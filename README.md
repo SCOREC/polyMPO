@@ -1,10 +1,8 @@
 
 ## layout
 
-- src - source codes (will be installed with `make
-install`)
-- test - example code that exercises APIs
-- CMakeLists.txt - cmake files that specify how to build the library and test
+- src - source files
+- test - examples and tests that exercise APIs
 
 ## setup
 

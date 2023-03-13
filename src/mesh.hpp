@@ -6,15 +6,16 @@ namespace polyMpmTest{
 #define maxVtxsPerElm 8
 #define maxElmsPerVtx 5
 
-using IntVtxView = Kokkos::View<int*[maxVtxsPerElm+1]>;
-using IntElmsPerVtxView = Kokkos::View<int*[maxElmsPerVtx+1]>;
+using IntVtx2ElmView = Kokkos::View<int*[maxVtxsPerElm+1]>;
+using IntElm2VtxView = Kokkos::View<int*[maxElmsPerVtx+1]>;
 
 class Mesh {
   private:
-    VectorView vtxCoords_;
-    IntVtxView elm2VtxConn_;
+    int numVtxs_;
     int numElms_;
-    Int ElmsPerVtxView vtx2ElmConn_;
+    VectorView vtxCoords_;
+    IntVtx2ElmView elm2VtxConn_;
+    IntElm2VtxView vtx2ElmConn_;
 
   public:
     Mesh();
@@ -27,11 +28,11 @@ class Mesh {
     IntVertiView getElm2VtxConn();
     IntElemsPerVertView getVtx2ElmConn();
 
-    void setVtx2ElmConn(IntElmsPerVertView vertex2Elems);  
+    void setVtx2ElmConn(IntElm2VtxView vtx2ElmConn);  
 };
 
 
-}i
+}
 
 #endif
 

@@ -1,6 +1,21 @@
 #ifndef POLYMPMTEST_UTILS_H
 #define POLYMPMTEST_UTILS_H
 
+#include <stdlib.h>
+#include <iostream>
+#include <limits>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#include <vector>
+#include <string>
+#include <fstream>
+#include <ctime>
+
+#include <Kokkos_Core.hpp>
+#include <Kokkos_Random.hpp>
+
+#include <netcdf.h>
 namespace polyMpmTest{
 
 // TODO: Vector => Vector2

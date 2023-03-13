@@ -8,7 +8,7 @@ namespace polyMpmTest{
 class MaterialPoints {
   private:
     int count_;
-    Vector2View positioins_;
+    Vector2View positions_;
     IntView elmIDs_;
     BoolView isActive_;
 
@@ -25,9 +25,9 @@ class MaterialPoints {
  
 
     int getCount() { return count_; }
-    Vector2View getPositions() {}
-    IntView getElmsIDs();
-    BoolView isActive();
+    Vector2View getPositions() { return positions_; }
+    IntView getElmsIDs() { return elmIDs_; }
+    BoolView isActive() { return isActive_; }
 
 //TODO:MUTATOR  
     void T2LTracking(Vector2View dx);

@@ -1,7 +1,9 @@
 set(HEADERS
   mesh.hpp
   materialPoints.hpp
-  integration.hpp
+  wachpressBasis.hpp
+  MPM.hpp
+  utils.hpp
 )
 
 set(SOURCES

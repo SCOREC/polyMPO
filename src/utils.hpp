@@ -18,6 +18,7 @@
 #include <netcdf.h>
 namespace polyMpmTest{
 
+class Vector2;
 // TODO: Vector => Vector2
 // afterwards may have: Vector3
 using Vector2View = Kokkos::View<Vector2*>;
@@ -34,7 +35,6 @@ class Vector2 {
     KOKKOS_INLINE_FUNCTION
     Vector2():coords_{0.0, 0.0}{}
     
-    KOKKOS_INLINE_FUNCTION
     ~Vector2() = default;
     
     KOKKOS_INLINE_FUNCTION
@@ -73,9 +73,8 @@ class Vector2 {
     double cross(Vector2 v) { return (coords_[0]*v[1] - coords_[1]*v[0]); }
     
     KOKKOS_INLINE_FUNCTION
-    double magnitude() {sqrt(coords_[0]*coords_[0] +
-                             coords_[1]*coordss_[1]); }
-
+    double magnitude() {return sqrt(coords_[0]*coords_[0] +
+                                    coords_[1]*coords_[1]); }
     
     KOKKOS_FUNCTION
     void operator=(const double &scalar);
@@ -89,14 +88,15 @@ void Vector2::operator=(const double &scalar){
     coords_[1] = scalar;
 }
 
-
-void initArray(Vector2 arr*, int n, Vector2 fill){
+KOKKOS_INLINE_FUNCTION
+void initArray(Vector2* arr, int n, Vector2 fill){
     for(int i=0; i<n; i++){
         arr[i] = fill;
     }
 }
 
-void initArray(double arr*, int n, double fill)}{
+KOKKOS_INLINE_FUNCTION
+void initArray(double* arr, int n, double fill){
     for(int i=0; i<n; i++){
         arr[i] = fill;
     }

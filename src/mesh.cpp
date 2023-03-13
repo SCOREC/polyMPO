@@ -83,12 +83,12 @@ Mesh readMPASMesh(int ncid){
   cellsOnVertex = new int[vertexDegree * nVertices]; // vertex dimension is vertexDegree
   nEdgesOnCell = new int[nCells];
 
-  if (maxEdges > maxVerti)
+  if (maxEdges > maxVtxsPerElm)
   {
     perror("maxEdges out of bound!\n");
     exit(1);
   }
-  if (vertexDegree > maxElemsPerVert)
+  if (vertexDegree > maxElmsPerVtx)
   {
     perror("vertexDegree is too large!\n");
     exit(1);
@@ -112,10 +112,10 @@ Mesh readMPASMesh(int ncid){
     ERRexit(retval);
 
   Vector2View vtxCoords("verticesCoordinates", nVertices);
-  IntElemsPerVertView vtx2ElmConn("vertexToElementsConnection", nVertices); // 4 = vertexDegree + 1
+  IntElm2VtxView vtx2ElmConn("vertexToElementsConnection", nVertices); // 4 = vertexDegree + 1
 
   Vector2View::HostMirror h_vtxCoords = Kokkos::create_mirror_view(vtxCoords);
-  IntElemsPerVertView::HostMirror h_vtx2ElmConn = Kokkos::create_mirror_view(vtx2ElmConn);
+  IntElm2VtxView::HostMirror h_vtx2ElmConn = Kokkos::create_mirror_view(vtx2ElmConn);
   for (int i = 0; i < nVertices; i++)
   {
     h_vtxCoords(i) = Vector2(xVertex[i], yVertex[i]);
@@ -128,8 +128,8 @@ Mesh readMPASMesh(int ncid){
   Kokkos::deep_copy(vtxCoords, h_vtxCoords);
   Kokkos::deep_copy(vtx2ElmConn, h_vtx2ElmConn);
 
-  Int4View elm2VtxConn("elementToVerticesConnection", nCells);
-  Int4View::HostMirror h_elm2VtxConn = Kokkos::create_mirror_view(elm2VtxConn);
+  IntVtx2ElmView elm2VtxConn("elementToVerticesConnection", nCells);
+  IntVtx2ElmView::HostMirror h_elm2VtxConn = Kokkos::create_mirror_view(elm2VtxConn);
 
   for (int i = 0; i < nCells; i++)
   {

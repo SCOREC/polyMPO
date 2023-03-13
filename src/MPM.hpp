@@ -20,8 +20,8 @@ class MPM{
         mesh_(mesh),
         materialPoints_(MPs){};
 
-    Mesh getMesh() { return mesh_; }
-    MaterialPoints getMPs() { return materialPoints_; }
+    Mesh getMesh() { return *mesh_; }
+    MaterialPoints getMPs() { return *materialPoints_; }
     IntView getElm2MPs() { return elm2MaterialPoints_; }
 
     void setElm2MPs(IntView elm2MPs) { elm2MaterialPoints_ = elm2MPs; }

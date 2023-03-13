@@ -3,6 +3,6 @@
 #include "materialPoints.hpp"
 
 int main() {
-  auto m = Mesh();
+  auto m = polyMpmTest::Mesh();
   return 0;
 }

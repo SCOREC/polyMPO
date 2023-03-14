@@ -9,15 +9,15 @@ void assembly(MPM mpm){
     int numVtxs = mesh.getNumVertices();
     int numElms = mesh.getNumElements();
     int numMPs = MPs.getCount(); 
-    
+     
     auto vtxCoords = mesh.getVtxCoords(); 
     auto elm2VtxConn = mesh.getElm2VtxConn();
     auto elm2MPs = mpm.getElm2MPs();
     auto xp = MPs.getPositions();
 
-     DoubleView vField("vField",numElms);
+    DoubleView vField("vField",numVtxs);
     
-    Kokkos::parallel_for("vertex_assem",numVtxs, KOKKOS_LAMBDA(const int ielm){
+    Kokkos::parallel_for("vertex_assem",numElms, KOKKOS_LAMBDA(const int ielm){
         int nVtxE = elm2VtxConn(ielm,0);
         int nMPE = elm2MPs(ielm*(maxMPsPerElm+1)); 
         for(int i=0; i<nVtxE; i++){
@@ -30,9 +30,8 @@ void assembly(MPM mpm){
             }
         }
     });
-
     auto MPs2Elm = mpm.getMPs2Elm();
-    DoubleView vField2("vField2",numElms);
+    DoubleView vField2("vField2",numVtxs);
     Kokkos::parallel_for("vertex_assem2", numMPs, KOKKOS_LAMBDA(const int iMP){
         int ielm = MPs2Elm(iMP); 
         int nVtxE = elm2VtxConn(ielm,0);
@@ -43,10 +42,9 @@ void assembly(MPM mpm){
             Kokkos::atomic_add(&vField2(vID),distance);
         }
     });
-
-    
-    //Kokkos::parallel_for("vFieldcheck",numElms, KOKKOS_LAMBDA(const int ielm){
-    //    printf("%d %f %f\n",ielm,vField(ielm),vField2(ielm));
+   
+    //Kokkos::parallel_for("vFieldcheck",numVtxs, KOKKOS_LAMBDA(const int ielm){
+    //    printf("%d: %f %f\n",ielm,vField(ielm),vField2(ielm));
     //});
 
 }

@@ -62,9 +62,9 @@ MPM initTestMPM(Mesh& mesh){
 
     int numMPs = 0;
     
-    IntView numMPsPerElement("numMaterialPointsPerElement",numVtxs);
+    IntView numMPsPerElement("numMaterialPointsPerElement",numElms);
     Kokkos::Random_XorShift64_Pool<> random_pool(randSeed);
-    Kokkos::parallel_for("setNumMPPerElement",numVtxs, KOKKOS_LAMBDA(const int i){
+    Kokkos::parallel_for("setNumMPPerElement",numElms, KOKKOS_LAMBDA(const int i){
         auto generator = random_pool.get_state();
         numMPsPerElement(i) = generator.urand(4,7);   
         random_pool.free_state(generator);
@@ -76,7 +76,7 @@ MPM initTestMPM(Mesh& mesh){
     },numMPs);
     IntView MPToElement("MPToElement",numMPs);  
 
-    IntView elm2MPs("elementToMPs",numVtxs*(maxMPsPerElm+1));
+    IntView elm2MPs("elementToMPs",numElms*(maxMPsPerElm+1));
     Kokkos::parallel_scan("setMPsToElement", numElms, KOKKOS_LAMBDA(int i, int& iMP, bool is_final){
         if(is_final){  
             elm2MPs(i*(maxMPsPerElm+1)) = numMPsPerElement(i);
@@ -91,21 +91,22 @@ MPM initTestMPM(Mesh& mesh){
     Vector2View positions("MPpositions",numMPs);
     IntView MPs2Elm("MPToElementIDs",numMPs);
     BoolView isActive("MPstatus",numMPs);
-    
+     
     Kokkos::parallel_for("intializeMPsPosition", numMPs, KOKKOS_LAMBDA(const int iMP){
         int ielm = MPToElement(iMP);
-        int numVtxs = elm2VtxConn(ielm,0);
+        int numVtx = elm2VtxConn(ielm,0);
         double sum_x = 0.0, sum_y = 0.0;
-        for(int i=1; i<= numVtxs; i++){
+        for(int i=1; i<= numVtx; i++){
             sum_x += vtxCoords(elm2VtxConn(ielm,i)-1)[0];
             sum_y += vtxCoords(elm2VtxConn(ielm,i)-1)[1];
         }
-        positions(iMP) = Vector2(sum_x/numVtxs, sum_y/numVtxs);
+        positions(iMP) = Vector2(sum_x/numVtx, sum_y/numVtx);
         MPs2Elm(iMP) = ielm;
         isActive(iMP) = true;
+        //printf("%d: (%f,%f)\n",iMP,positions(iMP)[0],positions(iMP)[1]);
     });
-
+    
     auto p = MaterialPoints(numMPs,positions,isActive);
 
-    return MPM(&mesh,&p,elm2MPs,MPs2Elm);
+    return MPM(mesh,p,elm2MPs,MPs2Elm);
 }

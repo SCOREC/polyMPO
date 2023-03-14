@@ -22,7 +22,6 @@ class MaterialPoints {
                     positions_(positions),
                     //elmIDs_(elmIDs),
                     isActive_(isActive){};
- 
 
     int getCount() { return count_; }
     Vector2View getPositions() { return positions_; }

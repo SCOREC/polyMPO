@@ -21,7 +21,7 @@ int main() {
         
             
         //test assembly in assembly.hpp
-        assembly(MPMTest);
+        polyMpmTest::assembly(MPMTest);
     }
     
     Kokkos::finalize();

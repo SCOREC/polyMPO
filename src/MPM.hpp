@@ -12,8 +12,8 @@ namespace polyMpmTest{
 
 class MPM{
   private:
-    Mesh& mesh_;
-    MaterialPoints& materialPoints_;
+    Mesh mesh_;
+    MaterialPoints materialPoints_;
     IntView elm2MaterialPoints_; 
     IntView materialPoints2Elm_;
     

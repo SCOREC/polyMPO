@@ -3,7 +3,7 @@
 
 namespace polyMpmTest{
 
-void assembly(const MPM& mpm){
+void assembly(MPM& mpm){
     auto mesh = mpm.getMesh();
     auto MPs = mpm.getMPs();
     int numVtxs = mesh.getNumVertices();

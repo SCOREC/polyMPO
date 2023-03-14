@@ -2,9 +2,15 @@
 #include "mesh.hpp"
 #include "materialPoints.hpp"
 
-using namespace polyMpmTest
+using namespace polyMpmTest;
 
 /* TODO: add some comments
- *
+ * Init a simple test square mesh
  */
-Mesh initializetestMesh(int factor);
+Mesh initTestMesh(int factor);
+
+/*
+ * Init particles at central position with a rand 4-6 duplicate
+ * put in an MPM file;
+ */
+MPM initTestMPM(Mesh& meshObj);

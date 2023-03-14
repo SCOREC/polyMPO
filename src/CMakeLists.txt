@@ -4,6 +4,7 @@ set(HEADERS
   wachpressBasis.hpp
   MPM.hpp
   utils.hpp
+  assembly.hpp
 )
 
 set(SOURCES

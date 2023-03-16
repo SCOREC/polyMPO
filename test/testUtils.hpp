@@ -14,3 +14,8 @@ Mesh initTestMesh(int factor);
  * put in an MPM file;
  */
 MPM initTestMPM(Mesh& meshObj);
+
+/*
+ * Wachpress driver function check by print out gradF at P
+ */
+void interpolateWachpress(MPM& mpm);

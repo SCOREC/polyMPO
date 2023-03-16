@@ -110,3 +110,45 @@ MPM initTestMPM(Mesh& mesh){
 
     return MPM(mesh,p,elm2MPs,MPs2Elm);
 }
+
+
+void interpolateWachpress(MPM& mpm){
+    auto mesh = mpm.getMesh();
+    auto MPs = mpm.getMPs();   
+    auto MPs2Elm = mpm.getMPs2Elm();
+   
+    auto vtxCoords = mesh.getVtxCoords();
+    auto elm2VtxConn = mesh.getElm2VtxConn();
+    
+
+    auto numMPs = MPs.getCount();
+    auto MPsPosition = MPs.getPositions();
+    auto isActive = MPs.isActive();
+
+    Kokkos::parallel_for("getBasisAndGradByAreaGblForm",numMPs,KOKKOS_LAMBDA(const int iMP){
+        if (isActive(iMP)){
+            int iElm = MPs2Elm(iMP);
+            Vector2 v[maxVtxsPerElm+1] = {vtxCoords(elm2VtxConn(iElm,1))};
+            initArray(v,maxVtxsPerElm+1,vtxCoords(elm2VtxConn(iElm,1)));
+            int numVtx = elm2VtxConn(iElm,0);
+            for(int i = 1; i<=numVtx; i++){
+                v[i-1] = vtxCoords(elm2VtxConn(iElm,i)-1);
+            }
+            v[numVtx] = vtxCoords(elm2VtxConn(iElm,1)-1);
+            double basisByArea[maxVtxsPerElm] = {0.0};
+            initArray(basisByArea,maxVtxsPerElm,0.0);
+            Vector2 gradBasisByArea[maxVtxsPerElm];
+            getBasisAndGradByAreaGblForm(MPsPosition(iMP), numVtx, v, basisByArea, gradBasisByArea);
+
+        //*answer check
+            Vector2 gradFByAreaAtP(0,0);
+            Vector2 wp_coordByArea(0,0);
+            for(int i = 0; i<maxVtxsPerElm; i++){
+                double Fi = 1 + 10.36*v[i][0]+12.2*v[i][1];
+                gradFByAreaAtP = Vector2(gradFByAreaAtP[0] + Fi*gradBasisByArea[i][0],gradFByAreaAtP[1] + Fi*gradBasisByArea[i][1]);
+                wp_coordByArea = wp_coordByArea + v[i]*basisByArea[i]; 
+            }
+            printf("gradF_%-4d@ %-3d:Area= (%6.3f,%6.3f)\n",iMP,iElm,gradFByAreaAtP[0],gradFByAreaAtP[1]);
+        }//=========*/
+    });
+}

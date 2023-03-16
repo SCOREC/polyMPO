@@ -15,13 +15,14 @@ int main() {
     
     //test init Test Mesh
     Kokkos::initialize();{
-        auto mTest = initTestMesh(1);
+        auto mTest = initTestMesh(100);
         auto MPMTest = initTestMPM(mTest);
         
         
             
         //test assembly in assembly.hpp
         polyMpmTest::assembly(MPMTest);
+        interpolateWachpress(MPMTest);
     }
     
     Kokkos::finalize();

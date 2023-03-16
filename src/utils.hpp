@@ -56,15 +56,15 @@ class Vector2 {
     
     KOKKOS_INLINE_FUNCTION
     Vector2 operator+(Vector2 v) { return Vector2(coords_[0] + v[0],
-                                                 coords_[0] + v[1]); }
+                                                 coords_[1] + v[1]); }
     
     KOKKOS_INLINE_FUNCTION
     Vector2 operator-(Vector2 v) { return Vector2(coords_[0] - v[0],
-                                                 coords_[0] - v[1]); }
+                                                 coords_[1] - v[1]); }
     
     KOKKOS_INLINE_FUNCTION
     Vector2 operator*(double scalar) const { return Vector2(coords_[0]*scalar,
-                                                            coords_[0]*scalar); }
+                                                            coords_[1]*scalar); }
     
     KOKKOS_INLINE_FUNCTION
     double dot(Vector2 v) { return  coords_[0]*v[0]+coords_[1]*v[1]; }

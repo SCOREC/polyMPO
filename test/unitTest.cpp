@@ -38,6 +38,19 @@ int main() {
     auto v9 = v1.magnitude();
     assert(v9 - sqrt(5) < 1e-6);  
 
+    //run assembly and test Wachpress
+    Kokkos::initialize();{
+        auto mTest = initTestMesh(1);
+        auto MPMTest = initTestMPM(mTest);
+        
+        auto meshFromMPM = MPMTest.getMesh();
+        assert(meshFromMPM.getNumVertices() == 19);
+        assert(meshFromMPM.getNumElements() == 10);
+        
+        polyMpmTest::assembly(MPMTest);
+        interpolateWachpress(MPMTest);              
+    }
+    Kokkos::finalize();
 
     return 0;
 }

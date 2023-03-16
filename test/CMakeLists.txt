@@ -7,7 +7,10 @@ install(TARGETS testFoo DESTINATION bin)
 
 enable_testing()
 
+
 add_test(
     unit_test unitTest
-    #COMMAND $TARGET_FILE:unitTest
+    )
+add_test(
+    test_watchpress testFoo
     )

@@ -119,7 +119,6 @@ void interpolateWachpress(MPM& mpm){
    
     auto vtxCoords = mesh.getVtxCoords();
     auto elm2VtxConn = mesh.getElm2VtxConn();
-    
 
     auto numMPs = MPs.getCount();
     auto MPsPosition = MPs.getPositions();
@@ -148,7 +147,8 @@ void interpolateWachpress(MPM& mpm){
                 gradFByAreaAtP = Vector2(gradFByAreaAtP[0] + Fi*gradBasisByArea[i][0],gradFByAreaAtP[1] + Fi*gradBasisByArea[i][1]);
                 wp_coordByArea = wp_coordByArea + v[i]*basisByArea[i]; 
             }
-            printf("gradF_%-4d@ %-3d:Area= (%6.3f,%6.3f)\n",iMP,iElm,gradFByAreaAtP[0],gradFByAreaAtP[1]);
+            assert(gradFByAreaAtP[0]-10.36 < 1e-6);
+            assert(gradFByAreaAtP[0]-12.2 < 1e-6);
         }//=========*/
     });
 }

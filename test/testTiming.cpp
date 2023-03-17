@@ -6,8 +6,10 @@
 #include "testUtils.hpp"
 
 int main(int argc, char* argv[] ) {
+    int factor = atoi(argv[1]);
+    printf("Time assembly and wachspress with factor: %d\n",factor);
     Kokkos::initialize(argc,argv);{
-        auto mTest = initTestMesh(atoi(argv[1]));
+        auto mTest = initTestMesh(factor);
         auto MPMTest = initTestMPM(mTest);
         
         polyMpmTest::assembly(MPMTest);

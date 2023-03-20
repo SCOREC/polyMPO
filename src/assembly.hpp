@@ -22,7 +22,7 @@ DoubleView assembly(MPM& mpm){
         for(int i=0; i<nVtxE; i++){
             int vID = elm2VtxConn(ielm,i+1)-1;
             auto vertexLoc = vtxCoords(vID);
-            double distance = (xp(iMP)-vertexLoc).magnitude();
+            double distance = xp(iMP)[0];
             Kokkos::atomic_add(&vField(vID),distance);
         }
     });

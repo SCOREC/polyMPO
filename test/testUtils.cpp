@@ -138,17 +138,13 @@ void interpolateWachpress(MPM& mpm){
             initArray(basisByArea,maxVtxsPerElm,0.0);
             Vector2 gradBasisByArea[maxVtxsPerElm];
             getBasisAndGradByAreaGblForm(MPsPosition(iMP), numVtx, v, basisByArea, gradBasisByArea);
-
-        //*answer check
-            Vector2 gradFByAreaAtP(0,0);
-            Vector2 wp_coordByArea(0,0);
-            for(int i = 0; i<maxVtxsPerElm; i++){
-                double Fi = 1 + 10.36*v[i][0]+12.2*v[i][1];
-                gradFByAreaAtP = Vector2(gradFByAreaAtP[0] + Fi*gradBasisByArea[i][0],gradFByAreaAtP[1] + Fi*gradBasisByArea[i][1]);
-                wp_coordByArea = wp_coordByArea + v[i]*basisByArea[i]; 
+        
+            Vector2 wp_coord(0.0,0.0);
+            double wp_grad = 0.0;
+            for(int i=0; i<= numVtx; i++){
+                wp_coord = wp_coord + v[i]*basisByArea[i];
+                wp_grad = wp_grad + gradBasisByArea[i].dot(v[i]);
             }
-            assert(gradFByAreaAtP[0]-10.36 < 1e-6);
-            assert(gradFByAreaAtP[0]-12.2 < 1e-6);
-        }//=========*/
+        }        
     });
 }

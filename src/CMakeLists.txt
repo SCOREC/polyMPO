@@ -9,6 +9,7 @@ set(HEADERS
 
 set(SOURCES
   mesh.cpp
+  utils.cpp
 )
 
 add_library(polyMpmTest-core ${SOURCES})

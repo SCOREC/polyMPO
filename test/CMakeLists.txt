@@ -1,19 +1,24 @@
-add_executable (testFoo testFoo.cpp testUtils.cpp)
-add_executable (unitTest unitTest.cpp testUtils.cpp)
-add_executable (timeAssmblyWachspress testTiming.cpp testUtils.cpp)
+add_library(pmtUtils testUtils.cpp)
+target_link_libraries(pmtUtils PRIVATE polyMpmTest)
+target_include_directories(pmtUtils PRIVATE
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+    $<INSTALL_INTERFACE:include>
+)
 
-target_link_libraries (testFoo polyMpmTest m)
-target_link_libraries (unitTest polyMpmTest m)
-target_link_libraries (timeAssmblyWachspress polyMpmTest m)
+function(pmt_add_exe exename srcname)
+  if(BUILD_TESTING)
+    add_executable(${exename} ${srcname})
+  else()
+    add_executable(${exename} EXCLUDE_FROM_ALL ${srcname})
+  endif()
+  target_link_libraries (${exename} polyMpmTest pmtUtils)
+  install(TARGETS ${exename} DESTINATION bin)
+endfunction()
 
-install(TARGETS testFoo DESTINATION bin)
-install(TARGETS timeAssmblyWachspress DESTINATION bin)
+pmt_add_exe(testFoo testFoo.cpp)
+pmt_add_exe(unitTest unitTest.cpp)
+pmt_add_exe(timeAssmblyWachspress testTiming.cpp)
 
-#enable_testing()
-
-add_test(
-    unit_test unitTest
-    )
-add_test(
-    test_watchpress testFoo
-    )
+add_test(NAME unit_test COMMAND ./unitTest)
+add_test(NAME test_watchpress COMMAND ./testFoo)
+add_test(NAME test_timing COMMAND ./timeAssmblyWachspress 5)

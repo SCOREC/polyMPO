@@ -1,5 +1,8 @@
 cmake_minimum_required(VERSION 3.19)
-project(polyMpmTest CXX )
+project(polyMpmTest VERSION 0.0.1 LANGUAGES CXX)
+
+include(CTest)
+enable_testing()
 
 function(export_target tgt_name)
   install(TARGETS ${tgt_name} EXPORT ${tgt_name}-target

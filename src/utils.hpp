@@ -14,8 +14,21 @@
 
 #include <Kokkos_Core.hpp>
 #include <Kokkos_Random.hpp>
-
 #include <netcdf.h>
+
+//assert borrowed from scorec/core/pcu/pcu_util.h
+void PMT_Assert_Fail(const char* msg) __attribute__ ((noreturn));
+
+#define PMT_ALWAYS_ASSERT(cond)                   \
+  do {                                            \
+    if (! (cond)) {                               \
+      char omsg[2048];                            \
+      sprintf(omsg, "%s failed at %s + %d \n",    \
+        #cond, __FILE__, __LINE__);               \
+      PMT_Assert_Fail(omsg);                      \
+    }                                             \
+  } while (0)
+
 namespace polyMpmTest{
 
 class Vector2;

@@ -18,7 +18,6 @@ class MPM{
     IntView materialPoints2Elm_;
     
   public:
-    //MPM(){}
     MPM(Mesh& mesh, MaterialPoints& MPs, IntView elm2MPs, IntView MPs2Elm):
         mesh_(mesh),
         materialPoints_(MPs),

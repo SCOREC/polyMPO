@@ -4,8 +4,6 @@
 
 namespace polyMpmTest{
 
-
-//XXX: the readMMPASMesh should be put in the MPM class!!!
 Mesh readMPASMesh(std::string filename){
   int ncid;
   int retval;

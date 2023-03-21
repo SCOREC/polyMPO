@@ -27,9 +27,6 @@ DoubleView assembly(MPM& mpm){
         }
     });
    
-    //Kokkos::parallel_for("vFieldcheck",numVtxs, KOKKOS_LAMBDA(const int ielm){
-    //    printf("%d: %f %f\n",ielm,vField(ielm),vField2(ielm));
-    //});
     return vField;
 }
 

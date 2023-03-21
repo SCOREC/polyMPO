@@ -12,6 +12,8 @@ int main(int argc, char* argv[] ) {
         auto mTest = initTestMesh(factor);
         auto MPMTest = initTestMPM(mTest);
         
+        printf("Total MPs:%d\n",MPMTest.getMPs().getCount());    
+    
         polyMpmTest::assembly(MPMTest);
         polyMpmTest::assembly(MPMTest);
         polyMpmTest::assembly(MPMTest);

@@ -6,25 +6,20 @@
 #include "testUtils.hpp"
 
 int main(int argc, char* argv[] ) {
+    PMT_ALWAYS_ASSERT(argc == 1);
+    Kokkos::initialize(argc,argv);
     int factor = atoi(argv[1]);
     printf("Time assembly and wachspress with factor: %d\n",factor);
-    Kokkos::initialize(argc,argv);{
-        auto mTest = initTestMesh(factor);
-        auto MPMTest = initTestMPM(mTest);
+    {
+        auto mesh = initTestMesh(factor);
+        auto mpm = initTestMPM(mesh);
         
-        printf("Total MPs:%d\n",MPMTest.getMPs().getCount());    
-    
-        polyMpmTest::assembly(MPMTest);
-        polyMpmTest::assembly(MPMTest);
-        polyMpmTest::assembly(MPMTest);
-        polyMpmTest::assembly(MPMTest);
-        polyMpmTest::assembly(MPMTest);
+        printf("Total MPs:%d\n",mpm.getMPs().getCount());    
         
-        interpolateWachpress(MPMTest);
-        interpolateWachpress(MPMTest);
-        interpolateWachpress(MPMTest);
-        interpolateWachpress(MPMTest);
-        interpolateWachpress(MPMTest);
+        for(int i=0; i<5; i++){
+            polyMpmTest::assembly(mpm);
+            interpolateWachpress(mpm);
+        }
     } 
     Kokkos::finalize();
     return 0;

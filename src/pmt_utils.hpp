@@ -3,18 +3,8 @@
 
 #include <stdlib.h>
 #include <iostream>
-#include <limits>
-#include <cstdio>
-#include <cstdlib>
-#include <cstring>
-#include <vector>
-#include <string>
-#include <fstream>
-#include <ctime>
 
 #include <Kokkos_Core.hpp>
-#include <Kokkos_Random.hpp>
-#include <netcdf.h>
 
 //assert borrowed from scorec/core/pcu/pcu_util.h
 void PMT_Assert_Fail(const char* msg) __attribute__ ((noreturn));
@@ -32,7 +22,6 @@ void PMT_Assert_Fail(const char* msg) __attribute__ ((noreturn));
 namespace polyMpmTest{
 
 class Vector2;
-// TODO: Vector => Vector2
 // afterwards may have: Vector3
 using Vector2View = Kokkos::View<Vector2*>;
 using DoubleView = Kokkos::View<double*>;

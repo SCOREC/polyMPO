@@ -1,3 +1,4 @@
+#include <Kokkos_Random.hpp>
 #include "testUtils.hpp"
 
 const int randSeed = 12345;

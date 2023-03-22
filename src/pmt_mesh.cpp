@@ -1,4 +1,5 @@
 #include "pmt_mesh.hpp"
+#include <netcdf.h>
 
 #define ERRexit(e){ printf("Error: %s\n", nc_strerror(e)); exit(2);}
 

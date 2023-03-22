@@ -1,10 +1,9 @@
 #ifndef POLYMPMTEST_MPM_H
 #define POLYMPMTEST_MPM_H
 
-#include "utils.hpp"
-#include "mesh.hpp"
-#include "materialPoints.hpp"
-#include "wachpressBasis.hpp"
+#include "pmt_utils.hpp"
+#include "pmt_mesh.hpp"
+#include "pmt_materialPoints.hpp"
 
 namespace polyMpmTest{
 

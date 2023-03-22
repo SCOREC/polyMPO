@@ -1,15 +1,15 @@
 set(HEADERS
-  mesh.hpp
-  materialPoints.hpp
-  wachpressBasis.hpp
-  MPM.hpp
-  utils.hpp
-  assembly.hpp
+  pmt_mesh.hpp
+  pmt_materialPoints.hpp
+  pmt_wachspressBasis.hpp
+  pmt_MPM.hpp
+  pmt_utils.hpp
+  pmt_assembly.hpp
 )
 
 set(SOURCES
-  mesh.cpp
-  utils.cpp
+  pmt_mesh.cpp
+  pmt_utils.cpp
 )
 
 add_library(polyMpmTest-core ${SOURCES})

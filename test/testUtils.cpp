@@ -112,7 +112,7 @@ MPM initTestMPM(Mesh& mesh){
 }
 
 
-void interpolateWachpress(MPM& mpm){
+void interpolateWachspress(MPM& mpm){
     auto mesh = mpm.getMesh();
     auto MPs = mpm.getMPs();   
     auto MPs2Elm = mpm.getMPs2Elm();

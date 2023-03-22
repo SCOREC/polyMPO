@@ -1,8 +1,8 @@
-#ifndef POLYMPMTEST_WACHPRESS_BASIS_H
-#define POLYMPMTEST_WACHPRESS_BASIS_H
+#ifndef POLYMPMTEST_WACHSPRESS_BASIS_H
+#define POLYMPMTEST_WACHSPRESS_BASIS_H
 
-#include "utils.hpp"
-#include "MPM.hpp"
+#include "pmt_utils.hpp"
+#include "pmt_MPM.hpp"
 
 namespace polyMpmTest{
 

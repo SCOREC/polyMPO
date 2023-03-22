@@ -15,10 +15,10 @@ function(pmt_add_exe exename srcname)
   install(TARGETS ${exename} DESTINATION bin)
 endfunction()
 
-pmt_add_exe(testFoo testFoo.cpp)
+pmt_add_exe(testWachspress testWachspress.cpp)
 pmt_add_exe(unitTest unitTest.cpp)
 pmt_add_exe(timeAssmblyWachspress testTiming.cpp)
 
 add_test(NAME unit_test COMMAND ./unitTest)
-add_test(NAME test_watchpress COMMAND ./testFoo)
+add_test(NAME test_wachspress COMMAND ./testWachspress)
 add_test(NAME test_timing COMMAND ./timeAssmblyWachspress 5)

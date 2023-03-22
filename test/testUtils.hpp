@@ -1,6 +1,5 @@
-#include "MPM.hpp"
-#include "mesh.hpp"
-#include "materialPoints.hpp"
+#include "pmt_MPM.hpp"
+#include "pmt_wachspressBasis.hpp"
 
 using namespace polyMpmTest;
 
@@ -18,4 +17,4 @@ MPM initTestMPM(Mesh& meshObj);
 /*
  * Wachpress driver function check by print out gradF at P
  */
-void interpolateWachpress(MPM& mpm);
+void interpolateWachspress(MPM& mpm);

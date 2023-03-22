@@ -1,7 +1,7 @@
 #ifndef POLYMPMTEST_MATERIALPOINTS_H
 #define POLYMPMTEST_MATERIALPOINTS_H
 
-#include "utils.hpp"
+#include "pmt_utils.hpp"
 
 namespace polyMpmTest{
 

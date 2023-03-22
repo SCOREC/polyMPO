@@ -1,6 +1,8 @@
 #ifndef POLYMPMTEST_ASSEMBLY_H
 #define POLYMPMTEST_ASSEMBLY_H
 
+#include "pmt_MPM.hpp"
+
 namespace polyMpmTest{
 
 DoubleView assembly(MPM& mpm){

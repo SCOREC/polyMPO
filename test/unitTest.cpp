@@ -1,10 +1,5 @@
-
-
-#include "MPM.hpp"
-#include "mesh.hpp"
-#include "materialPoints.hpp"
-#include "utils.hpp"
-#include "assembly.hpp"
+#include "pmt_MPM.hpp"
+#include "pmt_assembly.hpp"
 #include "testUtils.hpp"
 
 
@@ -38,7 +33,7 @@ int main() {
     auto v9 = v1.magnitude();
     PMT_ALWAYS_ASSERT(v9 - sqrt(5) < 1e-6);
 
-    //run assembly and test Wachpress
+    //run assembly and test Wachspress
     Kokkos::initialize();{
         auto mTest = initTestMesh(1);
         auto MPMTest = initTestMPM(mTest);
@@ -48,7 +43,7 @@ int main() {
         PMT_ALWAYS_ASSERT(meshFromMPM.getNumElements() == 10);
         
         polyMpmTest::assembly(MPMTest);
-        interpolateWachpress(MPMTest);              
+        interpolateWachspress(MPMTest);              
     }
     Kokkos::finalize();
 

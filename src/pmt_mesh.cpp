@@ -1,4 +1,4 @@
-#include "mesh.hpp"
+#include "pmt_mesh.hpp"
 
 #define ERRexit(e){ printf("Error: %s\n", nc_strerror(e)); exit(2);}
 

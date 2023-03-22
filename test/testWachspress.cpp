@@ -1,7 +1,6 @@
-#include "MPM.hpp"
-#include "mesh.hpp"
-#include "materialPoints.hpp"
-#include "assembly.hpp"
+#include "pmt_MPM.hpp"
+#include "pmt_wachspressBasis.hpp"
+#include "pmt_assembly.hpp"
 
 #include "testUtils.hpp"
 
@@ -20,7 +19,7 @@ int main() {
         
         //test assembly in assembly.hpp
         polyMpmTest::assembly(mpm);
-        interpolateWachpress(mpm);
+        interpolateWachspress(mpm);
     }
     
     Kokkos::finalize();

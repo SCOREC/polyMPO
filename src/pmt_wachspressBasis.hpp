@@ -7,9 +7,18 @@
 namespace polyMpmTest{
 
 /** \brief calculate the basis and gradient of Basis for a give MP with its element Vtxs
+ *
  *  \details based on the 4.1 section from:
  *  https://www.mn.uio.no/math/english/people/aca/michaelf/papers/gbc.pdf
- *  \param Material Point MP, vertices of its corresponding element
+ *
+ *  \param MP: single Material Point
+ *
+ *  \param numVtxs: number of vertices of vtxCoords
+ *
+ *  \param vtxCoords: vertices of its corresponding element
+ *
+ *  \param basis && gadBasis: hold the return values
+ *
  *  \return basis and gradient of basis
  * */
 KOKKOS_INLINE_FUNCTION
@@ -18,7 +27,6 @@ void getBasisAndGradByAreaGblForm(Vector2 MP,
                                   Vector2* vtxCoords,
                                   double* basis,
                                   Vector2* gradBasis){
-    //TODO: cp from ByArea
     Vector2 e[maxVtxsPerElm + 1];
     Vector2 p[maxVtxsPerElm];
     double w[maxVtxsPerElm];

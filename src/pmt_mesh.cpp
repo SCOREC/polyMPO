@@ -4,7 +4,7 @@
 
 namespace polyMpmTest{
 
-Mesh readMPASMesh(std::string filename){
+Mesh Mesh::readMPASMesh(std::string filename){
   int ncid;
   int retval;
   if ((retval = nc_open(filename.c_str(), NC_NOWRITE, &ncid)))
@@ -15,7 +15,7 @@ Mesh readMPASMesh(std::string filename){
   return mesh;
 }
 
-Mesh readMPASMesh(int ncid){
+Mesh Mesh::readMPASMesh(int ncid){
   int retval,
       nCells, nCellsID,
       nVertices, nVerticesID,
@@ -42,7 +42,6 @@ Mesh readMPASMesh(int ncid){
   if ((retval = nc_inq_dimid(ncid, "vertexDegree", &vertexDegreeID)))
     ERRexit(retval);
 
-  ///*
   if ((retval = nc_inq_dimlen(ncid, nCellsID, &temp)))
     ERRexit(retval);
   nCells = temp;

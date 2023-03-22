@@ -18,6 +18,7 @@ class Mesh {
     Vector2View vtxCoords_;
     IntVtx2ElmView elm2VtxConn_;
     IntElm2VtxView vtx2ElmConn_;
+    static Mesh readMPASMesh(int ncid);
 
   public:
     Mesh(){};
@@ -31,6 +32,7 @@ class Mesh {
           vtxCoords_(vtxCoords),
           elm2VtxConn_(elm2VtxConn),
           vtx2ElmConn_(vtx2ElmConn){};
+    static Mesh readMPASMesh(std::string filename);
 
     int getNumVertices() { return numVtxs_; }
     int getNumElements() { return numElms_; }
@@ -40,11 +42,8 @@ class Mesh {
 
     void setVtx2ElmConn(IntElm2VtxView vtx2ElmConn) { vtx2ElmConn_ = vtx2ElmConn; }
     void setElm2VtxConn(IntVtx2ElmView elm2VtxConn) { elm2VtxConn_ = elm2VtxConn; }
+    
 };
-
-Mesh readMPASMesh(std::string filename);
-Mesh readMPASMesh(int ncid);
-
 }
 
 #endif

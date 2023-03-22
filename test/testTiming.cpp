@@ -5,7 +5,7 @@
 #include "testUtils.hpp"
 
 int main(int argc, char* argv[] ) {
-    PMT_ALWAYS_ASSERT(argc == 1);
+    PMT_ALWAYS_ASSERT(argc == 2);
     Kokkos::initialize(argc,argv);
     int factor = atoi(argv[1]);
     printf("Time assembly and wachspress with factor: %d\n",factor);

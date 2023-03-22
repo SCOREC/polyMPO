@@ -4,6 +4,7 @@
 
 
 int main() {
+    Kokkos::initialize();
 
 //  test Vector2
     auto v = polyMpmTest::Vector2();
@@ -34,16 +35,16 @@ int main() {
     PMT_ALWAYS_ASSERT(v9 - sqrt(5) < 1e-6);
 
     //run assembly and test Wachspress
-    Kokkos::initialize();{
-        auto mTest = initTestMesh(1);
-        auto MPMTest = initTestMPM(mTest);
+    {
+        auto mesh = initTestMesh(1);
+        auto mpm = initTestMPM(mesh);
         
-        auto meshFromMPM = MPMTest.getMesh();
+        auto meshFromMPM = mpm.getMesh();
         PMT_ALWAYS_ASSERT(meshFromMPM.getNumVertices() == 19);
         PMT_ALWAYS_ASSERT(meshFromMPM.getNumElements() == 10);
         
-        polyMpmTest::assembly(MPMTest);
-        interpolateWachspress(MPMTest);              
+        polyMpmTest::assembly(mpm);
+        interpolateWachspress(mpm);              
     }
     Kokkos::finalize();
 

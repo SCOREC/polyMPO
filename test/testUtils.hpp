@@ -13,7 +13,7 @@ Mesh initTestMesh(int factor);
 /*
  * \breif Initialize test particles to a given mesh
  * \details  Init particles at central position of the element
- * with a rand 4-6 duplicate of the particles and link them in an MPM file
+ * with a rand 4-6 duplicate of the particles and link them in an MPM object
  */
 MPM initTestMPM(Mesh& meshObj);
 

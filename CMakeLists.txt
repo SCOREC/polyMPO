@@ -1,5 +1,8 @@
 cmake_minimum_required(VERSION 3.19)
-project(polyMpmTest CXX )
+project(polyMpmTest VERSION 0.0.1 LANGUAGES CXX)
+
+include(CTest)
+enable_testing()
 
 function(export_target tgt_name)
   install(TARGETS ${tgt_name} EXPORT ${tgt_name}-target
@@ -24,11 +27,14 @@ find_package(Kokkos REQUIRED)
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(NetCDF REQUIRED IMPORTED_TARGET netcdf>=4.7.3)
 
-if(NOT CMAKE_BUILD_TYPE)
-  set(CMAKE_BUILD_TYPE Release)
+# Set a default build type if none was specified
+# from: https://www.kitware.com/cmake-and-the-default-build-type/
+set(default_build_type "Release")
+if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
+  message(STATUS "Setting build type to '${default_build_type}' as none was specified.")
+  set(CMAKE_BUILD_TYPE "${default_build_type}" CACHE
+    STRING "Choose the type of build." FORCE)
 endif()
-
-message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
 
 set(CMAKE_CXX_FLAGS "-Wall -Wextra")
 set(CMAKE_CXX_FLAGS_DEBUG "-g")

@@ -87,6 +87,12 @@ Install with OpenMP backend
 ./installKokkos.sh OPENMP
 ```
 
+Install with Serial backend
+
+```
+./installKokkos.sh
+```
+
 ### Building for GPU execution
 
 Create a file named `doConfigPolyMpmSheathGpu.sh` with the following contents:
@@ -163,17 +169,43 @@ To rebuild the code after making some changes:
 ./buildPolyMpmSheathOmp.sh
 ```
 
+
+### Building for CPU execution using serial backend
+
+Create a file named `doConfigPolyMpmSheathSerial.sh` with the following contents:
+
+```
+bdir=$PWD/build-omp
+cmake -S polyMpmTest -B $bdir \
+-DKokkos_DIR=$PWD/buildKokkosSerial/install/lib64/cmake/Kokkos \
+-DCMAKE_INSTALL_PREFIX=$bdir/install
+```
+
+Create a file named `buildPolyMpmSheathSerial.sh` with the following contents:
+
+```
+bdir=$PWD/build-serial
+cmake --build $bdir --target install
+```
+
+Make them executable:
+
+```
+chmod +x doConfigPolyMpmSheathSerial.sh buildPolyMpmSheathSerial.sh
+```
+
+Run the configure script then run the build script:
+
+```
+./doConfigPolyMpmSheathSerial.sh
+./buildPolyMpmSheathSerial.sh
+```
+
 ## Run test
 
-Run with OpenMP on CPU
+Run with [OpenMP|CUDA|Serial]
 
 ```
-./build-omp/test/PolyMpmSheathWachspress_Demo
-```
-
-Run with CUDA on GPU
-
-```
-./build-GPU/test/PolyMpmSheathWachspress_Demo
+./build-[omp|GPU|serial]/test/testWachspress
 ```
 

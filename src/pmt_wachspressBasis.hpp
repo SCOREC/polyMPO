@@ -56,22 +56,17 @@ void getBasisAndGradByAreaGblForm(Vector2 MP,
             int index1 = (j + i + 1) % numVtxs;
             aProduct *= a[index1];
 
-            double productX = 1.0;
-            double productY = 1.0;
+            double product = 1.0;
             for (int k = 0; k < j; k++){
                 int index2 = (i + k + 1) % numVtxs;
-                productX *= a[index2];
-                productY *= a[index2];
+                product *= a[index2];
             }
-            productX *= -(vtxCoords[index1 + 1][1] - vtxCoords[index1][1]);
-            productY *= vtxCoords[index1 + 1][0] - vtxCoords[index1][0];
             for (int k = j + 1; k < numVtxs - 2; k++){
                 int index2 = (i + k + 1) % numVtxs;
-                productX *= a[index2];
-                productY *= a[index2];
+                product *= a[index2];
             }
-            wdx[i] += productX;
-            wdy[i] += productY;
+            wdx[i] += product * -(vtxCoords[index1 + 1][1] - vtxCoords[index1][1]);
+            wdy[i] += product * (vtxCoords[index1 + 1][0] - vtxCoords[index1][0]);
         }
         wdx[i] *= c[i];
         wdy[i] *= c[i];
@@ -82,9 +77,10 @@ void getBasisAndGradByAreaGblForm(Vector2 MP,
     }
 
     double wSumInv = 1.0 / wSum;
+    double wSumInvSq = wSumInv * wSumInv;
     for (int i = 0; i < numVtxs; i++){
         basis[i] = w[i] * wSumInv;
-        gradBasis[i] = Vector2(wdx[i] * wSumInv - w[i] * wSumInv * wSumInv * wdxSum, wdy[i] * wSumInv - w[i] * wSumInv * wSumInv * wdySum);
+        gradBasis[i] = Vector2(wdx[i] * wSumInv - w[i] * wSumInvSq * wdxSum, wdy[i] * wSumInv - w[i] * wSumInvSq * wdySum);
     }
 }
 

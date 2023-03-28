@@ -149,3 +149,18 @@ void interpolateWachspress(MPM& mpm){
         }        
     });
 }
+
+Vector2View InitT2LDelta(int size){
+
+    Vector2View retVal("T2LDeltaX",size);
+
+    Kokkos::Random_XorShift64_Pool<> random_pool(randSeed);
+    Kokkos::parallel_for("setNumMPPerElement", size, KOKKOS_LAMBDA(const int i){
+        auto generator = random_pool.get_state();
+        retVal(i) = Vector2(generator.drand(-1.0,1.0),generator.drand(-1.0,1.0));   
+        random_pool.free_state(generator);
+    });
+    Kokkos::fence();
+
+    return retVal;
+}

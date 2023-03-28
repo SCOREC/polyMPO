@@ -6,7 +6,6 @@
 
 int main() {
     Kokkos::initialize();
-
     
     //test init Test Mesh and run assembly and Wachspress
     {

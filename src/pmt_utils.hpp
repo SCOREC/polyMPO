@@ -80,7 +80,6 @@ class Vector2 {
     
     KOKKOS_FUNCTION
     void operator=(const double &scalar);
-    //Vector2 &operator+=(const Vector2 &v);
    
 };
 

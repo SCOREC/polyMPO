@@ -10,6 +10,7 @@ set(HEADERS
 set(SOURCES
   pmt_mesh.cpp
   pmt_utils.cpp
+  pmt_MPM.cpp
 )
 
 add_library(polyMpmTest-core ${SOURCES})

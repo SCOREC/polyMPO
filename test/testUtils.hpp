@@ -1,3 +1,6 @@
+#ifndef POLYMPMTEST_TEST_TESTUTILS_H
+#define POLYMPMTEST_TEST_TESTUTILS_H
+
 #include "pmt_MPM.hpp"
 #include "pmt_wachspressBasis.hpp"
 
@@ -36,3 +39,11 @@ MPM initTestMPM(Mesh& meshObj);
  * \param any resonable mpm to test
  */
 void interpolateWachspress(MPM& mpm);
+
+
+/*
+ * TODO: finish the comments
+ */
+Vector2View InitT2LDelta(int size);
+
+#endif

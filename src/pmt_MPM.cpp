@@ -5,8 +5,30 @@
 namespace polyMpmTest{
 
 void MPM::T2LTracking(Vector2View dx){
-    Kokkos::parallel_for("check",dx.size(),KOKKOS_LAMBDA(const int i){
-        //printf("%d:(%.3f,%.3f)\n",i,dx(i)[0],dx(i)[1]);
+    int numVtxs = mesh_.getNumVertices();
+    int numElms = mesh_.getNumElements();
+    
+    auto vtxCoords = mesh_.getVtxCoords(); 
+    auto elm2VtxConn = mesh_.getElm2VtxConn();
+    auto vtx2ElmConn = mesh_.getVtx2ElmConn();
+
+    auto numMPs = materialPoints_.getCount();
+    auto MPsPosition = materialPoints_.getPositions();
+    auto isActive = materialPoints_.isActive();
+    
+    Kokkos::parallel_for("test",numMPs,KOKKOS_LAMBDA(const int i){
+        if (isActive(iMP)){
+            int iElm = MPs2Elm(iMP);
+            Vector2 v[maxVtxsPerElm+1] = {vtxCoords(elm2VtxConn(iElm,1))};
+            initArray(v,maxVtxsPerElm+1,vtxCoords(elm2VtxConn(iElm,1)));
+            int numVtx = elm2VtxConn(iElm,0);
+            for(int i = 1; i<=numVtx; i++){
+                v[i-1] = vtxCoords(elm2VtxConn(iElm,i)-1);
+            }
+            v[numVtx] = vtxCoords(elm2VtxConn(iElm,1)-1);
+                
+            //get edges
+        }
     });   
 } 
 

@@ -10,7 +10,6 @@ namespace polyMpmTest{
 
 using IntVtx2ElmView = Kokkos::View<int*[maxVtxsPerElm+1]>;
 using IntElm2VtxView = Kokkos::View<int*[maxElmsPerVtx+1]>;
-//using 
 
 class Mesh {
   private:
@@ -19,6 +18,7 @@ class Mesh {
     Vector2View vtxCoords_;
     IntVtx2ElmView elm2VtxConn_;
     IntElm2VtxView vtx2ElmConn_;
+
     static Mesh readMPASMesh(int ncid);
 
   public:

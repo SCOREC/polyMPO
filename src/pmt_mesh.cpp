@@ -21,19 +21,18 @@ Mesh Mesh::readMPASMesh(int ncid){
       nCells, nCellsID,
       nVertices, nVerticesID,
       maxEdges, maxEdgesID,
-      vertexDegree, vertexDegreeID;
+      vertexDegree, vertexDegreeID,
+      nEdges, nEdgesID;
   size_t temp;
 
-  int xVertexID, yVertexID, zVertexID, lonVertexID, latVertexID,
-      verticesOnCellID, cellsOnVertexID, nEdgesOnCellID;
+  int xVertexID, yVertexID, verticesOnCellID, cellsOnVertexID, nEdgesOnCellID, cellsOnEdgeID;
   double *xVertex;
   double *yVertex;
-  double *zVertex;     // nVertices
-  double *lonVertex;   // 2d y
-  double *latVertex;   // 2d x
   int *verticesOnCell; //[maxEdges,nCells]
   int *cellsOnVertex;  //[3,nVertices]
   int *nEdgesOnCell;   //[nCells]
+  int *cellsOnEdge; //[nEdges*maxEdges2]
+
   if ((retval = nc_inq_dimid(ncid, "nCells", &nCellsID)))
     ERRexit(retval);
   if ((retval = nc_inq_dimid(ncid, "nVertices", &nVerticesID)))
@@ -41,6 +40,8 @@ Mesh Mesh::readMPASMesh(int ncid){
   if ((retval = nc_inq_dimid(ncid, "maxEdges", &maxEdgesID)))
     ERRexit(retval);
   if ((retval = nc_inq_dimid(ncid, "vertexDegree", &vertexDegreeID)))
+    ERRexit(retval);
+  if ((retval = nc_inq_dimid(ncid, "nEdges", &nEdgesID)))
     ERRexit(retval);
 
   if ((retval = nc_inq_dimlen(ncid, nCellsID, &temp)))
@@ -55,16 +56,13 @@ Mesh Mesh::readMPASMesh(int ncid){
   if ((retval = nc_inq_dimlen(ncid, vertexDegreeID, &temp)))
     ERRexit(retval);
   vertexDegree = temp;
+  if ((retval = nc_inq_dimlen(ncid, nEdgesID, &temp)))
+    ERRexit(retval);
+  nEdges = temp;
 
   if ((retval = nc_inq_varid(ncid, "xVertex", &xVertexID)))
     ERRexit(retval);
   if ((retval = nc_inq_varid(ncid, "yVertex", &yVertexID)))
-    ERRexit(retval);
-  if ((retval = nc_inq_varid(ncid, "zVertex", &zVertexID)))
-    ERRexit(retval);
-  if ((retval = nc_inq_varid(ncid, "lonVertex", &lonVertexID)))
-    ERRexit(retval);
-  if ((retval = nc_inq_varid(ncid, "latVertex", &latVertexID)))
     ERRexit(retval);
   if ((retval = nc_inq_varid(ncid, "verticesOnCell", &verticesOnCellID)))
     ERRexit(retval);
@@ -72,16 +70,16 @@ Mesh Mesh::readMPASMesh(int ncid){
     ERRexit(retval);
   if ((retval = nc_inq_varid(ncid, "nEdgesOnCell", &nEdgesOnCellID)))
     ERRexit(retval);
+  if ((retval = nc_inq_varid(ncid, "cellsOnEdge", &cellsOnEdgeID)))
+    ERRexit(retval);
 
   xVertex = new double[nVertices];
   yVertex = new double[nVertices];
-  zVertex = new double[nVertices];
-  lonVertex = new double[nVertices];
-  latVertex = new double[nVertices];
   verticesOnCell = new int[maxEdges * nCells];
 
   cellsOnVertex = new int[vertexDegree * nVertices]; // vertex dimension is vertexDegree
   nEdgesOnCell = new int[nCells];
+  cellsOnEdge = new int[2 * nEdges];
 
   if (maxEdges > maxVtxsPerElm)
   {
@@ -98,18 +96,16 @@ Mesh Mesh::readMPASMesh(int ncid){
     ERRexit(retval);
   if ((retval = nc_get_var(ncid, yVertexID, yVertex)))
     ERRexit(retval);
-  if ((retval = nc_get_var(ncid, zVertexID, zVertex)))
-    ERRexit(retval);
-  if ((retval = nc_get_var(ncid, lonVertexID, lonVertex)))
-    ERRexit(retval);
-  if ((retval = nc_get_var(ncid, latVertexID, latVertex)))
-    ERRexit(retval);
   if ((retval = nc_get_var(ncid, verticesOnCellID, verticesOnCell)))
     ERRexit(retval);
   if ((retval = nc_get_var(ncid, cellsOnVertexID, cellsOnVertex)))
     ERRexit(retval);
   if ((retval = nc_get_var(ncid, nEdgesOnCellID, nEdgesOnCell)))
     ERRexit(retval);
+  if ((retval = nc_get_var(ncid, cellsOnEdgeID, cellsOnEdge)))
+    ERRexit(retval);
+//TODO: add cellOnVertex[nVertices*VertexDegree] and verticesOnEdge[nEdge*2] to make edgeToEdge
+
 
   Vector2View vtxCoords("verticesCoordinates", nVertices);
   IntElm2VtxView vtx2ElmConn("vertexToElementsConnection", nVertices); // 4 = vertexDegree + 1
@@ -145,9 +141,6 @@ Mesh Mesh::readMPASMesh(int ncid){
   // delete dynamic allocation
   delete[] xVertex;
   delete[] yVertex;
-  delete[] zVertex;
-  delete[] lonVertex;
-  delete[] latVertex;
   delete[] verticesOnCell;
   delete[] cellsOnVertex;
 

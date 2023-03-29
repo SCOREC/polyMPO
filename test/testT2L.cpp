@@ -7,7 +7,8 @@ int main() {
 
     //test T2L
     {
-        auto mesh = Mesh::readMPASMesh("./grid_island.nc");
+        //auto mesh = Mesh::readMPASMesh("./grid_island.nc");
+        auto mesh = initTestMesh(1);
         auto mpm = initTestMPM(mesh);
         
         Vector2View dx = InitT2LDelta(mpm.getMPs().getCount());

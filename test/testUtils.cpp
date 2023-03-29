@@ -9,14 +9,21 @@ Mesh initTestMesh(int factor){
     int nCells = nCells_size*factor;
     int nVertices = nVertices_size*factor;
     const double v_array[19][2] = {{0.00,0.00},{0.47,0.00},{1.00,0.00},{0.60,0.25},{0.60,0.40},{0.00,0.50},{0.31,0.60},{0.40,0.60},{0.45,0.55},{0.70,0.49},{0.80,0.45},{0.90,0.47},{1.00,0.55},{0.60,0.60},{0.37,0.80},{0.00,1.00},{0.37,1.00},{0.48,1.00},{1.00,1.00}};
-    const int elm2VtxConn_array[10][8] = {{1,2,4,5,9,8,7,6},{2,3,4,-1,-1,-1,-1,-1},{4,3,11,10,5,-1,-1,-1},
-    {3,12,11,-1,-1,-1,-1,-1},{3,13,12,-1,-1,-1,-1,-1},
-    {5,10,14,9,-1,-1,-1,-1},{9,14,18,17,15,8,-1,-1},
-    {7,8,15,-1,-1,-1,-1,-1},{6,7,15,17,16,-1,-1,-1},
-    {14,10,11,12,13,19,18,-1}};
+    const int elm2VtxConn_array[10][8] = {{1,2,4,5,9,8,7,6},{2,3,4,-1,-1,-1,-1,-1},
+        {4,3,11,10,5,-1,-1,-1},{3,12,11,-1,-1,-1,-1,-1},{3,13,12,-1,-1,-1,-1,-1},
+        {5,10,14,9,-1,-1,-1,-1},{9,14,18,17,15,8,-1,-1},{7,8,15,-1,-1,-1,-1,-1},
+        {6,7,15,17,16,-1,-1,-1},{14,10,11,12,13,19,18,-1}};
     const int vtxCoords_array[10] = {8,3,5,3,3,4,6,3,5,7};
-    const int vtx2ElmConn_array[19][6] = {{1,0,-1,-1,-1,-1},{2,0,1,-1,-1,-1},{4,1,2,3,4,-1},{3,0,1,2,-1,-1},{3,0,2,5,-1,-1},{2,0,8,-1,-1,-1},{3,0,7,8,-1,-1},{3,0,6,7,-1,-1},{3,0,5,6,-1,-1},{3,2,5,9,-1,-1},{3,2,3,9,-1,-1},{3,3,4,9,-1,-1},{2,4,9,-1,-1,-1},{3,5,6,9,-1,-1},{3,6,7,8,-1,-1},{1,8,-1,-1,-1,-1},{2,6,8,-1,-1,-1},{2,6,9,-1,-1,-1},{1,9,-1,-1,-1,-1}};
-    
+    const int vtx2ElmConn_array[19][6] = {{1,0,-1,-1,-1,-1},{2,0,1,-1,-1,-1},{4,1,2,3,4,-1},
+        {3,0,1,2,-1,-1},{3,0,2,5,-1,-1},{2,0,8,-1,-1,-1},{3,0,7,8,-1,-1},
+        {3,0,6,7,-1,-1},{3,0,5,6,-1,-1},{3,2,5,9,-1,-1},{3,2,3,9,-1,-1},
+        {3,3,4,9,-1,-1},{2,4,9,-1,-1,-1},{3,5,6,9,-1,-1},{3,6,7,8,-1,-1},
+        {1,8,-1,-1,-1,-1},{2,6,8,-1,-1,-1},{2,6,9,-1,-1,-1},{1,9,-1,-1,-1,-1}};
+    //-1 is null, -2 is not connected to any elm
+    const int elm2ElmConn_array[10][8] = {{-2,1,2,5,6,7,8,-2},{-2,2,0,-1,-1,-1,-1,-1},
+        {1,3,9,5,0,-1,-1,-1},{4,9,2,-1,-1,-1,-1,-1},{-2,9,3,-1,-1,-1,-1,-1},
+        {2,9,6,0,-1,-1,-1,-1},{5,9,-2,8,7,0,-1,-1},{0,6,8,-1,-1,-1,-1,-1},
+        {0,7,6,-2,-2,-1,-1,-1},{5,2,3,4,-2,-2,6,-1}}; 
     Vector2View vtxCoords("verticesCoordinates", nVertices);
     IntElm2VtxView vtx2ElmConn("vertexToElementsConnection",nVertices);
     
@@ -35,7 +42,6 @@ Mesh initTestMesh(int factor){
     Kokkos::deep_copy(vtx2ElmConn,h_vtx2ElmConn);
 
     IntVtx2ElmView elm2VtxConn("elementToVerticesConnection",nCells);
-    
     IntVtx2ElmView::HostMirror h_elm2VtxConn = Kokkos::create_mirror_view(elm2VtxConn);
     for(int f=0; f<factor; f++){
         for(int i=0; i<nCells_size; i++){
@@ -47,11 +53,24 @@ Mesh initTestMesh(int factor){
     }
     Kokkos::deep_copy(elm2VtxConn, h_elm2VtxConn);
     
+    IntElm2ElmView elm2ElmConn("elementToElementsConnection",nCells);
+    IntElm2ElmView::HostMirror h_elm2ElmConn = Kokkos::create_mirror_view(elm2ElmConn);
+    for(int f=0; f<factor; f++){
+        for(int i=0; i<nCells_size; i++){
+            h_elm2ElmConn(i+f*nCells_size,0) = vtxCoords_array[i];
+            for(int j=0; j<h_elm2ElmConn(i,0); j++){
+                h_elm2ElmConn(i+f*nCells_size,j+1) = elm2ElmConn_array[i][j] + f*nVertices_size;
+            }
+        }
+    }
+    Kokkos::deep_copy(elm2ElmConn, h_elm2ElmConn);
+
     return Mesh(nVertices,
                 nCells,
                 vtxCoords,
                 elm2VtxConn,
-                vtx2ElmConn);
+                vtx2ElmConn,
+                elm2ElmConn);
 }
 
 
@@ -104,11 +123,9 @@ MPM initTestMPM(Mesh& mesh){
         positions(iMP) = Vector2(sum_x/numVtx, sum_y/numVtx);
         MPs2Elm(iMP) = ielm;
         isActive(iMP) = true;
-        //printf("%d: (%f,%f)\n",iMP,positions(iMP)[0],positions(iMP)[1]);
     });
     
     auto p = MaterialPoints(numMPs,positions,isActive);
-
     return MPM(mesh,p,elm2MPs,MPs2Elm);
 }
 
@@ -157,7 +174,8 @@ Vector2View InitT2LDelta(int size){
     Kokkos::Random_XorShift64_Pool<> random_pool(randSeed);
     Kokkos::parallel_for("setNumMPPerElement", size, KOKKOS_LAMBDA(const int i){
         auto generator = random_pool.get_state();
-        retVal(i) = Vector2(generator.drand(-1.0,1.0),generator.drand(-1.0,1.0));   
+        retVal(i) = Vector2(generator.drand(-0.1,0.1),generator.drand(-0.1,0.1));   
+        //retVal(i) = Vector2(0.6,0.6);
         random_pool.free_state(generator);
     });
     Kokkos::fence();

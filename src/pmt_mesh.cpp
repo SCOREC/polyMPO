@@ -144,11 +144,14 @@ Mesh Mesh::readMPASMesh(int ncid){
   delete[] verticesOnCell;
   delete[] cellsOnVertex;
 
+  return Mesh();
+  /*
   return Mesh(nVertices,
               nCells,
               vtxCoords,
               elm2VtxConn,
-              vtx2ElmConn);
+              vtx2ElmConn);  
+  */
 }
 
 } // namespace polyMpmTest

@@ -182,3 +182,64 @@ Vector2View InitT2LDelta(int size){
 
     return retVal;
 }
+
+
+MPM initMPMWithRandomMPs(Mesh& mesh, int factor){
+    int numVtxs = mesh.getNumVertices();
+    int numElms = mesh.getNumElements();
+    Vector2View vtxCoords = mesh.getVtxCoords();   
+    IntVtx2ElmView elm2VtxConn = mesh.getElm2VtxConn(); 
+
+    int numMPs = numElms*factor;
+    Vector2View positions("MPpositions", numMPs);
+    BoolView isActive("MPstatus",numMPs);
+    IntView elm2MPs("elementToMPs",numElms*(maxMPsPerElm+1));
+    IntView MPs2Elm("MPToElementIDs",numMPs);
+
+    IntView MPToElement("MPToElement",numMPs);
+    Kokkos::Random_XorShift64_Pool<> random_pool(randSeed);
+
+     Kokkos::parallel_scan("setMPsToElement", numElms, KOKKOS_LAMBDA(int i, int& iMP, bool is_final){
+        if(is_final){  
+            elm2MPs(i*(maxMPsPerElm+1)) = factor;
+            for(int j=0; j<factor; j++){
+                MPToElement(iMP+j) = i;
+                elm2MPs(i*(maxMPsPerElm+1)+j+1) = iMP+j;
+            }   
+        }
+        iMP += factor; 
+    },numMPs);
+
+    Kokkos::parallel_for("setPositions", numMPs, KOKKOS_LAMBDA(const int iMP){
+        auto generator = random_pool.get_state();
+        int ielm = MPToElement(iMP);
+        int numVtx = elm2VtxConn(ielm,0);
+        double sum_x = 0.0, sum_y = 0.0;
+        for(int i=1; i<= numVtx; i++){
+            sum_x += vtxCoords(elm2VtxConn(ielm,i)-1)[0];
+            sum_y += vtxCoords(elm2VtxConn(ielm,i)-1)[1];
+        }
+        Vector2 XYc = Vector2(sum_x/numVtx, sum_y/numVtx);
+        int triID = generator.urand(0,numVtx);
+        double rws[2] = {generator.drand(0.0,1.0), generator.drand(0.0,1.0)};
+        random_pool.free_state(generator);
+        double weights[3];
+        if (rws[0]> rws[1]){
+            weights[0] = rws[1];
+            weights[1] = rws[0]-rws[1];
+            weights[2] = 1-rws[0];
+        }else{
+            weights[0] = rws[0];
+            weights[1] = rws[1]-rws[0];
+            weights[2] = 1-rws[1];
+        }
+        auto v1 = vtxCoords(elm2VtxConn(ielm,triID)-1);
+        auto v2 = vtxCoords(elm2VtxConn(ielm,(triID+1)%numVtx)-1);
+        positions(iMP) = XYc*weights[0]+v1*weights[1]+v2*weights[2];
+        MPs2Elm(iMP) = ielm;
+        isActive(iMP) = true;
+    });    
+
+    auto p = MaterialPoints(numMPs,positions,isActive);
+    return MPM(mesh,p,elm2MPs,MPs2Elm);
+}

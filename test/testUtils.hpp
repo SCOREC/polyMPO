@@ -46,4 +46,9 @@ void interpolateWachspress(MPM& mpm);
  */
 Vector2View InitT2LDelta(int size);
 
+/*
+ * according to mp_init_poly_v5.py by Oncar
+ */
+MPM initMPMWithRandomMPs(Mesh& meshObj, int factor);
+
 #endif

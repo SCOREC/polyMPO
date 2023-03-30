@@ -236,6 +236,7 @@ MPM initMPMWithRandomMPs(Mesh& mesh, int factor){
         auto v1 = vtxCoords(elm2VtxConn(ielm,triID)-1);
         auto v2 = vtxCoords(elm2VtxConn(ielm,(triID+1)%numVtx)-1);
         positions(iMP) = XYc*weights[0]+v1*weights[1]+v2*weights[2];
+        printf("%f\t%f\n",positions(iMP)[0],positions(iMP)[1]);
         MPs2Elm(iMP) = ielm;
         isActive(iMP) = true;
     });    

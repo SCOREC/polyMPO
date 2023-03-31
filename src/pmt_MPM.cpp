@@ -19,7 +19,7 @@ void MPM::T2LTracking(Vector2View dx){
     
     auto MPs2Elm = materialPoints2Elm_;
    
-    //numMPs = 1;//XXX 
+    //numMPs = 10;//XXX 
     Kokkos::parallel_for("test",numMPs,KOKKOS_LAMBDA(const int iMP){
         if(isActive(iMP)){
             int iElm = MPs2Elm(iMP);

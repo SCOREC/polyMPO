@@ -25,13 +25,16 @@ Mesh Mesh::readMPASMesh(int ncid){
       nEdges, nEdgesID;
   size_t temp;
 
-  int xVertexID, yVertexID, verticesOnCellID, cellsOnVertexID, nEdgesOnCellID, cellsOnEdgeID;
+  int xVertexID, yVertexID, verticesOnCellID, cellsOnVertexID, nEdgesOnCellID, cellsOnEdgeID, verticesOnEdgeID, cellsOnCellID, edgesOnCellID;
   double *xVertex;
   double *yVertex;
   int *verticesOnCell; //[maxEdges,nCells]
   int *cellsOnVertex;  //[3,nVertices]
   int *nEdgesOnCell;   //[nCells]
-  int *cellsOnEdge; //[nEdges*maxEdges2]
+  int *cellsOnEdge; //[nEdges*2]
+  int *verticesOnEdge; //[nEdges*2]
+  int *cellsOnCell; //[nCells*maxEdges]
+  int *edgesOnCell;
 
   if ((retval = nc_inq_dimid(ncid, "nCells", &nCellsID)))
     ERRexit(retval);
@@ -72,14 +75,23 @@ Mesh Mesh::readMPASMesh(int ncid){
     ERRexit(retval);
   if ((retval = nc_inq_varid(ncid, "cellsOnEdge", &cellsOnEdgeID)))
     ERRexit(retval);
+  if ((retval = nc_inq_varid(ncid, "verticesOnEdge", &verticesOnEdgeID)))
+    ERRexit(retval);
+  if ((retval = nc_inq_varid(ncid, "cellsOnCell", &cellsOnCellID)))
+    ERRexit(retval);
+  if ((retval = nc_inq_varid(ncid, "edgesOnCell", &edgesOnCellID)))
+    ERRexit(retval);
 
   xVertex = new double[nVertices];
   yVertex = new double[nVertices];
-  verticesOnCell = new int[maxEdges * nCells];
+  verticesOnCell = new int[nCells * maxEdges];
 
   cellsOnVertex = new int[vertexDegree * nVertices]; // vertex dimension is vertexDegree
   nEdgesOnCell = new int[nCells];
   cellsOnEdge = new int[2 * nEdges];
+  verticesOnEdge = new int[2 * nEdges];
+  cellsOnCell = new int[nCells * maxEdges];
+  edgesOnCell = new int[nCells * maxEdges];
 
   if (maxEdges > maxVtxsPerElm)
   {
@@ -104,9 +116,44 @@ Mesh Mesh::readMPASMesh(int ncid){
     ERRexit(retval);
   if ((retval = nc_get_var(ncid, cellsOnEdgeID, cellsOnEdge)))
     ERRexit(retval);
-//TODO: add cellOnVertex[nVertices*VertexDegree] and verticesOnEdge[nEdge*2] to make edgeToEdge
-
-
+  if ((retval = nc_get_var(ncid, verticesOnEdgeID, verticesOnEdge)))
+    ERRexit(retval);
+  if ((retval = nc_get_var(ncid, cellsOnCellID, cellsOnCell)))
+    ERRexit(retval);
+  if ((retval = nc_get_var(ncid, edgesOnCellID, edgesOnCell)))
+    ERRexit(retval);
+//TODO: add verticesOnEdge[nEdge*2] to make edgeToEdge
+   ///* 
+   for(int i=0; i<10; i++){
+        //i=cell
+        printf("%2d ",i+1);
+        int n = nEdgesOnCell[i];
+        for (int j = 0; j < n; j++){
+            printf("| %4d= %4d,%4d ",verticesOnCell[i*maxEdges+j],verticesOnEdge[(edgesOnCell[i*maxEdges+(j+1)%n]-1)*2],verticesOnEdge[(edgesOnCell[i*maxEdges+(j+1)%n]-1)*2+1]);
+        }
+        printf("\n   ");
+        for (int j = 0; j < n; j++){
+            printf("| %4d= %4d,%4d ",cellsOnCell[i*maxEdges+(j+1)%n], cellsOnEdge[(edgesOnCell[i*maxEdges+(j+1)%n]-1)*2], cellsOnEdge[(edgesOnCell[i*maxEdges+(j+1)%n]-1)*2+1]);
+        }
+        printf("\n");
+    }//==*/
+/*
+    for(int i=0; i<nEdges; i++){
+        int v1 = verticesOnEdge[i*2];
+        int v2 = verticesOnEdge[i*2+1];
+        if(v1 == 1 || v2 == 1)
+            printf("%d:%d,%d|%d,%d\n",i,v1,v2,cellsOnEdge[i*2],cellsOnEdge[i*2+1]);
+    }
+    
+    for(int i=0; i<nCells; i++){
+        int e1 = edgesOnCell[i*4];
+        int e2 = edgesOnCell[i*4+1];
+        int e3 = edgesOnCell[i*4+2];
+        int e4 = edgesOnCell[i*4+3];
+        if(e1 == 7529 || e2 == 7529 || e3 == 7529 || e4 == 7529)
+            printf("%d:%d,%d,%d,%d\n",i,e1,e2,e3,e4);
+    }
+///====*/
   Vector2View vtxCoords("verticesCoordinates", nVertices);
   IntElm2VtxView vtx2ElmConn("vertexToElementsConnection", nVertices); // 4 = vertexDegree + 1
 
@@ -126,17 +173,24 @@ Mesh Mesh::readMPASMesh(int ncid){
 
   IntVtx2ElmView elm2VtxConn("elementToVerticesConnection", nCells);
   IntVtx2ElmView::HostMirror h_elm2VtxConn = Kokkos::create_mirror_view(elm2VtxConn);
+  IntElm2ElmView elm2ElmConn("elementToElmentConnection", nCells);
+  IntElm2ElmView::HostMirror h_elm2ElmConn = Kokkos::create_mirror_view(elm2ElmConn);
 
   for (int i = 0; i < nCells; i++)
   {
-    h_elm2VtxConn(i, 0) = nEdgesOnCell[i];
-    for (int j = 0; j < nEdgesOnCell[i]; j++)
+    int n = nEdgesOnCell[i];
+    h_elm2VtxConn(i, 0) = n;
+    h_elm2ElmConn(i, 0) = n;
+    for (int j = 0; j < n; j++)
     {
-      h_elm2VtxConn(i, j + 1) = verticesOnCell[i * maxEdges + j];
+      h_elm2VtxConn(i, j+1) = verticesOnCell[i * maxEdges + j];
+      h_elm2ElmConn(i, j+1) = cellsOnCell[i*maxEdges+(j+1)%n]-1;
     }
   }
 
+
   Kokkos::deep_copy(elm2VtxConn, h_elm2VtxConn);
+  Kokkos::deep_copy(elm2ElmConn, h_elm2ElmConn);
 
   // delete dynamic allocation
   delete[] xVertex;
@@ -144,14 +198,12 @@ Mesh Mesh::readMPASMesh(int ncid){
   delete[] verticesOnCell;
   delete[] cellsOnVertex;
 
-  return Mesh();
-  /*
   return Mesh(nVertices,
               nCells,
               vtxCoords,
               elm2VtxConn,
-              vtx2ElmConn);  
-  */
+              vtx2ElmConn,
+              elm2ElmConn);  
 }
 
 } // namespace polyMpmTest

@@ -233,10 +233,14 @@ MPM initMPMWithRandomMPs(Mesh& mesh, int factor){
             weights[1] = rws[1]-rws[0];
             weights[2] = 1-rws[1];
         }
-        auto v1 = vtxCoords(elm2VtxConn(ielm,triID)-1);
-        auto v2 = vtxCoords(elm2VtxConn(ielm,(triID+1)%numVtx)-1);
+        auto v1 = vtxCoords(elm2VtxConn(ielm,triID+1)-1);
+        auto v2 = vtxCoords(elm2VtxConn(ielm,(triID+1)%numVtx+1)-1);
         positions(iMP) = XYc*weights[0]+v1*weights[1]+v2*weights[2];
-        //printf("%f\t%f\n",positions(iMP)[0],positions(iMP)[1]);
+        //if(iMP == 59744){
+        //    printf("XYc= %.f,%.f, v1= (%.f,%.f), v2= (%.f,%.f)\n",XYc[0],XYc[1],v1[0],v1[1],v2[0],v2[1]);
+        //    printf("(%.f,%.f)(%.f,%.f)(%.f,%.f)(%.f,%.f) = (%.3f,%.3f)\n",vtxCoords(elm2VtxConn(ielm,1)-1)[0],vtxCoords(elm2VtxConn(ielm,1)-1)[1],vtxCoords(elm2VtxConn(ielm,2)-1)[0],vtxCoords(elm2VtxConn(ielm,2)-1)[1],vtxCoords(elm2VtxConn(ielm,3)-1)[0],vtxCoords(elm2VtxConn(ielm,3)-1)[1],vtxCoords(elm2VtxConn(ielm,4)-1)[0],vtxCoords(elm2VtxConn(ielm,4)-1)[1],positions(iMP)[0],positions(iMP)[1]);
+        //    printf("elm2VtxConn = %d,%d,%d,%d\n", elm2VtxConn(ielm,1), elm2VtxConn(ielm,2), elm2VtxConn(ielm,3), elm2VtxConn(ielm,4));
+        //}
         MPs2Elm(iMP) = ielm;
         isActive(iMP) = true;
     });    

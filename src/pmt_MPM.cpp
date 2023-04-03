@@ -53,11 +53,11 @@ void MPM::T2LTracking(Vector2View dx){
                         //go to the next elm
                         int iElmOld = iElm;
                         iElm = elm2ElmConn(iElm,i+1);
-                        if(MP[0]-464621<1 && MP[0]-464621>0){
-                            printf("%d: %f*%f= %f && eiCross = %f\n",i,pdx[i],pdx[ip1], pdx[i]*pdx[ip1] , e[i].cross(MPnew-vtxCoords(v[i])));
-                            printf("%d: from %d to %d, MP= (%f,%f), dx= (%f,%f)\n",iMP ,iElmOld, iElm , MP[0], MP[1], dx(iMP)[0], dx(iMP)[1]);
-                        }
-                        //printf("%d: from %d to %d, MP= (%f,%f), dx= (%f,%f)\n",iMP ,iElmOld, iElm , MP[0], MP[1], dx(iMP)[0], dx(iMP)[1]);
+                        //if(MP[0]-464621<1 && MP[0]-464621>0){
+                        //    printf("%d: %f*%f= %f && eiCross = %f\n",i,pdx[i],pdx[ip1], pdx[i]*pdx[ip1] , e[i].cross(MPnew-vtxCoords(v[i])));
+                        //    printf("%d: from %d to %d, MP= (%f,%f), dx= (%f,%f)\n",iMP ,iElmOld, iElm , MP[0], MP[1], dx(iMP)[0], dx(iMP)[1]);
+                        //}
+                        printf("%d: from %d to %d, MP= (%f,%f), dx= (%f,%f)\n",iMP ,iElmOld, iElm , MP[0], MP[1], dx(iMP)[0], dx(iMP)[1]);
                         goToNeighbour = true;
                         if(iElm <0){
                             isActive(iMP) = false;

@@ -4,7 +4,10 @@
 
 int main() {
     Kokkos::initialize();
-
+    
+    //for(int i=0; i<8704; i++){
+    //    printf("%d %d\n",i*2, i*2+1);
+    //}
     //test T2L
     {
         //auto mesh = Mesh::readMPASMesh("./mesh.QU.1920km.151026.nc");

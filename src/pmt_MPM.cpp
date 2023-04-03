@@ -48,11 +48,16 @@ void MPM::T2LTracking(Vector2View dx){
                     int ip1 = (i+1)%numVtx;
                     //pdx*pdx<0 and
                     if(pdx[i]*pdx[ip1] <0 && e[i].cross(MPnew-vtxCoords(v[i]))<0){
-                        printf("%d: MP=(%.3f,%.3f) MPnew=(%.3f,%.3f) MATLAB: [%f %f], [%f %f]\n",iMP, MP[0], MP[1], MPnew[0], MPnew[1], MP[0], MPnew[0], MP[1], MPnew[1]);
+                        //printf("%d: MP=(%.3f,%.3f) MPnew=(%.3f,%.3f) MATLAB: [%f %f], [%f %f]\n",iMP, MP[0], MP[1], MPnew[0], MPnew[1], MP[0], MPnew[0], MP[1], MPnew[1]);
+                        //printf("%f %f 0.0 \n%f %f 0.0\n",MP[0], MP[1], MPnew[0], MPnew[1]);
                         //go to the next elm
                         int iElmOld = iElm;
                         iElm = elm2ElmConn(iElm,i+1);
-                        printf("%d: from %d to %d, MP= (%f,%f), dx= (%f,%f)\n",iMP ,iElmOld, iElm , MP[0], MP[1], dx(iMP)[0], dx(iMP)[1]);
+                        if(MP[0]-464621<1 && MP[0]-464621>0){
+                            printf("%d: %f*%f= %f && eiCross = %f\n",i,pdx[i],pdx[ip1], pdx[i]*pdx[ip1] , e[i].cross(MPnew-vtxCoords(v[i])));
+                            printf("%d: from %d to %d, MP= (%f,%f), dx= (%f,%f)\n",iMP ,iElmOld, iElm , MP[0], MP[1], dx(iMP)[0], dx(iMP)[1]);
+                        }
+                        //printf("%d: from %d to %d, MP= (%f,%f), dx= (%f,%f)\n",iMP ,iElmOld, iElm , MP[0], MP[1], dx(iMP)[0], dx(iMP)[1]);
                         goToNeighbour = true;
                         if(iElm <0){
                             isActive(iMP) = false;

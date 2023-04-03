@@ -174,7 +174,7 @@ Vector2View InitT2LDelta(int size){
     Kokkos::Random_XorShift64_Pool<> random_pool(randSeed);
     Kokkos::parallel_for("setNumMPPerElement", size, KOKKOS_LAMBDA(const int i){
         auto generator = random_pool.get_state();
-        retVal(i) = Vector2(generator.drand(-0.1,0.1),generator.drand(-0.1,0.1));   
+        retVal(i) = Vector2(generator.drand(-1000,1000),generator.drand(-1000,1000));   
         //retVal(i) = Vector2(0.6,0.6);
         random_pool.free_state(generator);
     });

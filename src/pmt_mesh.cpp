@@ -123,7 +123,7 @@ Mesh Mesh::readMPASMesh(int ncid){
   if ((retval = nc_get_var(ncid, edgesOnCellID, edgesOnCell)))
     ERRexit(retval);
 //TODO: add verticesOnEdge[nEdge*2] to make edgeToEdge
-   ///* 
+   /* 
    for(int i=0; i<10; i++){
         //i=cell
         printf("%2d ",i+1);
@@ -191,6 +191,28 @@ Mesh Mesh::readMPASMesh(int ncid){
 
   Kokkos::deep_copy(elm2VtxConn, h_elm2VtxConn);
   Kokkos::deep_copy(elm2ElmConn, h_elm2ElmConn);
+/*
+    printf("<VTKFile type=\"PolyData\" version=\"1.0\" byte_order=\"LittleEndian\" header_type=\"UInt64\">\n  <PolyData>\n    <Piece NumberOfPoints=\"%d\" NumberOfVerts=\"0\" NumberOfLines=\"0\" NumberOfStrips=\"0\" NumberOfPolys=\"%d\">\n      <Points>\n        <DataArray type=\"Float32\" Name=\"Points\" NumberOfComponents=\"3\" format=\"ascii\">\n",nVertices,nCells);
+    for(int i=0; i<nVertices; i++){
+        printf("          %f %f 0.0\n",xVertex[i],yVertex[i]);
+    }
+    printf("        </DataArray>\n      </Points>\n      <Polys>\n        <DataArray type=\"Int64\" Name=\"connectivity\" format=\"ascii\">\n");
+    for(int i=0; i<nCells; i++){
+        printf("          ");
+        for(int j=0; j< nEdgesOnCell[i]; j++){
+            printf("%d ", h_elm2VtxConn(i,j+1)-1);
+        } 
+        printf("\n");
+    }
+    printf("        </DataArray>\n        <DataArray type=\"Int64\" Name=\"offsets\" format=\"ascii\">\n");
+    
+    int count = 0;
+    for(int i=0;i<nCells; i++){
+        count += h_elm2VtxConn(i,0);
+        printf("          %d\n",count);
+    }
+    printf("        </DataArray>\n      </Polys>\n    </Piece>\n  </PolyData>\n</VTKFile>\n");
+*/
 
   // delete dynamic allocation
   delete[] xVertex;

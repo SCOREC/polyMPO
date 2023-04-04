@@ -4,6 +4,8 @@
 
 namespace polyMpmTest{
 
+const bool printVTP = true;
+
 void MPM::T2LTracking(Vector2View dx){
     int numVtxs = mesh_.getNumVertices();
     int numElms = mesh_.getNumElements();
@@ -19,14 +21,35 @@ void MPM::T2LTracking(Vector2View dx){
     
     auto MPs2Elm = materialPoints2Elm_;
    
-    //numMPs = 10;//XXX 
+    //numMPs = 10;//XXX
+    if(printVTP)
+        printf("<VTKFile type=\"PolyData\" version=\"1.0\" byte_order=\"LittleEndian\" header_type=\"UInt64\">\n  <PolyData>\n    <Piece NumberOfPoints=\"%d\" NumberOfVerts=\"0\" NumberOfLines=\"%d\" NumberOfStrips=\"0\" NumberOfPolys=\"0\">\n      <Points>\n        <DataArray type=\"Float32\" Name=\"Points\" NumberOfComponents=\"3\" format=\"ascii\">\n",numMPs*2,numMPs); 
+    if(printVTP){
+        Vector2View result("positionResult",numMPs);
+        Vector2View::HostMirror h_result = Kokkos::create_mirror_view(result);
+        Vector2View::HostMirror h_MPsPosition = Kokkos::create_mirror_view(MPsPosition);
+        Kokkos::parallel_for("printVTP",numMPs,KOKKOS_LAMBDA(const int iMP){
+            Vector2 MP = MPsPosition(iMP);
+            Vector2 MPnew = MP + dx(iMP);   
+            Kokkos::atomic_store(&result(iMP),MPnew);
+            //printf("          %f %f 0.0\n          %f %f 0.0\n",MP[0], MP[1], MPnew[0], MPnew[1]);
+        });
+        Kokkos::fence();
+        Kokkos::deep_copy(h_result, result);
+        Kokkos::deep_copy(h_MPsPosition, MPsPosition);
+        Kokkos::fence();
+        for(int i=0; i<numMPs; i++){
+            printf("          %f %f 0.0\n          %f %f 0.0\n",h_MPsPosition(i)[0], h_MPsPosition(i)[1], h_result(i)[0], h_result(i)[1]);
+        }
+    }
+    else
     Kokkos::parallel_for("test",numMPs,KOKKOS_LAMBDA(const int iMP){
         if(isActive(iMP)){
             int iElm = MPs2Elm(iMP);
             Vector2 MP = MPsPosition(iMP);
             Vector2 MPnew = MP + dx(iMP);    
             //printf(" MP=(%.3f,%.3f) MPnew=(%.3f,%.3f) MATLAB: [%f %f], [%f %f]\n", MP[0], MP[1], MPnew[0], MPnew[1], MP[0], MPnew[0], MP[1], MPnew[1]);
-
+            
             while(true){
                 int numVtx = elm2VtxConn(iElm,0);
                 bool goToNeighbour = false;
@@ -49,7 +72,6 @@ void MPM::T2LTracking(Vector2View dx){
                     //pdx*pdx<0 and
                     if(pdx[i]*pdx[ip1] <0 && e[i].cross(MPnew-vtxCoords(v[i]))<0){
                         //printf("%d: MP=(%.3f,%.3f) MPnew=(%.3f,%.3f) MATLAB: [%f %f], [%f %f]\n",iMP, MP[0], MP[1], MPnew[0], MPnew[1], MP[0], MPnew[0], MP[1], MPnew[1]);
-                        //printf("%f %f 0.0 \n%f %f 0.0\n",MP[0], MP[1], MPnew[0], MPnew[1]);
                         //go to the next elm
                         int iElmOld = iElm;
                         iElm = elm2ElmConn(iElm,i+1);
@@ -75,7 +97,21 @@ void MPM::T2LTracking(Vector2View dx){
             }
         }
         //printf("position update: (%f,%f)\n",MPsPosition(0)[0], MPsPosition(0)[1]);
-    });   
-} 
+    });  
+    
+    if(printVTP){
+        Kokkos::fence();
+        printf("        </DataArray>\n      </Points>\n      <Lines>\n        <DataArray type=\"Int64\" Name=\"connectivity\" format=\"ascii\">\n"); 
+        for(int i=0; i<numMPs*2; i+=2){
+            printf("          %d %d\n", i, i+1);    
+        }
+        printf("        </DataArray>\n        <DataArray type=\"Int64\" Name=\"offsets\" format=\"ascii\">\n");
+        for(int i=1; i<=numMPs; i++){
+            printf("          %d\n",i*2);
+        }
+        printf("        </DataArray>\n      </Lines>\n    </Piece>\n  </PolyData>\n</VTKFile>\n");
+
+    }   
+}
 
 } 

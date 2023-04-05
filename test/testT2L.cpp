@@ -11,7 +11,7 @@ int main() {
     //test T2L
     {
         //auto mesh = Mesh::readMPASMesh("./mesh.QU.1920km.151026.nc");
-        auto mesh = Mesh::readMPASMesh("./grid_island.nc");
+        auto mesh = Mesh::readMPASMesh("./GIS.nc");
         //auto mesh = initTestMesh(1);
         
         auto mpm = initMPMWithRandomMPs(mesh,10);

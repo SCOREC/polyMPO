@@ -4,6 +4,8 @@
 #include "pmt_MPM.hpp"
 #include "pmt_wachspressBasis.hpp"
 
+#define randSeed 12345
+
 using namespace polyMpmTest;
 
 /*  \breif Init a simple test square mesh
@@ -44,11 +46,11 @@ void interpolateWachspress(MPM& mpm);
 /*
  * TODO: finish the comments
  */
-Vector2View InitT2LDelta(int size);
+Vector2View InitT2LDelta(int size, const double range, const int randomSeed = randSeed);
 
 /*
  * according to mp_init_poly_v5.py by Oncar
  */
-MPM initMPMWithRandomMPs(Mesh& meshObj, int factor);
+MPM initMPMWithRandomMPs(Mesh& meshObj, int factor, const int randomSeed = randSeed);
 
 #endif

@@ -1,8 +1,6 @@
 #include <Kokkos_Random.hpp>
 #include "testUtils.hpp"
 
-const int randSeed = 12345;
-
 Mesh initTestMesh(int factor){
     const int nCells_size = 10;//10 tri-oct
     const int nVertices_size = 19;//arbi <20
@@ -167,14 +165,14 @@ void interpolateWachspress(MPM& mpm){
     });
 }
 
-Vector2View InitT2LDelta(int size){
+Vector2View InitT2LDelta(int size, const double range, const int randomSeed){
 
     Vector2View retVal("T2LDeltaX",size);
 
-    Kokkos::Random_XorShift64_Pool<> random_pool(randSeed);
+    Kokkos::Random_XorShift64_Pool<> random_pool(randomSeed);
     Kokkos::parallel_for("setNumMPPerElement", size, KOKKOS_LAMBDA(const int i){
         auto generator = random_pool.get_state();
-        retVal(i) = Vector2(generator.drand(-10000,10000),generator.drand(-10000,10000));   
+        retVal(i) = Vector2(generator.drand(-range,range),generator.drand(-range,range));
         //retVal(i) = Vector2(0.6,0.6);
         random_pool.free_state(generator);
     });
@@ -184,7 +182,7 @@ Vector2View InitT2LDelta(int size){
 }
 
 
-MPM initMPMWithRandomMPs(Mesh& mesh, int factor){
+MPM initMPMWithRandomMPs(Mesh& mesh, int factor, const int randomSeed){
     int numVtxs = mesh.getNumVertices();
     int numElms = mesh.getNumElements();
     Vector2View vtxCoords = mesh.getVtxCoords();   
@@ -197,7 +195,7 @@ MPM initMPMWithRandomMPs(Mesh& mesh, int factor){
     IntView MPs2Elm("MPToElementIDs",numMPs);
 
     IntView MPToElement("MPToElement",numMPs);
-    Kokkos::Random_XorShift64_Pool<> random_pool(randSeed);
+    Kokkos::Random_XorShift64_Pool<> random_pool(randomSeed);
 
      Kokkos::parallel_scan("setMPsToElement", numElms, KOKKOS_LAMBDA(int i, int& iMP, bool is_final){
         if(is_final){  

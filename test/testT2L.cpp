@@ -16,8 +16,11 @@ int main() {
         
         auto mpm = initMPMWithRandomMPs(mesh,10);
         
-        Vector2View dx = InitT2LDelta(mpm.getMPs().getCount());
+        Vector2View dx = InitT2LDelta(mpm.getMPs().getCount(),2000,12345);
         //test T2L in materialPoints
+        mpm.T2LTracking(dx);
+
+        dx = InitT2LDelta(mpm.getMPs().getCount(),3000,54321);
         mpm.T2LTracking(dx);
     }
     

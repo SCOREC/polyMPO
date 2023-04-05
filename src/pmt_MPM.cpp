@@ -21,7 +21,7 @@ void MPM::T2LTracking(Vector2View dx){
     
     auto MPs2Elm = materialPoints2Elm_;
    
-    //numMPs = 10;//XXX
+    numMPs = 10;//XXX
     if(printVTP)
         printf("<VTKFile type=\"PolyData\" version=\"1.0\" byte_order=\"LittleEndian\" header_type=\"UInt64\">\n  <PolyData>\n    <Piece NumberOfPoints=\"%d\" NumberOfVerts=\"0\" NumberOfLines=\"%d\" NumberOfStrips=\"0\" NumberOfPolys=\"0\">\n      <Points>\n        <DataArray type=\"Float32\" Name=\"Points\" NumberOfComponents=\"3\" format=\"ascii\">\n",numMPs*4,numMPs*2); 
     if(printVTP){
@@ -64,7 +64,7 @@ void MPM::T2LTracking(Vector2View dx){
         }
         printf("        </DataArray>\n      </Lines>\n    </Piece>\n  </PolyData>\n</VTKFile>\n");
     }
-    else
+
     Kokkos::parallel_for("test",numMPs,KOKKOS_LAMBDA(const int iMP){
         if(isActive(iMP)){
             int iElm = MPs2Elm(iMP);

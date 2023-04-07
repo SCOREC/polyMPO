@@ -4,9 +4,7 @@
 
 namespace polyMpmTest{
 
-const bool printVTP = true;
-
-void MPM::T2LTracking(Vector2View dx){
+void MPM::T2LTracking(Vector2View dx, const int printVTP){
     int numVtxs = mesh_.getNumVertices();
     int numElms = mesh_.getNumElements();
     
@@ -77,14 +75,14 @@ void MPM::T2LTracking(Vector2View dx){
                 if(goToNeighbour)
                     continue; 
                 //otherwise we do the update and end the loop
-                if(printVTP){ 
+                if(printVTP>=0){ 
                     Vector2 MParrow = MP + dx(iMP)*0.7;
                     Vector2 shift = Vector2(-dx(iMP)[1],dx(iMP)[0])*0.1;
                     Vector2 MPLeft = MParrow + shift;
                     Vector2 MPRight = MParrow - shift;
-                    Kokkos::atomic_store(&history(iMP),MP);
-                    Kokkos::atomic_store(&resultLeft(iMP),MPLeft);
-                    Kokkos::atomic_store(&resultRight(iMP),MPRight);
+                    history(iMP) = MP;
+                    resultLeft(iMP) = MPLeft;
+                    resultRight(iMP) = MPRight;
                 }
                 MPs2Elm(iMP) = iElm;
                 MPsPosition(iMP) = MPnew;
@@ -92,14 +90,18 @@ void MPM::T2LTracking(Vector2View dx){
             }
         }
         else{
-            Kokkos::atomic_store(&history(iMP),MP);
-            Kokkos::atomic_store(&resultLeft(iMP),MP);
-            Kokkos::atomic_store(&resultRight(iMP),MP);
+            history(iMP) = MP;
+            resultLeft(iMP) = MP;
+            resultRight(iMP) = MP;
         }
     }); 
-    if(printVTP){ 
-        printf("<VTKFile type=\"PolyData\" version=\"1.0\" byte_order=\"LittleEndian\" header_type=\"UInt64\">\n  <PolyData>\n    <Piece NumberOfPoints=\"%d\" NumberOfVerts=\"0\" NumberOfLines=\"%d\" NumberOfStrips=\"0\" NumberOfPolys=\"0\">\n      <Points>\n        <DataArray type=\"Float32\" Name=\"Points\" NumberOfComponents=\"3\" format=\"ascii\">\n",numMPs*4,numMPs*2); 
+    if(printVTP>=0){
         Kokkos::fence();
+        char* fileOutput = (char *)malloc(sizeof(char) * 256); 
+        sprintf(fileOutput, "polyMpmTestVTPOutput-%d.vtp",printVTP);
+        FILE * pFile = fopen(fileOutput,"w");
+        free(fileOutput);    
+        fprintf(pFile, "<VTKFile type=\"PolyData\" version=\"1.0\" byte_order=\"LittleEndian\" header_type=\"UInt64\">\n  <PolyData>\n    <Piece NumberOfPoints=\"%d\" NumberOfVerts=\"0\" NumberOfLines=\"%d\" NumberOfStrips=\"0\" NumberOfPolys=\"0\">\n      <Points>\n        <DataArray type=\"Float32\" Name=\"Points\" NumberOfComponents=\"3\" format=\"ascii\">\n",numMPs*4,numMPs*2); 
         Kokkos::deep_copy(h_history, history);
         Kokkos::deep_copy(h_resultLeft, resultLeft);
         Kokkos::deep_copy(h_resultRight, resultRight);
@@ -107,20 +109,20 @@ void MPM::T2LTracking(Vector2View dx){
         Kokkos::fence();
         for(int i=0; i<numMPs; i++){
             //XXX: MPsPosition is the updated new position, h_history is the old position
-            printf("          %f %f 0.0\n          %f %f 0.0\n          %f %f 0.0\n          %f %f 0.0\n",h_history(i)[0], h_history(i)[1], h_MPsPosition(i)[0], h_MPsPosition(i)[1], h_resultLeft(i)[0], h_resultLeft(i)[1], h_resultRight(i)[0], h_resultRight(i)[1]);
+            fprintf(pFile,"          %f %f 0.0\n          %f %f 0.0\n          %f %f 0.0\n          %f %f 0.0\n",h_history(i)[0], h_history(i)[1], h_MPsPosition(i)[0], h_MPsPosition(i)[1], h_resultLeft(i)[0], h_resultLeft(i)[1], h_resultRight(i)[0], h_resultRight(i)[1]);
         }
-        printf("        </DataArray>\n      </Points>\n      <Lines>\n        <DataArray type=\"Int64\" Name=\"connectivity\" format=\"ascii\">\n"); 
+        fprintf(pFile,"        </DataArray>\n      </Points>\n      <Lines>\n        <DataArray type=\"Int64\" Name=\"connectivity\" format=\"ascii\">\n"); 
         for(int i=0; i<numMPs*4; i+=4){
             // 01 213
-            printf("          %d %d\n          %d %d %d\n", i, i+1, i+2, i+1, i+3);
+            fprintf(pFile,"          %d %d\n          %d %d %d\n", i, i+1, i+2, i+1, i+3);
         }
-        printf("        </DataArray>\n        <DataArray type=\"Int64\" Name=\"offsets\" format=\"ascii\">\n");
+        fprintf(pFile,"        </DataArray>\n        <DataArray type=\"Int64\" Name=\"offsets\" format=\"ascii\">\n");
         for(int i=0; i<numMPs*5; i+=5){
-            printf("          %d\n          %d\n",i+2,i+5);
+            fprintf(pFile,"          %d\n          %d\n",i+2,i+5);
         }
-        printf("        </DataArray>\n      </Lines>\n    </Piece>\n  </PolyData>\n</VTKFile>\n");
-
-   }
+        fprintf(pFile,"        </DataArray>\n      </Lines>\n    </Piece>\n  </PolyData>\n</VTKFile>\n");
+        fclose(pFile);
+    }
 
 }
 

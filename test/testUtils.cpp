@@ -246,3 +246,35 @@ MPM initMPMWithRandomMPs(Mesh& mesh, int factor, const int randomSeed){
     auto p = MaterialPoints(numMPs,positions,isActive);
     return MPM(mesh,p,elm2MPs,MPs2Elm);
 }
+
+Vector2View InitT2LDeltaRankineVortex(MPM mpm, Vector2 center, const double a, const double Gamma ){
+    auto mesh = mpm.getMesh();
+    auto MPs = mpm.getMPs();
+    int numMPs = MPs.getCount();
+    auto MPsPosition = MPs.getPositions();    
+
+    Vector2View retVal("T2LDeltaXY",numMPs);
+    const double coeff = Gamma/(2*MPMTEST_PI);
+    const double T = (2*MPMTEST_PI*a)*(2*MPMTEST_PI*a);
+    const double dt = T/360;
+    const double coeffLess = coeff*dt/(a*a);
+    const double coeffGret = coeff*dt;
+    Kokkos::parallel_for("setNumMPPerElement", numMPs, KOKKOS_LAMBDA(const int iMP){
+        auto MP = MPsPosition(iMP);
+        auto centerVector = MP-center;
+        auto radius = centerVector.magnitude();
+        Vector2 v;
+        double vTheta;
+        if(radius<= a){
+            vTheta = coeffLess*radius;
+        }else{
+            vTheta = coeffGret/radius;
+        }
+        //(-y,+x) to get tangential
+        v = Vector2(-centerVector[1],centerVector[0])*(vTheta/radius);
+        Kokkos::atomic_store(&retVal(iMP),v);
+    });
+    Kokkos::fence();
+
+    return retVal;
+}

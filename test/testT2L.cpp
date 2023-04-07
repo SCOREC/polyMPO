@@ -16,14 +16,16 @@ int main() {
         
         auto mpm = initMPMWithRandomMPs(mesh,10);
         
-        Vector2View dx = InitT2LDelta(mpm.getMPs().getCount(),4000,12345);
+        //Vector2View dx = InitT2LDelta(mpm.getMPs().getCount(),4000,12345);
         //test T2L in materialPoints
-        mpm.T2LTracking(dx);
+        //mpm.T2LTracking(dx);
 
-        dx = InitT2LDelta(mpm.getMPs().getCount(),3000,54321);
-        mpm.T2LTracking(dx);
-    }
-    
+        for(int i=0; i<2; i++){ 
+            //TODO: improve the writing to different file
+            Vector2View dx = InitT2LDeltaRankineVortex(mpm, Vector2(150000, -2000000), 15*10000, 1);
+            mpm.T2LTracking(dx);
+        }
+    }    
     Kokkos::finalize();
     return 0;
 }

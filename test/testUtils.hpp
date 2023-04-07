@@ -4,6 +4,7 @@
 #include "pmt_MPM.hpp"
 #include "pmt_wachspressBasis.hpp"
 
+#define MPMTEST_PI 3.14159265358979323846
 #define randSeed 12345
 
 using namespace polyMpmTest;
@@ -53,4 +54,8 @@ Vector2View InitT2LDelta(int size, const double range, const int randomSeed = ra
  */
 MPM initMPMWithRandomMPs(Mesh& meshObj, int factor, const int randomSeed = randSeed);
 
+/*
+ * TODO: comments
+ */
+Vector2View InitT2LDeltaRankineVortex(MPM mpm, Vector2 center, const double a, const double Gamma);
 #endif

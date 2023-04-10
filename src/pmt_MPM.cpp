@@ -27,6 +27,9 @@ void MPM::T2LTracking(Vector2View dx, const int printVTP){
     Vector2View resultRight("positionResult",numMPs);
     Vector2View::HostMirror h_resultRight = Kokkos::create_mirror_view(resultRight);
     Vector2View::HostMirror h_MPsPosition = Kokkos::create_mirror_view(MPsPosition);
+    
+    IntView count("countCrossMPs",1);
+    IntView::HostMirror h_count = Kokkos::create_mirror_view(count);
     Kokkos::parallel_for("test",numMPs,KOKKOS_LAMBDA(const int iMP){
         Vector2 MP = MPsPosition(iMP);
         if(isActive(iMP)){
@@ -59,6 +62,7 @@ void MPM::T2LTracking(Vector2View dx, const int printVTP){
                         //go to the next elm
                         //int iElmOld = iElm;
                         iElm = elm2ElmConn(iElm,i+1);
+                        Kokkos::atomic_increment(&count(0));
                         //if(MP[0]-464621<1 && MP[0]-464621>0){
                         //    printf("%d: %f*%f= %f && eiCross = %f\n",i,pdx[i],pdx[ip1], pdx[i]*pdx[ip1] , e[i].cross(MPnew-vtxCoords(v[i])));
                         //    printf("%d: from %d to %d, MP= (%f,%f), dx= (%f,%f)\n",iMP ,iElmOld, iElm , MP[0], MP[1], dx(iMP)[0], dx(iMP)[1]);
@@ -122,8 +126,10 @@ void MPM::T2LTracking(Vector2View dx, const int printVTP){
         }
         fprintf(pFile,"        </DataArray>\n      </Lines>\n    </Piece>\n  </PolyData>\n</VTKFile>\n");
         fclose(pFile);
+        
+        Kokkos::deep_copy(h_count,count);
+        printf("%d:count= %d\n",printVTP, h_count(0));
     }
-
 }
 
 } 

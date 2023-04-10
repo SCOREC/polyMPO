@@ -28,7 +28,7 @@ void MPM::T2LTracking(Vector2View dx, const int printVTP){
     Vector2View::HostMirror h_resultRight = Kokkos::create_mirror_view(resultRight);
     Vector2View::HostMirror h_MPsPosition = Kokkos::create_mirror_view(MPsPosition);
     
-    IntView count("countCrossMPs",1);
+    IntView count("countCrossMPs",numMPs);
     IntView::HostMirror h_count = Kokkos::create_mirror_view(count);
     Kokkos::parallel_for("test",numMPs,KOKKOS_LAMBDA(const int iMP){
         Vector2 MP = MPsPosition(iMP);
@@ -62,7 +62,7 @@ void MPM::T2LTracking(Vector2View dx, const int printVTP){
                         //go to the next elm
                         //int iElmOld = iElm;
                         iElm = elm2ElmConn(iElm,i+1);
-                        Kokkos::atomic_increment(&count(0));
+                        Kokkos::atomic_increment(&count(iMP));
                         //if(MP[0]-464621<1 && MP[0]-464621>0){
                         //    printf("%d: %f*%f= %f && eiCross = %f\n",i,pdx[i],pdx[ip1], pdx[i]*pdx[ip1] , e[i].cross(MPnew-vtxCoords(v[i])));
                         //    printf("%d: from %d to %d, MP= (%f,%f), dx= (%f,%f)\n",iMP ,iElmOld, iElm , MP[0], MP[1], dx(iMP)[0], dx(iMP)[1]);
@@ -110,8 +110,10 @@ void MPM::T2LTracking(Vector2View dx, const int printVTP){
         Kokkos::deep_copy(h_resultLeft, resultLeft);
         Kokkos::deep_copy(h_resultRight, resultRight);
         Kokkos::deep_copy(h_MPsPosition, MPsPosition);
+        Kokkos::deep_copy(h_count,count);
         Kokkos::fence();
         for(int i=0; i<numMPs; i++){
+            printf("%d:count(%d)= %d\n",printVTP, i, h_count(i));
             //XXX: MPsPosition is the updated new position, h_history is the old position
             fprintf(pFile,"          %f %f 0.0\n          %f %f 0.0\n          %f %f 0.0\n          %f %f 0.0\n",h_history(i)[0], h_history(i)[1], h_MPsPosition(i)[0], h_MPsPosition(i)[1], h_resultLeft(i)[0], h_resultLeft(i)[1], h_resultRight(i)[0], h_resultRight(i)[1]);
         }
@@ -127,8 +129,6 @@ void MPM::T2LTracking(Vector2View dx, const int printVTP){
         fprintf(pFile,"        </DataArray>\n      </Lines>\n    </Piece>\n  </PolyData>\n</VTKFile>\n");
         fclose(pFile);
         
-        Kokkos::deep_copy(h_count,count);
-        printf("%d:count= %d\n",printVTP, h_count(0));
     }
 }
 

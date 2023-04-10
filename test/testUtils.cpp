@@ -256,8 +256,8 @@ Vector2View InitT2LDeltaRankineVortex(MPM mpm, Vector2 center, const int numEdge
     Vector2View retVal("T2LDeltaXY",numMPs);
     const double a = numEdge*dx;
     const double coeff = Gamma/(2*MPMTEST_PI);
-    const double T = (2*MPMTEST_PI*a)*(2*MPMTEST_PI*a);
-    const double dt = 2*a*2*MPMTEST_PI*dx; // a= numEdge*dx
+    //T = (2*MPMTEST_PI*a)*(2*MPMTEST_PI*a)/Gamma;
+    const double dt = 4*dx*2*MPMTEST_PI*a/Gamma; // a= numEdge*dx
     const double coeffLess = coeff*dt/(a*a);
     const double coeffGret = coeff*dt;
     Kokkos::parallel_for("setNumMPPerElement", numMPs, KOKKOS_LAMBDA(const int iMP){

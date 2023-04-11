@@ -277,3 +277,28 @@ Vector2View InitT2LDeltaRankineVortex(MPM mpm, Vector2 center, const int numEdge
 
     return returnDx;
 }
+
+void calcAvgLengthOfEdge(Mesh mesh){
+    auto vtxCoords = mesh.getVtxCoords();
+    auto elm2VtxConn = mesh.getElm2VtxConn();
+    auto numElm = mesh.getNumElements();
+
+    double sum = 0.0;
+    double SqrSum = 0.0;
+    int count = 0;
+    Kokkos::parallel_reduce("sumOfEdges*2", numElm,KOKKOS_LAMBDA(const int& iElm, double& lsum, int& lcount, double& lSqrSum){
+        int numVtx = elm2VtxConn(iElm,0);
+        Vector2 v[maxVtxsPerElm+1];
+        for(int i = 1; i<=numVtx; i++){
+                v[i-1] = vtxCoords(elm2VtxConn(iElm,i)-1);
+        }
+        v[numVtx] = vtxCoords(elm2VtxConn(iElm,1)-1);
+        for (int i = 0; i < numVtx; i++){
+            double l_e = (v[i+1] - v[i]).magnitude();
+            lsum += l_e;
+            lSqrSum += l_e*l_e;
+            lcount++;
+        }
+    },sum,count,SqrSum);
+    printf("l_eSum= %f, avg_l_e= %f, avg_l_e*l_e= %f\n", sum, sum/count, SqrSum/count);
+}

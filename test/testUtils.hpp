@@ -58,4 +58,10 @@ MPM initMPMWithRandomMPs(Mesh& meshObj, int factor, const int randomSeed = randS
  * TODO: comments
  */
 Vector2View InitT2LDeltaRankineVortex(MPM mpm, Vector2 center, const int numEdge, const double avgLength, const double Gamma);
+
+/*
+ * TODO: comments
+ */
+void calcAvgLengthOfEdge(Mesh mesh);
+
 #endif

@@ -13,7 +13,8 @@ int main() {
         auto mp = polyMpmTest::MaterialPoints();
         auto v = polyMpmTest::Vector2();
         
-        auto mesh = initTestMesh(100);
+        //auto mesh = initTestMesh(100);
+        auto mesh = Mesh::readMPASMesh("./GIS.nc");
         auto mpm = initTestMPM(mesh);
         
         //test assembly in assembly.hpp

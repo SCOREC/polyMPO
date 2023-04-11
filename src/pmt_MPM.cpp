@@ -21,21 +21,15 @@ void MPM::T2LTracking(Vector2View dx, const int printVTP){
    
     //numMPs = 10;//XXX
     Vector2View history("positionHistory",numMPs);
-    Vector2View::HostMirror h_history = Kokkos::create_mirror_view(history);
     Vector2View resultLeft("positionResult",numMPs);
-    Vector2View::HostMirror h_resultLeft = Kokkos::create_mirror_view(resultLeft);
     Vector2View resultRight("positionResult",numMPs);
-    Vector2View::HostMirror h_resultRight = Kokkos::create_mirror_view(resultRight);
-    Vector2View::HostMirror h_MPsPosition = Kokkos::create_mirror_view(MPsPosition);
-    
+   
     IntView count("countCrossMPs",numMPs);
-    IntView::HostMirror h_count = Kokkos::create_mirror_view(count);
-    Kokkos::parallel_for("test",numMPs,KOKKOS_LAMBDA(const int iMP){
+    Kokkos::parallel_for("T2LCalc",numMPs,KOKKOS_LAMBDA(const int iMP){
         Vector2 MP = MPsPosition(iMP);
         if(isActive(iMP)){
             int iElm = MPs2Elm(iMP);
             Vector2 MPnew = MP + dx(iMP);    
-            //printf(" MP=(%.3f,%.3f) MPnew=(%.3f,%.3f) MATLAB: [%f %f], [%f %f]\n", MP[0], MP[1], MPnew[0], MPnew[1], MP[0], MPnew[0], MP[1], MPnew[1]);
             
             while(true){
                 int numVtx = elm2VtxConn(iElm,0);
@@ -58,16 +52,10 @@ void MPM::T2LTracking(Vector2View dx, const int printVTP){
                     int ip1 = (i+1)%numVtx;
                     //pdx*pdx<0 and
                     if(pdx[i]*pdx[ip1] <0 && e[i].cross(MPnew-vtxCoords(v[i]))<0){
-                        //printf("%d: MP=(%.3f,%.3f) MPnew=(%.3f,%.3f) MATLAB: [%f %f], [%f %f]\n",iMP, MP[0], MP[1], MPnew[0], MPnew[1], MP[0], MPnew[0], MP[1], MPnew[1]);
                         //go to the next elm
                         //int iElmOld = iElm;
                         iElm = elm2ElmConn(iElm,i+1);
                         Kokkos::atomic_increment(&count(iMP));
-                        //if(MP[0]-464621<1 && MP[0]-464621>0){
-                        //    printf("%d: %f*%f= %f && eiCross = %f\n",i,pdx[i],pdx[ip1], pdx[i]*pdx[ip1] , e[i].cross(MPnew-vtxCoords(v[i])));
-                        //    printf("%d: from %d to %d, MP= (%f,%f), dx= (%f,%f)\n",iMP ,iElmOld, iElm , MP[0], MP[1], dx(iMP)[0], dx(iMP)[1]);
-                        //}
-                        //printf("%d: from %d to %d, MP= (%f,%f), dx= (%f,%f)\n",iMP ,iElmOld, iElm , MP[0], MP[1], dx(iMP)[0], dx(iMP)[1]);
                         goToNeighbour = true;
                         if(iElm <0){
                             isActive(iMP) = false;
@@ -100,35 +88,57 @@ void MPM::T2LTracking(Vector2View dx, const int printVTP){
         }
     }); 
     if(printVTP>=0){
+        //TODO: figure out the maxNum (parallel_reduce)
+        const int maxNum = 5;
+
+        IntView::HostMirror h_count = Kokkos::create_mirror_view(count);
+        Vector2View::HostMirror h_history = Kokkos::create_mirror_view(history);
+        Vector2View::HostMirror h_resultLeft = Kokkos::create_mirror_view(resultLeft);
+        Vector2View::HostMirror h_resultRight = Kokkos::create_mirror_view(resultRight);
+        Vector2View::HostMirror h_MPsPosition = Kokkos::create_mirror_view(MPsPosition);
+        Kokkos::deep_copy(h_count,count);
         Kokkos::fence();
-        char* fileOutput = (char *)malloc(sizeof(char) * 256); 
-        sprintf(fileOutput, "polyMpmTestVTPOutput-%d.vtp",printVTP);
-        FILE * pFile = fopen(fileOutput,"w");
-        free(fileOutput);    
-        fprintf(pFile, "<VTKFile type=\"PolyData\" version=\"1.0\" byte_order=\"LittleEndian\" header_type=\"UInt64\">\n  <PolyData>\n    <Piece NumberOfPoints=\"%d\" NumberOfVerts=\"0\" NumberOfLines=\"%d\" NumberOfStrips=\"0\" NumberOfPolys=\"0\">\n      <Points>\n        <DataArray type=\"Float32\" Name=\"Points\" NumberOfComponents=\"3\" format=\"ascii\">\n",numMPs*4,numMPs*2); 
+        IntView countNum("countNumCrossMPs",maxNum+1);
+        Kokkos::parallel_for("countMPs",numMPs,KOKKOS_LAMBDA(const int iMP){
+            for(int i=0; i<=maxNum; i++){
+                if(i == count(iMP)){
+                    Kokkos::atomic_increment(&countNum(i));
+                    break;
+                }    
+            }
+        });
         Kokkos::deep_copy(h_history, history);
         Kokkos::deep_copy(h_resultLeft, resultLeft);
         Kokkos::deep_copy(h_resultRight, resultRight);
         Kokkos::deep_copy(h_MPsPosition, MPsPosition);
-        Kokkos::deep_copy(h_count,count);
+        IntView::HostMirror h_countNum = Kokkos::create_mirror_view(countNum); 
+        Kokkos::deep_copy(h_countNum, countNum);
         Kokkos::fence();
-        for(int i=0; i<numMPs; i++){
-            printf("%d:count(%d)= %d\n",printVTP, i, h_count(i));
-            //XXX: MPsPosition is the updated new position, h_history is the old position
-            fprintf(pFile,"          %f %f 0.0\n          %f %f 0.0\n          %f %f 0.0\n          %f %f 0.0\n",h_history(i)[0], h_history(i)[1], h_MPsPosition(i)[0], h_MPsPosition(i)[1], h_resultLeft(i)[0], h_resultLeft(i)[1], h_resultRight(i)[0], h_resultRight(i)[1]);
+        const int totalNumMPs = numMPs;
+        for(int iCountNum = 0; iCountNum <= maxNum; iCountNum++){
+            numMPs = h_countNum(iCountNum);
+            char* fileOutput = (char *)malloc(sizeof(char) * 256); 
+            sprintf(fileOutput, "polyMpmTestVTPOutput_across%d-%d.vtp",iCountNum,printVTP);
+            FILE * pFile = fopen(fileOutput,"w");
+            free(fileOutput);    
+            fprintf(pFile, "<VTKFile type=\"PolyData\" version=\"1.0\" byte_order=\"LittleEndian\" header_type=\"UInt64\">\n  <PolyData>\n    <Piece NumberOfPoints=\"%d\" NumberOfVerts=\"0\" NumberOfLines=\"%d\" NumberOfStrips=\"0\" NumberOfPolys=\"0\">\n      <Points>\n        <DataArray type=\"Float32\" Name=\"Points\" NumberOfComponents=\"3\" format=\"ascii\">\n",numMPs*4,numMPs*2); 
+            for(int i=0; i<totalNumMPs; i++){
+                if(h_count(i) == iCountNum)
+                //XXX: MPsPosition is the updated new position, h_history is the old position
+                    fprintf(pFile,"          %f %f 0.0\n          %f %f 0.0\n          %f %f 0.0\n          %f %f 0.0\n",h_history(i)[0], h_history(i)[1], h_MPsPosition(i)[0], h_MPsPosition(i)[1], h_resultLeft(i)[0], h_resultLeft(i)[1], h_resultRight(i)[0], h_resultRight(i)[1]);
+            }
+            fprintf(pFile,"        </DataArray>\n      </Points>\n      <Lines>\n        <DataArray type=\"Int64\" Name=\"connectivity\" format=\"ascii\">\n"); 
+            for(int i=0; i<numMPs*4; i+=4){
+                // 01 213
+                fprintf(pFile,"          %d %d\n          %d %d %d\n", i, i+1, i+2, i+1, i+3);
+            }
+            fprintf(pFile,"        </DataArray>\n        <DataArray type=\"Int64\" Name=\"offsets\" format=\"ascii\">\n");
+            for(int i=0; i<numMPs*5; i+=5){
+                fprintf(pFile,"          %d\n          %d\n",i+2,i+5);
+            }
+            fprintf(pFile,"        </DataArray>\n      </Lines>\n    </Piece>\n  </PolyData>\n</VTKFile>\n");
+            fclose(pFile);
         }
-        fprintf(pFile,"        </DataArray>\n      </Points>\n      <Lines>\n        <DataArray type=\"Int64\" Name=\"connectivity\" format=\"ascii\">\n"); 
-        for(int i=0; i<numMPs*4; i+=4){
-            // 01 213
-            fprintf(pFile,"          %d %d\n          %d %d %d\n", i, i+1, i+2, i+1, i+3);
-        }
-        fprintf(pFile,"        </DataArray>\n        <DataArray type=\"Int64\" Name=\"offsets\" format=\"ascii\">\n");
-        for(int i=0; i<numMPs*5; i+=5){
-            fprintf(pFile,"          %d\n          %d\n",i+2,i+5);
-        }
-        fprintf(pFile,"        </DataArray>\n      </Lines>\n    </Piece>\n  </PolyData>\n</VTKFile>\n");
-        fclose(pFile);
-        
     }
 }
 

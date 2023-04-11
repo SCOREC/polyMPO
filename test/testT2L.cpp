@@ -20,6 +20,7 @@ int main() {
         //test T2L in materialPoints
         //mpm.T2LTracking(dx);
 
+        calcAvgLengthOfEdge(mesh); 
         for(int i=0; i<100; i++){ 
             //TODO: improve the writing to different file
             Vector2View dx = InitT2LDeltaRankineVortex(mpm, Vector2(150000, -2000000), 15, 10000, 1);

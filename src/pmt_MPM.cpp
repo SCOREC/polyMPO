@@ -102,7 +102,7 @@ void MPM::T2LTracking(Vector2View dx, const int printVTP){
     if(printVTP>=0){
         Kokkos::fence();
         char* fileOutput = (char *)malloc(sizeof(char) * 256); 
-        sprintf(fileOutput, "polyMpmTestVTPOutput-Geq3-%d.vtp",printVTP);
+        sprintf(fileOutput, "polyMpmTestVTPOutput-%d.vtp",printVTP);
         FILE * pFile = fopen(fileOutput,"w");
         free(fileOutput);    
         fprintf(pFile, "<VTKFile type=\"PolyData\" version=\"1.0\" byte_order=\"LittleEndian\" header_type=\"UInt64\">\n  <PolyData>\n    <Piece NumberOfPoints=\"%d\" NumberOfVerts=\"0\" NumberOfLines=\"%d\" NumberOfStrips=\"0\" NumberOfPolys=\"0\">\n      <Points>\n        <DataArray type=\"Float32\" Name=\"Points\" NumberOfComponents=\"3\" format=\"ascii\">\n",numMPs*4,numMPs*2); 
@@ -114,12 +114,8 @@ void MPM::T2LTracking(Vector2View dx, const int printVTP){
         Kokkos::fence();
         for(int i=0; i<numMPs; i++){
             printf("%d:count(%d)= %d\n",printVTP, i, h_count(i));
-            if(h_count(i)>=3){
-                fprintf(pFile,"          %f %f 0.0\n          %f %f 0.0\n          %f %f 0.0\n          %f %f 0.0\n",h_history(i)[0], h_history(i)[1], h_MPsPosition(i)[0], h_MPsPosition(i)[1], h_resultLeft(i)[0], h_resultLeft(i)[1], h_resultRight(i)[0], h_resultRight(i)[1]);
-            }else{
-                //XXX: MPsPosition is the updated new position, h_history is the old position
-                fprintf(pFile,"          %f %f 0.0\n          %f %f 0.0\n          %f %f 0.0\n          %f %f 0.0\n",0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
-            }
+            //XXX: MPsPosition is the updated new position, h_history is the old position
+            fprintf(pFile,"          %f %f 0.0\n          %f %f 0.0\n          %f %f 0.0\n          %f %f 0.0\n",h_history(i)[0], h_history(i)[1], h_MPsPosition(i)[0], h_MPsPosition(i)[1], h_resultLeft(i)[0], h_resultLeft(i)[1], h_resultRight(i)[0], h_resultRight(i)[1]);
         }
         fprintf(pFile,"        </DataArray>\n      </Points>\n      <Lines>\n        <DataArray type=\"Int64\" Name=\"connectivity\" format=\"ascii\">\n"); 
         for(int i=0; i<numMPs*4; i+=4){

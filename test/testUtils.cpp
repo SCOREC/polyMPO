@@ -253,7 +253,7 @@ Vector2View InitT2LDeltaRankineVortex(MPM mpm, Vector2 center, const int numEdge
     int numMPs = MPs.getCount();
     auto MPsPosition = MPs.getPositions();    
 
-    Vector2View dx("T2LDeltaXY",numMPs);
+    Vector2View returnDx("T2LDeltaXY",numMPs);
     const double a = numEdge*dx;
     const double coeff = Gamma/(2*MPMTEST_PI);
     //T = (2*MPMTEST_PI*a)*(2*MPMTEST_PI*a)/Gamma;
@@ -264,7 +264,6 @@ Vector2View InitT2LDeltaRankineVortex(MPM mpm, Vector2 center, const int numEdge
         auto MP = MPsPosition(iMP);
         auto centerVector = MP-center;
         auto radius = centerVector.magnitude();
-        Vector2 v;
         double vTheta;
         if(radius<= a){
             vTheta = coeffLess*radius;
@@ -272,10 +271,9 @@ Vector2View InitT2LDeltaRankineVortex(MPM mpm, Vector2 center, const int numEdge
             vTheta = coeffGret/radius;
         }
         //(-y,+x) to get tangential
-        v = Vector2(-centerVector[1],centerVector[0])*(vTheta/radius);
-        dx(iMP) = v;
+        returnDx(iMP) = Vector2(-centerVector[1],centerVector[0])*(vTheta/radius);
     });
     Kokkos::fence();
 
-    return dx;
+    return returnDx;
 }

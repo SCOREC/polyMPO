@@ -300,5 +300,5 @@ void calcAvgLengthOfEdge(Mesh mesh){
             lcount++;
         }
     },sum,count,SqrSum);
-    printf("l_eSum= %f, avg_l_e= %f, avg_l_e*l_e= %f\n", sum, sum/count, SqrSum/count);
+    printf("%d: l_eSum= %f, avg_l_e= %f, avg_l_e*l_e= %f\n",count, sum, sum/count, SqrSum/count);
 }

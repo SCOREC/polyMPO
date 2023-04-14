@@ -101,7 +101,7 @@ void MPM::T2LTracking(Vector2View dx, const int printVTP){
         IntView countNum("countNumCrossMPs",maxNum+1);
         Kokkos::parallel_for("countMPs",numMPs,KOKKOS_LAMBDA(const int iMP){
             for(int i=0; i<=maxNum; i++){
-                if(i == count(iMP)){
+                if(i == count(iMP) || (i == maxNum && count(iMP)>= i)){
                     Kokkos::atomic_increment(&countNum(i));
                     break;
                 }    
@@ -123,7 +123,7 @@ void MPM::T2LTracking(Vector2View dx, const int printVTP){
             free(fileOutput);    
             fprintf(pFile, "<VTKFile type=\"PolyData\" version=\"1.0\" byte_order=\"LittleEndian\" header_type=\"UInt64\">\n  <PolyData>\n    <Piece NumberOfPoints=\"%d\" NumberOfVerts=\"0\" NumberOfLines=\"%d\" NumberOfStrips=\"0\" NumberOfPolys=\"0\">\n      <Points>\n        <DataArray type=\"Float32\" Name=\"Points\" NumberOfComponents=\"3\" format=\"ascii\">\n",numMPs*4,numMPs*2); 
             for(int i=0; i<totalNumMPs; i++){
-                if(h_count(i) == iCountNum)
+                if(h_count(i) == iCountNum || (iCountNum == maxNum && h_count(i) >= maxNum))
                 //XXX: MPsPosition is the updated new position, h_history is the old position
                     fprintf(pFile,"          %f %f 0.0\n          %f %f 0.0\n          %f %f 0.0\n          %f %f 0.0\n",h_history(i)[0], h_history(i)[1], h_MPsPosition(i)[0], h_MPsPosition(i)[1], h_resultLeft(i)[0], h_resultLeft(i)[1], h_resultRight(i)[0], h_resultRight(i)[1]);
             }

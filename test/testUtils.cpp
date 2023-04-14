@@ -165,15 +165,13 @@ void interpolateWachspress(MPM& mpm){
     });
 }
 
-Vector2View InitT2LDelta(int size, const double range, const int randomSeed){
-
+Vector2View initT2LDelta(int size, const double range, const int randomSeed){
     Vector2View retVal("T2LDeltaX",size);
 
     Kokkos::Random_XorShift64_Pool<> random_pool(randomSeed);
-    Kokkos::parallel_for("setNumMPPerElement", size, KOKKOS_LAMBDA(const int i){
+    Kokkos::parallel_for("setT2LDeltaX", size, KOKKOS_LAMBDA(const int i){
         auto generator = random_pool.get_state();
         retVal(i) = Vector2(generator.drand(-range,range),generator.drand(-range,range));
-        //retVal(i) = Vector2(0.6,0.6);
         random_pool.free_state(generator);
     });
     Kokkos::fence();
@@ -234,11 +232,6 @@ MPM initMPMWithRandomMPs(Mesh& mesh, int factor, const int randomSeed){
         auto v1 = vtxCoords(elm2VtxConn(ielm,triID+1)-1);
         auto v2 = vtxCoords(elm2VtxConn(ielm,(triID+1)%numVtx+1)-1);
         positions(iMP) = XYc*weights[0]+v1*weights[1]+v2*weights[2];
-        //if(iMP == 59744){
-        //    printf("XYc= %.f,%.f, v1= (%.f,%.f), v2= (%.f,%.f)\n",XYc[0],XYc[1],v1[0],v1[1],v2[0],v2[1]);
-        //    printf("(%.f,%.f)(%.f,%.f)(%.f,%.f)(%.f,%.f) = (%.3f,%.3f)\n",vtxCoords(elm2VtxConn(ielm,1)-1)[0],vtxCoords(elm2VtxConn(ielm,1)-1)[1],vtxCoords(elm2VtxConn(ielm,2)-1)[0],vtxCoords(elm2VtxConn(ielm,2)-1)[1],vtxCoords(elm2VtxConn(ielm,3)-1)[0],vtxCoords(elm2VtxConn(ielm,3)-1)[1],vtxCoords(elm2VtxConn(ielm,4)-1)[0],vtxCoords(elm2VtxConn(ielm,4)-1)[1],positions(iMP)[0],positions(iMP)[1]);
-        //    printf("elm2VtxConn = %d,%d,%d,%d\n", elm2VtxConn(ielm,1), elm2VtxConn(ielm,2), elm2VtxConn(ielm,3), elm2VtxConn(ielm,4));
-        //}
         MPs2Elm(iMP) = ielm;
         isActive(iMP) = true;
     });    
@@ -247,7 +240,7 @@ MPM initMPMWithRandomMPs(Mesh& mesh, int factor, const int randomSeed){
     return MPM(mesh,p,elm2MPs,MPs2Elm);
 }
 
-Vector2View InitT2LDeltaRankineVortex(MPM mpm, Vector2 center, const int numEdge, const double dx, const double Gamma ){
+Vector2View initT2LDeltaRankineVortex(MPM mpm, Vector2 center, const int numEdge, const double dx, const double Gamma ){
     auto mesh = mpm.getMesh();
     auto MPs = mpm.getMPs();
     int numMPs = MPs.getCount();
@@ -278,7 +271,7 @@ Vector2View InitT2LDeltaRankineVortex(MPM mpm, Vector2 center, const int numEdge
     return returnDx;
 }
 
-void calcAvgLengthOfEdge(Mesh mesh){
+double calcAvgLengthOfEdge(Mesh mesh, int printOut){
     auto vtxCoords = mesh.getVtxCoords();
     auto elm2VtxConn = mesh.getElm2VtxConn();
     auto elm2ElmConn = mesh.getElm2ElmConn();
@@ -309,5 +302,45 @@ void calcAvgLengthOfEdge(Mesh mesh){
         }
     },sum,count,SqrSum,countTwice);
     count -= countTwice/2;
-    printf("%d: l_eSum= %f, avg_l_e= %f, avg_l_e*l_e= %f\n",count, sum, sum/count, SqrSum/count);
+    if(printOut)
+        printf("%d: l_eSum= %f, avg_l_e= %f, avg_l_e*l_e= %f\n",count, sum, sum/count, SqrSum/count);
+    return sum/count;
+}
+
+Vector2View initT2LTest1(const int size, const double range, double percent1, double percent2, double percent3, double percent4, const int randomSeed){
+    PMT_ALWAYS_ASSERT(percent1+percent2+percent3+percent4 <= 1+MPMTEST_EPSILON);
+    percent2 += percent1;
+    percent3 += percent2;
+    percent4 += percent3;
+    Vector2View returnDx("T2LDeltaX",size);
+    return returnDx;
+}
+
+Vector2View initT2LTest2(const int size, const double range, double percent1, double percent2, double percent3, double percent4, const int randomSeed){ 
+    PMT_ALWAYS_ASSERT(percent1+percent2+percent3+percent4 <= 1+MPMTEST_EPSILON);
+    percent2 += percent1;
+    percent3 += percent2;
+    percent4 += percent3;
+    Vector2View returnDx("T2LDeltaX",size);    
+    Kokkos::Random_XorShift64_Pool<> random_pool(randomSeed);
+    Kokkos::parallel_for("setNumMPPerElement", size, KOKKOS_LAMBDA(const int i){
+        auto generator = random_pool.get_state();
+        double direction = generator.drand(0,2*MPMTEST_PI);
+        double iRange = generator.drand(1);
+        double length = 0.0;
+        if(iRange < percent1){
+            length = generator.drand(0.0,range*0.5);
+        }else if(iRange < percent2){
+            length = generator.drand(range,range*1.5);
+        }else if(iRange < percent3){
+            length = generator.drand(range*2,range*2.5);
+        }else{
+            length = generator.drand(range*3,range*3.5);
+        }
+        returnDx(i) = Vector2(length*std::cos(direction), length*std::sin(direction));
+        random_pool.free_state(generator);
+    });
+    Kokkos::fence();
+    
+    return returnDx;
 }

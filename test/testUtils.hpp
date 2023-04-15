@@ -63,7 +63,7 @@ Vector2View initT2LDeltaRankineVortex(MPM mpm, Vector2 center, const int numEdge
 /*
  * TODO: comments
  */
-Vector2View initT2LTest1(const int size, const double range, double percent1, double percent2, double percent3, double percent4, const int randomSeed = randSeed);
+Vector2View initT2LTest1(MPM mpm, double percent1, double percent2, double percent3, double percent4, double range = -1, const int randomSeed = randSeed);
 
 /*
  * TODO: comments

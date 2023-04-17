@@ -307,22 +307,23 @@ double calcAvgLengthOfEdge(Mesh mesh, int printOut){
     return sum/count;
 }
 
-Vector2View initT2LTest1(MPM mpm, double percent1, double percent2, double percent3, double percent4, double range, const int randomSeed){
+Vector2View initT2LTest1(MPM mpm, double percent1, double percent2, double percent3, double percent4, const int randomSeed){
     PMT_ALWAYS_ASSERT(percent1+percent2+percent3+percent4 <= 1+MPMTEST_EPSILON);
     auto mesh = mpm.getMesh();
     auto MPs = mpm.getMPs();
-    int numMPs = MPs.getCount();
-    auto MPs2Elm = MPs.getMPs2Elm();
-    auto elm2ElmConn = mesh.getElm2Elm();
     Vector2View vtxCoords = mesh.getVtxCoords();   
+    int numMPs = MPs.getCount();
+    auto MPsPosition = MPs.getPositions();
+    auto MPs2Elm = mpm.getMPs2Elm();
+    auto elm2ElmConn = mesh.getElm2ElmConn();
     IntVtx2ElmView elm2VtxConn = mesh.getElm2VtxConn();
 
     percent2 += percent1;
     percent3 += percent2;
     percent4 += percent3;
-    Vector2View returnDx("T2LDeltaX",numVtx);
+    Vector2View returnDx("T2LDeltaX",numMPs);
     Kokkos::Random_XorShift64_Pool<> random_pool(randomSeed);
-    Kokkos::parallel_for("setNumMPPerElement", numVtx, KOKKOS_LAMBDA(const int iMP){
+    Kokkos::parallel_for("setNumMPPerElement", numMPs, KOKKOS_LAMBDA(const int iMP){
         auto generator = random_pool.get_state();
         double iRange = generator.drand(1);
         int numAcross = 0;
@@ -335,14 +336,64 @@ Vector2View initT2LTest1(MPM mpm, double percent1, double percent2, double perce
         }else{
             numAcross = 3;
         }
-        int iElm = 
-   
+        int iElm = MPs2Elm(iMP);
+        int nextEdge = generator.urand(0,elm2ElmConn(iElm,0))+1;//(0:numElm)+1
+        int nextElm = elm2ElmConn(iElm,nextEdge);
+        bool goOut = false;
+        for(int iAcross = 0; iAcross<numAcross; iAcross++){
+            if(nextElm < 0){
+                goOut = true;
+                break;
+            }
+            int numElm = elm2ElmConn(iElm, 0);
+            iElm = nextElm;
+            nextEdge = (nextEdge + numElm/2)%numElm + 1;
+            nextElm = elm2ElmConn(iElm,nextEdge);
+        }
+        //normal case nextElm >= 0;
+        int numVtx = elm2VtxConn(iElm,0);
+        double sum_x = 0.0, sum_y = 0.0;
+        for(int i=1; i<= numVtx; i++){
+            sum_x += vtxCoords(elm2VtxConn(iElm,i)-1)[0];
+            sum_y += vtxCoords(elm2VtxConn(iElm,i)-1)[1];
+        }
+        Vector2 XYc = Vector2(sum_x/numVtx, sum_y/numVtx);
+        int triID = generator.urand(0,numVtx);
+        double rws[2] = {generator.drand(0.0,1.0), generator.drand(0.0,1.0)};
         random_pool.free_state(generator);
+        double weights[3];
+        if (rws[0]> rws[1]){
+            weights[0] = rws[1];
+            weights[1] = rws[0]-rws[1];
+            weights[2] = 1-rws[0];
+        }else{
+            weights[0] = rws[0];
+            weights[1] = rws[1]-rws[0];
+            weights[2] = 1-rws[1];
+        }
+        auto v1 = vtxCoords(elm2VtxConn(iElm,triID+1)-1);
+        auto v2 = vtxCoords(elm2VtxConn(iElm,(triID+1)%numVtx+1)-1);
+        Vector2 MPPosition = MPsPosition(iMP);
+        Vector2 targetPosition = XYc*weights[0]+v1*weights[1]+v2*weights[2];
+        //go out nextElm <0;
+        if(goOut){
+            //find the two vertex then -y, x
+            if(nextEdge == elm2VtxConn(iElm,0)){
+                v1 = vtxCoords(elm2VtxConn(iElm, nextEdge)-1);
+                v2 = vtxCoords(elm2VtxConn(iElm, 1)-1);
+            }else{
+                v1 = vtxCoords(elm2VtxConn(iElm, nextEdge)-1);
+                v2 = vtxCoords(elm2VtxConn(iElm, nextEdge+1)-1);
+            }
+            Vector2 diff = v1-v2;
+            targetPosition = targetPosition + Vector2(diff[1], -diff[0]);
+        }     
+        returnDx(iMP) = targetPosition - MPPosition;
     }); 
     return returnDx;
 }
 
-Vector2View initT2LTest2(const int size, const double range, double percent1, double percent2, double percent3, double percent4, const int randomSeed){ 
+Vector2View initT2LTest2(const int size, double percent1, double percent2, double percent3, double percent4, double range, const int randomSeed){ 
     PMT_ALWAYS_ASSERT(percent1+percent2+percent3+percent4 <= 1+MPMTEST_EPSILON);
     percent2 += percent1;
     percent3 += percent2;
@@ -363,7 +414,7 @@ Vector2View initT2LTest2(const int size, const double range, double percent1, do
             length = generator.drand(range*3,range*3.5);
         }
         double direction = generator.drand(0,2*MPMTEST_PI);
-       returnDx(i) = Vector2(length*std::cos(direction), length*std::sin(direction));
+        returnDx(i) = Vector2(length*std::cos(direction), length*std::sin(direction));
         random_pool.free_state(generator);
     });
     Kokkos::fence();

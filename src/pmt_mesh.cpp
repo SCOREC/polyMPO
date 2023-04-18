@@ -122,7 +122,6 @@ Mesh Mesh::readMPASMesh(int ncid){
     ERRexit(retval);
   if ((retval = nc_get_var(ncid, edgesOnCellID, edgesOnCell)))
     ERRexit(retval);
-//TODO: add verticesOnEdge[nEdge*2] to make edgeToEdge
    /* 
    for(int i=0; i<10; i++){
         //i=cell

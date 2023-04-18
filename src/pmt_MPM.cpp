@@ -19,7 +19,7 @@ void MPM::T2LTracking(Vector2View dx, const int printVTP){
     
     auto MPs2Elm = materialPoints2Elm_;
    
-    //numMPs = 10;//XXX
+    //numMPs = 100;//XXX
     Vector2View history("positionHistory",numMPs);
     Vector2View resultLeft("positionResult",numMPs);
     Vector2View resultRight("positionResult",numMPs);
@@ -119,8 +119,9 @@ void MPM::T2LTracking(Vector2View dx, const int printVTP){
             numMPs = h_countNum(iCountNum);
             char* fileOutput = (char *)malloc(sizeof(char) * 256); 
             sprintf(fileOutput, "polyMpmTestVTPOutput_across%d-%d.vtp",iCountNum,printVTP);
+            printf("%d-%d:%d\n",iCountNum,printVTP,numMPs); 
             FILE * pFile = fopen(fileOutput,"w");
-            free(fileOutput);    
+            free(fileOutput);   
             fprintf(pFile, "<VTKFile type=\"PolyData\" version=\"1.0\" byte_order=\"LittleEndian\" header_type=\"UInt64\">\n  <PolyData>\n    <Piece NumberOfPoints=\"%d\" NumberOfVerts=\"0\" NumberOfLines=\"%d\" NumberOfStrips=\"0\" NumberOfPolys=\"0\">\n      <Points>\n        <DataArray type=\"Float32\" Name=\"Points\" NumberOfComponents=\"3\" format=\"ascii\">\n",numMPs*4,numMPs*2); 
             for(int i=0; i<totalNumMPs; i++){
                 if(h_count(i) == iCountNum || (iCountNum == maxNum && h_count(i) >= maxNum))

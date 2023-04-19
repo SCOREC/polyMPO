@@ -7,6 +7,7 @@
 #define MPMTEST_PI 3.14159265358979323846
 #define MPMTEST_EPSILON 1.19209e-07 //using the float epsilon
 #define randSeed 12345
+#define arbitraryInt 10
 
 using namespace polyMpmTest;
 
@@ -68,7 +69,7 @@ Vector2View initT2LTest1(MPM mpm, double percent1, double percent2, double perce
 /*
  * TODO: comments
  */
-Vector2View initT2LTest2(const int size, double percent1, double percent2, double percent3, double percent4, double range = -1, const int randomSeed = randSeed);
+Vector2View initT2LTest2(MPM mpm, const int MPAcross, const int randomSeed = randSeed);
 
 /*
  * TODO: comments

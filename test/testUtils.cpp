@@ -447,30 +447,88 @@ Vector2View initT2LTest1(MPM mpm, double percent1, double percent2, double perce
     return returnDx;
 }
 
-Vector2View initT2LTest2(const int size, double percent1, double percent2, double percent3, double percent4, double range, const int randomSeed){ 
-    PMT_ALWAYS_ASSERT(percent1+percent2+percent3+percent4 <= 1+MPMTEST_EPSILON);
-    percent2 += percent1;
-    percent3 += percent2;
-    percent4 += percent3;
-    Vector2View returnDx("T2LDeltaX",size);    
+Vector2View initT2LTest2(MPM mpm, const int MPAcross, const int randomSeed){ 
+    PMT_ALWAYS_ASSERT(MPAcross >= 0);
+    auto mesh = mpm.getMesh();
+    auto MPs = mpm.getMPs();
+    Vector2View vtxCoords = mesh.getVtxCoords();   
+    int numMPs = MPs.getCount();
+    auto MPsPosition = MPs.getPositions();
+    auto MPs2Elm = mpm.getMPs2Elm();
+    auto elm2ElmConn = mesh.getElm2ElmConn();
+    auto isActive = MPs.isActive();
+    IntVtx2ElmView elm2VtxConn = mesh.getElm2VtxConn();
+    Vector2View returnDx("T2LDeltaX",numMPs);
     Kokkos::Random_XorShift64_Pool<> random_pool(randomSeed);
-    Kokkos::parallel_for("setNumMPPerElement", size, KOKKOS_LAMBDA(const int i){
+    Kokkos::parallel_for("setNumMPPerElement", numMPs, KOKKOS_LAMBDA(const int iMP){
+    if(isActive(iMP)){
         auto generator = random_pool.get_state();
+        Vector2 MPPosition = MPsPosition(iMP);
         double iRange = generator.drand(1);
-        double length = 0.0;
-        if(iRange < percent1){
-            length = generator.drand(0.0,range*0.5);
-        }else if(iRange < percent2){
-            length = generator.drand(range,range*1.5);
-        }else if(iRange < percent3){
-            length = generator.drand(range*2,range*2.5);
-        }else{
-            length = generator.drand(range*3,range*3.5);
+        int numAcross = 0;
+        if(iMP == arbitraryInt){
+            numAcross = MPAcross;
         }
-        double direction = generator.drand(0,2*MPMTEST_PI);
-        returnDx(i) = Vector2(length*std::cos(direction), length*std::sin(direction));
+        int initElm = MPs2Elm(iMP);
+        int iElm = initElm;
+        int numElm = elm2ElmConn(iElm, 0);
+        int initDirection = generator.urand(0,numElm)+1;//[0:numElm)+1
+        int nextEdge = initDirection;//[0:numElm)+1
+        int nextElm = elm2ElmConn(iElm,nextEdge);
+        for(int iAcross = 0; iAcross< numAcross; iAcross++){
+            if(nextElm < 0){//reInit to a new direction
+                iElm = initElm;
+                numElm = elm2ElmConn(iElm, 0);
+                if(initDirection == numElm){
+                    initDirection = 1;
+                }else{
+                    initDirection += 1;
+                }
+                nextEdge = initDirection;
+                nextElm = elm2ElmConn(iElm,nextEdge);
+                iAcross = 0;
+                continue;
+            }
+            int oldElm = iElm;
+            iElm = nextElm;
+            numElm = elm2ElmConn(iElm, 0);
+            //update the nextEdge:
+            for(int i=1; i<=numElm; i++){
+                if(elm2ElmConn(iElm, i) == oldElm){
+                    nextEdge = i;
+                    break;
+                }
+            }
+            nextEdge = (nextEdge + numElm/2)%numElm;
+            if(nextEdge == 0)
+                nextEdge = numElm;
+            nextElm = elm2ElmConn(iElm,nextEdge);
+        }
+        int numVtx = elm2VtxConn(iElm,0);
+        double sum_x = 0.0, sum_y = 0.0;
+        for(int i=1; i<= numVtx; i++){
+            sum_x += vtxCoords(elm2VtxConn(iElm,i)-1)[0];
+            sum_y += vtxCoords(elm2VtxConn(iElm,i)-1)[1];
+        }
+        Vector2 XYc = Vector2(sum_x/numVtx, sum_y/numVtx);
+        int triID = generator.urand(0,numVtx);
+        double rws[2] = {generator.drand(0.0,1.0), generator.drand(0.0,1.0)};
         random_pool.free_state(generator);
-    });
+        double weights[3];
+        if (rws[0]> rws[1]){
+            weights[0] = rws[1];
+            weights[1] = rws[0]-rws[1];
+            weights[2] = 1-rws[0];
+        }else{
+            weights[0] = rws[0];
+            weights[1] = rws[1]-rws[0];
+            weights[2] = 1-rws[1];
+        }
+        auto v1 = vtxCoords(elm2VtxConn(iElm,triID+1)-1);
+        auto v2 = vtxCoords(elm2VtxConn(iElm,(triID+1)%numVtx+1)-1);
+        Vector2 targetPosition = XYc*weights[0]+v1*weights[1]+v2*weights[2];
+        returnDx(iMP) = targetPosition - MPPosition;
+    }}); 
     Kokkos::fence();
     
     return returnDx;

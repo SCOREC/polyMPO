@@ -55,7 +55,7 @@ void MPM::T2LTracking(Vector2View dx, const int printVTP){
                         //go to the next elm
                         //int iElmOld = iElm;
                         iElm = elm2ElmConn(iElm,i+1);
-                        Kokkos::atomic_increment(&count(iMP));
+                        //Kokkos::atomic_increment(&count(iMP));
                         goToNeighbour = true;
                         if(iElm <0){
                             isActive(iMP) = false;
@@ -67,25 +67,25 @@ void MPM::T2LTracking(Vector2View dx, const int printVTP){
                 if(goToNeighbour)
                     continue; 
                 //otherwise we do the update and end the loop
-                if(printVTP>=0){ 
-                    Vector2 MParrow = MP + dx(iMP)*0.7;
-                    Vector2 shift = Vector2(-dx(iMP)[1],dx(iMP)[0])*0.1;
-                    Vector2 MPLeft = MParrow + shift;
-                    Vector2 MPRight = MParrow - shift;
-                    history(iMP) = MP;
-                    resultLeft(iMP) = MPLeft;
-                    resultRight(iMP) = MPRight;
-                }
+                //if(printVTP>=0){ 
+                //    Vector2 MParrow = MP + dx(iMP)*0.7;
+                //    Vector2 shift = Vector2(-dx(iMP)[1],dx(iMP)[0])*0.1;
+                //    Vector2 MPLeft = MParrow + shift;
+                //    Vector2 MPRight = MParrow - shift;
+                //    history(iMP) = MP;
+                //    resultLeft(iMP) = MPLeft;
+                //    resultRight(iMP) = MPRight;
+                //}
                 MPs2Elm(iMP) = iElm;
                 MPsPosition(iMP) = MPnew;
                break;
             }
         }
-        else{
-            history(iMP) = MP;
-            resultLeft(iMP) = MP;
-            resultRight(iMP) = MP;
-        }
+        //else{
+        //    history(iMP) = MP;
+        //    resultLeft(iMP) = MP;
+        //    resultRight(iMP) = MP;
+        //}
     }); 
     if(printVTP>=0){
         //TODO: figure out the maxNum (parallel_reduce)

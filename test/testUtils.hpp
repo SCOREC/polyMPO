@@ -49,7 +49,7 @@ void interpolateWachspress(MPM& mpm);
 /*
  * TODO: finish the comments
  */
-Vector2View initT2LDelta(int size, const double range, const int randomSeed = randSeed);
+Vector2View initT2LDelta(const int size, const double range = -1, const int randomSeed = randSeed);
 
 /*
  * according to mp_init_poly_v5.py by Oncar
@@ -74,6 +74,26 @@ Vector2View initT2LTest2(MPM mpm, const int MPAcross, const int randomSeed = ran
 /*
  * TODO: comments
  */
-double calcAvgLengthOfEdge(Mesh mesh, int printOut =0);
+double calcAvgLengthOfEdge(Mesh mesh, int printOut = 0);
 
+/*
+ * TODO: comments
+ */
+void runT2LSimple(MPM mpm, int size = -1, double range = -1, const int loopTimes = 1, const int printVTP = -1, const int randomSeed = randSeed);
+
+/*
+ * TODO: comments
+ */
+void runT2LRankineVortex(MPM mpm, Vector2 center, const int numEdge = 1, double avgLength = -1, const double Gamma = 1, const int loopTimes = 1, const int printVTP = -1);
+
+/*
+ * TODO: comments
+ */
+void runT2LRandomWithProportion(MPM mpm, const double p0 = 0.25, const double p1 = 0.25, const double p2 = 0.25, const double p3 = 0.25, const int loopTimes = 1, const int printVTP = -1, const int randomSeed = randSeed);
+
+/*
+ * TODO: comments
+ */
+void runT2LWithOneMPAcross(MPM mpm, const int MPAcross = 0, const int loopTimes = 1, const int printVTP = -1, const int randomSeed = randSeed);
 #endif
+

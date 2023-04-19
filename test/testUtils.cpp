@@ -166,8 +166,8 @@ void interpolateWachspress(MPM& mpm){
 }
 
 Vector2View initT2LDelta(int size, const double range, const int randomSeed){
+    PMT_ALWAYS_ASSERT(range > 0);
     Vector2View retVal("T2LDeltaX",size);
-
     Kokkos::Random_XorShift64_Pool<> random_pool(randomSeed);
     Kokkos::parallel_for("setT2LDeltaX", size, KOKKOS_LAMBDA(const int i){
         auto generator = random_pool.get_state();
@@ -175,7 +175,6 @@ Vector2View initT2LDelta(int size, const double range, const int randomSeed){
         random_pool.free_state(generator);
     });
     Kokkos::fence();
-
     return retVal;
 }
 
@@ -243,6 +242,7 @@ MPM initMPMWithRandomMPs(Mesh& mesh, int factor, const int randomSeed){
 }
 
 Vector2View initT2LDeltaRankineVortex(MPM mpm, Vector2 center, const int numEdge, const double dx, const double Gamma ){
+    PMT_ALWAYS_ASSERT(numEdge >0);
     auto mesh = mpm.getMesh();
     auto MPs = mpm.getMPs();
     int numMPs = MPs.getCount();
@@ -368,7 +368,7 @@ Vector2View initT2LTest1(MPM mpm, double percent1, double percent2, double perce
                         goOut = true;
                         break;
                     }
-                    iAcross = 0;
+                    iAcross = -1;
                     continue;
                 }else{
                     goOut = true;
@@ -464,7 +464,6 @@ Vector2View initT2LTest2(MPM mpm, const int MPAcross, const int randomSeed){
     if(isActive(iMP)){
         auto generator = random_pool.get_state();
         Vector2 MPPosition = MPsPosition(iMP);
-        double iRange = generator.drand(1);
         int numAcross = 0;
         if(iMP == arbitraryInt){
             numAcross = MPAcross;
@@ -486,7 +485,7 @@ Vector2View initT2LTest2(MPM mpm, const int MPAcross, const int randomSeed){
                 }
                 nextEdge = initDirection;
                 nextElm = elm2ElmConn(iElm,nextEdge);
-                iAcross = 0;
+                iAcross = -1;
                 continue;
             }
             int oldElm = iElm;
@@ -532,4 +531,42 @@ Vector2View initT2LTest2(MPM mpm, const int MPAcross, const int randomSeed){
     Kokkos::fence();
     
     return returnDx;
+}
+
+void runT2LSimple(MPM mpm, int size, double range, const int loopTimes, const int printVTP, const int randomSeed){
+    if(size < 0)
+        size = mpm.getMPs().getCount();
+    if(range < 0)
+        range = calcAvgLengthOfEdge(mpm.getMesh())*3;
+    printf("Run T2L Tracking Simple Test with size= %d and range= %.4f\n",size, range);
+    for(int i=0; i< loopTimes; i++){
+        Vector2View dx = initT2LDelta(size, range, randomSeed);
+        mpm.T2LTracking(dx, printVTP<0?-1:i); 
+    }
+}
+
+void runT2LRankineVortex(MPM mpm, Vector2 center, const int numEdge, double avgLength, const double Gamma, const int loopTimes, const int printVTP){
+    if(avgLength <0)
+        avgLength = calcAvgLengthOfEdge(mpm.getMesh());
+    printf("Run T2L Tracking Rankine Vortex Test with center= (%.4f,%.4f), numEdge= %d, avgLength= %.4f, Gamma= %.4f\n",center[0], center[1], numEdge, avgLength, Gamma);
+    for(int i=0; i< loopTimes; i++){
+        Vector2View dx = initT2LDeltaRankineVortex(mpm, center, numEdge, avgLength, Gamma);
+        mpm.T2LTracking(dx, printVTP<0?-1:i); 
+    }
+}
+
+void runT2LRandomWithProportion(MPM mpm, const double p0, const double p1, const double p2, const double p3, const int loopTimes, const int printVTP, const int randomSeed){
+    printf("\tRun T2L Tracking Random With Proportion: %.2f %.2f %.2f %.2f\n",p0,p1,p2,p3);
+    for(int i=0; i< loopTimes; i++){
+        Vector2View dx = initT2LTest1(mpm, p0, p1, p2, p3, randomSeed);
+        mpm.T2LTracking(dx, printVTP<0?-1:i); 
+    }
+}
+
+void runT2LWithOneMPAcross(MPM mpm, const int MPAcross, const int loopTimes, const int printVTP, const int randomSeed){
+    printf("\tRun T2L Tracking with one MP Across %d Element(s)\n",MPAcross);
+    for(int i=0; i< loopTimes; i++){
+        Vector2View dx = initT2LTest2(mpm, MPAcross, randomSeed);
+        mpm.T2LTracking(dx, printVTP<0?-1:i); 
+    }
 }

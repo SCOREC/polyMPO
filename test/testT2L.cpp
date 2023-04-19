@@ -16,45 +16,26 @@ int main(int argc, char* argv[]) {
         //10,20,40,80,160,320,640
         //TODO: 10,40,160,640
         
-        //Vector2View dx = initT2LDelta(mpm.getMPs().getCount(),4000,12345);
-        //test T2L in materialPoints
-        //mpm.T2LTracking(dx);
-
         //calcAvgLengthOfEdge(mesh,1); 
-/*======//Test Rankine
-        //for(int i=0; i<100; i++){ 
-        //    Vector2View dx = initT2LDeltaRankineVortex(mpm, Vector2(150000, -2000000), 15, 11500, 1);
-        //    mpm.T2LTracking(dx,-1);
-        //}
-//======*/
-/*======//Test1
+        //runT2LSimple(mpm);
+
+        //Test Rankine
+        //runT2LRankineVortex(mpm, Vector2(150000,-2000000), 15, 11500, 1, 100, -1);
+
+        //Test1
         //Test init with fractions:
-        double p0 = 0.99;
-        double p1 = 0.01;
-        double p2 = 0.0;
-        double p3 = 0.0;
-        printf("\tfraction: %.2f %.2f %.2f %.2f\n",p0,p1,p2,p3);
-//TODO: 1.00 0.00 0.00 0.00
-//      0.90 0.10 0.00 0.00
-//      0.90 0.00 0.10 0.00
-//      0.90 0.00 0.00 0.10
-//      0.90 0.05 0.05 0.00 //look the same??
-//
-        for(int i=0; i<5; i++){
-            Vector2View dx1 = initT2LTest1(mpm,p0,p1,p2,p3);
-            mpm.T2LTracking(dx1,-1);
-        }
-//======*/
+        //TODO: 1.00 0.00 0.00 0.00
+        //      0.90 0.10 0.00 0.00
+        //      0.90 0.00 0.10 0.00
+        //      0.90 0.00 0.00 0.10
+        //      0.90 0.05 0.05 0.00 //look the same??
+        //runT2LRandomWithProportion(mpm, 1.0, 0.0, 0.0, 0.0, 5, -1);
+        
         //Test2
-//      1.00 1MP  0.00 0.00
-//      1.00 0.00 1MP  0.00
-//      1.00 0.00 0.00 1MP
-        int MP1 = 1;
-        printf("\tTest2 1MP at %d across\n",MP1);
-        for(int i=0; i<5; i++){
-            Vector2View dx2 = initT2LTest2(mpm, MP1);
-            mpm.T2LTracking(dx2,-1);
-        }
+        //TODO: 1.00 1MP  0.00 0.00
+        //      1.00 0.00 1MP  0.00
+        //      1.00 0.00 0.00 1MP
+        runT2LWithOneMPAcross(mpm, 1, 5, -1);
     }    
     Kokkos::finalize();
     return 0;

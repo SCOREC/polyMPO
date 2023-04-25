@@ -19,26 +19,26 @@ typedef ps::ParticleStructure<MaterialPointTypes> PS;
 
 class MaterialPoints {
   private:
-    int count_;
+    int numElms_;
+    int numMPs_;
     Vector2View positions_;
     BoolView isActive_;
     PS* MPs;
 
   public:
     MaterialPoints(){};
-    MaterialPoints( int count, Vector2View positions, BoolView isActive):
-                    count_(count), positions_(positions), isActive_(isActive){
-      const int numElms = 1; //FIXME - putting all MPs in one element
-      PS::kkLidView ppe("particlesPerElement", numElms);
-      PS::kkGidView elmGids("elementGlobalIds", numElms);
-      Kokkos::TeamPolicy<Kokkos::DefaultExecutionSpace> policy(numElms,32);
-      MPs = new DPS<MaterialPointTypes>(policy, numElms, count, ppe, elmGids);
+    MaterialPoints(int numElms, int numMPs, Vector2View positions, BoolView isActive):
+                    numElms_(numElms), numMPs_(numMPs), positions_(positions), isActive_(isActive){
+      PS::kkLidView ppe("particlesPerElement", numElms_);
+      PS::kkGidView elmGids("elementGlobalIds", numElms_);
+      Kokkos::TeamPolicy<Kokkos::DefaultExecutionSpace> policy(numElms_,32);
+      MPs = new DPS<MaterialPointTypes>(policy, numElms_, numMPs_, ppe, elmGids);
     };
     ~MaterialPoints() {
       delete MPs;
     }
 
-    int getCount() { return count_; }
+    int getCount() { return numMPs_; }
     Vector2View getPositions() { return positions_; }
     BoolView isActive() { return isActive_; }
 

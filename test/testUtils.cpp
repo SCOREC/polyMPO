@@ -107,7 +107,7 @@ MPM initTestMPM(Mesh& mesh){
         //printf("%d: (%f,%f)\n",iMP,positions(iMP)[0],positions(iMP)[1]);
     });
     
-    auto p = new MaterialPoints(numMPs,positions,isActive);
+    auto p = new MaterialPoints(numElms,numMPs,positions,isActive);
 
     return MPM(mesh,p,elm2MPs,MPs2Elm);
 }

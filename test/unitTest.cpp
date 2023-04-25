@@ -1,10 +1,12 @@
 #include "pmt_MPM.hpp"
 #include "pmt_assembly.hpp"
 #include "testUtils.hpp"
+#include <mpi.h>
 
 
-int main() {
-    Kokkos::initialize();
+int main(int argc, char** argv) {
+    MPI_Init(&argc, &argv);
+    Kokkos::initialize(argc, argv);
 
 //  test Vector2
     auto v = polyMpmTest::Vector2();

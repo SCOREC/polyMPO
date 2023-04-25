@@ -372,6 +372,7 @@ Vector2View initT2LTest1(MPM mpm, double percent1, double percent2, double perce
                     continue;
                 }else{
                     goOut = true;
+                    //printf("go out\n");
                     break;
                 }
             }
@@ -422,7 +423,8 @@ Vector2View initT2LTest1(MPM mpm, double percent1, double percent2, double perce
         }
         auto v1 = vtxCoords(elm2VtxConn(iElm,triID+1)-1);
         auto v2 = vtxCoords(elm2VtxConn(iElm,(triID+1)%numVtx+1)-1);
-        Vector2 targetPosition = XYc*weights[0]+v1*weights[1]+v2*weights[2];
+        //Vector2 targetPosition = XYc*weights[0]+v1*weights[1]+v2*weights[2];
+        Vector2 targetPosition = XYc;
         //go out nextElm <0;
         if(goOut){
             //find the two vertex then -y, x

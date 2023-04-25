@@ -22,7 +22,7 @@ endif()
 target_include_directories(polyMpmTest-core INTERFACE
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
   $<INSTALL_INTERFACE:include>)
-target_link_libraries(polyMpmTest-core PUBLIC Kokkos::kokkos)
+target_link_libraries(polyMpmTest-core PUBLIC pumipic::pumipic)
 target_link_libraries(polyMpmTest-core PRIVATE PkgConfig::NetCDF)
 
 polyMpmTest_export_lib(polyMpmTest-core "${HEADERS}")

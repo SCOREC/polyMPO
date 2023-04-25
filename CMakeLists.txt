@@ -20,6 +20,14 @@ macro(polyMpmTest_export_lib target headers)
   install(FILES ${headers} DESTINATION include)
 endmacro(polyMpmTest_export_lib)
 
+#pumipic dependency
+message(STATUS "Found PUMIpic: ${pumipic_VERSION}")
+set(xgcm_USE_pumipic_DEFAULT ON)
+find_package(pumipic REQUIRED)
+#Clear the omegah compilation flags that it passes to cuda.  Using the
+# kokkos target, and nvcc_wrapper, provide sufficient flags.
+set_property(TARGET Omega_h::omega_h PROPERTY INTERFACE_COMPILE_OPTIONS "")
+
 #kokkos does not allow extensions
 set(CMAKE_CXX_EXTENSIONS Off)
 find_package(Kokkos REQUIRED)

@@ -107,7 +107,7 @@ MPM initTestMPM(Mesh& mesh){
         //printf("%d: (%f,%f)\n",iMP,positions(iMP)[0],positions(iMP)[1]);
     });
     
-    auto p = MaterialPoints(numMPs,positions,isActive);
+    auto p = new MaterialPoints(numMPs,positions,isActive);
 
     return MPM(mesh,p,elm2MPs,MPs2Elm);
 }
@@ -115,15 +115,14 @@ MPM initTestMPM(Mesh& mesh){
 
 void interpolateWachspress(MPM& mpm){
     auto mesh = mpm.getMesh();
-    auto MPs = mpm.getMPs();   
     auto MPs2Elm = mpm.getMPs2Elm();
    
     auto vtxCoords = mesh.getVtxCoords();
     auto elm2VtxConn = mesh.getElm2VtxConn();
 
-    auto numMPs = MPs.getCount();
-    auto MPsPosition = MPs.getPositions();
-    auto isActive = MPs.isActive();
+    auto numMPs = mpm.MPs->getCount();
+    auto MPsPosition = mpm.MPs->getPositions();
+    auto isActive = mpm.MPs->isActive();
 
     Kokkos::parallel_for("getBasisAndGradByAreaGblForm",numMPs,KOKKOS_LAMBDA(const int iMP){
         if (isActive(iMP)){

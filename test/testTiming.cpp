@@ -13,7 +13,7 @@ int main(int argc, char* argv[] ) {
         auto mesh = initTestMesh(factor);
         auto mpm = initTestMPM(mesh);
         
-        printf("Total MPs:%d\n",mpm.getMPs().getCount());    
+        printf("Total MPs:%d\n",mpm.MPs->getCount());
         
         for(int i=0; i<5; i++){
             polyMpmTest::assembly(mpm);

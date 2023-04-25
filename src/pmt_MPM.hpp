@@ -12,19 +12,21 @@ namespace polyMpmTest{
 class MPM{
   private:
     Mesh mesh_;
-    MaterialPoints materialPoints_;
     IntView elm2MaterialPoints_; 
     IntView materialPoints2Elm_;
     
   public:
-    MPM(Mesh& mesh, MaterialPoints& MPs, IntView elm2MPs, IntView MPs2Elm):
+    MaterialPoints* MPs;
+    MPM(Mesh& mesh, MaterialPoints* inMPs, IntView elm2MPs, IntView MPs2Elm):
         mesh_(mesh),
-        materialPoints_(MPs),
+        MPs(inMPs),
         elm2MaterialPoints_(elm2MPs),
         materialPoints2Elm_(MPs2Elm){};
+    ~MPM() {
+      delete MPs;
+    }
 
     Mesh getMesh() { return mesh_; }
-    MaterialPoints getMPs() { return materialPoints_; }
     IntView getElm2MPs() { return elm2MaterialPoints_; }
     IntView getMPs2Elm() { return materialPoints2Elm_; }
 

@@ -7,14 +7,13 @@ namespace polyMpmTest{
 
 DoubleView assembly(MPM& mpm){
     auto mesh = mpm.getMesh();
-    auto MPs = mpm.getMPs();
     int numVtxs = mesh.getNumVertices();
     int numElms = mesh.getNumElements();
-    int numMPs = MPs.getCount(); 
+    int numMPs = mpm.MPs->getCount();
      
     auto vtxCoords = mesh.getVtxCoords(); 
     auto elm2VtxConn = mesh.getElm2VtxConn();
-    auto xp = MPs.getPositions();
+    auto xp = mpm.MPs->getPositions();
     
     auto MPs2Elm = mpm.getMPs2Elm();
     DoubleView vField("vField2",numVtxs);

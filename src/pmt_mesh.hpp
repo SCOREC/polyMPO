@@ -50,6 +50,17 @@ class Mesh {
     void setElm2VtxConn(IntVtx2ElmView elm2VtxConn) { elm2VtxConn_ = elm2VtxConn; }
 };
 
+KOKKOS_INLINE_FUNCTION
+Vector2 calcMeshCenter(const int iElm, IntElm2VtxView elm2VtxConn, Vector2View vtxCoords){
+    int numVtx = elm2VtxConn(iElm,0);
+    double sum_x = 0.0, sum_y = 0.0;
+    for(int i=1; i<= numVtx; i++){
+        sum_x += vtxCoords(elm2VtxConn(iElm,i)-1)[0];
+        sum_y += vtxCoords(elm2VtxConn(iElm,i)-1)[1];
+    }
+    return Vector2(sum_x/numVtx, sum_y/numVtx);
 }
+
+}//end namespace polyMpmTest
 
 #endif

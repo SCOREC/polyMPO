@@ -76,7 +76,7 @@ MPM initTestMPM(Mesh& mesh){
     int numVtxs = mesh.getNumVertices();
     int numElms = mesh.getNumElements();
     Vector2View vtxCoords = mesh.getVtxCoords();   
-    IntVtx2ElmView elm2VtxConn = mesh.getElm2VtxConn();
+    auto elm2VtxConn = mesh.getElm2VtxConn();
 
     int numMPs = 0;
     
@@ -177,7 +177,7 @@ MPM initMPMWithRandomMPs(Mesh& mesh, int factor, const int randomSeed){
     int numVtxs = mesh.getNumVertices();
     int numElms = mesh.getNumElements();
     Vector2View vtxCoords = mesh.getVtxCoords();   
-    IntVtx2ElmView elm2VtxConn = mesh.getElm2VtxConn(); 
+    auto elm2VtxConn = mesh.getElm2VtxConn(); 
 
     int numMPs = numElms*factor;
     Vector2View positions("MPpositions", numMPs);
@@ -201,7 +201,8 @@ MPM initMPMWithRandomMPs(Mesh& mesh, int factor, const int randomSeed){
 
     Kokkos::parallel_for("setPositions", numMPs, KOKKOS_LAMBDA(const int iMP){
         auto generator = random_pool.get_state();
-        int ielm = MPToElement(iMP);
+        int iElm = MPToElement(iMP);
+        int numVtx = elm2VtxConn(iElm,0);
         Vector2 XYc = calcElmCenter(iElm,elm2VtxConn,vtxCoords);
 //        if(ielm == 8 || ielm == 2420 || ielm == 4880 || ielm == 5286)
 //            printf("%f %f 0.0\n", XYc[0], XYc[1]);
@@ -218,10 +219,10 @@ MPM initMPMWithRandomMPs(Mesh& mesh, int factor, const int randomSeed){
             weights[1] = rws[1]-rws[0];
             weights[2] = 1-rws[1];
         }
-        auto v1 = vtxCoords(elm2VtxConn(ielm,triID+1)-1);
-        auto v2 = vtxCoords(elm2VtxConn(ielm,(triID+1)%numVtx+1)-1);
+        auto v1 = vtxCoords(elm2VtxConn(iElm,triID+1)-1);
+        auto v2 = vtxCoords(elm2VtxConn(iElm,(triID+1)%numVtx+1)-1);
         positions(iMP) = XYc*weights[0]+v1*weights[1]+v2*weights[2];
-        MPs2Elm(iMP) = ielm;
+        MPs2Elm(iMP) = iElm;
         isActive(iMP) = true;
     });    
 
@@ -307,7 +308,7 @@ Vector2View initT2LTest1(MPM mpm, double percent1, double percent2, double perce
     auto MPs2Elm = mpm.getMPs2Elm();
     auto elm2ElmConn = mesh.getElm2ElmConn();
     auto isActive = MPs.isActive();
-    IntVtx2ElmView elm2VtxConn = mesh.getElm2VtxConn();
+    auto elm2VtxConn = mesh.getElm2VtxConn();
     percent2 += percent1;
     percent3 += percent2;
     percent4 += percent3;
@@ -331,15 +332,43 @@ Vector2View initT2LTest1(MPM mpm, double percent1, double percent2, double perce
         }
         int initElm = MPs2Elm(iMP);
         int iElm = initElm;
-        //Vector2 currentCenter = calcElmCenter(iElm,elm2VtxConn,vtxCoords);
+        Vector2 currentCenter = calcElmCenter(iElm,elm2VtxConn,vtxCoords);
         int numEdge = elm2ElmConn(iElm, 0);
+        int numVtx = elm2VtxConn(iElm,0);
+    // calc the center line:
+        int nextEdge = 0;
+        int nextElm = 0;
+        Vector2 MP = MPsPosition(iMP);
+        Vector2 dx = currentCenter - MP;
+        int v[maxVtxsPerElm];
+            for(int i=0; i< numVtx; i++)
+                v[i] = elm2VtxConn(iElm,i+1)-1;
+        Vector2 e[maxVtxsPerElm];
+        double pdx[maxVtxsPerElm];                    
+        for(int i=0; i< numVtx; i++){
+            Vector2 v_i = vtxCoords(v[i]);
+            Vector2 v_ip1 = vtxCoords(v[(i+1)%numVtx]);
+            e[i] = v_ip1 - v_i;
+            pdx[i] = (v_i - MP).cross(dx);
+        }
+        for(int i=0; i<numVtx; i++){
+            int ip1 = (i+1)%numVtx;
+            if(pdx[i]*pdx[ip1] <0 && e[i].cross(currentCenter-vtxCoords(v[i]))<0){
+            //iElm = elm2ElmConn(iElm,i+1);
+            nextElm = elm2ElmConn(iElm,i+1);
+            for(int i=1; i<=numEdge; i++){
+                if(elm2ElmConn(iElm, i) == initElm){
+                    nextEdge = i;
+                    break;
+                }
+            }
+            //goToNeighbour = true;
+            }
+        }
+    //
         int initDirection = generator.urand(0,numEdge)+1;//(0:numEdge)+1
-        int revDirection = (initDirection + numEdge/2)%numEdge;
-        if(revDirection == 0)
-            revDirection = numEdge;
-        int nextEdge = initDirection;//(0:numEdge)+1
-        int nextElm = elm2ElmConn(iElm,nextEdge);
-        bool goOut = false;
+        //int revDirection = (initDirection + numEdge/2)%numEdge;
+        //bool goOut = false;
         //bool goRev = false;
         //double printfx[2] = {563196,563197};
         for(int iAcross = 0; iAcross< numAcross; iAcross++){
@@ -410,7 +439,7 @@ Vector2View initT2LTest1(MPM mpm, double percent1, double percent2, double perce
         //printf("nextElm= %d, nextEdge= %d, nextElmFromNextEdge= %d\n",nextElm, nextEdge, elm2ElmConn(iElm,nextEdge));
         double rws[2] = {generator.drand(0.0,1.0), generator.drand(0.0,1.0)};
         random_pool.free_state(generator);
-        double weights[3];
+        //double weights[3];
         //if (rws[0]> rws[1]){
         //    weights[0] = rws[1];
         //    weights[1] = rws[0]-rws[1];
@@ -425,7 +454,7 @@ Vector2View initT2LTest1(MPM mpm, double percent1, double percent2, double perce
         //Vector2 targetPosition = XYc*weights[0]+v1*weights[1]+v2*weights[2];
         Vector2 targetPosition = XYc;
         //go out nextElm <0;
-        if(goOut){
+        /*if(goOut){
             //find the two vertex then -y, x
             if(nextEdge == elm2VtxConn(iElm,0)){
                 v1 = vtxCoords(elm2VtxConn(iElm, nextEdge)-1);
@@ -437,7 +466,7 @@ Vector2View initT2LTest1(MPM mpm, double percent1, double percent2, double perce
             Vector2 diff = v1-v2;
             targetPosition = targetPosition + Vector2(diff[1], -diff[0]);
             //targetPosition = targetPosition*1.1;
-        }     
+        }*/     
         //if(MPPosition[0] <printfx[1] && MPPosition[0] > printfx[0]){
         //    printf("%d: initElm: %d, iElm: %d, v1= (%f,%f), v2= (%f,%f)\n",goOut,initElm,iElm,v1[0],v1[1],v2[0],v2[1]);
         //}
@@ -504,6 +533,7 @@ Vector2View initT2LTest2(MPM mpm, const int MPAcross, const int randomSeed){
                 nextEdge = numElm;
             nextElm = elm2ElmConn(iElm,nextEdge);
         }
+        int numVtx = elm2VtxConn(iElm,0);
         Vector2 XYc = calcElmCenter(iElm, elm2VtxConn, vtxCoords);
         int triID = generator.urand(0,numVtx);
         double rws[2] = {generator.drand(0.0,1.0), generator.drand(0.0,1.0)};

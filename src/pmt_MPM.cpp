@@ -115,7 +115,7 @@ void MPM::T2LTracking(Vector2View dx, const int printVTP){
         IntView::HostMirror h_countNum = Kokkos::create_mirror_view(countNum); 
         Kokkos::deep_copy(h_countNum, countNum);
         Kokkos::fence();
-        const int totalNumMPs = numMPs;
+        //const int totalNumMPs = numMPs;
         for(int iCountNum = 0; iCountNum <= maxNum; iCountNum++){
             numMPs = h_countNum(iCountNum);
             printf("%d-%d:%d\n",iCountNum,printVTP,numMPs); 

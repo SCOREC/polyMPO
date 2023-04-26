@@ -6,6 +6,7 @@
 
 int main(int argc, char* argv[] ) {
     PMT_ALWAYS_ASSERT(argc == 2);
+    MPI_Init(&argc, &argv);
     Kokkos::initialize(argc,argv);
     int factor = atoi(argv[1]);
     printf("Time assembly and wachspress with factor: %d\n",factor);

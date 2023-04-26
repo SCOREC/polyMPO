@@ -4,8 +4,9 @@
 
 #include "testUtils.hpp"
 
-int main() {
-    Kokkos::initialize();
+int main(int argc, char** argv) {
+    MPI_Init(&argc, &argv);
+    Kokkos::initialize(argc, argv);
 
     
     //test init Test Mesh and run assembly and Wachspress

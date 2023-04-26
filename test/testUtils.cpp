@@ -332,13 +332,14 @@ Vector2View initT2LTest1(MPM mpm, double percent1, double percent2, double perce
         double iRange = generator.drand(1);
         int numAcross = 0;
         if(iRange < percent1){
-            numAcross = 0;
         }else if(iRange < percent2){
             numAcross = 1;
         }else if(iRange < percent3){
             numAcross = 2;
-        }else{
+        }else if(iRange < percent4){
             numAcross = 3;
+        }else{
+            numAcross = 4;
         }
         int initElm = MPs2Elm(iMP);
         int iElm = initElm;
@@ -350,7 +351,7 @@ Vector2View initT2LTest1(MPM mpm, double percent1, double percent2, double perce
         int nextEdge = initDirection;//(0:numElm)+1
         int nextElm = elm2ElmConn(iElm,nextEdge);
         bool goOut = false;
-        bool goRev = false;
+        //bool goRev = false;
         //double printfx[2] = {563196,563197};
         for(int iAcross = 0; iAcross< numAcross; iAcross++){
             //if(MPPosition[0] <printfx[1] && MPPosition[0] > printfx[0]){
@@ -359,7 +360,7 @@ Vector2View initT2LTest1(MPM mpm, double percent1, double percent2, double perce
             //if(MPPosition[0] <-629065 && MPPosition[0] >-629066){
             //    printf("%d:nextEdge: %d, nextElm: %d\n",iMP,nextEdge,nextElm);
             //}
-            if(nextElm < 0){
+            /*if(nextElm < 0){
                 if(!goRev){
                     goRev = true;
                     nextEdge = revDirection;
@@ -375,6 +376,19 @@ Vector2View initT2LTest1(MPM mpm, double percent1, double percent2, double perce
                     //printf("go out\n");
                     break;
                 }
+            }*/
+            if(nextElm < 0){//reInit to a new direction
+                iElm = initElm;
+                numElm = elm2ElmConn(iElm, 0);
+                if(initDirection == numElm){
+                    initDirection = 1;
+                }else{
+                    initDirection += 1;
+                }
+                nextEdge = initDirection;
+                nextElm = elm2ElmConn(iElm,nextEdge);
+                iAcross = -1;
+                continue;
             }
             int oldElm = iElm;
             iElm = nextElm;
@@ -408,19 +422,21 @@ Vector2View initT2LTest1(MPM mpm, double percent1, double percent2, double perce
             sum_y += vtxCoords(elm2VtxConn(iElm,i)-1)[1];
         }
         Vector2 XYc = Vector2(sum_x/numVtx, sum_y/numVtx);
-        int triID = generator.urand(0,numVtx);
+        //int triID = generator.urand(0,numVtx);
+        int triID = nextEdge-1;
+        //printf("nextElm= %d, nextEdge= %d, nextElmFromNextEdge= %d\n",nextElm, nextEdge, elm2ElmConn(iElm,nextEdge));
         double rws[2] = {generator.drand(0.0,1.0), generator.drand(0.0,1.0)};
         random_pool.free_state(generator);
         double weights[3];
-        if (rws[0]> rws[1]){
-            weights[0] = rws[1];
-            weights[1] = rws[0]-rws[1];
-            weights[2] = 1-rws[0];
-        }else{
-            weights[0] = rws[0];
-            weights[1] = rws[1]-rws[0];
-            weights[2] = 1-rws[1];
-        }
+        //if (rws[0]> rws[1]){
+        //    weights[0] = rws[1];
+        //    weights[1] = rws[0]-rws[1];
+        //    weights[2] = 1-rws[0];
+        //}else{
+        //    weights[0] = rws[0];
+        //    weights[1] = rws[1]-rws[0];
+        //    weights[2] = 1-rws[1];
+        //}
         auto v1 = vtxCoords(elm2VtxConn(iElm,triID+1)-1);
         auto v2 = vtxCoords(elm2VtxConn(iElm,(triID+1)%numVtx+1)-1);
         //Vector2 targetPosition = XYc*weights[0]+v1*weights[1]+v2*weights[2];

@@ -26,7 +26,7 @@ class MaterialPoints {
     PS* MPs;
 
   public:
-    MaterialPoints(){};
+    MaterialPoints() : MPs(nullptr) {};
     MaterialPoints(int numElms, int numMPs, Vector2View positions, BoolView isActive):
                     numElms_(numElms), numMPs_(numMPs), positions_(positions), isActive_(isActive){
       PS::kkLidView ppe("particlesPerElement", numElms_);
@@ -35,7 +35,8 @@ class MaterialPoints {
       MPs = new DPS<MaterialPointTypes>(policy, numElms_, numMPs_, ppe, elmGids);
     };
     ~MaterialPoints() {
-      delete MPs;
+      if(MPs != nullptr)
+        delete MPs;
     }
 
     int getCount() { return numMPs_; }

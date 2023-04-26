@@ -19,8 +19,6 @@ typedef ps::ParticleStructure<MaterialPointTypes> PS;
 
 class MaterialPoints {
   private:
-    int numElms_;
-    int numMPs_;
     Vector2View positions_;
     BoolView isActive_;
     PS* MPs;
@@ -28,18 +26,24 @@ class MaterialPoints {
   public:
     MaterialPoints() : MPs(nullptr) {};
     MaterialPoints(int numElms, int numMPs, Vector2View positions, BoolView isActive):
-                    numElms_(numElms), numMPs_(numMPs), positions_(positions), isActive_(isActive){
-      PS::kkLidView ppe("particlesPerElement", numElms_);
-      PS::kkGidView elmGids("elementGlobalIds", numElms_);
-      Kokkos::TeamPolicy<Kokkos::DefaultExecutionSpace> policy(numElms_,32);
-      MPs = new DPS<MaterialPointTypes>(policy, numElms_, numMPs_, ppe, elmGids);
+                    positions_(positions), isActive_(isActive){
+      PS::kkLidView ppe("particlesPerElement", numElms);
+      PS::kkGidView elmGids("elementGlobalIds", numElms);
+      Kokkos::TeamPolicy<Kokkos::DefaultExecutionSpace> policy(numElms,32);
+      MPs = new DPS<MaterialPointTypes>(policy, numElms, numMPs, ppe, elmGids);
     };
     ~MaterialPoints() {
       if(MPs != nullptr)
         delete MPs;
     }
-
-    int getCount() { return numMPs_; }
+    void rebuild(IntView materialPoints2Elm) {
+      assert(materialPoints2Elm.size() == MPs->nPtcls());
+      if( materialPoints2Elm.size() < static_cast<size_t>(MPs->capacity()) ) {
+        Kokkos::resize(Kokkos::WithoutInitializing, materialPoints2Elm, MPs->capacity());
+      }
+      MPs->rebuild(materialPoints2Elm);
+    }
+    int getCount() { return MPs->nPtcls(); }
     Vector2View getPositions() { return positions_; }
     BoolView isActive() { return isActive_; }
 

@@ -18,10 +18,9 @@ class MPM{
   public:
     MaterialPoints* MPs;
     MPM(Mesh& mesh, MaterialPoints* inMPs, IntView elm2MPs, IntView MPs2Elm):
-        mesh_(mesh),
-        MPs(inMPs),
-        elm2MaterialPoints_(elm2MPs),
-        materialPoints2Elm_(MPs2Elm){};
+        mesh_(mesh), MPs(inMPs), elm2MaterialPoints_(elm2MPs), materialPoints2Elm_(MPs2Elm) {
+      MPs->rebuild(materialPoints2Elm_);
+    };
     ~MPM() {
       delete MPs;
     }

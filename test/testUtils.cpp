@@ -339,10 +339,10 @@ Vector2View initT2LTest1(MPM mpm, double percent1, double percent2, double perce
         int nextEdge = 0;
         int nextElm = 0;
         Vector2 MP = MPsPosition(iMP);
-        Vector2 dx = currentCenter - MP;
+        Vector2 dx = (currentCenter - MP)*100000;//arbitrary size only get the direction
         int v[maxVtxsPerElm];
-            for(int i=0; i< numVtx; i++)
-                v[i] = elm2VtxConn(iElm,i+1)-1;
+        for(int i=0; i< numVtx; i++)
+            v[i] = elm2VtxConn(iElm,i+1)-1;
         Vector2 e[maxVtxsPerElm];
         double pdx[maxVtxsPerElm];                    
         for(int i=0; i< numVtx; i++){
@@ -353,20 +353,23 @@ Vector2View initT2LTest1(MPM mpm, double percent1, double percent2, double perce
         }
         for(int i=0; i<numVtx; i++){
             int ip1 = (i+1)%numVtx;
-            if(pdx[i]*pdx[ip1] <0 && e[i].cross(currentCenter-vtxCoords(v[i]))<0){
+        //printf("%d,%d (%f,%f)\n",nextElm,nextEdge,dx[0],dx[1]);
+            if(pdx[i]*pdx[ip1] <0){
             //iElm = elm2ElmConn(iElm,i+1);
-            nextElm = elm2ElmConn(iElm,i+1);
-            for(int i=1; i<=numEdge; i++){
-                if(elm2ElmConn(iElm, i) == initElm){
-                    nextEdge = i;
-                    break;
+                nextElm = elm2ElmConn(iElm,i+1);
+                for(int j=1; j<=numEdge; j++){
+                    if(elm2ElmConn(iElm, j) == initElm){
+                        nextEdge = j;
+                        break;
+                    }
                 }
-            }
             //goToNeighbour = true;
+            break;
             }
         }
     //
-        int initDirection = generator.urand(0,numEdge)+1;//(0:numEdge)+1
+        //int initDirection = generator.urand(0,numEdge)+1;//(0:numEdge)+1
+        int initDirection =  nextEdge;
         //int revDirection = (initDirection + numEdge/2)%numEdge;
         //bool goOut = false;
         //bool goRev = false;

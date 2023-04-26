@@ -111,15 +111,9 @@ MPM initTestMPM(Mesh& mesh){
     BoolView isActive("MPstatus",numMPs);
      
     Kokkos::parallel_for("intializeMPsPosition", numMPs, KOKKOS_LAMBDA(const int iMP){
-        int ielm = MPToElement(iMP);
-        int numVtx = elm2VtxConn(ielm,0);
-        double sum_x = 0.0, sum_y = 0.0;
-        for(int i=1; i<= numVtx; i++){
-            sum_x += vtxCoords(elm2VtxConn(ielm,i)-1)[0];
-            sum_y += vtxCoords(elm2VtxConn(ielm,i)-1)[1];
-        }
-        positions(iMP) = Vector2(sum_x/numVtx, sum_y/numVtx);
-        MPs2Elm(iMP) = ielm;
+        int iElm = MPToElement(iMP);
+        positions(iMP) = calcElmCenter(iElm,elm2VtxConn,vtxCoords);
+        MPs2Elm(iMP) = iElm;
         isActive(iMP) = true;
     });
     
@@ -208,13 +202,7 @@ MPM initMPMWithRandomMPs(Mesh& mesh, int factor, const int randomSeed){
     Kokkos::parallel_for("setPositions", numMPs, KOKKOS_LAMBDA(const int iMP){
         auto generator = random_pool.get_state();
         int ielm = MPToElement(iMP);
-        int numVtx = elm2VtxConn(ielm,0);
-        double sum_x = 0.0, sum_y = 0.0;
-        for(int i=1; i<= numVtx; i++){
-            sum_x += vtxCoords(elm2VtxConn(ielm,i)-1)[0];
-            sum_y += vtxCoords(elm2VtxConn(ielm,i)-1)[1];
-        }
-        Vector2 XYc = Vector2(sum_x/numVtx, sum_y/numVtx);
+        Vector2 XYc = calcElmCenter(iElm,elm2VtxConn,vtxCoords);
 //        if(ielm == 8 || ielm == 2420 || ielm == 4880 || ielm == 5286)
 //            printf("%f %f 0.0\n", XYc[0], XYc[1]);
         int triID = generator.urand(0,numVtx);
@@ -343,12 +331,13 @@ Vector2View initT2LTest1(MPM mpm, double percent1, double percent2, double perce
         }
         int initElm = MPs2Elm(iMP);
         int iElm = initElm;
-        int numElm = elm2ElmConn(iElm, 0);
-        int initDirection = generator.urand(0,numElm)+1;//(0:numElm)+1
-        int revDirection = (initDirection + numElm/2)%numElm;
+        //Vector2 currentCenter = calcElmCenter(iElm,elm2VtxConn,vtxCoords);
+        int numEdge = elm2ElmConn(iElm, 0);
+        int initDirection = generator.urand(0,numEdge)+1;//(0:numEdge)+1
+        int revDirection = (initDirection + numEdge/2)%numEdge;
         if(revDirection == 0)
-            revDirection = numElm;
-        int nextEdge = initDirection;//(0:numElm)+1
+            revDirection = numEdge;
+        int nextEdge = initDirection;//(0:numEdge)+1
         int nextElm = elm2ElmConn(iElm,nextEdge);
         bool goOut = false;
         //bool goRev = false;
@@ -379,8 +368,8 @@ Vector2View initT2LTest1(MPM mpm, double percent1, double percent2, double perce
             }*/
             if(nextElm < 0){//reInit to a new direction
                 iElm = initElm;
-                numElm = elm2ElmConn(iElm, 0);
-                if(initDirection == numElm){
+                numEdge = elm2ElmConn(iElm, 0);
+                if(initDirection == numEdge){
                     initDirection = 1;
                 }else{
                     initDirection += 1;
@@ -392,9 +381,9 @@ Vector2View initT2LTest1(MPM mpm, double percent1, double percent2, double perce
             }
             int oldElm = iElm;
             iElm = nextElm;
-            numElm = elm2ElmConn(iElm, 0);
+            numEdge = elm2ElmConn(iElm, 0);
             //update the nextEdge:
-            for(int i=1; i<=numElm; i++){
+            for(int i=1; i<=numEdge; i++){
                 if(elm2ElmConn(iElm, i) == oldElm){
                     nextEdge = i;
                     break;
@@ -403,25 +392,19 @@ Vector2View initT2LTest1(MPM mpm, double percent1, double percent2, double perce
             //if(MPPosition[0] <printfx[1] && MPPosition[0] > printfx[0]){
             //    printf("%d -> ",nextEdge);
             //}
-            nextEdge = (nextEdge + numElm/2)%numElm;
+            nextEdge = (nextEdge + numEdge/2)%numEdge;
             //if(MPPosition[0] <printfx[1] && MPPosition[0] > printfx[0]){
             //    printf("%d\n",nextEdge);
             //}
             if(nextEdge == 0)
-                nextEdge = numElm;
+                nextEdge = numEdge;
             nextElm = elm2ElmConn(iElm,nextEdge);
         }
             //if(MPPosition[0] <printfx[1] && MPPosition[0] > printfx[0]){
             //    printf("i(%d): (%f,%f), initElm: %d, iElm: %d, nextElm: %d\n",numAcross,vtxCoords(elm2VtxConn(iElm,1)-1)[0],vtxCoords(elm2VtxConn(iElm,1)-1)[1],initElm,iElm,nextElm);
             //}
         //normal case nextElm >= 0;
-        int numVtx = elm2VtxConn(iElm,0);
-        double sum_x = 0.0, sum_y = 0.0;
-        for(int i=1; i<= numVtx; i++){
-            sum_x += vtxCoords(elm2VtxConn(iElm,i)-1)[0];
-            sum_y += vtxCoords(elm2VtxConn(iElm,i)-1)[1];
-        }
-        Vector2 XYc = Vector2(sum_x/numVtx, sum_y/numVtx);
+        Vector2 XYc = calcElmCenter(iElm,elm2VtxConn, vtxCoords);
         //int triID = generator.urand(0,numVtx);
         int triID = nextEdge-1;
         //printf("nextElm= %d, nextEdge= %d, nextElmFromNextEdge= %d\n",nextElm, nextEdge, elm2ElmConn(iElm,nextEdge));
@@ -521,13 +504,7 @@ Vector2View initT2LTest2(MPM mpm, const int MPAcross, const int randomSeed){
                 nextEdge = numElm;
             nextElm = elm2ElmConn(iElm,nextEdge);
         }
-        int numVtx = elm2VtxConn(iElm,0);
-        double sum_x = 0.0, sum_y = 0.0;
-        for(int i=1; i<= numVtx; i++){
-            sum_x += vtxCoords(elm2VtxConn(iElm,i)-1)[0];
-            sum_y += vtxCoords(elm2VtxConn(iElm,i)-1)[1];
-        }
-        Vector2 XYc = Vector2(sum_x/numVtx, sum_y/numVtx);
+        Vector2 XYc = calcElmCenter(iElm, elm2VtxConn, vtxCoords);
         int triID = generator.urand(0,numVtx);
         double rws[2] = {generator.drand(0.0,1.0), generator.drand(0.0,1.0)};
         random_pool.free_state(generator);

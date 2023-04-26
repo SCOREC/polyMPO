@@ -51,7 +51,7 @@ class Mesh {
 };
 
 KOKKOS_INLINE_FUNCTION
-Vector2 calcMeshCenter(const int iElm, IntElm2VtxView elm2VtxConn, Vector2View vtxCoords){
+Vector2 calcElmCenter(const int iElm, IntElm2VtxView elm2VtxConn, Vector2View vtxCoords){
     int numVtx = elm2VtxConn(iElm,0);
     double sum_x = 0.0, sum_y = 0.0;
     for(int i=1; i<= numVtx; i++){

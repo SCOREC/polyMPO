@@ -41,6 +41,14 @@ class MaterialPoints {
       }
       MPs->rebuild(materialPoints2Elm);
     }
+    template <int index>
+    auto getData() {
+      return MPs->get<index>();
+    }
+    template <typename FunctorType>
+    void parallel_for(FunctorType kernel) {
+      ps::parallel_for(MPs, kernel);
+    }
     int getCount() { return MPs->nPtcls(); }
     Vector2View getPositions() { return positions_; }
     BoolView isActive() { return isActive_; }

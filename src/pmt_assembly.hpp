@@ -15,18 +15,22 @@ DoubleView assembly(MPMesh& mpMesh){
     auto elm2VtxConn = mesh.getElm2VtxConn();
     auto xp = mpMesh.MPs->getPositions();
     
-    auto MPs2Elm = mpMesh.getMPs2Elm();
     DoubleView vField("vField2",numVtxs);
-    Kokkos::parallel_for("vertex_assem", numMPs, KOKKOS_LAMBDA(const int iMP){
-        int ielm = MPs2Elm(iMP); 
-        int nVtxE = elm2VtxConn(ielm,0);
+    auto MPs = mpMesh.MPs;
+    auto mpPositions = MPs->getData<0>();
+    auto assemble = PS_LAMBDA(const int& e, const int& pid, const int& mask) {
+      if(mask > 0) {
+        int nVtxE = elm2VtxConn(e,0);
         for(int i=0; i<nVtxE; i++){
-            int vID = elm2VtxConn(ielm,i+1)-1;
+            int vID = elm2VtxConn(e,i+1)-1;
             auto vertexLoc = vtxCoords(vID);
-            double distance = xp(iMP)[0];
+            double distance = mpPositions(pid,0);
             Kokkos::atomic_add(&vField(vID),distance);
         }
-    });
+      }
+    };
+    MPs->parallel_for(assemble);
+
    
     return vField;
 }

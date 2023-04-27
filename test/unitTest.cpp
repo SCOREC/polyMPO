@@ -38,14 +38,17 @@ int main(int argc, char** argv) {
 
     //run assembly and test Wachspress
     {
-        auto testMesh = initTestMesh(1);
-        auto mpMesh = initTestMPMesh(testMesh);
+        //auto testMesh = Mesh::readMPASMesh("/path/to/mpas/mesh.nc"); //read from MPAS via netcdf
+        auto testMesh = initTestMesh(1); //creates simple test mesh, '1' is a replication factor
+        auto mpMesh = initTestMPMesh(testMesh); //creates test MPs
         
         auto mesh = mpMesh.getMesh();
         PMT_ALWAYS_ASSERT(mesh.getNumVertices() == 19);
         PMT_ALWAYS_ASSERT(mesh.getNumElements() == 10);
-        
-        polyMpmTest::assembly(mpMesh);
+
+        //run non-physical assembly (mp -to- mesh vertex) kernel
+        auto vtxField = polyMpmTest::assembly(mpMesh); //TODO: check result against known values
+
         interpolateWachspress(mpMesh);              
     }
     Kokkos::finalize();

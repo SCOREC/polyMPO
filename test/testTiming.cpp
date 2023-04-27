@@ -1,4 +1,4 @@
-#include "pmt_MPM.hpp"
+#include "pmt_MPMesh.hpp"
 #include "pmt_assembly.hpp"
 #include "pmt_wachspressBasis.hpp"
 
@@ -12,13 +12,13 @@ int main(int argc, char* argv[] ) {
     printf("Time assembly and wachspress with factor: %d\n",factor);
     {
         auto mesh = initTestMesh(factor);
-        auto mpm = initTestMPM(mesh);
+        auto mpMesh = initTestMPMesh(mesh);
         
-        printf("Total MPs:%d\n",mpm.MPs->getCount());
+        printf("Total MPs:%d\n",mpMesh.MPs->getCount());
         
         for(int i=0; i<5; i++){
-            polyMpmTest::assembly(mpm);
-            interpolateWachspress(mpm);
+            polyMpmTest::assembly(mpMesh);
+            interpolateWachspress(mpMesh);
         }
     } 
     Kokkos::finalize();

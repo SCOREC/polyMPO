@@ -1,4 +1,4 @@
-#include "pmt_MPM.hpp"
+#include "pmt_MPMesh.hpp"
 #include "pmt_wachspressBasis.hpp"
 
 using namespace polyMpmTest;
@@ -19,13 +19,13 @@ Mesh initTestMesh(int factor);
  * \breif Initialize test particles to a given mesh
  * 
  * \details  Init particles at central position of the element
- * with a rand 4-6 duplicate of the particles and link them in an MPM object
+ * with a rand 4-6 duplicate of the particles and link them in an MPMesh object
  * 
  * \param any resonable meshObj
  *
- * \return the MPM object with the meshObj and test MPs
+ * \return the MPMesh object with the meshObj and test MPs
  */
-MPM initTestMPM(Mesh& meshObj);
+MPMesh initTestMPMesh(Mesh& meshObj);
 
 /*
  * \breif Wachspress driver function
@@ -35,4 +35,4 @@ MPM initTestMPM(Mesh& meshObj);
  *
  * \param any resonable mpm to test
  */
-void interpolateWachspress(MPM& mpm);
+void interpolateWachspress(MPMesh& mpMesh);

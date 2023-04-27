@@ -1,4 +1,4 @@
-#include "pmt_MPM.hpp"
+#include "pmt_MPMesh.hpp"
 #include "pmt_wachspressBasis.hpp"
 #include "pmt_assembly.hpp"
 
@@ -16,11 +16,11 @@ int main(int argc, char** argv) {
         auto v = polyMpmTest::Vector2();
         
         auto mesh = initTestMesh(100);
-        auto mpm = initTestMPM(mesh);
+        auto mpMesh = initTestMPMesh(mesh);
         
         //test assembly in assembly.hpp
-        polyMpmTest::assembly(mpm);
-        interpolateWachspress(mpm);
+        polyMpmTest::assembly(mpMesh);
+        interpolateWachspress(mpMesh);
     }
     
     Kokkos::finalize();

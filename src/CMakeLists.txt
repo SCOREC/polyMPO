@@ -2,7 +2,7 @@ set(HEADERS
   pmt_mesh.hpp
   pmt_materialPoints.hpp
   pmt_wachspressBasis.hpp
-  pmt_MPM.hpp
+  pmt_MPMesh.hpp
   pmt_utils.hpp
   pmt_assembly.hpp
 )

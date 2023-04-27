@@ -9,7 +9,7 @@ namespace polyMpmTest{
 
 #define maxMPsPerElm 8
 
-class MPM{
+class MPMesh{
   private:
     Mesh mesh_;
     IntView elm2MaterialPoints_; 
@@ -17,11 +17,11 @@ class MPM{
     
   public:
     MaterialPoints* MPs;
-    MPM(Mesh& mesh, MaterialPoints* inMPs, IntView elm2MPs, IntView MPs2Elm):
+    MPMesh(Mesh& mesh, MaterialPoints* inMPs, IntView elm2MPs, IntView MPs2Elm):
         mesh_(mesh), MPs(inMPs), elm2MaterialPoints_(elm2MPs), materialPoints2Elm_(MPs2Elm) {
       MPs->rebuild(materialPoints2Elm_);
     };
-    ~MPM() {
+    ~MPMesh() {
       delete MPs;
     }
 

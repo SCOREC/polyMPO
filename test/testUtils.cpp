@@ -55,7 +55,7 @@ Mesh initTestMesh(int factor){
 }
 
 
-MPM initTestMPM(Mesh& mesh){
+MPMesh initTestMPMesh(Mesh& mesh){
     int numVtxs = mesh.getNumVertices();
     int numElms = mesh.getNumElements();
     Vector2View vtxCoords = mesh.getVtxCoords();   
@@ -109,20 +109,20 @@ MPM initTestMPM(Mesh& mesh){
     
     auto p = new MaterialPoints(numElms,numMPs,positions,isActive);
 
-    return MPM(mesh,p,elm2MPs,MPs2Elm);
+    return MPMesh(mesh,p,elm2MPs,MPs2Elm);
 }
 
 
-void interpolateWachspress(MPM& mpm){
-    auto mesh = mpm.getMesh();
-    auto MPs2Elm = mpm.getMPs2Elm();
+void interpolateWachspress(MPMesh& mpMesh){
+    auto mesh = mpMesh.getMesh();
+    auto MPs2Elm = mpMesh.getMPs2Elm();
    
     auto vtxCoords = mesh.getVtxCoords();
     auto elm2VtxConn = mesh.getElm2VtxConn();
 
-    auto numMPs = mpm.MPs->getCount();
-    auto MPsPosition = mpm.MPs->getPositions();
-    auto isActive = mpm.MPs->isActive();
+    auto numMPs = mpMesh.MPs->getCount();
+    auto MPsPosition = mpMesh.MPs->getPositions();
+    auto isActive = mpMesh.MPs->isActive();
 
     Kokkos::parallel_for("getBasisAndGradByAreaGblForm",numMPs,KOKKOS_LAMBDA(const int iMP){
         if (isActive(iMP)){

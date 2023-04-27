@@ -1,4 +1,4 @@
-#include "pmt_MPM.hpp"
+#include "pmt_MPMesh.hpp"
 #include "pmt_assembly.hpp"
 #include "testUtils.hpp"
 #include <mpi.h>
@@ -38,15 +38,15 @@ int main(int argc, char** argv) {
 
     //run assembly and test Wachspress
     {
-        auto mesh = initTestMesh(1);
-        auto mpm = initTestMPM(mesh);
+        auto testMesh = initTestMesh(1);
+        auto mpMesh = initTestMPMesh(testMesh);
         
-        auto meshFromMPM = mpm.getMesh();
-        PMT_ALWAYS_ASSERT(meshFromMPM.getNumVertices() == 19);
-        PMT_ALWAYS_ASSERT(meshFromMPM.getNumElements() == 10);
+        auto mesh = mpMesh.getMesh();
+        PMT_ALWAYS_ASSERT(mesh.getNumVertices() == 19);
+        PMT_ALWAYS_ASSERT(mesh.getNumElements() == 10);
         
-        polyMpmTest::assembly(mpm);
-        interpolateWachspress(mpm);              
+        polyMpmTest::assembly(mpMesh);
+        interpolateWachspress(mpMesh);              
     }
     Kokkos::finalize();
 

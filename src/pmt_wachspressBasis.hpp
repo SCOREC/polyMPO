@@ -2,7 +2,7 @@
 #define POLYMPMTEST_WACHSPRESS_BASIS_H
 
 #include "pmt_utils.hpp"
-#include "pmt_MPM.hpp"
+#include "pmt_MPMesh.hpp"
 
 namespace polyMpmTest{
 

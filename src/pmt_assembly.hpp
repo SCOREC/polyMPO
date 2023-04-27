@@ -1,21 +1,21 @@
 #ifndef POLYMPMTEST_ASSEMBLY_H
 #define POLYMPMTEST_ASSEMBLY_H
 
-#include "pmt_MPM.hpp"
+#include "pmt_MPMesh.hpp"
 
 namespace polyMpmTest{
 
-DoubleView assembly(MPM& mpm){
-    auto mesh = mpm.getMesh();
+DoubleView assembly(MPMesh& mpMesh){
+    auto mesh = mpMesh.getMesh();
     int numVtxs = mesh.getNumVertices();
     int numElms = mesh.getNumElements();
-    int numMPs = mpm.MPs->getCount();
+    int numMPs = mpMesh.MPs->getCount();
      
     auto vtxCoords = mesh.getVtxCoords(); 
     auto elm2VtxConn = mesh.getElm2VtxConn();
-    auto xp = mpm.MPs->getPositions();
+    auto xp = mpMesh.MPs->getPositions();
     
-    auto MPs2Elm = mpm.getMPs2Elm();
+    auto MPs2Elm = mpMesh.getMPs2Elm();
     DoubleView vField("vField2",numVtxs);
     Kokkos::parallel_for("vertex_assem", numMPs, KOKKOS_LAMBDA(const int iMP){
         int ielm = MPs2Elm(iMP); 

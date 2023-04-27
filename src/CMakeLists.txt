@@ -8,6 +8,7 @@ set(HEADERS
 )
 
 set(SOURCES
+  pmt_materialPoints.cpp
   pmt_mesh.cpp
   pmt_utils.cpp
 )

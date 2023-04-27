@@ -12,25 +12,23 @@ namespace polyMpmTest{
 
 using particle_structs::DPS;
 using particle_structs::MemberTypes;
-using pumipic::Vector3d;
 
-typedef MemberTypes<Vector3d, int, int> MaterialPointTypes;
+typedef MemberTypes<double[2]> MaterialPointTypes;
 typedef ps::ParticleStructure<MaterialPointTypes> PS;
+
+PS* createDPS(int numElms, int numMPs, Vector2View positions, BoolView isActive);
 
 class MaterialPoints {
   private:
     Vector2View positions_;
-    BoolView isActive_;
+    BoolView isActive_; //FIXME remove this, stored in particle structure
     PS* MPs;
 
   public:
     MaterialPoints() : MPs(nullptr) {};
     MaterialPoints(int numElms, int numMPs, Vector2View positions, BoolView isActive):
                     positions_(positions), isActive_(isActive){
-      PS::kkLidView ppe("particlesPerElement", numElms);
-      PS::kkGidView elmGids("elementGlobalIds", numElms);
-      Kokkos::TeamPolicy<Kokkos::DefaultExecutionSpace> policy(numElms,32);
-      MPs = new DPS<MaterialPointTypes>(policy, numElms, numMPs, ppe, elmGids);
+      MPs = createDPS(numElms, numMPs, positions, isActive);
     };
     ~MaterialPoints() {
       if(MPs != nullptr)

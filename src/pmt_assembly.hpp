@@ -8,11 +8,7 @@ namespace polyMpmTest{
 DoubleView assembly(MPMesh& mpMesh){
     auto mesh = mpMesh.getMesh();
     int numVtxs = mesh.getNumVertices();
-    int numElms = mesh.getNumElements();
-    int numMPs = mpMesh.MPs->getCount();
-     
     auto elm2VtxConn = mesh.getElm2VtxConn();
-    auto xp = mpMesh.MPs->getPositions();
     
     DoubleView vField("vField2",numVtxs);
     auto MPs = mpMesh.MPs;

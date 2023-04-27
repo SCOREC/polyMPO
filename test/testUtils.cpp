@@ -67,10 +67,9 @@ MPMesh initTestMPMesh(Mesh& mesh){
     Kokkos::Random_XorShift64_Pool<> random_pool(randSeed);
     Kokkos::parallel_for("setNumMPPerElement",numElms, KOKKOS_LAMBDA(const int i){
         auto generator = random_pool.get_state();
-        numMPsPerElement(i) = generator.urand(4,7);   
+        numMPsPerElement(i) = generator.urand(4,7); //rand between 4 and 7 - TODO: make input arg
         random_pool.free_state(generator);
     });
-    Kokkos::fence();
 
     Kokkos::parallel_reduce("calcTotalMP",numElms,KOKKOS_LAMBDA(const int&i, int& sum){
         sum += numMPsPerElement(i);

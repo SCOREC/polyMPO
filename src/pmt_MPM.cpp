@@ -115,12 +115,13 @@ void MPM::T2LTracking(Vector2View dx, const int printVTP){
         IntView::HostMirror h_countNum = Kokkos::create_mirror_view(countNum); 
         Kokkos::deep_copy(h_countNum, countNum);
         Kokkos::fence();
-        //const int totalNumMPs = numMPs;
+        const int totalNumMPs = numMPs;
         for(int iCountNum = 0; iCountNum <= maxNum; iCountNum++){
             numMPs = h_countNum(iCountNum);
             printf("%d-%d:%d\n",iCountNum,printVTP,numMPs); 
-/*            char* fileOutput = (char *)malloc(sizeof(char) * 256); 
-            //sprintf(fileOutput, "polyMpmTestVTPOutput_across%d-%d.vtp",iCountNum,printVTP);
+//* printVTP file
+            char* fileOutput = (char *)malloc(sizeof(char) * 256); 
+            sprintf(fileOutput, "polyMpmTestVTPOutput_across%d-%d.vtp",iCountNum,printVTP);
             FILE * pFile = fopen(fileOutput,"w");
             free(fileOutput);   
             fprintf(pFile, "<VTKFile type=\"PolyData\" version=\"1.0\" byte_order=\"LittleEndian\" header_type=\"UInt64\">\n  <PolyData>\n    <Piece NumberOfPoints=\"%d\" NumberOfVerts=\"0\" NumberOfLines=\"%d\" NumberOfStrips=\"0\" NumberOfPolys=\"0\">\n      <Points>\n        <DataArray type=\"Float32\" Name=\"Points\" NumberOfComponents=\"3\" format=\"ascii\">\n",numMPs*4,numMPs*2); 
@@ -140,7 +141,7 @@ void MPM::T2LTracking(Vector2View dx, const int printVTP){
             }
             fprintf(pFile,"        </DataArray>\n      </Lines>\n    </Piece>\n  </PolyData>\n</VTKFile>\n");
             fclose(pFile);
-*/
+//===*/
         }
     }
 }

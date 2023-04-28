@@ -320,162 +320,95 @@ Vector2View initT2LTest1(MPM mpm, double percent1, double percent2, double perce
         Vector2 MPPosition = MPsPosition(iMP);
         double iRange = generator.drand(1);
         int numAcross = 0;
-        if(iRange < percent1){
+        if(iRange < percent1){//maybe add a goto to improve a bit of performance
         }else if(iRange < percent2){
             numAcross = 1;
         }else if(iRange < percent3){
             numAcross = 2;
         }else if(iRange < percent4){
             numAcross = 3;
+        }
+        if(iMP == 10){//debug
+            numAcross = 1;
         }else{
-            numAcross = 4;
+            numAcross = 0;
         }
         int initElm = MPs2Elm(iMP);
         int iElm = initElm;
-        Vector2 currentCenter = calcElmCenter(iElm,elm2VtxConn,vtxCoords);
         int numEdge = elm2ElmConn(iElm, 0);
-        int numVtx = elm2VtxConn(iElm,0);
-    // calc the center line:
-        int nextEdge = 0;
-        int nextElm = 0;
-        Vector2 MP = MPsPosition(iMP);
-        Vector2 dx = (currentCenter - MP)*100000;//arbitrary size only get the direction
-        int v[maxVtxsPerElm];
-        for(int i=0; i< numVtx; i++)
-            v[i] = elm2VtxConn(iElm,i+1)-1;
-        Vector2 e[maxVtxsPerElm];
-        double pdx[maxVtxsPerElm];                    
-        for(int i=0; i< numVtx; i++){
-            Vector2 v_i = vtxCoords(v[i]);
-            Vector2 v_ip1 = vtxCoords(v[(i+1)%numVtx]);
-            e[i] = v_ip1 - v_i;
-            pdx[i] = (v_i - MP).cross(dx);
-        }
-        for(int i=0; i<numVtx; i++){
-            int ip1 = (i+1)%numVtx;
-        //printf("%d,%d (%f,%f)\n",nextElm,nextEdge,dx[0],dx[1]);
-            if(pdx[i]*pdx[ip1] <0){
-            //iElm = elm2ElmConn(iElm,i+1);
-                nextElm = elm2ElmConn(iElm,i+1);
-                for(int j=1; j<=numEdge; j++){
-                    if(elm2ElmConn(iElm, j) == initElm){
-                        nextEdge = j;
-                        break;
-                    }
-                }
-            //goToNeighbour = true;
-            break;
-            }
-        }
-    //
-        //int initDirection = generator.urand(0,numEdge)+1;//(0:numEdge)+1
-        int initDirection =  nextEdge;
-        //int revDirection = (initDirection + numEdge/2)%numEdge;
-        //bool goOut = false;
-        //bool goRev = false;
-        //double printfx[2] = {563196,563197};
+        int initEdge,nextElm;
+        do{
+            initEdge = generator.urand(0,numEdge)+1;
+            nextElm = elm2ElmConn(iElm,initEdge); 
+        }while(nextElm <0);
+        random_pool.free_state(generator);
+        Vector2 targetPosition = MPsPosition(iMP);
+        Vector2 v0 = vtxCoords(elm2VtxConn(initElm,initEdge));
+        Vector2 v1 = vtxCoords(elm2VtxConn(initElm,initEdge%numEdge+1));
+        Vector2 edgeCenter = (v1 + v0)*0.5;
+        Vector2 direction = edgeCenter - targetPosition;
+        direction = direction*(1/direction.magnitude());
         for(int iAcross = 0; iAcross< numAcross; iAcross++){
-            //if(MPPosition[0] <printfx[1] && MPPosition[0] > printfx[0]){
-            //    printf("i(%d): (%f,%f), initElm: %d, iElm: %d, nextElm: %d\n",numAcross,vtxCoords(elm2VtxConn(iElm,1)-1)[0],vtxCoords(elm2VtxConn(iElm,1)-1)[1],initElm,iElm,nextElm);
-            //}
-            //if(MPPosition[0] <-629065 && MPPosition[0] >-629066){
-            //    printf("%d:nextEdge: %d, nextElm: %d\n",iMP,nextEdge,nextElm);
-            //}
-            /*if(nextElm < 0){
-                if(!goRev){
-                    goRev = true;
-                    nextEdge = revDirection;
-                    nextElm = elm2ElmConn(iElm,nextEdge);
-                    if(nextElm < 0){
-                        goOut = true;
-                        break;
-                    }
-                    iAcross = -1;
-                    continue;
-                }else{
-                    goOut = true;
-                    //printf("go out\n");
-                    break;
-                }
-            }*/
             if(nextElm < 0){//reInit to a new direction
                 iElm = initElm;
                 numEdge = elm2ElmConn(iElm, 0);
-                if(initDirection == numEdge){
-                    initDirection = 1;
-                }else{
-                    initDirection += 1;
-                }
-                nextEdge = initDirection;
-                nextElm = elm2ElmConn(iElm,nextEdge);
+                do{
+                    if(initEdge == numEdge){
+                        initEdge = 1;
+                    }else{
+                        initEdge += 1;
+                    }
+                    nextElm = elm2ElmConn(iElm,initEdge); 
+                }while(nextElm <0);
+                targetPosition = MPsPosition(iMP);
+                v0 = vtxCoords(elm2VtxConn(initElm,initEdge));
+                v1 = vtxCoords(elm2VtxConn(initElm,initEdge%numEdge+1));
+                edgeCenter = (v1 + v0)*0.5;
+                direction = edgeCenter - targetPosition;
+                direction = direction*(1/direction.magnitude());
                 iAcross = -1;
                 continue;
             }
-            int oldElm = iElm;
-            iElm = nextElm;
-            numEdge = elm2ElmConn(iElm, 0);
-            //update the nextEdge:
-            for(int i=1; i<=numEdge; i++){
-                if(elm2ElmConn(iElm, i) == oldElm){
-                    nextEdge = i;
-                    break;
+            int numVtx = elm2VtxConn(iElm,0);
+            int v[maxVtxsPerElm];
+            for(int i=0; i< numVtx; i++)
+                v[i] = elm2VtxConn(iElm,i+1)-1;
+            Vector2 e[maxVtxsPerElm];
+            double pdx[maxVtxsPerElm];
+            for(int i=0; i< numVtx; i++){
+                Vector2 v_i = vtxCoords(v[i]);
+                Vector2 v_ip1 = vtxCoords(v[(i+1)%numVtx]);
+                e[i] = v_ip1 - v_i;
+                pdx[i] = (v_i - MPsPosition(iMP)).cross(direction);
+            }
+            
+            // update the nextElm and targetPosition  
+            for(int i=0; i<numVtx; i++){
+                int ip1 = (i+1)%numVtx;
+                if(pdx[i]*pdx[ip1] <0){
+                    if(elm2ElmConn(nextElm,i+1) == iElm){
+                        // we update the target position
+                        // calc the intersection of direction and e[i]
+                        // TODO: move redundant TODO
+                        Vector2 V02TP = targetPosition - vtxCoords(v[i]); 
+                        double cosV0 = e[i].dot(V02TP)/(V02TP.magnitude()*e[i].magnitude());
+                        double cosV1 = e[i].dot(direction)/e[i].magnitude(); //cos of angle at v0/v1
+                        double sinV0 = sqrt(1-cosV0*cosV0);
+                        double sinV1 = sqrt(1-cosV1*cosV1);
+                        Vector2 edgeIntersect = targetPosition + direction * ((vtxCoords(v[i])-targetPosition).magnitude()*(sinV0/sinV1));
+                        targetPosition = edgeIntersect + direction*direction.dot(calcElmCenter(nextElm,elm2VtxConn,vtxCoords)-edgeIntersect);
+                    }
+                    else{
+                        // i will be the next edge to across
+                        iElm = nextElm;
+                        nextElm = elm2ElmConn(nextElm,i+1);
+                    }
                 }
             }
-            //if(MPPosition[0] <printfx[1] && MPPosition[0] > printfx[0]){
-            //    printf("%d -> ",nextEdge);
-            //}
-            nextEdge = (nextEdge + numEdge/2)%numEdge;
-            //if(MPPosition[0] <printfx[1] && MPPosition[0] > printfx[0]){
-            //    printf("%d\n",nextEdge);
-            //}
-            if(nextEdge == 0)
-                nextEdge = numEdge;
-            nextElm = elm2ElmConn(iElm,nextEdge);
         }
-            //if(MPPosition[0] <printfx[1] && MPPosition[0] > printfx[0]){
-            //    printf("i(%d): (%f,%f), initElm: %d, iElm: %d, nextElm: %d\n",numAcross,vtxCoords(elm2VtxConn(iElm,1)-1)[0],vtxCoords(elm2VtxConn(iElm,1)-1)[1],initElm,iElm,nextElm);
-            //}
-        //normal case nextElm >= 0;
-        Vector2 XYc = calcElmCenter(iElm,elm2VtxConn, vtxCoords);
-        //int triID = generator.urand(0,numVtx);
-        int triID = nextEdge-1;
-        //printf("nextElm= %d, nextEdge= %d, nextElmFromNextEdge= %d\n",nextElm, nextEdge, elm2ElmConn(iElm,nextEdge));
-        double rws[2] = {generator.drand(0.0,1.0), generator.drand(0.0,1.0)};
-        random_pool.free_state(generator);
-        //double weights[3];
-        //if (rws[0]> rws[1]){
-        //    weights[0] = rws[1];
-        //    weights[1] = rws[0]-rws[1];
-        //    weights[2] = 1-rws[0];
-        //}else{
-        //    weights[0] = rws[0];
-        //    weights[1] = rws[1]-rws[0];
-        //    weights[2] = 1-rws[1];
-        //}
-        auto v1 = vtxCoords(elm2VtxConn(iElm,triID+1)-1);
-        auto v2 = vtxCoords(elm2VtxConn(iElm,(triID+1)%numVtx+1)-1);
-        //Vector2 targetPosition = XYc*weights[0]+v1*weights[1]+v2*weights[2];
-        Vector2 targetPosition = XYc;
-        //go out nextElm <0;
-        /*if(goOut){
-            //find the two vertex then -y, x
-            if(nextEdge == elm2VtxConn(iElm,0)){
-                v1 = vtxCoords(elm2VtxConn(iElm, nextEdge)-1);
-                v2 = vtxCoords(elm2VtxConn(iElm, 1)-1);
-            }else{
-                v1 = vtxCoords(elm2VtxConn(iElm, nextEdge)-1);
-                v2 = vtxCoords(elm2VtxConn(iElm, nextEdge+1)-1);
-            }
-            Vector2 diff = v1-v2;
-            targetPosition = targetPosition + Vector2(diff[1], -diff[0]);
-            //targetPosition = targetPosition*1.1;
-        }*/     
-        //if(MPPosition[0] <printfx[1] && MPPosition[0] > printfx[0]){
-        //    printf("%d: initElm: %d, iElm: %d, v1= (%f,%f), v2= (%f,%f)\n",goOut,initElm,iElm,v1[0],v1[1],v2[0],v2[1]);
-        //}
         returnDx(iMP) = targetPosition - MPPosition;
-        //if(iMP < 10)
-        //    printf("%d:(%f) = (%f,%f)-(%f,%f)\n", iMP, returnDx(iMP).magnitude(), targetPosition[1], targetPosition[1], MPPosition[0], MPPosition[1]);
+        if(iMP <20)
+            printf("%f\n",returnDx(iMP).magnitude());
     }}); 
     return returnDx;
 }

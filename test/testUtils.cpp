@@ -328,11 +328,6 @@ Vector2View initT2LTest1(MPM mpm, double percent1, double percent2, double perce
         }else if(iRange < percent4){
             numAcross = 3;
         }
-        if(iMP == 10){//debug
-            numAcross = 1;
-        }else{
-            numAcross = 0;
-        }
         int initElm = MPs2Elm(iMP);
         int iElm = initElm;
         int numEdge = elm2ElmConn(iElm, 0);
@@ -343,8 +338,8 @@ Vector2View initT2LTest1(MPM mpm, double percent1, double percent2, double perce
         }while(nextElm <0);
         random_pool.free_state(generator);
         Vector2 targetPosition = MPsPosition(iMP);
-        Vector2 v0 = vtxCoords(elm2VtxConn(initElm,initEdge));
-        Vector2 v1 = vtxCoords(elm2VtxConn(initElm,initEdge%numEdge+1));
+        Vector2 v0 = vtxCoords(elm2VtxConn(initElm,initEdge)-1);
+        Vector2 v1 = vtxCoords(elm2VtxConn(initElm,initEdge%numEdge+1)-1);
         Vector2 edgeCenter = (v1 + v0)*0.5;
         Vector2 direction = edgeCenter - targetPosition;
         direction = direction*(1/direction.magnitude());
@@ -361,8 +356,8 @@ Vector2View initT2LTest1(MPM mpm, double percent1, double percent2, double perce
                     nextElm = elm2ElmConn(iElm,initEdge); 
                 }while(nextElm <0);
                 targetPosition = MPsPosition(iMP);
-                v0 = vtxCoords(elm2VtxConn(initElm,initEdge));
-                v1 = vtxCoords(elm2VtxConn(initElm,initEdge%numEdge+1));
+                v0 = vtxCoords(elm2VtxConn(initElm,initEdge)-1);
+                v1 = vtxCoords(elm2VtxConn(initElm,initEdge%numEdge+1)-1);
                 edgeCenter = (v1 + v0)*0.5;
                 direction = edgeCenter - targetPosition;
                 direction = direction*(1/direction.magnitude());
@@ -390,8 +385,8 @@ Vector2View initT2LTest1(MPM mpm, double percent1, double percent2, double perce
                         // we update the target position
                         // calc the intersection of direction and e[i]
                         // TODO: move redundant TODO
-                        Vector2 V02TP = targetPosition - vtxCoords(v[i]); 
-                        double cosV0 = e[i].dot(V02TP)/(V02TP.magnitude()*e[i].magnitude());
+                        Vector2 V0TP = targetPosition - vtxCoords(v[i]); 
+                        double cosV0 = e[i].dot(V0TP)/(V0TP.magnitude()*e[i].magnitude());
                         double cosV1 = e[i].dot(direction)/e[i].magnitude(); //cos of angle at v0/v1
                         double sinV0 = sqrt(1-cosV0*cosV0);
                         double sinV1 = sqrt(1-cosV1*cosV1);
@@ -407,8 +402,6 @@ Vector2View initT2LTest1(MPM mpm, double percent1, double percent2, double perce
             }
         }
         returnDx(iMP) = targetPosition - MPPosition;
-        if(iMP <20)
-            printf("%f\n",returnDx(iMP).magnitude());
     }}); 
     return returnDx;
 }

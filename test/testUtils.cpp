@@ -314,19 +314,31 @@ Vector2View initT2LTest1(MPM mpm, double percent1, double percent2, double perce
     percent4 += percent3;
     Vector2View returnDx("T2LDeltaX",numMPs);
     Kokkos::Random_XorShift64_Pool<> random_pool(randomSeed);
+    IntView count("counter",5);
+    IntView::HostMirror h_count = Kokkos::create_mirror_view(count);
+    IntView count2("counter2",5);
+    IntView::HostMirror h_count2 = Kokkos::create_mirror_view(count2);
+    IntView count3("counter3",numMPs);
+    IntView::HostMirror h_count3 = Kokkos::create_mirror_view(count3);
+    IntView countMax("counterMax",1);
+    IntView::HostMirror h_countMax = Kokkos::create_mirror_view(countMax);
     Kokkos::parallel_for("setNumMPPerElement", numMPs, KOKKOS_LAMBDA(const int iMP){
     if(isActive(iMP)){
         auto generator = random_pool.get_state();
-        Vector2 MPPosition = MPsPosition(iMP);
         double iRange = generator.drand(1);
         int numAcross = 0;
         if(iRange < percent1){//maybe add a goto to improve a bit of performance
+            numAcross = 0;
+            Kokkos::atomic_increment(&count2(0));
         }else if(iRange < percent2){
             numAcross = 1;
+            Kokkos::atomic_increment(&count2(1));
         }else if(iRange < percent3){
             numAcross = 2;
+            Kokkos::atomic_increment(&count2(2));
         }else if(iRange < percent4){
             numAcross = 3;
+            Kokkos::atomic_increment(&count2(3));
         }
         int initElm = MPs2Elm(iMP);
         int iElm = initElm;
@@ -335,35 +347,22 @@ Vector2View initT2LTest1(MPM mpm, double percent1, double percent2, double perce
         do{
             initEdge = generator.urand(0,numEdge)+1;
             nextElm = elm2ElmConn(iElm,initEdge); 
-        }while(nextElm <0);
+        }while(nextElm<0);
         random_pool.free_state(generator);
-        Vector2 targetPosition = MPsPosition(iMP);
+        Vector2 targetPosition = calcElmCenter(initElm,elm2VtxConn,vtxCoords);
+        MPsPosition(iMP) = targetPosition;
+        Vector2 MPPosition = MPsPosition(iMP);
         Vector2 v0 = vtxCoords(elm2VtxConn(initElm,initEdge)-1);
         Vector2 v1 = vtxCoords(elm2VtxConn(initElm,initEdge%numEdge+1)-1);
         Vector2 edgeCenter = (v1 + v0)*0.5;
         Vector2 direction = edgeCenter - targetPosition;
         direction = direction*(1/direction.magnitude());
         for(int iAcross = 0; iAcross< numAcross; iAcross++){
-            if(nextElm < 0){//reInit to a new direction
-                iElm = initElm;
-                numEdge = elm2ElmConn(iElm, 0);
-                do{
-                    if(initEdge == numEdge){
-                        initEdge = 1;
-                    }else{
-                        initEdge += 1;
-                    }
-                    nextElm = elm2ElmConn(iElm,initEdge); 
-                }while(nextElm <0);
-                targetPosition = MPsPosition(iMP);
-                v0 = vtxCoords(elm2VtxConn(initElm,initEdge)-1);
-                v1 = vtxCoords(elm2VtxConn(initElm,initEdge%numEdge+1)-1);
-                edgeCenter = (v1 + v0)*0.5;
-                direction = edgeCenter - targetPosition;
-                direction = direction*(1/direction.magnitude());
-                iAcross = -1;
+            if(nextElm <0){
+                Kokkos::atomic_increment(&count(iAcross));
                 continue;
             }
+            count3(iMP) += 1;
             int numVtx = elm2VtxConn(iElm,0);
             int v[maxVtxsPerElm];
             for(int i=0; i< numVtx; i++)
@@ -374,10 +373,11 @@ Vector2View initT2LTest1(MPM mpm, double percent1, double percent2, double perce
                 Vector2 v_i = vtxCoords(v[i]);
                 Vector2 v_ip1 = vtxCoords(v[(i+1)%numVtx]);
                 e[i] = v_ip1 - v_i;
-                pdx[i] = (v_i - MPsPosition(iMP)).cross(direction);
+                pdx[i] = (v_i - targetPosition).cross(direction);
             }
             
             // update the nextElm and targetPosition  
+            int tempForNextElm = -1;
             for(int i=0; i<numVtx; i++){
                 int ip1 = (i+1)%numVtx;
                 if(pdx[i]*pdx[ip1] <0){
@@ -385,24 +385,35 @@ Vector2View initT2LTest1(MPM mpm, double percent1, double percent2, double perce
                         // we update the target position
                         // calc the intersection of direction and e[i]
                         // TODO: move redundant TODO
-                        Vector2 V0TP = targetPosition - vtxCoords(v[i]); 
-                        double cosV0 = e[i].dot(V0TP)/(V0TP.magnitude()*e[i].magnitude());
-                        double cosV1 = e[i].dot(direction)/e[i].magnitude(); //cos of angle at v0/v1
-                        double sinV0 = sqrt(1-cosV0*cosV0);
-                        double sinV1 = sqrt(1-cosV1*cosV1);
-                        Vector2 edgeIntersect = targetPosition + direction * ((vtxCoords(v[i])-targetPosition).magnitude()*(sinV0/sinV1));
+                        Vector2 P2Vi = vtxCoords(v[i])-targetPosition; 
+                        Vector2 edgeIntersect = targetPosition + direction*direction.dot(P2Vi);
                         targetPosition = edgeIntersect + direction*direction.dot(calcElmCenter(nextElm,elm2VtxConn,vtxCoords)-edgeIntersect);
                     }
                     else{
                         // i will be the next edge to across
-                        iElm = nextElm;
-                        nextElm = elm2ElmConn(nextElm,i+1);
+                        tempForNextElm = i+1;
                     }
                 }
             }
+            iElm = nextElm; 
+            if(tempForNextElm == -1)
+                printf("%d: (%f,%f)->(%f,%f)\n",iMP,MPPosition[0],MPPosition[1],targetPosition[0],targetPosition[1]);
+            nextElm = elm2ElmConn(nextElm,tempForNextElm);
+        }
+        if(count3(iMP)<numAcross && iMP < 10000){
+            printf("iMP %d(%d): (%f,%f)->(%f,%f)\n",iMP,numAcross,MPPosition[0],MPPosition[1],targetPosition[0],targetPosition[1]);
+            Kokkos::atomic_increment(&countMax(0));
         }
         returnDx(iMP) = targetPosition - MPPosition;
-    }}); 
+    }});
+    Kokkos::deep_copy(h_count,count) ;
+    Kokkos::deep_copy(h_count2,count2) ;
+    for(int i=0; i<5; i++){
+        printf("%d: %d\n",i,h_count(i));
+    }
+    for(int i=0; i<5; i++){
+        printf("%d: %d\n",i,h_count2(i));
+    }
     return returnDx;
 }
 
@@ -524,3 +535,40 @@ void runT2LWithOneMPAcross(MPM mpm, const int MPAcross, const int loopTimes, con
         mpm.T2LTracking(dx, printVTP<0?-1:i); 
     }
 }
+
+MPM initMPMWithCenterMPs(Mesh& mesh, int factor){
+    int numVtxs = mesh.getNumVertices();
+    int numElms = mesh.getNumElements();
+    Vector2View vtxCoords = mesh.getVtxCoords();   
+    auto elm2VtxConn = mesh.getElm2VtxConn(); 
+
+    int numMPs = numElms*factor;
+    Vector2View positions("MPpositions", numMPs);
+    BoolView isActive("MPstatus",numMPs);
+    IntView elm2MPs("elementToMPs",numElms*(maxMPsPerElm+1));
+    IntView MPs2Elm("MPToElementIDs",numMPs);
+
+    IntView MPToElement("MPToElement",numMPs);
+
+     Kokkos::parallel_scan("setMPsToElement", numElms, KOKKOS_LAMBDA(int i, int& iMP, bool is_final){
+        if(is_final){  
+            elm2MPs(i*(maxMPsPerElm+1)) = factor;
+            for(int j=0; j<factor; j++){
+                MPToElement(iMP+j) = i;
+                elm2MPs(i*(maxMPsPerElm+1)+j+1) = iMP+j;
+            }   
+        }
+        iMP += factor; 
+    },numMPs);
+
+    Kokkos::parallel_for("setPositions", numMPs, KOKKOS_LAMBDA(const int iMP){
+        int iElm = MPToElement(iMP);
+        positions(iMP) = calcElmCenter(iElm,elm2VtxConn,vtxCoords);
+        MPs2Elm(iMP) = iElm;
+        isActive(iMP) = true;
+    });    
+
+    auto p = MaterialPoints(numMPs,positions,isActive);
+    return MPM(mesh,p,elm2MPs,MPs2Elm);
+}
+

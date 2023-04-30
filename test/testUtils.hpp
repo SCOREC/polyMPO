@@ -59,6 +59,11 @@ MPM initMPMWithRandomMPs(Mesh& meshObj, int factor, const int randomSeed = randS
 /*
  * TODO: comments
  */
+MPM initMPMWithCenterMPs(Mesh& meshObj, int factor);
+
+/*
+ * TODO: comments
+ */
 Vector2View initT2LDeltaRankineVortex(MPM mpm, Vector2 center, const int numEdge, const double avgLength, const double Gamma);
 
 /*

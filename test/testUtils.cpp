@@ -309,36 +309,87 @@ Vector2View initT2LTest1(MPM mpm, double percent1, double percent2, double perce
     auto elm2ElmConn = mesh.getElm2ElmConn();
     auto isActive = MPs.isActive();
     auto elm2VtxConn = mesh.getElm2VtxConn();
+    Vector2View returnDx("T2LDeltaX",numMPs);
+    Kokkos::Random_XorShift64_Pool<> random_pool(randomSeed);
+    //Ind = 1 bound; Ind = 2 connect to bound
+    IntView MPBoundInd("MPatBoundaryIndicator",numMPs);
+    IntView ElmBoundInd("MPatBoundaryIndicator",elm2ElmConn.size());
+    IntView countBounds("countBounds",2);
+    IntView::HostMirror h_countBounds = Kokkos::create_mirror_view(countBounds);
+    Kokkos::parallel_for("setBoundary1", numMPs, KOKKOS_LAMBDA(const int iMP){
+    if(isActive(iMP)){
+        int iElm = MPs2Elm(iMP);
+        int numEdge = elm2ElmConn(iElm, 0);
+        for(int i=0; i<numEdge; i++){
+            if(elm2ElmConn(iElm,i+1)<0){
+                MPBoundInd(iMP) = 1;
+                Kokkos::atomic_increment(&countBounds(0));
+                ElmBoundInd(iElm) = 1;
+                break;
+            }
+        }
+    }});
+    Kokkos::fence();
+    Kokkos::parallel_for("setBoundary2", numMPs, KOKKOS_LAMBDA(const int iMP){
+    if(isActive(iMP) && MPBoundInd(iMP)!= 1){
+        int iElm = MPs2Elm(iMP);
+        int numEdge = elm2ElmConn(iElm, 0);
+        for(int i=0; i<numEdge; i++){
+            if(ElmBoundInd(elm2ElmConn(iElm,i+1)) == 1){
+                MPBoundInd(iMP) = 2;
+                Kokkos::atomic_increment(&countBounds(1));
+                ElmBoundInd(iElm) = 2;
+                break;
+            }
+        }
+    }});
+    Kokkos::fence();
+    deep_copy(h_countBounds, countBounds);
+    int leftFreeMPs = numMPs - h_countBounds(0) - h_countBounds(1);
+    printf("MPs: %f,%f,%f,%f\n",numMPs*percent1,numMPs*percent2,numMPs*percent3,numMPs*percent4);
+    percent1 = (numMPs*percent1-h_countBounds(0))/leftFreeMPs;
+    percent2 = (numMPs*percent2-h_countBounds(1))/leftFreeMPs;
+    printf("percent:%f,%f,%f,%f\n",percent1,percent2,percent3,percent4);
+    percent3 = (numMPs*percent3)/leftFreeMPs;
+    percent4 = (numMPs*percent4)/leftFreeMPs;
+    if(percent2<0){
+        percent1 = (numMPs*percent1-h_countBounds(0)-h_countBounds(1))/leftFreeMPs;
+        percent2 = 0;
+    }
     percent2 += percent1;
     percent3 += percent2;
     percent4 += percent3;
-    Vector2View returnDx("T2LDeltaX",numMPs);
-    Kokkos::Random_XorShift64_Pool<> random_pool(randomSeed);
-    IntView count("counter",5);
+    printf("percent:%f,%f,%f,%f\n",percent1,percent2,percent3,percent4);
+    printf("countBounds:%d,%d\n",h_countBounds(0),h_countBounds(1));
+
+    IntView count("count",1);
     IntView::HostMirror h_count = Kokkos::create_mirror_view(count);
-    IntView count2("counter2",5);
-    IntView::HostMirror h_count2 = Kokkos::create_mirror_view(count2);
-    IntView count3("counter3",numMPs);
-    IntView::HostMirror h_count3 = Kokkos::create_mirror_view(count3);
-    IntView countMax("counterMax",1);
-    IntView::HostMirror h_countMax = Kokkos::create_mirror_view(countMax);
     Kokkos::parallel_for("setNumMPPerElement", numMPs, KOKKOS_LAMBDA(const int iMP){
     if(isActive(iMP)){
         auto generator = random_pool.get_state();
-        double iRange = generator.drand(1);
         int numAcross = 0;
-        if(iRange < percent1){//maybe add a goto to improve a bit of performance
+        if(MPBoundInd(iMP) == 1){
             numAcross = 0;
-            Kokkos::atomic_increment(&count2(0));
-        }else if(iRange < percent2){
-            numAcross = 1;
-            Kokkos::atomic_increment(&count2(1));
-        }else if(iRange < percent3){
-            numAcross = 2;
-            Kokkos::atomic_increment(&count2(2));
-        }else if(iRange < percent4){
-            numAcross = 3;
-            Kokkos::atomic_increment(&count2(3));
+        }else if(MPBoundInd(iMP) == 2){
+            if(percent2 > percent1){
+                numAcross = 1;
+                printf("hit");
+            }
+            else{
+                numAcross = 0;
+            }
+        }else{
+            double iRange = generator.drand(percent4);
+            if(iRange < percent1){//maybe add a goto to improve a bit of performance
+                numAcross = 0;
+            }else if(iRange < percent2){
+                numAcross = 1;
+            }else if(iRange < percent3){
+                numAcross = 2;
+                Kokkos::atomic_increment(&count(0));
+            }else if(iRange < percent4){
+                numAcross = 3;
+            }
         }
         int initElm = MPs2Elm(iMP);
         int iElm = initElm;
@@ -359,10 +410,9 @@ Vector2View initT2LTest1(MPM mpm, double percent1, double percent2, double perce
         direction = direction*(1/direction.magnitude());
         for(int iAcross = 0; iAcross< numAcross; iAcross++){
             if(nextElm <0){
-                Kokkos::atomic_increment(&count(iAcross));
-                continue;
+                printf("%d(%d)",MPBoundInd(iMP),numAcross);
+                break;
             }
-            count3(iMP) += 1;
             int numVtx = elm2VtxConn(iElm,0);
             int v[maxVtxsPerElm];
             for(int i=0; i< numVtx; i++)
@@ -400,20 +450,11 @@ Vector2View initT2LTest1(MPM mpm, double percent1, double percent2, double perce
                 printf("%d: (%f,%f)->(%f,%f)\n",iMP,MPPosition[0],MPPosition[1],targetPosition[0],targetPosition[1]);
             nextElm = elm2ElmConn(nextElm,tempForNextElm);
         }
-        if(count3(iMP)<numAcross && iMP < 10000){
-            printf("iMP %d(%d): (%f,%f)->(%f,%f)\n",iMP,numAcross,MPPosition[0],MPPosition[1],targetPosition[0],targetPosition[1]);
-            Kokkos::atomic_increment(&countMax(0));
-        }
+            //printf("iMP %d(%d): (%f,%f)->(%f,%f)\n",iMP,numAcross,MPPosition[0],MPPosition[1],targetPosition[0],targetPosition[1]);
         returnDx(iMP) = targetPosition - MPPosition;
     }});
-    Kokkos::deep_copy(h_count,count) ;
-    Kokkos::deep_copy(h_count2,count2) ;
-    for(int i=0; i<5; i++){
-        printf("%d: %d\n",i,h_count(i));
-    }
-    for(int i=0; i<5; i++){
-        printf("%d: %d\n",i,h_count2(i));
-    }
+    deep_copy(h_count,count);
+    printf("count: %d\n",h_count(0));
     return returnDx;
 }
 

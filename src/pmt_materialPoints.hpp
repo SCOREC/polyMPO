@@ -46,8 +46,8 @@ class MaterialPoints {
       return MPs->get<index>();
     }
     template <typename FunctorType>
-    void parallel_for(FunctorType kernel) {
-      ps::parallel_for(MPs, kernel);
+    void parallel_for(FunctorType kernel, std::string name="") {
+      ps::parallel_for(MPs, kernel, name);
     }
     int getCount() { return MPs->nPtcls(); }
     Vector2View getPositions() { return positions_; }

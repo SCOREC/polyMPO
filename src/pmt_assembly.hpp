@@ -27,7 +27,7 @@ DoubleView assembly(MPMesh& mpMesh){
     //  }
     //}
     };
-    MPs->parallel_for(assemble);
+    MPs->parallel_for(assemble, "assembly");
     return vField;
 }
 

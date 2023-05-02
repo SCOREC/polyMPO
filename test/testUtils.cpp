@@ -141,6 +141,5 @@ void interpolateWachspress(MPMesh& mpMesh){
             }
         }        
     };
-    const auto name = "getBasisAndGradByAreaGblForm";
-    MPs->parallel_for(eval);
+    MPs->parallel_for(eval, "getBasisAndGradByAreaGblForm");
 }

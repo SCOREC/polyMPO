@@ -298,8 +298,8 @@ double calcAvgLengthOfEdge(Mesh mesh, int printOut){
     return sum/count;
 }
 
-Vector2View initT2LTest1(MPM mpm, double percent1, double percent2, double percent3, double percent4, const int randomSeed){
-    PMT_ALWAYS_ASSERT(percent1+percent2+percent3+percent4 <= 1+MPMTEST_EPSILON);
+Vector2View initT2LTest1(MPM mpm, double ratio1, double ratio2, double ratio3, double ratio4, const int randomSeed){
+    PMT_ALWAYS_ASSERT(ratio1+ratio2+ratio3+ratio4 <= 1+MPMTEST_EPSILON);
     auto mesh = mpm.getMesh();
     auto MPs = mpm.getMPs();
     Vector2View vtxCoords = mesh.getVtxCoords();   
@@ -346,24 +346,26 @@ Vector2View initT2LTest1(MPM mpm, double percent1, double percent2, double perce
     Kokkos::fence();
     deep_copy(h_countBounds, countBounds);
     int leftFreeMPs = numMPs - h_countBounds(0) - h_countBounds(1);
-    printf("MPs: %f,%f,%f,%f\n",numMPs*percent1,numMPs*percent2,numMPs*percent3,numMPs*percent4);
-    percent1 = (numMPs*percent1-h_countBounds(0))/leftFreeMPs;
-    percent2 = (numMPs*percent2-h_countBounds(1))/leftFreeMPs;
-    printf("percent:%f,%f,%f,%f\n",percent1,percent2,percent3,percent4);
-    percent3 = (numMPs*percent3)/leftFreeMPs;
-    percent4 = (numMPs*percent4)/leftFreeMPs;
+    double percent1 = (numMPs*ratio1-h_countBounds(0))/leftFreeMPs;
+    double percent2 = (numMPs*ratio2-h_countBounds(1))/leftFreeMPs;
+    double percent3 = (numMPs*ratio3)/leftFreeMPs;
+    double percent4 = (numMPs*ratio4)/leftFreeMPs;
+    double percentForPartOf2 = 1.0;
     if(percent2<0){
-        percent1 = (numMPs*percent1-h_countBounds(0)-h_countBounds(1))/leftFreeMPs;
-        percent2 = 0;
+        if(ratio2 == 0.0){
+            percent1 = (numMPs*ratio1-h_countBounds(0)-h_countBounds(1))/leftFreeMPs;
+            percent2 = 0;
+            percentForPartOf2 = 0.0;
+        }else{
+            percent1 = (numMPs*ratio1-h_countBounds(0)-h_countBounds(1)+numMPs*ratio2)/leftFreeMPs;
+            percent2 = 0;
+            percentForPartOf2 = numMPs*ratio2/h_countBounds(1);
+        }
     }
     percent2 += percent1;
     percent3 += percent2;
     percent4 += percent3;
     printf("percent:%f,%f,%f,%f\n",percent1,percent2,percent3,percent4);
-    printf("countBounds:%d,%d\n",h_countBounds(0),h_countBounds(1));
-
-    IntView count("count",1);
-    IntView::HostMirror h_count = Kokkos::create_mirror_view(count);
     Kokkos::parallel_for("setNumMPPerElement", numMPs, KOKKOS_LAMBDA(const int iMP){
     if(isActive(iMP)){
         auto generator = random_pool.get_state();
@@ -371,11 +373,10 @@ Vector2View initT2LTest1(MPM mpm, double percent1, double percent2, double perce
         if(MPBoundInd(iMP) == 1){
             numAcross = 0;
         }else if(MPBoundInd(iMP) == 2){
-            if(percent2 > percent1){
+            double range2 = generator.drand(1);
+            if(range2 < percentForPartOf2){
                 numAcross = 1;
-                printf("hit");
-            }
-            else{
+            }else{
                 numAcross = 0;
             }
         }else{
@@ -386,7 +387,6 @@ Vector2View initT2LTest1(MPM mpm, double percent1, double percent2, double perce
                 numAcross = 1;
             }else if(iRange < percent3){
                 numAcross = 2;
-                Kokkos::atomic_increment(&count(0));
             }else if(iRange < percent4){
                 numAcross = 3;
             }
@@ -410,13 +410,12 @@ Vector2View initT2LTest1(MPM mpm, double percent1, double percent2, double perce
         direction = direction*(1/direction.magnitude());
         for(int iAcross = 0; iAcross< numAcross; iAcross++){
             if(nextElm <0){
-                printf("%d(%d)",MPBoundInd(iMP),numAcross);
                 break;
             }
-            int numVtx = elm2VtxConn(iElm,0);
+            int numVtx = elm2VtxConn(nextElm,0);
             int v[maxVtxsPerElm];
             for(int i=0; i< numVtx; i++)
-                v[i] = elm2VtxConn(iElm,i+1)-1;
+                v[i] = elm2VtxConn(nextElm,i+1)-1;
             Vector2 e[maxVtxsPerElm];
             double pdx[maxVtxsPerElm];
             for(int i=0; i< numVtx; i++){
@@ -427,34 +426,26 @@ Vector2View initT2LTest1(MPM mpm, double percent1, double percent2, double perce
             }
             
             // update the nextElm and targetPosition  
-            int tempForNextElm = -1;
+            int tempForNextElm = initEdge;
             for(int i=0; i<numVtx; i++){
                 int ip1 = (i+1)%numVtx;
                 if(pdx[i]*pdx[ip1] <0){
                     if(elm2ElmConn(nextElm,i+1) == iElm){
-                        // we update the target position
-                        // calc the intersection of direction and e[i]
-                        // TODO: move redundant TODO
                         Vector2 P2Vi = vtxCoords(v[i])-targetPosition; 
                         Vector2 edgeIntersect = targetPosition + direction*direction.dot(P2Vi);
                         targetPosition = edgeIntersect + direction*direction.dot(calcElmCenter(nextElm,elm2VtxConn,vtxCoords)-edgeIntersect);
                     }
                     else{
-                        // i will be the next edge to across
+                        // i+1 will be the next edge to across
                         tempForNextElm = i+1;
                     }
                 }
             }
             iElm = nextElm; 
-            if(tempForNextElm == -1)
-                printf("%d: (%f,%f)->(%f,%f)\n",iMP,MPPosition[0],MPPosition[1],targetPosition[0],targetPosition[1]);
             nextElm = elm2ElmConn(nextElm,tempForNextElm);
         }
-            //printf("iMP %d(%d): (%f,%f)->(%f,%f)\n",iMP,numAcross,MPPosition[0],MPPosition[1],targetPosition[0],targetPosition[1]);
         returnDx(iMP) = targetPosition - MPPosition;
     }});
-    deep_copy(h_count,count);
-    printf("count: %d\n",h_count(0));
     return returnDx;
 }
 

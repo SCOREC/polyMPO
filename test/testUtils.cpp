@@ -365,7 +365,6 @@ Vector2View initT2LTest1(MPM mpm, double ratio1, double ratio2, double ratio3, d
     percent2 += percent1;
     percent3 += percent2;
     percent4 += percent3;
-    printf("percent:%f,%f,%f,%f\n",percent1,percent2,percent3,percent4);
     Kokkos::parallel_for("setNumMPPerElement", numMPs, KOKKOS_LAMBDA(const int iMP){
     if(isActive(iMP)){
         auto generator = random_pool.get_state();

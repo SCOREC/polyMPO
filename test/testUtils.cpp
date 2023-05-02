@@ -114,29 +114,24 @@ MPMesh initTestMPMesh(Mesh& mesh){
 
 void interpolateWachspress(MPMesh& mpMesh){
     auto mesh = mpMesh.getMesh();
-    auto MPs2Elm = mpMesh.getMPs2Elm();
-   
     auto vtxCoords = mesh.getVtxCoords();
     auto elm2VtxConn = mesh.getElm2VtxConn();
 
-    auto numMPs = mpMesh.MPs->getCount();
-    auto MPsPosition = mpMesh.MPs->getPositions();
-    auto isActive = mpMesh.MPs->isActive();
-
-    Kokkos::parallel_for("getBasisAndGradByAreaGblForm",numMPs,KOKKOS_LAMBDA(const int iMP){
-        if (isActive(iMP)){
-            int iElm = MPs2Elm(iMP);
-            Vector2 v[maxVtxsPerElm+1] = {vtxCoords(elm2VtxConn(iElm,1))};
-            initArray(v,maxVtxsPerElm+1,vtxCoords(elm2VtxConn(iElm,1)));
-            int numVtx = elm2VtxConn(iElm,0);
+    auto MPs = mpMesh.MPs;
+    auto MPsPosition = MPs->getPositions();
+    auto eval = PS_LAMBDA(const int& elm, const int& mp, const int mask){
+        if (mask) {
+            Vector2 v[maxVtxsPerElm+1] = {vtxCoords(elm2VtxConn(elm,1))};
+            initArray(v,maxVtxsPerElm+1,vtxCoords(elm2VtxConn(elm,1)));
+            int numVtx = elm2VtxConn(elm,0);
             for(int i = 1; i<=numVtx; i++){
-                v[i-1] = vtxCoords(elm2VtxConn(iElm,i)-1);
+                v[i-1] = vtxCoords(elm2VtxConn(elm,i)-1);
             }
-            v[numVtx] = vtxCoords(elm2VtxConn(iElm,1)-1);
+            v[numVtx] = vtxCoords(elm2VtxConn(elm,1)-1);
             double basisByArea[maxVtxsPerElm] = {0.0};
             initArray(basisByArea,maxVtxsPerElm,0.0);
             Vector2 gradBasisByArea[maxVtxsPerElm];
-            getBasisAndGradByAreaGblForm(MPsPosition(iMP), numVtx, v, basisByArea, gradBasisByArea);
+            getBasisAndGradByAreaGblForm(MPsPosition(mp), numVtx, v, basisByArea, gradBasisByArea);
         
             Vector2 wp_coord(0.0,0.0);
             double wp_grad = 0.0;
@@ -145,5 +140,7 @@ void interpolateWachspress(MPMesh& mpMesh){
                 wp_grad = wp_grad + gradBasisByArea[i].dot(v[i]);
             }
         }        
-    });
+    };
+    const auto name = "getBasisAndGradByAreaGblForm";
+    MPs->parallel_for(eval);
 }

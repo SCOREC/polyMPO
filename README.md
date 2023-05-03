@@ -1,211 +1,234 @@
-
-## layout
+## code layout
 
 - src - source files
 - test - examples and tests that exercise APIs
 
-## setup
+## read this first
 
-```
-git clone https://github.com/SCOREC/polyMpmTest.git
-```
+The instructions in the 'setup' section should be run once to get the stack of software built.  After that, the instructions in the 'develop and rebuild' section should be followed to rebuild polyMPO after making source code changes.
 
-## build
+CUDA flags for the NVIDIA Turing GPUs are included below.  The scorec workstations `cranium` and `blockade` have Turing GPUs.
 
-The following assumes that a valid C and C++ compiler, and `cmake`, are in your PATH.
+The following assumes that a valid C and C++ compiler, and `cmake`, are in your PATH.  On SCOREC systems these are provided by `module` commands.  If you are not on a SCOREC system these must be edited accordingly.
 
 `CMAKE_INSTALL_PREFIX` is the path where the library, headers, and test binary
 are installed.
 
-`kk` is the path where kokkos is installed (either GPU or OpenMP based installation).
+## install dependencies
 
-Set path as `export kk=/path/to/kokkos/install`
-
-`kk_compiler` is the path to kokkos compiler
-Set path as `export kk_compiler=/path/to/nvcc_wrapper` for GPU build.
-
-Ignore this for OpenMP build
-
-Load necessary modules:
-```
-module unuse /opt/scorec/spack/lmod/linux-rhel7-x86_64/Core
-module use /opt/scorec/spack/v0154_2/lmod/linux-rhel7-x86_64/Core
-module load \
-gcc/10.1.0 \
-openmpi \
-cmake/3.20.0  \
-cuda/11.4
-```
-
-### Install Kokkos
-
-Clone the repo
+Create a directory to work from.  It will contain all source code and build directories.
 
 ```
-git clone https://github.com/Kokkos/kokkos.git
+mkdir polyMpoDev #this can be any name - just be consistent
+cd polyMpoDev
 ```
 
-Create a file named `installKokkos.sh` with the following contents:
+Create an environment script `setupEnvironment.sh` with the following contents.  **It contains SCOREC specific `module` commands that will have to be modified if you are building on a non-SCOREC system.**
 
 ```
-bkend=$1
-d=buildKokkos${bkend}
-omp=""
-cuda=""
-[[ ${bkend} == "OPENMP" ]] && omp="-DKokkos_ENABLE_OPENMP=on"
-[[ ${bkend} == "CUDA" ]] && cuda="-DKokkos_ENABLE_CUDA=on -DKokkos_ENABLE_CUDA_LAMBDA=on"
-[[ ${bkend} == "OPENMP_CUDA" ]] && ompcuda="-DKokkos_ENABLE_OPENMP=on -DKokkos_ENABLE_CUDA=on -DKokkos_ENABLE_CUDA_LAMBDA=on"
-cmake -S kokkos -B $d \
-  -DCMAKE_CXX_COMPILER=g++ \
+export root=$PWD 
+module unuse /opt/scorec/spack/lmod/linux-rhel7-x86_64/Core 
+module use /opt/scorec/spack/v0154_2/lmod/linux-rhel7-x86_64/Core 
+module load gcc/10.1.0 cuda/11.4
+module load mpich/3.3.2
+module load cmake
+module load netcdf-c/4.7.3
+
+function getname() {
+  name=$1
+  machine=`hostname -s`
+  buildSuffix=${machine}-cuda
+  echo "build-${name}-${buildSuffix}"
+}
+export engpar=$root/`getname engpar`/install # This is where engpar will be (or is) installed
+export kk=$root/`getname kokkos`/install   # This is where kokkos will be (or is) installed
+export oh=$root/`getname omegah`/install  # This is where omega_h will be (or is) installed
+export cab=$root/`getname cabana`/install # This is where cabana will be (or is) installed
+export pumipic=$root/`getname pumipic`/install # This is where PumiPIC will be (or is) installed
+export CMAKE_PREFIX_PATH=$engpar:$kk:$kk/lib64/cmake:$oh:$cab:$pumipic:$CMAKE_PREFIX_PATH
+export MPICH_CXX=$root/kokkos/bin/nvcc_wrapper
+```
+
+Create a file named `buildAll.sh` with the following contents. **It contains compiler flags specific to NVIDIA GPUs with the Turing architecture (i.e., `-DKokkos_ARCH_TURING75=ON` and `-DOmega_h_CUDA_ARCH=75`) that need to be modified to match the architecture of the GPU in your system.**
+
+```
+#!/bin/bash -e
+
+#kokkos
+cd $root
+git clone -b 3.1.00 https://github.com/kokkos/kokkos.git
+mkdir -p $kk
+cmake -S kokkos -B ${kk%%install} \
+  -DCMAKE_CXX_COMPILER=$root/kokkos/bin/nvcc_wrapper \
   -DKokkos_ARCH_TURING75=ON \
-  -DBUILD_SHARED_LIBS=ON \
-  $omp \
-  $cuda \
-  $ompcuda \
   -DKokkos_ENABLE_SERIAL=ON \
+  -DKokkos_ENABLE_OPENMP=off \
+  -DKokkos_ENABLE_CUDA=on \
+  -DKokkos_ENABLE_CUDA_LAMBDA=on \
   -DKokkos_ENABLE_DEBUG=on \
-  -DKokkos_ENABLE_TESTS=off \
-  -DCMAKE_INSTALL_PREFIX=$d/install
-cmake --build $d -j 8 --target install
+  -DKokkos_ENABLE_PROFILING=on \
+  -DCMAKE_INSTALL_PREFIX=$PWD/install
+cmake --build ${kk%%install} --target -j 24 install
+
+#engpar
+cd $root
+mkdir -p $engpar
+git clone https://github.com/SCOREC/EnGPar.git
+cmake -S EnGPar -B ${engpar%%install} \
+  -DCMAKE_INSTALL_PREFIX=$engpar \
+  -DCMAKE_C_COMPILER="mpicc" \
+  -DCMAKE_CXX_COMPILER="mpicxx" \
+  -DCMAKE_CXX_FLAGS="-std=c++11" \
+  -DENABLE_PARMETIS=OFF \
+  -DENABLE_PUMI=OFF \
+  -DIS_TESTING=OFF
+cmake --build ${engpar%%install} --target -j 24 install
+
+#omegah
+cd $root
+mkdir -p $oh
+git clone https://github.com/SCOREC/omega_h.git
+cmake -S omega_h -B ${oh%%install} \
+  -DCMAKE_INSTALL_PREFIX=$oh \
+  -DBUILD_SHARED_LIBS=OFF \
+  -DOmega_h_USE_Kokkos=ON \
+  -DOmega_h_USE_CUDA=on \
+  -DOmega_h_CUDA_ARCH=75 \
+  -DOmega_h_USE_MPI=on  \
+  -DBUILD_TESTING=off  \
+  -DCMAKE_CXX_COMPILER=`which mpicxx` \
+  -DKokkos_PREFIX=$kk/lib64/cmake
+cmake --build ${oh%%install} --target -j 24 install
+
+#cabana
+cd $root
+mkdir -p $cab
+git clone -b 0.3.0 https://github.com/ECP-copa/Cabana.git cabana
+cmake -S cabana -B ${cab%%install} \
+  -DCMAKE_INSTALL_PREFIX=$cab \
+  -DCMAKE_BUILD_TYPE="Release" \
+  -DCMAKE_CXX_COMPILER=$root/kokkos/bin/nvcc_wrapper \
+  -DCabana_ENABLE_Cuda=ON \
+  -DCabana_ENABLE_TESTING=OFF \
+  -DCabana_ENABLE_EXAMPLES=OFF
+cmake --build ${cab%%install} --target -j 24 install
+
+#pumipic
+cd $root
+mkdir -p $pumipic
+git clone --recursive https://github.com/SCOREC/pumi-pic.git
+cmake -S pumi-pic -B ${pumipic%%install} \
+  -DCMAKE_INSTALL_PREFIX=$pumipic \
+  -DCMAKE_CXX_COMPILER=mpicxx \
+  -DENABLE_CABANA=ON \
+  -DTEST_DATA_DIR=$root/pumi-pic/pumipic-data \
+  -DOmega_h_PREFIX=$oh \
+  -DEnGPar_PREFIX=$engpar \
+  -DIS_TESTING=OFF \
+  -DPS_IS_TESTING=OFF
+cmake --build ${pumipic%%install} --target -j 24 install
 ```
 
-Make it executable:
+Make the script executable:
 
 ```
-chmod +x installKokkos.sh
+chmod +x buildAll.sh
 ```
 
-Install with CUDA backend
+
+Source the environment script from this work directory:
 
 ```
-./installKokkos.sh CUDA
+source setupEnvironment.sh
 ```
 
-Install with OpenMP backend
+Run the build script:
 
 ```
-./installKokkos.sh OPENMP
+./buildAll.sh
 ```
 
-Install with Serial backend
+### Build polyMPO
 
 ```
-./installKokkos.sh
+git clone https://github.com/SCOREC/polyMPO.git
 ```
 
-### Building for GPU execution
-
-Create a file named `doConfigPolyMpmSheathGpu.sh` with the following contents:
+Create a file named `doConfigPolyMPO-GPU.sh` with the following contents:
 
 ```
-bdir=$PWD/build-GPU
-cmake -S polyMpmTest -B $bdir \
--DKokkos_DIR=$PWD/buildKokkosCUDA/install/lib64/cmake/Kokkos \
--DCMAKE_CXX_COMPILER=$PWD/buildKokkosCUDA/install/bin/nvcc_wrapper \
+bdir=$PWD/buildPolyMPO-GPU
+cmake -S polyMPO -B $bdir \
+-DKokkos_DIR=$kk/lib64/cmake/Kokkos \
+-DCMAKE_CXX_COMPILER=$kk/bin/nvcc_wrapper \
 -DCMAKE_INSTALL_PREFIX=$bdir/install
 ```
 
-Create a file named `buildPolyMpmSheathGpu.sh` with the following contents:
+Create a file named `buildPolyMPO-GPU.sh` with the following contents:
 
 ```
-bdir=$PWD/build-GPU
-cmake --build $bdir --target install
+bdir=$PWD/buildPolyMPO-GPU
+cmake --build $bdir --target install -j4
 ```
 
 Make them executable:
 
 ```
-chmod +x doConfigPolyMpmSheathGpu.sh buildPolyMpmSheathGpu.sh
+chmod +x doConfigPolyMPO-GPU.sh buildPolyMPO-GPU.sh
 ```
 
 Run the configure script then run the build script:
 
 ```
-./doConfigPolyMpmSheathGpu.sh
-./buildPolyMpmSheathGpu.sh
+./doConfigPolyMPO-GPU.sh
+./buildPolyMPO-GPU.sh
 ```
 
-To rebuild the code after making some changes:
+## Run polyMPO tests
 
 ```
-./buildPolyMpmSheathGpu.sh
+ctest --test-dir $root/build-GPU
 ```
 
-
-### Building for CPU execution using OpenMP
-
-Create a file named `doConfigPolyMpmSheathOmp.sh` with the following contents:
+Show stdout and stderr when the tests run:
 
 ```
-bdir=$PWD/build-omp
-cmake -S polyMpmTest -B $bdir \
--DKokkos_DIR=$PWD/buildKokkosOPENMP/install/lib64/cmake/Kokkos \
--DCMAKE_INSTALL_PREFIX=$bdir/install
+ctest --test-dir $root/build-GPU -V
 ```
 
-Create a file named `buildPolyMpmSheathOmp.sh` with the following contents:
+Show stdout and stderr *and* run only the `unitTest`:
 
 ```
-bdir=$PWD/build-omp
-cmake --build $bdir --target install
+ctest --test-dir $root/build-GPU -V -R unit
 ```
 
-Make them executable:
+## polyMPO: develop and rebuild
+
+To resume work on polyMPO (i.e., when starting a new shell session/terminal) run the following commands to setup your environment:
 
 ```
-chmod +x doConfigPolyMpmSheathOmp.sh buildPolyMpmSheathOmp.sh
+cd /path/to/polyMpoDev
+source setupEnvironment.sh
 ```
 
-Run the configure script then run the build script:
+Note, `setupEnvironment.sh` **MUST** be sourced from the top-level work directory (`polyMpoDev`).
+
+### C++ source changes only
+
+Assuming changes existing polyMPO C++ source/header files were made you can just run make as follows:
 
 ```
-./doConfigPolyMpmSheathOmp.sh
-./buildPolyMpmSheathOmp.sh
+./buildPolyMPO-GPU.sh
 ```
 
-To rebuild the code after making some changes:
+### CMake changes
+
+If CMake files were changed (i.e., to add new C++ source files) then you should delete the contents of the build directory, then rerun the configure and build scripts:
 
 ```
-./buildPolyMpmSheathOmp.sh
-```
-
-
-### Building for CPU execution using serial backend
-
-Create a file named `doConfigPolyMpmSheathSerial.sh` with the following contents:
-
-```
-bdir=$PWD/build-omp
-cmake -S polyMpmTest -B $bdir \
--DKokkos_DIR=$PWD/buildKokkosSerial/install/lib64/cmake/Kokkos \
--DCMAKE_INSTALL_PREFIX=$bdir/install
-```
-
-Create a file named `buildPolyMpmSheathSerial.sh` with the following contents:
-
-```
-bdir=$PWD/build-serial
-cmake --build $bdir --target install
-```
-
-Make them executable:
-
-```
-chmod +x doConfigPolyMpmSheathSerial.sh buildPolyMpmSheathSerial.sh
-```
-
-Run the configure script then run the build script:
-
-```
-./doConfigPolyMpmSheathSerial.sh
-./buildPolyMpmSheathSerial.sh
-```
-
-## Run test
-
-Run with [OpenMP|CUDA|Serial]
-
-```
-./build-[omp|GPU|serial]/test/testWachspress
+cd $root
+rm -rf buildPolyMPO-GPU
+./doConfigPolyMPO-GPU.sh
+./buildPolyMPO-GPU.sh
 ```
 

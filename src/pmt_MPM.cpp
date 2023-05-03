@@ -4,6 +4,94 @@
 
 namespace polyMpmTest{
 
+void MPM::CVTTracking(Vector2View dx, const int printVTP){
+    int numVtxs = mesh_.getNumVertices();
+    int numElms = mesh_.getNumElements();
+    
+    const auto vtxCoords = mesh_.getVtxCoords(); 
+    auto elm2VtxConn = mesh_.getElm2VtxConn();
+    auto vtx2ElmConn = mesh_.getVtx2ElmConn();
+    auto elm2ElmConn = mesh_.getElm2ElmConn();
+
+    auto numMPs = materialPoints_.getCount();
+    auto MPsPosition = materialPoints_.getPositions();
+    auto isActive = materialPoints_.isActive();
+    
+    auto MPs2Elm = materialPoints2Elm_;
+
+    //numMPs = 1; //XXX
+    IntView count("countCrossMPs",numMPs);
+    Kokkos::parallel_for("T2LCalc",numMPs,KOKKOS_LAMBDA(const int iMP){
+        Vector2 MP = MPsPosition(iMP);
+        if(isActive(iMP)){
+            int iElm = MPs2Elm(iMP);
+            Vector2 MPnew = MP + dx(iMP);
+            while(true){
+                int numVtx = elm2VtxConn(iElm,0);
+                //seperate the elm2Vtx
+                int v[maxVtxsPerElm];
+                for(int i=0; i< numVtx; i++)
+                    v[i] = elm2VtxConn(iElm,i+1)-1;
+                //calc dist square from each edge center to MPnew
+                //calc dot products to check inside or not
+                int edgeIndex = -1;
+                double minDistSq = DBL_MAX;
+                for(int i=0; i< numVtx; i++){
+                    Vector2 v_i = vtxCoords(v[i]);
+                    Vector2 v_ip1 = vtxCoords(v[(i+1)%numVtx]);
+                    Vector2 edgeCenter = (v_ip1 + v_i)*0.5;
+                    Vector2 delta = MPnew - edgeCenter;
+                    double currentDistSq = delta[0]*delta[0] + delta[1]*delta[1];
+                    double dotProduct = dx(iMP).dot(delta);
+                    //printf("%d: %.3f\n",i,dotProduct);
+                    if(dotProduct <=0){
+                        edgeIndex = -1;
+                        break;
+                    } 
+                    if(currentDistSq < minDistSq){
+                        edgeIndex = i+1;
+                        minDistSq = currentDistSq;    
+                    }
+                }
+                if(edgeIndex <0){
+                    //we get to the final elm
+                    MPs2Elm(iMP) = iElm;
+                    MPsPosition(iMP) = MPnew;
+                    break;
+                }else{
+                    //update the iELm and do the loop again
+                    //int oldElm = iElm;
+                    //Vector2 oldElmCenter = calcElmCenter(iElm,elm2VtxConn,vtxCoords);
+                    iElm = elm2ElmConn(iElm,edgeIndex);
+                    //Vector2 elmCenter = calcElmCenter(iElm,elm2VtxConn,vtxCoords);
+                    //printf("%d:%d->%d: (%.3f %.3f)->(%.3f %.3f)\n",edgeIndex,oldElm,iElm,oldElmCenter[0],oldElmCenter[1],elmCenter[0],elmCenter[1]);
+                    if(printVTP>=0)
+                        Kokkos::atomic_increment(&count(iMP));
+                }
+            } 
+        }
+    });
+    if(printVTP>=0){
+        const int maxNum =5;
+        IntView countNum("countNumCrossMPs",maxNum+1);
+        Kokkos::parallel_for("countMPs",numMPs,KOKKOS_LAMBDA(const int iMP){
+            for(int i=0; i<=maxNum; i++){
+                if(i == count(iMP) || (i == maxNum && count(iMP)>= i)){
+                    Kokkos::atomic_increment(&countNum(i));
+                    break;
+                }    
+            }
+        });
+        IntView::HostMirror h_countNum = Kokkos::create_mirror_view(countNum);
+        Kokkos::deep_copy(h_countNum, countNum);
+        Kokkos::fence();
+        for(int iCountNum = 0; iCountNum <= maxNum; iCountNum++){
+            numMPs = h_countNum(iCountNum);
+            printf("%d-%d:%d\n",iCountNum,printVTP,numMPs);
+        }
+    }
+}
+
 void MPM::T2LTracking(Vector2View dx, const int printVTP){
     int numVtxs = mesh_.getNumVertices();
     int numElms = mesh_.getNumElements();
@@ -22,8 +110,7 @@ void MPM::T2LTracking(Vector2View dx, const int printVTP){
     //numMPs = 100;//XXX
     Vector2View history("positionHistory",numMPs);
     Vector2View resultLeft("positionResult",numMPs);
-    Vector2View resultRight("positionResult",numMPs);
-   
+    Vector2View resultRight("positionResult",numMPs); 
     IntView count("countCrossMPs",numMPs);
     Kokkos::parallel_for("T2LCalc",numMPs,KOKKOS_LAMBDA(const int iMP){
         Vector2 MP = MPsPosition(iMP);
@@ -55,8 +142,8 @@ void MPM::T2LTracking(Vector2View dx, const int printVTP){
                         //go to the next elm
                         //int iElmOld = iElm;
                         iElm = elm2ElmConn(iElm,i+1);
-                        //if(printVTP>=0)
-                        //    Kokkos::atomic_increment(&count(iMP));
+                        if(printVTP>=0)
+                            Kokkos::atomic_increment(&count(iMP));
                         goToNeighbour = true;
                         if(iElm <0){
                             isActive(iMP) = false;
@@ -79,7 +166,7 @@ void MPM::T2LTracking(Vector2View dx, const int printVTP){
                 //}
                 MPs2Elm(iMP) = iElm;
                 MPsPosition(iMP) = MPnew;
-               break;
+                break;
             }
         }
         //else{

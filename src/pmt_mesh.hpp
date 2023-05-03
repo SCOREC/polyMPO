@@ -10,7 +10,7 @@ namespace polyMpmTest{
 
 using IntVtx2ElmView = Kokkos::View<int*[maxVtxsPerElm+1]>;
 using IntElm2VtxView = Kokkos::View<int*[maxElmsPerVtx+1]>;
-using IntElm2ElmView = Kokkos::View<int*[maxVtxsPerElm+1]>;
+using IntElm2ElmView = Kokkos::View<int*[maxVtxsPerElm*2+1]>;
 
 class Mesh {
   private:

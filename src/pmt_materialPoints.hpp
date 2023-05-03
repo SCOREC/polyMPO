@@ -16,19 +16,18 @@ using particle_structs::MemberTypes;
 typedef MemberTypes<double[2]> MaterialPointTypes;
 typedef ps::ParticleStructure<MaterialPointTypes> PS;
 
-PS* createDPS(int numElms, int numMPs, Vector2View positions, BoolView isActive);
+PS* createDPS(int numElms, int numMPs, Vector2View positions);
 
 class MaterialPoints {
   private:
     Vector2View positions_;
-    BoolView isActive_; //FIXME remove this, stored in particle structure
     PS* MPs;
 
   public:
     MaterialPoints() : MPs(nullptr) {};
-    MaterialPoints(int numElms, int numMPs, Vector2View positions, BoolView isActive):
-                    positions_(positions), isActive_(isActive){
-      MPs = createDPS(numElms, numMPs, positions, isActive);
+    MaterialPoints(int numElms, int numMPs, Vector2View positions) :
+                    positions_(positions) {
+      MPs = createDPS(numElms, numMPs, positions);
     };
     ~MaterialPoints() {
       if(MPs != nullptr)
@@ -51,7 +50,6 @@ class MaterialPoints {
     }
     int getCount() { return MPs->nPtcls(); }
     Vector2View getPositions() { return positions_; }
-    BoolView isActive() { return isActive_; }
 
 //TODO:MUTATOR  
     void T2LTracking(Vector2View dx);

@@ -16,7 +16,7 @@ DoubleView assembly(MPMesh& mpMesh){
     auto assemble = PS_LAMBDA(const int& elm, const int& mp, const int& mask) {
     //for elm in elementsInMesh { //pseudo code - the 'parallel_for' handles this
     //  for mp in materialPointsInElm { //pseudo code (cont.)
-          if(mask > 0) { //if material point is 'active'/'enabled'
+          if(mask) { //if material point is 'active'/'enabled'
             int nVtxE = elm2VtxConn(elm,0); //number of vertices bounding the element
             for(int i=0; i<nVtxE; i++){
               int vID = elm2VtxConn(elm,i+1)-1; //vID = vertex id

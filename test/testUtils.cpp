@@ -90,7 +90,6 @@ MPMesh initTestMPMesh(Mesh& mesh){
 
     Vector2View positions("MPpositions",numMPs);
     IntView MPs2Elm("MPToElementIDs",numMPs);
-    BoolView isActive("MPstatus",numMPs);
      
     Kokkos::parallel_for("intializeMPsPosition", numMPs, KOKKOS_LAMBDA(const int iMP){
         int ielm = MPToElement(iMP);
@@ -102,11 +101,10 @@ MPMesh initTestMPMesh(Mesh& mesh){
         }
         positions(iMP) = Vector2(sum_x/numVtx, sum_y/numVtx);
         MPs2Elm(iMP) = ielm;
-        isActive(iMP) = true;
         //printf("%d: (%f,%f)\n",iMP,positions(iMP)[0],positions(iMP)[1]);
     });
     
-    auto p = new MaterialPoints(numElms,numMPs,positions,isActive);
+    auto p = new MaterialPoints(numElms,numMPs,positions);
 
     return MPMesh(mesh,p,elm2MPs,MPs2Elm);
 }

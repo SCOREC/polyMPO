@@ -21,6 +21,7 @@ macro(polyMpmTest_export_lib target headers)
 endmacro(polyMpmTest_export_lib)
 
 #pumipic dependency
+set(CMAKE_CXX_EXTENSIONS Off) #kokkos does not allow extensions
 message(STATUS "Found PUMIpic: ${pumipic_VERSION}")
 set(xgcm_USE_pumipic_DEFAULT ON)
 find_package(pumipic REQUIRED)
@@ -28,8 +29,7 @@ find_package(pumipic REQUIRED)
 # kokkos target, and nvcc_wrapper, provide sufficient flags.
 set_property(TARGET Omega_h::omega_h PROPERTY INTERFACE_COMPILE_OPTIONS "")
 
-#kokkos does not allow extensions
-set(CMAKE_CXX_EXTENSIONS Off)
+#kokkos - pumipic should provide this
 find_package(Kokkos REQUIRED)
 
 find_package(PkgConfig REQUIRED)

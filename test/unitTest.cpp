@@ -3,7 +3,6 @@
 #include "testUtils.hpp"
 #include <mpi.h>
 
-
 int main(int argc, char** argv) {
     MPI_Init(&argc, &argv);
     Kokkos::initialize(argc, argv);
@@ -47,13 +46,21 @@ int main(int argc, char** argv) {
         PMT_ALWAYS_ASSERT(mesh.getNumElements() == 10);
 
         //run non-physical assembly (mp -to- mesh vertex) kernel
-        auto vtxField = polyMpmTest::assembly(mpMesh); //TODO: check result against known values
+        auto vtxField = polyMpmTest::assembly(mpMesh);
+        //check the result
         auto vtxField_h = Kokkos::create_mirror_view(vtxField);
         Kokkos::deep_copy(vtxField_h, vtxField);
-        fprintf(stderr, "vtxField_h:");
-        for(size_t i=0; i<vtxField_h.size(); i++)
-          fprintf(stderr, " %f", vtxField_h(i));
-        fprintf(stderr, "\n");
+        const std::vector<double> vtxFieldExpected = {
+          1.768750, 4.528750, 17.660000, 8.228750,
+          8.406250, 2.818750, 4.978750, 5.708750,
+          6.486250, 10.551786, 13.014286, 15.114286,
+          9.714286, 8.631786, 4.990000, 1.050000,
+          2.830000, 5.694286, 3.914286
+        };
+        for(size_t i=0; i<vtxField_h.size(); i++) {
+          auto res = polyMpmTest::isEqual(vtxField_h(i),vtxFieldExpected[i], 1e-6);
+          PMT_ALWAYS_ASSERT(res);
+        }
 
         interpolateWachspress(mpMesh);              
     }

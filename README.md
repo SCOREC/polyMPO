@@ -49,7 +49,7 @@ export CMAKE_PREFIX_PATH=$engpar:$kk:$kk/lib64/cmake:$oh:$cab:$pumipic:$CMAKE_PR
 export MPICH_CXX=$root/kokkos/bin/nvcc_wrapper
 ```
 
-Create a file named `buildAll.sh` with the following contents. **It contains compiler flags specific to NVIDIA GPUs with the Turing architecture (i.e., `-DKokkos_ARCH_TURING75=ON` and `-DOmega_h_CUDA_ARCH=75`) that need to be modified to match the architecture of the GPU in your system.**
+Create a file named `buildAll.sh` with the following contents. **It contains compiler flags specific to NVIDIA GPUs with the Turing architecture (i.e., `-DKokkos_ARCH_TURING75=ON` and `-DOmega_h_CUDA_ARCH=75`) that need to be modified to match the architecture of the GPU in your system.**  See https://kokkos.github.io/kokkos-core-wiki/keywords.html#architecture-keywords for alternative settings.
 
 ```
 #!/bin/bash -e

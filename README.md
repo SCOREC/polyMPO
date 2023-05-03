@@ -108,7 +108,6 @@ cmake -S cabana -B ${cab%%install} \
   -DCMAKE_INSTALL_PREFIX=$cab \
   -DCMAKE_BUILD_TYPE="Release" \
   -DCMAKE_CXX_COMPILER=$root/kokkos/bin/nvcc_wrapper \
-  -DCabana_ENABLE_Cuda=ON \
   -DCabana_ENABLE_TESTING=OFF \
   -DCabana_ENABLE_EXAMPLES=OFF
 cmake --build ${cab%%install} -j 24 --target install

@@ -21,7 +21,7 @@ void MPM::CVTTracking(Vector2View dx, const int printVTP){
 
     //numMPs = 1; //XXX
     IntView count("countCrossMPs",numMPs);
-    Kokkos::parallel_for("T2LCalc",numMPs,KOKKOS_LAMBDA(const int iMP){
+    Kokkos::parallel_for("CVTCalc",numMPs,KOKKOS_LAMBDA(const int iMP){
         Vector2 MP = MPsPosition(iMP);
         if(isActive(iMP)){
             int iElm = MPs2Elm(iMP);

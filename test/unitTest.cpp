@@ -48,6 +48,12 @@ int main(int argc, char** argv) {
 
         //run non-physical assembly (mp -to- mesh vertex) kernel
         auto vtxField = polyMpmTest::assembly(mpMesh); //TODO: check result against known values
+        auto vtxField_h = Kokkos::create_mirror_view(vtxField);
+        Kokkos::deep_copy(vtxField_h, vtxField);
+        fprintf(stderr, "vtxField_h:");
+        for(size_t i=0; i<vtxField_h.size(); i++)
+          fprintf(stderr, " %f", vtxField_h(i));
+        fprintf(stderr, "\n");
 
         interpolateWachspress(mpMesh);              
     }

@@ -57,7 +57,7 @@ Create a file named `buildAll.sh` with the following contents. **It contains com
 cd $root
 
 #kokkos
-git clone -b 3.1.00 https://github.com/kokkos/kokkos.git
+git clone -b 3.7.01 https://github.com/kokkos/kokkos.git
 mkdir -p $kk
 cmake -S kokkos -B ${kk%%install} \
   -DCMAKE_INSTALL_PREFIX=$kk \
@@ -105,7 +105,7 @@ cmake --build ${oh%%install} -j 24 --target install
 
 #cabana
 mkdir -p $cab
-git clone -b 0.3.0 https://github.com/ECP-copa/Cabana.git cabana
+git clone -b 0.5.0 https://github.com/ECP-copa/Cabana.git cabana
 cmake -S cabana -B ${cab%%install} \
   -DCMAKE_INSTALL_PREFIX=$cab \
   -DCMAKE_BUILD_TYPE="Release" \

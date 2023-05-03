@@ -1,7 +1,7 @@
 #include "pmt_MPM.hpp"
-
 #include "testUtils.hpp"
 
+//TODO: add usage comments
 int main(int argc, char* argv[]) {
     PMT_ALWAYS_ASSERT(argc == 7);
     Kokkos::initialize();
@@ -35,8 +35,8 @@ int main(int argc, char* argv[]) {
         //      0.90 0.00 0.00 0.10
         //      0.90 0.05 0.05 0.00 //look the same??
         if (MPAcross == 0){
-            for(int i=0; i<1; i++)
-                runT2LRandomWithProportion(mpm, p0, p1, p2, p3, 1, 0);
+            for(int i=0; i<5; i++)
+                runT2LRandomWithProportion(mpm, p0, p1, p2, p3, 1, -1);
         }else{
         //Test2
         //TODO: 1.00 1MP  0.00 0.00
@@ -44,8 +44,8 @@ int main(int argc, char* argv[]) {
         //      1.00 0.00 0.00 1MP
             Vector2View dx = initT2LTest1(mpm, p0, p1, p2, p3);
             mpm.CVTTracking(dx, 0); 
-            //for(int i=0; i<5; i++)
-            //   runT2LWithOneMPAcross(mpm, MPAcross, 1, 0);
+            for(int i=0; i<5; i++)
+               runT2LWithOneMPAcross(mpm, MPAcross, 1, -1);
         }
     }    
     Kokkos::finalize();

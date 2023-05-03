@@ -5,14 +5,11 @@
 
 ## read this first
 
-The instructions in the 'setup' section should be run once to get the stack of software built.  After that, the instructions in the 'develop and rebuild' section should be followed to rebuild polyMPO after making source code changes.
+The instructions in the 'install dependencies' section should be run once to get the dependencies installed.  The next section, 'Build PolyMPO', details how to do an initial build of polyMPO.  After that, the instructions in the 'develop and rebuild' section should be followed to rebuild polyMPO after making source code changes.
 
-CUDA flags for the NVIDIA Turing GPUs are included below.  The scorec workstations `cranium` and `blockade` have Turing GPUs.
+An NVIDIA GPU is required for building and running the software.  CUDA flags for NVIDIA GPUs with the Turing architecture are included below.  For scorec users Turing GPUs are in the `cranium` and `blockade` workstations.  More info on how to set these flags for different NVIDIA architectures is below.
 
 The following assumes that a valid C and C++ compiler, and `cmake`, are in your PATH.  On SCOREC systems these are provided by `module` commands.  If you are not on a SCOREC system these must be edited accordingly.
-
-`CMAKE_INSTALL_PREFIX` is the path where the library, headers, and test binary
-are installed.
 
 ## install dependencies
 

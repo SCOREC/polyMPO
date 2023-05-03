@@ -603,3 +603,31 @@ MPM initMPMWithCenterMPs(Mesh& mesh, int factor){
     return MPM(mesh,p,elm2MPs,MPs2Elm);
 }
 
+void runCVTRandomWithProportion(MPM mpm, const double p0, const double p1, const double p2, const double p3, const int loopTimes, const int printVTP, const int randomSeed){
+    printf("\tRun CVT Tracking Random With Proportion: %.2f %.2f %.2f %.2f\n",p0,p1,p2,p3);
+    for(int i=0; i< loopTimes; i++){
+        Vector2View dx = initT2LTest1(mpm, p0, p1, p2, p3, randomSeed);
+        mpm.CVTTracking(dx, printVTP<0?-1:i); 
+    }
+}
+
+void printMPs(MPM mpm){
+    auto MPs = mpm.getMPs();
+    int numMPs = MPs.getCount();
+    auto MPsPosition = MPs.getPositions();
+    auto MPs2Elm = mpm.getMPs2Elm();
+    auto isActive = MPs.isActive();
+        
+    auto h_MPsPosition = Kokkos::create_mirror_view(MPsPosition);
+    auto h_MPs2Elm = Kokkos::create_mirror_view(MPs2Elm);
+    auto h_isActive = Kokkos::create_mirror_view(isActive);
+    Kokkos::deep_copy(h_MPsPosition,MPsPosition);
+    Kokkos::deep_copy(h_MPs2Elm, MPs2Elm);
+    Kokkos::deep_copy(h_isActive, isActive);
+    printf("The mpm has %d MPs\n",numMPs);
+    Kokkos::fence();
+    
+    for(int i=0; i<numMPs; i++){
+        printf("%d: in Elm: %d, at(%.3f,%.3f)\n",i,h_MPs2Elm(i),h_MPsPosition(i)[0],h_MPsPosition(i)[1]);
+    }
+}

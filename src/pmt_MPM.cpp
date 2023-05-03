@@ -43,7 +43,6 @@ void MPM::CVTTracking(Vector2View dx, const int printVTP){
                     Vector2 delta = MPnew - edgeCenter;
                     double currentDistSq = delta[0]*delta[0] + delta[1]*delta[1];
                     double dotProduct = dx(iMP).dot(delta);
-                    //printf("%d: %.3f\n",i,dotProduct);
                     if(dotProduct <=0){
                         edgeIndex = -1;
                         break;
@@ -60,13 +59,9 @@ void MPM::CVTTracking(Vector2View dx, const int printVTP){
                     break;
                 }else{
                     //update the iELm and do the loop again
-                    //int oldElm = iElm;
-                    //Vector2 oldElmCenter = calcElmCenter(iElm,elm2VtxConn,vtxCoords);
                     iElm = elm2ElmConn(iElm,edgeIndex);
-                    //Vector2 elmCenter = calcElmCenter(iElm,elm2VtxConn,vtxCoords);
-                    //printf("%d:%d->%d: (%.3f %.3f)->(%.3f %.3f)\n",edgeIndex,oldElm,iElm,oldElmCenter[0],oldElmCenter[1],elmCenter[0],elmCenter[1]);
-                    if(printVTP>=0)
-                        Kokkos::atomic_increment(&count(iMP));
+                    //if(printVTP>=0)
+                    //   Kokkos::atomic_increment(&count(iMP));
                 }
             } 
         }
@@ -140,10 +135,9 @@ void MPM::T2LTracking(Vector2View dx, const int printVTP){
                     //pdx*pdx<0 and
                     if(pdx[i]*pdx[ip1] <0 && e[i].cross(MPnew-vtxCoords(v[i]))<0){
                         //go to the next elm
-                        //int iElmOld = iElm;
                         iElm = elm2ElmConn(iElm,i+1);
-                        if(printVTP>=0)
-                            Kokkos::atomic_increment(&count(iMP));
+                        //if(printVTP>=0)
+                        //    Kokkos::atomic_increment(&count(iMP));
                         goToNeighbour = true;
                         if(iElm <0){
                             isActive(iMP) = false;

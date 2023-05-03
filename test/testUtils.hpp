@@ -100,5 +100,17 @@ void runT2LRandomWithProportion(MPM mpm, const double p0 = 0.25, const double p1
  * TODO: comments
  */
 void runT2LWithOneMPAcross(MPM mpm, const int MPAcross = 0, const int loopTimes = 1, const int printVTP = -1, const int randomSeed = randSeed);
+
+/*
+ * TODO: comments
+ */
+void runCVTRandomWithProportion(MPM mpm, const double p0 = 0.25, const double p1 = 0.25, const double p2 = 0.25, const double p3 = 0.25, const int loopTimes = 1, const int printVTP = -1, const int randomSeed = randSeed);
+
+
+/*
+ * TODO: comments
+ */
+void printMPs(MPM mpm);
+
 #endif
 

@@ -10,14 +10,17 @@ int main(int argc, char* argv[]) {
     double p1 = atof(argv[3]);
     double p2 = atof(argv[4]);
     double p3 = atof(argv[5]);
+    //MPAcross control which way we test
+    //0:   T2L tracking with p0,p1,p2,p3 across centralized MPs TODO change naming
+    //1-5: T2L tracking with one MP across randomMPs with one across
+    //6:   CVT tracking with p0,p1,p2,p3 across centralized MPs
     int MPAcross = atoi(argv[6]);
-    //test T2L
-    printf("TestT2L with a factor of: %d\n",factor);
+    //testTracking
+    printf("Test MPs tracking with a factor of: %d\n",factor);
     {
         //auto mesh = Mesh::readMPASMesh("./mesh.QU.1920km.151026.nc");
-        auto mesh = Mesh::readMPASMesh("./GIS.nc");//numElm == 6122
-        
-        auto mpm = initMPMWithRandomMPs(mesh,factor); 
+        auto mesh = Mesh::readMPASMesh("./GIS.nc");//numElm == 6122 
+        MPM mpm = initMPMWithRandomMPs(mesh,factor); 
         //10,20,40,80,160,320,640
         //TODO: 10,40,160,640
         
@@ -27,26 +30,26 @@ int main(int argc, char* argv[]) {
         //Test Rankine
         //runT2LRankineVortex(mpm, Vector2(150000,-2000000), 15, 11500, 1, 100, -1);
 
-        //Test1
-        //Test init with fractions:
-        //TODO: 1.00 0.00 0.00 0.00
-        //      0.90 0.10 0.00 0.00
-        //      0.90 0.00 0.10 0.00
-        //      0.90 0.00 0.00 0.10
-        //      0.90 0.05 0.05 0.00 //look the same??
+        //test for timing
         if (MPAcross == 0){
-            for(int i=0; i<5; i++)
+            for(int i=0; i<5; i++){
+                mpm = initMPMWithRandomMPs(mesh,factor); 
                 runT2LRandomWithProportion(mpm, p0, p1, p2, p3, 1, -1);
+            }
+        }else if(MPAcross < 6){
+            for(int i=0; i<5; i++){
+                mpm = initMPMWithRandomMPs(mesh,factor); 
+                runT2LWithOneMPAcross(mpm, MPAcross, 1, -1);
+            }
+        }else if(MPAcross == 6){
+            for(int i=0; i<5; i++){
+                mpm = initMPMWithRandomMPs(mesh,factor); 
+                runCVTRandomWithProportion(mpm, p0, p1, p2, p3, 1, -1);
+            }
         }else{
-        //Test2
-        //TODO: 1.00 1MP  0.00 0.00
-        //      1.00 0.00 1MP  0.00
-        //      1.00 0.00 0.00 1MP
-            Vector2View dx = initT2LTest1(mpm, p0, p1, p2, p3);
-            mpm.CVTTracking(dx, 0); 
-            for(int i=0; i<5; i++)
-               runT2LWithOneMPAcross(mpm, MPAcross, 1, -1);
+            PMT_ALWAYS_ASSERT(false);
         }
+        printMPs(mpm);
     }    
     Kokkos::finalize();
     return 0;

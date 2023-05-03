@@ -71,6 +71,7 @@ cmake -S kokkos -B ${kk%%install} \
 cmake --build ${kk%%install} -j 24 --target install
 
 #engpar
+unset MPICH_CXX #don't want nvcc_wrapper for engpar
 mkdir -p $engpar
 git clone https://github.com/SCOREC/EnGPar.git
 cmake -S EnGPar -B ${engpar%%install} \
@@ -83,6 +84,7 @@ cmake -S EnGPar -B ${engpar%%install} \
   -DENABLE_PUMI=OFF \
   -DIS_TESTING=OFF
 cmake --build ${engpar%%install} -j 24 --target install
+export MPICH_CXX=$root/kokkos/bin/nvcc_wrapper #restore use of nvcc_wrapper
 
 #omegah
 mkdir -p $oh

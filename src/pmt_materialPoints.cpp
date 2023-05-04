@@ -13,7 +13,7 @@ PS* createDPS(int numElms, int numMPs, Vector2View positions) {
     mpPositions(i,1) = positions[i][1];
     mpElms[i] = 0;
   });
-  Kokkos::TeamPolicy<Kokkos::DefaultExecutionSpace> policy(numElms,32);
+  Kokkos::TeamPolicy<Kokkos::DefaultExecutionSpace> policy(numElms,Kokkos::AUTO);
   return new DPS<MaterialPointTypes>(policy, numElms, numMPs, ppe, elmGids, mpElms, mpInfo);
 }
 

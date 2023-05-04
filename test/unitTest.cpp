@@ -57,8 +57,13 @@ int main(int argc, char** argv) {
           9.714286, 8.631786, 4.990000, 1.050000,
           2.830000, 5.694286, 3.914286
         };
+        PMT_ALWAYS_ASSERT(vtxField_h.size() == vtxFieldExpected.size());
         for(size_t i=0; i<vtxField_h.size(); i++) {
           auto res = polyMpmTest::isEqual(vtxField_h(i),vtxFieldExpected[i], 1e-6);
+          if(!res) {
+            fprintf(stderr, "computed value for vtx %ld, %.6f, does not match expected value %.6f\n",
+                    i, vtxField_h(i), vtxFieldExpected[i]);
+          }
           PMT_ALWAYS_ASSERT(res);
         }
 

@@ -56,7 +56,6 @@ Mesh initTestMesh(int factor){
 
 
 MPMesh initTestMPMesh(Mesh& mesh){
-    int numVtxs = mesh.getNumVertices();
     int numElms = mesh.getNumElements();
     Vector2View vtxCoords = mesh.getVtxCoords();   
     IntVtx2ElmView elm2VtxConn = mesh.getElm2VtxConn();

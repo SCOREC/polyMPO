@@ -34,7 +34,7 @@ class MaterialPoints {
         delete MPs;
     }
     void rebuild(IntView materialPoints2Elm) {
-      assert(materialPoints2Elm.size() == MPs->nPtcls());
+      assert(materialPoints2Elm.size() == static_cast<size_t>(MPs->nPtcls()));
       if( materialPoints2Elm.size() < static_cast<size_t>(MPs->capacity()) ) {
         Kokkos::resize(Kokkos::WithoutInitializing, materialPoints2Elm, MPs->capacity());
       }

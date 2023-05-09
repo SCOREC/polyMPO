@@ -24,7 +24,10 @@ target_include_directories(polyMpmTest-core INTERFACE
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
   $<INSTALL_INTERFACE:include>)
 target_link_libraries(polyMpmTest-core PUBLIC pumipic::pumipic)
-target_link_libraries(polyMpmTest-core PRIVATE PkgConfig::NetCDF)
+if(${NetCDF_FOUND})
+  target_compile_definitions(polyMpmTest-core PRIVATE POLYMPO_HAS_NETCDF)
+  target_link_libraries(polyMpmTest-core PRIVATE PkgConfig::NetCDF)
+endif()
 
 polyMpmTest_export_lib(polyMpmTest-core "${HEADERS}")
 

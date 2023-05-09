@@ -33,7 +33,12 @@ set_property(TARGET Omega_h::omega_h PROPERTY INTERFACE_COMPILE_OPTIONS "")
 find_package(Kokkos REQUIRED)
 
 find_package(PkgConfig REQUIRED)
-pkg_check_modules(NetCDF REQUIRED IMPORTED_TARGET netcdf>=4.7.3)
+pkg_check_modules(NetCDF IMPORTED_TARGET netcdf>=4.7.3)
+if(${NetCDF_FOUND})
+  message(STATUS "NetCDF found")
+else()
+  message(STATUS "NetCDF not found")
+endif()
 
 # Set a default build type if none was specified
 # from: https://www.kitware.com/cmake-and-the-default-build-type/

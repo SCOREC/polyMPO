@@ -67,13 +67,15 @@ MPMesh initTestMPMesh(Mesh& mesh){
     Kokkos::parallel_for("setNumMPPerElement",numElms, KOKKOS_LAMBDA(const int i){
         auto generator = random_pool.get_state();
         numMPsPerElement(i) = generator.urand(4,7); //rand between 4 and 7 - TODO: make input arg
+        printf("elm %d numMp %d\n", i, numMPsPerElement(i));
         random_pool.free_state(generator);
     });
 
     Kokkos::parallel_reduce("calcTotalMP",numElms,KOKKOS_LAMBDA(const int&i, int& sum){
         sum += numMPsPerElement(i);
     },numMPs);
-    IntView MPToElement("MPToElement",numMPs);  
+    IntView MPToElement("MPToElement",numMPs);
+    printf("total numMp %d\n", numMPs);
 
     IntView elm2MPs("elementToMPs",numElms*(maxMPsPerElm+1));
     Kokkos::parallel_scan("setMPsToElement", numElms, KOKKOS_LAMBDA(int i, int& iMP, bool is_final){
@@ -86,6 +88,7 @@ MPMesh initTestMPMesh(Mesh& mesh){
         }
         iMP += numMPsPerElement(i); 
     },numMPs);
+    printf("scan total numMp %d\n", numMPs);
 
     Vector2View positions("MPpositions",numMPs);
     IntView MPs2Elm("MPToElementIDs",numMPs);

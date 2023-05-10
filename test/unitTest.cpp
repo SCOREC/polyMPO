@@ -39,7 +39,8 @@ int main(int argc, char** argv) {
     {
         //auto testMesh = Mesh::readMPASMesh("/path/to/mpas/mesh.nc"); //read from MPAS via netcdf
         auto testMesh = initTestMesh(1); //creates simple test mesh, '1' is a replication factor
-        auto mpMesh = initTestMPMesh(testMesh); //creates test MPs
+        auto mpPerElement = std::vector<int>({5,4,5,6,6,5,4,6,5,5});
+        auto mpMesh = initTestMPMesh(testMesh, mpPerElement); //creates test MPs
         
         auto mesh = mpMesh.getMesh();
         PMT_ALWAYS_ASSERT(mesh.getNumVertices() == 19);

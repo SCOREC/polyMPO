@@ -54,22 +54,31 @@ Mesh initTestMesh(int factor){
                 vtx2ElmConn);
 }
 
+MPMesh initTestMPMesh(Mesh& mesh) {
+  std::vector<int> ignored;
+  return initTestMPMesh(mesh, ignored);
+}
 
-MPMesh initTestMPMesh(Mesh& mesh){
+MPMesh initTestMPMesh(Mesh& mesh, std::vector<int>& mpPerElement){
     int numElms = mesh.getNumElements();
     Vector2View vtxCoords = mesh.getVtxCoords();   
     IntVtx2ElmView elm2VtxConn = mesh.getElm2VtxConn();
 
     int numMPs = 0;
-    
+   
     IntView numMPsPerElement("numMaterialPointsPerElement",numElms);
-    Kokkos::Random_XorShift64_Pool<> random_pool(randSeed);
-    Kokkos::parallel_for("setNumMPPerElement",numElms, KOKKOS_LAMBDA(const int i){
-        auto generator = random_pool.get_state();
-        numMPsPerElement(i) = generator.urand(4,7); //rand between 4 and 7 - TODO: make input arg
-        printf("elm %d numMp %d\n", i, numMPsPerElement(i));
-        random_pool.free_state(generator);
-    });
+    if(mpPerElement.empty()) {
+      Kokkos::Random_XorShift64_Pool<> random_pool(randSeed);
+      Kokkos::parallel_for("setNumMPPerElement",numElms, KOKKOS_LAMBDA(const int i){
+          auto generator = random_pool.get_state();
+          numMPsPerElement(i) = generator.urand(4,7); //rand between 4 and 7 - TODO: make input arg
+          random_pool.free_state(generator);
+      });
+    } else {
+      PMT_ALWAYS_ASSERT(static_cast<size_t>(mesh.getNumElements()) == mpPerElement.size());
+      Kokkos::View<int*, Kokkos::HostSpace> mpPerElement_hv(mpPerElement.data(),mpPerElement.size());
+      Kokkos::deep_copy(numMPsPerElement,mpPerElement_hv);
+    }
 
     Kokkos::parallel_reduce("calcTotalMP",numElms,KOKKOS_LAMBDA(const int&i, int& sum){
         sum += numMPsPerElement(i);

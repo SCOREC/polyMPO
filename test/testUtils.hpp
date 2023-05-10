@@ -21,10 +21,12 @@ Mesh initTestMesh(int factor);
  * \details  Init particles at central position of the element
  * with a rand 4-6 duplicate of the particles and link them in an MPMesh object
  * 
- * \param any resonable meshObj
+ * \param meshObj (in) a mesh
+ * \param mpPerElement (in) number of material points per element
  *
  * \return the MPMesh object with the meshObj and test MPs
  */
+MPMesh initTestMPMesh(Mesh& meshObj, std::vector<int>& mpPerElement);
 MPMesh initTestMPMesh(Mesh& meshObj);
 
 /*

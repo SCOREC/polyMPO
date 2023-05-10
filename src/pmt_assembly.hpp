@@ -9,7 +9,6 @@ DoubleView assembly(MPM& mpm){
     auto mesh = mpm.getMesh();
     auto MPs = mpm.getMPs();
     int numVtxs = mesh.getNumVertices();
-    int numElms = mesh.getNumElements();
     int numMPs = MPs.getCount(); 
      
     auto vtxCoords = mesh.getVtxCoords(); 

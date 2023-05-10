@@ -25,6 +25,7 @@ Mesh initTestMesh(int factor);
  *
  * \return the MPM object with the meshObj and test MPs
  */
+MPM initTestMPM(Mesh& meshObj, std::vector<int>& mpPerElement);
 MPM initTestMPM(Mesh& meshObj);
 
 /*

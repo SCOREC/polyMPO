@@ -37,13 +37,36 @@ int main() {
     //run assembly and test Wachspress
     {
         auto mesh = initTestMesh(1);
-        auto mpm = initTestMPM(mesh);
+        auto mpPerElement = std::vector<int>({5,4,5,6,6,5,4,6,5,5});
+        auto mpm = initTestMPM(mesh, mpPerElement); //creates test MPs
         
         auto meshFromMPM = mpm.getMesh();
         PMT_ALWAYS_ASSERT(meshFromMPM.getNumVertices() == 19);
         PMT_ALWAYS_ASSERT(meshFromMPM.getNumElements() == 10);
         
-        polyMpmTest::assembly(mpm);
+        //run non-physical assembly (mp -to- mesh vertex) kernel
+        auto vtxField = polyMpmTest::assembly(mpm);
+        //check the result
+        auto vtxField_h = Kokkos::create_mirror_view(vtxField);
+        Kokkos::deep_copy(vtxField_h, vtxField);
+        const std::vector<double> vtxFieldExpected = {
+          1.768750, 4.528750, 17.660000, 8.228750,
+          8.406250, 2.818750, 4.978750, 5.708750,
+          6.486250, 10.551786, 13.014286, 15.114286,
+          9.714286, 8.631786, 4.990000, 1.050000,
+          2.830000, 5.694286, 3.914286
+        };
+        PMT_ALWAYS_ASSERT(vtxField_h.size() == vtxFieldExpected.size());
+        for(size_t i=0; i<vtxField_h.size(); i++) {
+          auto res = polyMpmTest::isEqual(vtxField_h(i),vtxFieldExpected[i], 1e-6);
+          if(!res) {
+            fprintf(stderr, "computed value for vtx %ld, %.6f, does not match expected value %.6f\n",
+                    i, vtxField_h(i), vtxFieldExpected[i]);
+          }
+          PMT_ALWAYS_ASSERT(res);
+        }
+
+
         interpolateWachspress(mpm);              
     }
     Kokkos::finalize();

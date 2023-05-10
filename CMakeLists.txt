@@ -24,8 +24,11 @@ endmacro(polyMpmTest_export_lib)
 set(CMAKE_CXX_EXTENSIONS Off)
 find_package(Kokkos REQUIRED)
 
-find_package(PkgConfig REQUIRED)
-pkg_check_modules(NetCDF REQUIRED IMPORTED_TARGET netcdf>=4.7.3)
+option(POLYMPO_USE_NETCDF "Enable the use of NetCDF" OFF)
+if(POLYMPO_USE_NETCDF)
+  find_package(PkgConfig REQUIRED)
+  pkg_check_modules(NetCDF REQUIRED IMPORTED_TARGET netcdf>=4.7.3)
+endif()
 
 # Set a default build type if none was specified
 # from: https://www.kitware.com/cmake-and-the-default-build-type/

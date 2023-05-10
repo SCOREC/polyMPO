@@ -104,6 +104,9 @@ void initArray(double* arr, int n, double fill){
     }
 }
 
+//this is a lazy comparison and shouldn't be relied on beyond simple testing
+bool isEqual(double a, double b, double tol=1e-9);
+
 }//namespace polyMpmTest end
 
 #endif

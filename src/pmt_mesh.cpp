@@ -1,4 +1,6 @@
 #include "pmt_mesh.hpp"
+
+#ifdef POLYMPI_HAS_NETCDF
 #include <netcdf.h>
 
 #define ERRexit(e){ printf("Error: %s\n", nc_strerror(e)); exit(2);}
@@ -157,5 +159,17 @@ Mesh Mesh::readMPASMesh(int ncid){
               elm2VtxConn,
               vtx2ElmConn);
 }
+#else
+
+namespace polyMpmTest{
+  Mesh Mesh::readMPASMesh(std::string) {
+    return readMPASMesh(0);
+  }
+  Mesh Mesh::readMPASMesh(int){
+    fprintf(stderr, "ERROR: readMPASMesh requires compiling with NetCDF enabled\n");
+    exit(EXIT_FAILURE);
+    return Mesh();
+  }
+#endif
 
 } // namespace polyMpmTest

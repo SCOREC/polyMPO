@@ -84,7 +84,6 @@ MPMesh initTestMPMesh(Mesh& mesh, std::vector<int>& mpPerElement){
         sum += numMPsPerElement(i);
     },numMPs);
     IntView MPToElement("MPToElement",numMPs);
-    printf("total numMp %d\n", numMPs);
 
     IntView elm2MPs("elementToMPs",numElms*(maxMPsPerElm+1));
     Kokkos::parallel_scan("setMPsToElement", numElms, KOKKOS_LAMBDA(int i, int& iMP, bool is_final){
@@ -97,7 +96,6 @@ MPMesh initTestMPMesh(Mesh& mesh, std::vector<int>& mpPerElement){
         }
         iMP += numMPsPerElement(i); 
     },numMPs);
-    printf("scan total numMp %d\n", numMPs);
 
     Vector2View positions("MPpositions",numMPs);
     IntView MPs2Elm("MPToElementIDs",numMPs);

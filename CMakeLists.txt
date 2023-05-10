@@ -23,7 +23,6 @@ endmacro(polyMpmTest_export_lib)
 #pumipic dependency
 set(CMAKE_CXX_EXTENSIONS Off) #kokkos does not allow extensions
 message(STATUS "Found PUMIpic: ${pumipic_VERSION}")
-set(xgcm_USE_pumipic_DEFAULT ON)
 find_package(pumipic REQUIRED)
 #Clear the omegah compilation flags that it passes to cuda.  Using the
 # kokkos target, and nvcc_wrapper, provide sufficient flags.
@@ -32,12 +31,10 @@ set_property(TARGET Omega_h::omega_h PROPERTY INTERFACE_COMPILE_OPTIONS "")
 #kokkos - pumipic should provide this
 find_package(Kokkos REQUIRED)
 
-find_package(PkgConfig REQUIRED)
-pkg_check_modules(NetCDF IMPORTED_TARGET netcdf>=4.7.3)
-if(${NetCDF_FOUND})
-  message(STATUS "NetCDF found")
-else()
-  message(STATUS "NetCDF not found")
+option(POLYMPO_USE_NETCDF "Enable the use of NetCDF" OFF)
+if(POLYMPO_USE_NETCDF)
+  find_package(PkgConfig REQUIRED)
+  pkg_check_modules(NetCDF REQUIRED IMPORTED_TARGET netcdf>=4.7.3)
 endif()
 
 # Set a default build type if none was specified

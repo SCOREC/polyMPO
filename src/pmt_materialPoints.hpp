@@ -20,13 +20,11 @@ PS* createDPS(int numElms, int numMPs, Vector2View positions);
 
 class MaterialPoints {
   private:
-    Vector2View positions_;
     PS* MPs;
 
   public:
     MaterialPoints() : MPs(nullptr) {};
-    MaterialPoints(int numElms, int numMPs, Vector2View positions) :
-                    positions_(positions) {
+    MaterialPoints(int numElms, int numMPs, Vector2View positions) {
       MPs = createDPS(numElms, numMPs, positions);
     };
     ~MaterialPoints() {
@@ -49,7 +47,7 @@ class MaterialPoints {
       ps::parallel_for(MPs, kernel, name);
     }
     int getCount() { return MPs->nPtcls(); }
-    Vector2View getPositions() { return positions_; }
+    auto getPositions() { return getData<0>(); }
 
 //TODO:MUTATOR  
     void T2LTracking(Vector2View dx);

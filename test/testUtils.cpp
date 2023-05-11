@@ -138,7 +138,8 @@ void interpolateWachspress(MPMesh& mpMesh){
             double basisByArea[maxVtxsPerElm] = {0.0};
             initArray(basisByArea,maxVtxsPerElm,0.0);
             Vector2 gradBasisByArea[maxVtxsPerElm];
-            getBasisAndGradByAreaGblForm(MPsPosition(mp), numVtx, v, basisByArea, gradBasisByArea);
+            Vector2 position(MPsPosition(mp,0),MPsPosition(mp,1));
+            getBasisAndGradByAreaGblForm(position, numVtx, v, basisByArea, gradBasisByArea);
         
             Vector2 wp_coord(0.0,0.0);
             double wp_grad = 0.0;

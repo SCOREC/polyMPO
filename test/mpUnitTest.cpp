@@ -6,8 +6,8 @@ void checkPositions(polyMpmTest::MaterialPoints& MPs, std::string name) {
   auto mpPositions = MPs.getData<0>();
   auto checkPositions = PS_LAMBDA(const int&, const int& mp, const int& mask) {
     if(mask) { //if material point is 'active'/'enabled'
-      PMT_ALWAYS_ASSERT(mpPositions(mp,0) == 1.0);
-      PMT_ALWAYS_ASSERT(mpPositions(mp,1) == 42.0);
+      assert(mpPositions(mp,0) == 1.0);
+      assert(mpPositions(mp,1) == 42.0);
     }
   };
   MPs.parallel_for(checkPositions, "checkPositions_"+name);

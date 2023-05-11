@@ -17,8 +17,10 @@ endfunction()
 
 pmt_add_exe(testWachspress testWachspress.cpp)
 pmt_add_exe(unitTest unitTest.cpp)
+pmt_add_exe(mpUnitTest mpUnitTest.cpp)
 pmt_add_exe(timeAssmblyWachspress testTiming.cpp)
 
 add_test(NAME unit_test COMMAND ./unitTest)
+add_test(NAME mp_unit_test COMMAND ./mpUnitTest)
 add_test(NAME test_wachspress COMMAND ./testWachspress)
 add_test(NAME test_timing COMMAND ./timeAssmblyWachspress 5)

@@ -17,7 +17,7 @@ class MPMesh{
     
   public:
     MaterialPoints* MPs;
-    MPMesh(Mesh& mesh, MaterialPoints* inMPs, IntView elm2MPs):
+    MPMesh(Mesh& mesh, MaterialPoints* inMPs, IntView elm2MPs, IntView MPs2Elm):
         mesh_(mesh), elm2MaterialPoints_(elm2MPs), materialPoints2Elm_(MPs2Elm), MPs(inMPs) {
       MPs->rebuild(materialPoints2Elm_);
     };

@@ -12,25 +12,17 @@ namespace polyMpmTest{
 class MPMesh{
   private:
     Mesh mesh_;
-    IntView elm2MaterialPoints_; 
-    IntView materialPoints2Elm_;
     
   public:
     MaterialPoints* MPs;
-    MPMesh(Mesh& mesh, MaterialPoints* inMPs, IntView elm2MPs, IntView MPs2Elm):
-        mesh_(mesh), elm2MaterialPoints_(elm2MPs), materialPoints2Elm_(MPs2Elm), MPs(inMPs) {
-      MPs->rebuild(materialPoints2Elm_);
+    MPMesh(Mesh& mesh, MaterialPoints* inMPs):
+        mesh_(mesh), MPs(inMPs) {
     };
     ~MPMesh() {
       delete MPs;
     }
 
     Mesh getMesh() { return mesh_; }
-    IntView getElm2MPs() { return elm2MaterialPoints_; }
-    IntView getMPs2Elm() { return materialPoints2Elm_; }
-
-    void setElm2MPs(IntView elm2MPs) { elm2MaterialPoints_ = elm2MPs; }
-    void setMPs2Elm(IntView MPs2Elm) { materialPoints2Elm_ = MPs2Elm; }
 };
 
 }//namespace polyMpmTest end

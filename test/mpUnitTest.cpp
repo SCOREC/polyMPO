@@ -4,13 +4,21 @@
 
 void checkPositions(polyMpmTest::MaterialPoints& MPs, std::string name) {
   auto mpPositions = MPs.getData<0>();
-  auto checkPositions = PS_LAMBDA(const int&, const int& mp, const int& mask) {
+  auto checkPositions = PS_LAMBDA(const int& elm, const int& mp, const int& mask) {
     if(mask) { //if material point is 'active'/'enabled'
-      assert(mpPositions(mp,0) == 1.0);
-      assert(mpPositions(mp,1) == 42.0);
+      assert(mpPositions(mp,0) == elm*1.0);
+      assert(mpPositions(mp,1) == elm*-1.0);
     }
   };
   MPs.parallel_for(checkPositions, "checkPositions_"+name);
+}
+
+template <typename T>
+auto copyToDevice(std::vector<T> inVec, std::string name) {
+  Kokkos::View<int*, Kokkos::HostSpace> src(inVec.data(),inVec.size());
+  Kokkos::View<T*, Kokkos::DefaultExecutionSpace> dest(name,inVec.size());
+  Kokkos::deep_copy(dest,src);
+  return dest;
 }
 
 
@@ -20,17 +28,10 @@ int main(int argc, char** argv) {
   {
     const int numElms = 10;
     const int numMPs = 20;
-    auto mpPositions = polyMpmTest::Vector2View("positions",numMPs);
-    Kokkos::parallel_for("intializeMPsPosition", numMPs, KOKKOS_LAMBDA(const int i){
-        const auto x = 1.0;
-        const auto y = 42.0;
-        mpPositions(i) = polyMpmTest::Vector2(x,y);
-    });
+
     auto mpPerElement = std::vector<int>({2,3,1,2,3,3,2,1,2,1});
     const auto mpCount = std::accumulate(mpPerElement.begin(),mpPerElement.end(),0);
     PMT_ALWAYS_ASSERT(mpCount == numMPs);
-    auto MPs = polyMpmTest::MaterialPoints(numElms, numMPs, mpPositions);
-    checkPositions(MPs, "afterConstruction");
 
     auto mpToElement = std::vector<int>(numMPs);
     int mpIdx = 0;
@@ -39,11 +40,19 @@ int main(int argc, char** argv) {
         mpToElement[mpIdx++] = i;
       }
     }
-    Kokkos::View<int*, Kokkos::HostSpace> mpToElement_h(mpToElement.data(),mpToElement.size());
-    polyMpmTest::IntView mpToElement_d("mpToElement",numMPs);
-    Kokkos::deep_copy(mpToElement_d,mpToElement_h);
-    MPs.rebuild(mpToElement_d);
-    checkPositions(MPs, "afterRebuild");
+
+    auto mpToElement_d = copyToDevice<int>(mpToElement, "mpToElement");
+    auto mpPerElement_d = copyToDevice<int>(mpPerElement, "mpPerElement");
+
+    auto mpPositions = polyMpmTest::Vector2View("positions",numMPs);
+    Kokkos::parallel_for("intializeMPsPosition", numMPs, KOKKOS_LAMBDA(const int i){
+        const auto x = mpToElement_d(i)*1.0;
+        const auto y = mpToElement_d(i)*-1.0;
+        mpPositions(i) = polyMpmTest::Vector2(x,y);
+    });
+
+    auto MPs = polyMpmTest::MaterialPoints(numElms, numMPs, mpPositions, mpPerElement_d, mpToElement_d);
+    checkPositions(MPs, "afterConstruction");
   }
   Kokkos::finalize();
   return 0;

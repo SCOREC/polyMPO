@@ -85,20 +85,16 @@ MPMesh initTestMPMesh(Mesh& mesh, std::vector<int>& mpPerElement){
     },numMPs);
     IntView MPToElement("MPToElement",numMPs);
 
-    IntView elm2MPs("elementToMPs",numElms*(maxMPsPerElm+1));
     Kokkos::parallel_scan("setMPsToElement", numElms, KOKKOS_LAMBDA(int i, int& iMP, bool is_final){
         if(is_final){  
-            elm2MPs(i*(maxMPsPerElm+1)) = numMPsPerElement(i);
             for(int j=0; j<numMPsPerElement(i); j++){
                 MPToElement(iMP+j) = i;
-                elm2MPs(i*(maxMPsPerElm+1)+j+1) = iMP+j;
             }   
         }
         iMP += numMPsPerElement(i); 
     },numMPs);
 
     Vector2View positions("MPpositions",numMPs);
-    IntView MPs2Elm("MPToElementIDs",numMPs);
      
     Kokkos::parallel_for("intializeMPsPosition", numMPs, KOKKOS_LAMBDA(const int iMP){
         int ielm = MPToElement(iMP);
@@ -109,13 +105,12 @@ MPMesh initTestMPMesh(Mesh& mesh, std::vector<int>& mpPerElement){
             sum_y += vtxCoords(elm2VtxConn(ielm,i)-1)[1];
         }
         positions(iMP) = Vector2(sum_x/numVtx, sum_y/numVtx);
-        MPs2Elm(iMP) = ielm;
         //printf("%d: (%f,%f)\n",iMP,positions(iMP)[0],positions(iMP)[1]);
     });
     
-    auto p = new MaterialPoints(numElms,numMPs,positions);
+    auto p = new MaterialPoints(numElms,numMPs,positions,numMPsPerElement,MPToElement);
 
-    return MPMesh(mesh,p,elm2MPs,MPs2Elm);
+    return MPMesh(mesh,p);
 }
 
 

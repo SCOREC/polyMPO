@@ -16,7 +16,7 @@ using particle_structs::MemberTypes;
 typedef MemberTypes<double[2]> MaterialPointTypes;
 typedef ps::ParticleStructure<MaterialPointTypes> PS;
 
-PS* createDPS(int numElms, int numMPs, Vector2View positions);
+PS* createDPS(int numElms, int numMPs, Vector2View positions, IntView mpsPerElm, IntView mp2elm);
 
 class MaterialPoints {
   private:
@@ -24,8 +24,8 @@ class MaterialPoints {
 
   public:
     MaterialPoints() : MPs(nullptr) {};
-    MaterialPoints(int numElms, int numMPs, Vector2View positions) {
-      MPs = createDPS(numElms, numMPs, positions);
+    MaterialPoints(int numElms, int numMPs, Vector2View positions, IntView mpsPerElm, IntView mp2elm) {
+      MPs = createDPS(numElms, numMPs, positions, mpsPerElm, mp2elm);
     };
     ~MaterialPoints() {
       if(MPs != nullptr)

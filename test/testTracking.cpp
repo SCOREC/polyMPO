@@ -54,7 +54,7 @@ int main(int argc, char* argv[]) {
         }else{
             PMT_ALWAYS_ASSERT(false);
         }
-        printMPs(mpm);
+        //printMPs(mpm);
     }    
     Kokkos::finalize();
     return 0;

@@ -4,7 +4,7 @@
 
 namespace polyMpmTest{
 
-void MPM::CVTTracking(Vector2View dx, const int printVTP){
+void MPM::CVTTrackingEdgeCenterBased(Vector2View dx, const int printVTP){
     int numVtxs = mesh_.getNumVertices();
     int numElms = mesh_.getNumElements();
     
@@ -21,7 +21,7 @@ void MPM::CVTTracking(Vector2View dx, const int printVTP){
 
     //numMPs = 1; //XXX
     IntView count("countCrossMPs",numMPs);
-    Kokkos::parallel_for("CVTCalc",numMPs,KOKKOS_LAMBDA(const int iMP){
+    Kokkos::parallel_for("CVTEdgeCalc",numMPs,KOKKOS_LAMBDA(const int iMP){
         Vector2 MP = MPsPosition(iMP);
         if(isActive(iMP)){
             int iElm = MPs2Elm(iMP);
@@ -60,8 +60,8 @@ void MPM::CVTTracking(Vector2View dx, const int printVTP){
                 }else{
                     //update the iELm and do the loop again
                     iElm = elm2ElmConn(iElm,edgeIndex);
-                    if(printVTP>=0)
-                       Kokkos::atomic_increment(&count(iMP));
+                    //if(printVTP>=0)
+                    //   Kokkos::atomic_increment(&count(iMP));
                 }
             } 
         }
@@ -108,7 +108,7 @@ void MPM::CVTTrackingElmCenterBased(Vector2View dx, const int printVTP){
     Kokkos::parallel_for("calcElmCenter",numElms,KOKKOS_LAMBDA(const int iElm){
         elmCenter(iElm) = calcElmCenter(iElm,elm2VtxConn,vtxCoords);
     });
-    Kokkos::parallel_for("CVTCalc",numMPs,KOKKOS_LAMBDA(const int iMP){
+    Kokkos::parallel_for("CVTElmCalc",numMPs,KOKKOS_LAMBDA(const int iMP){
         Vector2 MP = MPsPosition(iMP);
         if(isActive(iMP)){
             int iElm = MPs2Elm(iMP);
@@ -134,8 +134,8 @@ void MPM::CVTTrackingElmCenterBased(Vector2View dx, const int printVTP){
                     break;
                 }else{
                     iElm = closestElm;
-                    if(printVTP>=0)
-                       Kokkos::atomic_increment(&count(iMP));
+                    //if(printVTP>=0)
+                    //   Kokkos::atomic_increment(&count(iMP));
                 }
             } 
         }

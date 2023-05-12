@@ -31,7 +31,7 @@ class MPM{
     void setElm2MPs(IntView elm2MPs) { elm2MaterialPoints_ = elm2MPs; }
     void setMPs2Elm(IntView MPs2Elm) { materialPoints2Elm_ = MPs2Elm; }
 
-    void CVTTracking(Vector2View dx, const int printFlag = -1);
+    void CVTTrackingEdgeCenterBased(Vector2View dx, const int printFlag = -1);
     void CVTTrackingElmCenterBased(Vector2View dx, const int printFlag = -1);
     void T2LTracking(Vector2View dx, const int printFlag = -1);
 };

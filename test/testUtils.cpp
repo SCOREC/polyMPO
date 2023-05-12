@@ -607,7 +607,7 @@ void runCVTRandomWithProportion(MPM mpm, const double p0, const double p1, const
     printf("\tRun CVT Tracking Edge Center Based Random With Proportion: %.2f %.2f %.2f %.2f\n",p0,p1,p2,p3);
     for(int i=0; i< loopTimes; i++){
         Vector2View dx = initT2LTest1(mpm, p0, p1, p2, p3, randomSeed);
-        mpm.CVTTracking(dx, printVTP<0?-1:i); 
+        mpm.CVTTrackingEdgeCenterBased(dx, printVTP<0?-1:i); 
     }
 }
 

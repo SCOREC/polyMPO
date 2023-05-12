@@ -60,8 +60,8 @@ void MPM::CVTTracking(Vector2View dx, const int printVTP){
                 }else{
                     //update the iELm and do the loop again
                     iElm = elm2ElmConn(iElm,edgeIndex);
-                    //if(printVTP>=0)
-                    //   Kokkos::atomic_increment(&count(iMP));
+                    if(printVTP>=0)
+                       Kokkos::atomic_increment(&count(iMP));
                 }
             } 
         }
@@ -103,9 +103,10 @@ void MPM::CVTTrackingElmCenterBased(Vector2View dx, const int printVTP){
     auto MPs2Elm = materialPoints2Elm_;
 
     //numMPs = 1; //XXX
-    //IntView count("countCrossMPs",numMPs);
-    Kokkos::parallel_for("calcElmCenter",numElm,KOKKOS_LAMBDA(const int iELm){
-        
+    IntView count("countCrossMPs",numMPs);
+    Vector2View elmCenter("elmentCenter",numElms);
+    Kokkos::parallel_for("calcElmCenter",numElms,KOKKOS_LAMBDA(const int iElm){
+        elmCenter(iElm) = calcElmCenter(iElm,elm2VtxConn,vtxCoords);
     });
     Kokkos::parallel_for("CVTCalc",numMPs,KOKKOS_LAMBDA(const int iMP){
         Vector2 MP = MPsPosition(iMP);
@@ -114,40 +115,27 @@ void MPM::CVTTrackingElmCenterBased(Vector2View dx, const int printVTP){
             Vector2 MPnew = MP + dx(iMP);
             while(true){
                 int numVtx = elm2VtxConn(iElm,0);
-                //seperate the elm2Vtx
-                int v[maxVtxsPerElm];
-                for(int i=0; i< numVtx; i++)
-                    v[i] = elm2VtxConn(iElm,i+1)-1;
-                //calc dist square from each edge center to MPnew
-                //calc dot products to check inside or not
-                int edgeIndex = -1;
-                double minDistSq = DBL_MAX;
-                for(int i=0; i< numVtx; i++){
-                    Vector2 v_i = vtxCoords(v[i]);
-                    Vector2 v_ip1 = vtxCoords(v[(i+1)%numVtx]);
-                    Vector2 edgeCenter = (v_ip1 + v_i)*0.5;
-                    Vector2 delta = MPnew - edgeCenter;
-                    double currentDistSq = delta[0]*delta[0] + delta[1]*delta[1];
-                    double dotProduct = dx(iMP).dot(delta);
-                    if(dotProduct <=0){
-                        edgeIndex = -1;
-                        break;
-                    } 
-                    if(currentDistSq < minDistSq){
-                        edgeIndex = i+1;
-                        minDistSq = currentDistSq;    
+                Vector2 delta = MPnew - elmCenter(iElm);
+                double minDistSq = delta[0]*delta[0] + delta[1]*delta[1];
+                int closestElm = -1;
+                //go through all the connected elm, calc distance
+                for(int i=1; i<=numVtx; i++){
+                    int elmID = elm2ElmConn(iElm,i);
+                    delta = MPnew - elmCenter(elmID);
+                    double neighborDistSq = delta[0]*delta[0] + delta[1]*delta[1];
+                    if(neighborDistSq < minDistSq){
+                        closestElm = elmID;
+                        minDistSq = neighborDistSq;
                     }
                 }
-                if(edgeIndex <0){
-                    //we get to the final elm
+                if(closestElm<0){
                     MPs2Elm(iMP) = iElm;
                     MPsPosition(iMP) = MPnew;
                     break;
                 }else{
-                    //update the iELm and do the loop again
-                    iElm = elm2ElmConn(iElm,edgeIndex);
-                    //if(printVTP>=0)
-                    //   Kokkos::atomic_increment(&count(iMP));
+                    iElm = closestElm;
+                    if(printVTP>=0)
+                       Kokkos::atomic_increment(&count(iMP));
                 }
             } 
         }

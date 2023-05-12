@@ -46,10 +46,15 @@ int main(int argc, char* argv[]) {
                 mpm = initMPMWithRandomMPs(mesh,factor); 
                 runCVTRandomWithProportion(mpm, p0, p1, p2, p3, 1, -1);
             }
+        }else if(MPAcross == 7){
+            for(int i=0; i<5; i++){
+                mpm = initMPMWithRandomMPs(mesh,factor); 
+                runCVTElmCenterBasedRandomWithProportion(mpm, p0, p1, p2, p3, 1, -1);
+            }
         }else{
             PMT_ALWAYS_ASSERT(false);
         }
-        //printMPs(mpm);
+        printMPs(mpm);
     }    
     Kokkos::finalize();
     return 0;

@@ -604,10 +604,18 @@ MPM initMPMWithCenterMPs(Mesh& mesh, int factor){
 }
 
 void runCVTRandomWithProportion(MPM mpm, const double p0, const double p1, const double p2, const double p3, const int loopTimes, const int printVTP, const int randomSeed){
-    printf("\tRun CVT Tracking Random With Proportion: %.2f %.2f %.2f %.2f\n",p0,p1,p2,p3);
+    printf("\tRun CVT Tracking Edge Center Based Random With Proportion: %.2f %.2f %.2f %.2f\n",p0,p1,p2,p3);
     for(int i=0; i< loopTimes; i++){
         Vector2View dx = initT2LTest1(mpm, p0, p1, p2, p3, randomSeed);
         mpm.CVTTracking(dx, printVTP<0?-1:i); 
+    }
+}
+
+void runCVTElmCenterBasedRandomWithProportion(MPM mpm, const double p0, const double p1, const double p2, const double p3, const int loopTimes, const int printVTP, const int randomSeed){
+    printf("\tRun CVT Tracking Elm Center Based Random With Proportion: %.2f %.2f %.2f %.2f\n",p0,p1,p2,p3);
+    for(int i=0; i< loopTimes; i++){
+        Vector2View dx = initT2LTest1(mpm, p0, p1, p2, p3, randomSeed);
+        mpm.CVTTrackingElmCenterBased(dx, printVTP<0?-1:i); 
     }
 }
 

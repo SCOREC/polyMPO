@@ -21,6 +21,19 @@ void MPM::CVTTrackingEdgeCenterBased(Vector2View dx, const int printVTP){
 
     //numMPs = 1; //XXX
     IntView count("countCrossMPs",numMPs);
+    Kokkos::View<Vector2*[maxVtxsPerElm]> edgeCenters("EdgeCenters",numElms);
+    Kokkos::parallel_for("EdgeCenterCalc",numElms,KOKKOS_LAMBDA(const int iElm){
+        int numVtx = elm2VtxConn(iElm,0);
+        int v[maxVtxsPerElm];
+        for(int i=0; i< numVtx; i++)
+            v[i] = elm2VtxConn(iElm,i+1)-1;
+        for(int i=0; i< numVtx; i++){
+            Vector2 v_i = vtxCoords(v[i]);
+            Vector2 v_ip1 = vtxCoords(v[(i+1)%numVtx]);
+            edgeCenters(iElm,i) = (v_ip1 + v_i)*0.5;
+        }
+   });
+    Kokkos::fence();
     Kokkos::parallel_for("CVTEdgeCalc",numMPs,KOKKOS_LAMBDA(const int iMP){
         Vector2 MP = MPsPosition(iMP);
         if(isActive(iMP)){
@@ -28,18 +41,12 @@ void MPM::CVTTrackingEdgeCenterBased(Vector2View dx, const int printVTP){
             Vector2 MPnew = MP + dx(iMP);
             while(true){
                 int numVtx = elm2VtxConn(iElm,0);
-                //seperate the elm2Vtx
-                int v[maxVtxsPerElm];
-                for(int i=0; i< numVtx; i++)
-                    v[i] = elm2VtxConn(iElm,i+1)-1;
                 //calc dist square from each edge center to MPnew
                 //calc dot products to check inside or not
                 int edgeIndex = -1;
                 double minDistSq = DBL_MAX;
                 for(int i=0; i< numVtx; i++){
-                    Vector2 v_i = vtxCoords(v[i]);
-                    Vector2 v_ip1 = vtxCoords(v[(i+1)%numVtx]);
-                    Vector2 edgeCenter = (v_ip1 + v_i)*0.5;
+                    Vector2 edgeCenter = edgeCenters(iElm,i);
                     Vector2 delta = MPnew - edgeCenter;
                     double currentDistSq = delta[0]*delta[0] + delta[1]*delta[1];
                     double dotProduct = dx(iMP).dot(delta);

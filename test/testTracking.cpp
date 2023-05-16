@@ -22,7 +22,8 @@ int main(int argc, char* argv[]) {
         auto mesh = Mesh::readMPASMesh("./GIS.nc");//numElm == 6122 
         MPM mpm = initMPMWithRandomMPs(mesh,factor); 
         //10,20,40,80,160,320,640
-        //TODO: 10,40,160,640
+        //TODO: test 1M and 10M
+        //      factor of 163, 1630
         
         //calcAvgLengthOfEdge(mesh,1); 
         //runT2LSimple(mpm);

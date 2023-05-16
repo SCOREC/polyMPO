@@ -45,7 +45,7 @@ int main(int argc, char* argv[]) {
         }else if(MPAcross == 6){
             for(int i=0; i<5; i++){
                 mpm = initMPMWithCenterMPs(mesh,factor); 
-                runCVTRandomWithProportion(mpm, p0, p1, p2, p3, 1, 0);
+                runCVTRandomWithProportion(mpm, p0, p1, p2, p3, 1, -1);
             }
         }else if(MPAcross == 7){
             for(int i=0; i<5; i++){
@@ -55,17 +55,32 @@ int main(int argc, char* argv[]) {
         }else if(MPAcross == 8){
             for(int i=0; i<5; i++){
                 mpm = initMPMWithCenterMPs(mesh,factor); 
-                runCVTAllAcrossTest(mpm, 1, 1, 0);
+                runCVTAllAcrossTest(mpm, 1, 1, -1);
             }
         }else if(MPAcross == 9){
             for(int i=0; i<5; i++){
                 mpm = initMPMWithCenterMPs(mesh,factor); 
-                runCVTAllAcrossTest(mpm, 2, 1, 0);
+                runCVTAllAcrossTest(mpm, 2, 1, -1);
             }
         }else if(MPAcross == 10){
             for(int i=0; i<5; i++){
                 mpm = initMPMWithCenterMPs(mesh,factor); 
-                runCVTElmAllAcrossTest(mpm, 10, 0.4, 1, 0);
+                runCVTAllAcrossTest(mpm, 10, 0.4, 1, -1);
+            }
+        }else if(MPAcross == 11){
+            for(int i=0; i<5; i++){
+                mpm = initMPMWithCenterMPs(mesh,factor); 
+                runCVTElmAllAcrossTest(mpm, 1, 1, -1);
+            }
+        }else if(MPAcross == 12){
+            for(int i=0; i<5; i++){
+                mpm = initMPMWithCenterMPs(mesh,factor); 
+                runCVTElmAllAcrossTest(mpm, 2, 1, -1);
+            }
+        }else if(MPAcross == 12){
+            for(int i=0; i<5; i++){
+                mpm = initMPMWithCenterMPs(mesh,factor); 
+                runCVTElmAllAcrossTest(mpm, 10, 0.4, 1, -1);
             }
         }else{
             PMT_ALWAYS_ASSERT(false);

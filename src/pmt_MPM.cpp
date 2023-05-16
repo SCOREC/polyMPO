@@ -67,8 +67,8 @@ void MPM::CVTTrackingEdgeCenterBased(Vector2View dx, const int printVTP){
                 }else{
                     //update the iELm and do the loop again
                     iElm = elm2ElmConn(iElm,edgeIndex);
-                    if(printVTP>=0)
-                       Kokkos::atomic_increment(&count(iMP));
+                    //if(printVTP>=0)
+                    //   Kokkos::atomic_increment(&count(iMP));
                 }
             } 
         }
@@ -141,8 +141,8 @@ void MPM::CVTTrackingElmCenterBased(Vector2View dx, const int printVTP){
                     break;
                 }else{
                     iElm = closestElm;
-                    if(printVTP>=0)
-                       Kokkos::atomic_increment(&count(iMP));
+                    //if(printVTP>=0)
+                    //   Kokkos::atomic_increment(&count(iMP));
                 }
             } 
         }
@@ -218,8 +218,8 @@ void MPM::T2LTracking(Vector2View dx, const int printVTP){
                     if(pdx[i]*pdx[ip1] <0 && e[i].cross(MPnew-vtxCoords(v[i]))<0){
                         //go to the next elm
                         iElm = elm2ElmConn(iElm,i+1);
-                        if(printVTP>=0)
-                            Kokkos::atomic_increment(&count(iMP));
+                        //if(printVTP>=0)
+                        //    Kokkos::atomic_increment(&count(iMP));
                         goToNeighbour = true;
                         if(iElm <0){
                             isActive(iMP) = false;

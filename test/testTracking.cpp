@@ -20,7 +20,7 @@ int main(int argc, char* argv[]) {
     {
         //auto mesh = Mesh::readMPASMesh("./mesh.QU.1920km.151026.nc");
         auto mesh = Mesh::readMPASMesh("./GIS.nc");//numElm == 6122 
-        MPM mpm = initMPMWithRandomMPs(mesh,factor); 
+        MPM mpm = initMPMWithCenterMPs(mesh,factor); 
         //10,20,40,80,160,320,640
         //TODO: test 1M and 10M
         //      factor of 163, 1630
@@ -34,23 +34,38 @@ int main(int argc, char* argv[]) {
         //test for timing
         if (MPAcross == 0){
             for(int i=0; i<5; i++){
-                mpm = initMPMWithRandomMPs(mesh,factor); 
+                mpm = initMPMWithCenterMPs(mesh,factor); 
                 runT2LRandomWithProportion(mpm, p0, p1, p2, p3, 1, -1);
             }
         }else if(MPAcross < 6){
             for(int i=0; i<5; i++){
-                mpm = initMPMWithRandomMPs(mesh,factor); 
+                mpm = initMPMWithCenterMPs(mesh,factor); 
                 runT2LWithOneMPAcross(mpm, MPAcross, 1, -1);
             }
         }else if(MPAcross == 6){
             for(int i=0; i<5; i++){
-                mpm = initMPMWithRandomMPs(mesh,factor); 
-                runCVTRandomWithProportion(mpm, p0, p1, p2, p3, 1, -1);
+                mpm = initMPMWithCenterMPs(mesh,factor); 
+                runCVTRandomWithProportion(mpm, p0, p1, p2, p3, 1, 0);
             }
         }else if(MPAcross == 7){
             for(int i=0; i<5; i++){
-                mpm = initMPMWithRandomMPs(mesh,factor); 
+                mpm = initMPMWithCenterMPs(mesh,factor); 
                 runCVTElmCenterBasedRandomWithProportion(mpm, p0, p1, p2, p3, 1, -1);
+            }
+        }else if(MPAcross == 8){
+            for(int i=0; i<5; i++){
+                mpm = initMPMWithCenterMPs(mesh,factor); 
+                runCVTAllAcrossTest(mpm, 1, 1, 0);
+            }
+        }else if(MPAcross == 9){
+            for(int i=0; i<5; i++){
+                mpm = initMPMWithCenterMPs(mesh,factor); 
+                runCVTAllAcrossTest(mpm, 2, 1, 0);
+            }
+        }else if(MPAcross == 10){
+            for(int i=0; i<5; i++){
+                mpm = initMPMWithCenterMPs(mesh,factor); 
+                runCVTElmAllAcrossTest(mpm, 10, 0.4, 1, 0);
             }
         }else{
             PMT_ALWAYS_ASSERT(false);

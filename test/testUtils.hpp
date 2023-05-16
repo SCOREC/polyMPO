@@ -79,6 +79,11 @@ Vector2View initT2LTest2(MPM mpm, const int MPAcross, const int randomSeed = ran
 /*
  * TODO: comments
  */
+Vector2View initT2LTest3(MPM mpm, const int MPAcross = 0,const double percent = 1.0, const int randomSeed = randSeed);
+
+/*
+ * TODO: comments
+ */
 double calcAvgLengthOfEdge(Mesh mesh, int printOut = 0);
 
 /*
@@ -110,6 +115,16 @@ void runCVTRandomWithProportion(MPM mpm, const double p0 = 0.25, const double p1
  * TODO: comments
  */
 void runCVTElmCenterBasedRandomWithProportion(MPM mpm, const double p0 = 0.25, const double p1 = 0.25, const double p2 = 0.25, const double p3 = 0.25, const int loopTimes = 1, const int printVTP = -1, const int randomSeed = randSeed);
+
+/*
+ * TODO: comments
+ */
+void runCVTAllAcrossTest(MPM mpm, const int MPAcross = 0, const double percent = 1.0, const int loopTimes = 1, const int printVTP = -1, const int randomSeed = randSeed);
+
+/*
+ * TODO: comments
+ */
+void runCVTElmAllAcrossTest(MPM mpm, const int MPAcross = 0, const double percent = 1.0, const int loopTimes = 1, const int printVTP = -1, const int randomSeed = randSeed);
 
 /*
  * TODO: comments

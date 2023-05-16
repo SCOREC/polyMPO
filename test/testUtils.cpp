@@ -529,6 +529,73 @@ Vector2View initT2LTest2(MPM mpm, const int MPAcross, const int randomSeed){
     return returnDx;
 }
 
+Vector2View initT2LTest3(MPM mpm, const int MPAcross, const double percent, const int randomSeed){ 
+    PMT_ALWAYS_ASSERT(MPAcross >= 0);
+    PMT_ALWAYS_ASSERT(percent >= 0 && percent <1.0+MPMTEST_EPSILON);
+    auto mesh = mpm.getMesh();
+    auto MPs = mpm.getMPs();
+    Vector2View vtxCoords = mesh.getVtxCoords();   
+    int numMPs = MPs.getCount();
+    auto MPsPosition = MPs.getPositions();
+    auto MPs2Elm = mpm.getMPs2Elm();
+    auto elm2ElmConn = mesh.getElm2ElmConn();
+    auto isActive = MPs.isActive();
+    IntVtx2ElmView elm2VtxConn = mesh.getElm2VtxConn();
+    Vector2View returnDx("T2LDeltaX",numMPs);
+    Kokkos::Random_XorShift64_Pool<> random_pool(randomSeed);
+    Kokkos::parallel_for("setNumMPPerElement", numMPs, KOKKOS_LAMBDA(const int iMP){
+    if(isActive(iMP)){
+        Vector2 MPPosition = MPsPosition(iMP);
+        auto generator = random_pool.get_state();
+        int numAcross = 0;
+        if(generator.drand(1)<percent){
+            numAcross = MPAcross;
+        }
+        random_pool.free_state(generator);
+        int initElm = MPs2Elm(iMP);
+        int iElm = initElm;
+        int numElm = elm2ElmConn(iElm, 0);
+        int initDirection = 1;//[0:numElm)+1
+        int nextEdge = initDirection;//[0:numElm)+1
+        int nextElm = elm2ElmConn(iElm,nextEdge);
+        for(int iAcross = 0; iAcross< numAcross; iAcross++){
+            if(nextElm < 0){//reInit to a new direction
+                iElm = initElm;
+                numElm = elm2ElmConn(iElm, 0);
+                if(initDirection == numElm){
+                    break;
+                }else{
+                    initDirection += 1;
+                }
+                nextEdge = initDirection;
+                nextElm = elm2ElmConn(iElm,nextEdge);
+                iAcross = -1;
+                continue;
+            }
+            int oldElm = iElm;
+            iElm = nextElm;
+            numElm = elm2ElmConn(iElm, 0);
+            //update the nextEdge:
+            for(int i=1; i<=numElm; i++){
+                if(elm2ElmConn(iElm, i) == oldElm){
+                    nextEdge = i;
+                    break;
+                }
+            }
+            nextEdge = (nextEdge + numElm/2)%numElm;
+            if(nextEdge == 0)
+                nextEdge = numElm;
+            nextElm = elm2ElmConn(iElm,nextEdge);
+        }
+        Vector2 targetPosition = calcElmCenter(iElm, elm2VtxConn, vtxCoords);
+        returnDx(iMP) = targetPosition - MPPosition;
+    }}); 
+    Kokkos::fence();
+    
+    return returnDx;
+}
+
+
 void runT2LSimple(MPM mpm, int size, double range, const int loopTimes, const int printVTP, const int randomSeed){
     if(size < 0)
         size = mpm.getMPs().getCount();
@@ -615,6 +682,22 @@ void runCVTElmCenterBasedRandomWithProportion(MPM mpm, const double p0, const do
     printf("\tRun CVT Tracking Elm Center Based Random With Proportion: %.2f %.2f %.2f %.2f\n",p0,p1,p2,p3);
     for(int i=0; i< loopTimes; i++){
         Vector2View dx = initT2LTest1(mpm, p0, p1, p2, p3, randomSeed);
+        mpm.CVTTrackingElmCenterBased(dx, printVTP<0?-1:i); 
+    }
+}
+
+void runCVTAllAcrossTest(MPM mpm, const int MPAcross, const double percent, const int loopTimes, const int printVTP, const int randomSeed){
+    printf("\tRun CVT Tracking Edge Center Based with all MPs across %d Element(s)\n",MPAcross);
+    for(int i=0; i< loopTimes; i++){
+        Vector2View dx = initT2LTest3(mpm, MPAcross, percent, randomSeed);
+        mpm.CVTTrackingEdgeCenterBased(dx, printVTP<0?-1:i); 
+    }
+}
+
+void runCVTElmAllAcrossTest(MPM mpm, const int MPAcross, const double percent, const int loopTimes, const int printVTP, const int randomSeed){
+    printf("\tRun CVT Tracking Elm Center Based with all MPs Across %d Element(s)\n",MPAcross);
+    for(int i=0; i< loopTimes; i++){
+        Vector2View dx = initT2LTest3(mpm, MPAcross, percent, randomSeed);
         mpm.CVTTrackingElmCenterBased(dx, printVTP<0?-1:i); 
     }
 }

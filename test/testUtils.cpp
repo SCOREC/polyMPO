@@ -159,6 +159,21 @@ void interpolateWachspress(MPM& mpm){
     });
 }
 
+Vector2View initDeltaRandomDir(int size, const double range, const int randomSeed){
+    PMT_ALWAYS_ASSERT(range > 0);
+    Vector2View retVal("Delta",size);
+    Kokkos::Random_XorShift64_Pool<> random_pool(randomSeed);
+    Kokkos::parallel_for("setDelta", size, KOKKOS_LAMBDA(const int i){
+        auto generator = random_pool.get_state();
+        double r = generator.drand(1);
+        retVal(i) = Vector2(range*r,range*sqrt(1-r*r));
+        random_pool.free_state(generator);
+    });
+    Kokkos::fence();
+    return retVal;
+}
+
+
 Vector2View initT2LDelta(int size, const double range, const int randomSeed){
     PMT_ALWAYS_ASSERT(range > 0);
     Vector2View retVal("T2LDeltaX",size);

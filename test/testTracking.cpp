@@ -77,15 +77,23 @@ int main(int argc, char* argv[]) {
                 mpm = initMPMWithCenterMPs(mesh,factor); 
                 runCVTElmAllAcrossTest(mpm, 2, 1, -1);
             }
-        }else if(MPAcross == 12){
+        }else if(MPAcross == 13){
             for(int i=0; i<5; i++){
                 mpm = initMPMWithCenterMPs(mesh,factor); 
                 runCVTElmAllAcrossTest(mpm, 10, 0.4, 1, -1);
             }
         }else{
-            PMT_ALWAYS_ASSERT(false);
+            mpm = initMPMWithRandomMPs(mesh,factor);
+            auto dx = initDeltaRandomDir(mpm.getMesh().getNumElements()*factor,100000);
+            if(MPAcross == 14)
+                mpm.T2LTracking(dx,0);
+            else if(MPAcross == 15)
+                mpm.CVTTrackingEdgeCenterBased(dx,0);
+            else if(MPAcross == 16)
+                mpm.CVTTrackingElmCenterBased(dx,0);
+            //PMT_ALWAYS_ASSERT(false);
         }
-        //printMPs(mpm);
+        printMPs(mpm);
     }    
     Kokkos::finalize();
     return 0;

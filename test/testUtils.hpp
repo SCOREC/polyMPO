@@ -45,11 +45,15 @@ MPM initTestMPM(Mesh& meshObj);
  */
 void interpolateWachspress(MPM& mpm);
 
+/*
+ * TODO: finish the comments
+ */
+Vector2View initT2LDelta(const int size, const double range, const int randomSeed = randSeed);
 
 /*
  * TODO: finish the comments
  */
-Vector2View initT2LDelta(const int size, const double range = -1, const int randomSeed = randSeed);
+Vector2View initDeltaRandomDir(const int size, const double range, const int randomSeed = randSeed);
 
 /*
  * according to mp_init_poly_v5.py by Oncar

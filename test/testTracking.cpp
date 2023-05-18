@@ -73,12 +73,12 @@ int main(int argc, char* argv[]) {
         }else if(MPAcross == 11){
             for(int i=0; i<5; i++){
                 mpm = initMPMWithCenterMPs(mesh,factor); 
-                runCVTElmAllAcrossTest(mpm, 1, 1, -1);
+                runCVTElmAllAcrossTest(mpm, 1, 1.0, 1, -1);
             }
         }else if(MPAcross == 12){
             for(int i=0; i<5; i++){
                 mpm = initMPMWithCenterMPs(mesh,factor); 
-                runCVTElmAllAcrossTest(mpm, 2, 1, -1);
+                runCVTElmAllAcrossTest(mpm, 2, 1.0, 1, -1);
             }
         }else if(MPAcross == 13){
             for(int i=0; i<5; i++){
@@ -91,11 +91,11 @@ int main(int argc, char* argv[]) {
             MPM mpmOneMP = initMPMOneMP(mesh);
             auto dxOneMP = initOneDelta();
             if(MPAcross == 14)
-                mpm.T2LTracking(dx,0);
+                mpm.T2LTracking(dx,-1);
             else if(MPAcross == 15)
-                mpm.CVTTrackingEdgeCenterBased(dx,0);
+                mpm.CVTTrackingEdgeCenterBased(dx,-1);
             else if(MPAcross == 16)
-                mpmOneMP.CVTTrackingElmCenterBased(dxOneMP,0);
+                mpmOneMP.CVTTrackingElmCenterBased(dxOneMP,-1);
             //PMT_ALWAYS_ASSERT(false);
         }
         //printMPs(mpm);

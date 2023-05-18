@@ -68,6 +68,16 @@ MPM initMPMWithCenterMPs(Mesh& meshObj, int factor);
 /*
  * TODO: comments
  */
+MPM initMPMOneMP(Mesh& meshObj);
+
+/*
+ * TODO: comments
+ */
+Vector2View initOneDelta();
+
+/*
+ * TODO: comments
+ */
 Vector2View initT2LDeltaRankineVortex(MPM mpm, Vector2 center, const int numEdge, const double avgLength, const double Gamma);
 
 /*

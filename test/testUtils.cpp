@@ -219,8 +219,10 @@ MPM initMPMWithRandomMPs(Mesh& mesh, int factor, const int randomSeed){
         int iElm = MPToElement(iMP);
         int numVtx = elm2VtxConn(iElm,0);
         Vector2 XYc = calcElmCenter(iElm,elm2VtxConn,vtxCoords);
-//        if(ielm == 8 || ielm == 2420 || ielm == 4880 || ielm == 5286)
-//            printf("%f %f 0.0\n", XYc[0], XYc[1]);
+        //if(iElm == 284 || iElm == 110)
+        //    printf("center: %f %f 0.0\n", XYc[0], XYc[1]);
+        //if(XYc[0] > 297941 && XYc[0] <316243 && XYc[1] > 312903 && XYc[1] < 354549)
+        //    printf("center:%d %f %f 0.0\n",iElm, XYc[0], XYc[1]);
         int triID = generator.urand(0,numVtx);
         double rws[2] = {generator.drand(0.0,1.0), generator.drand(0.0,1.0)};
         random_pool.free_state(generator);
@@ -649,6 +651,46 @@ void runT2LWithOneMPAcross(MPM mpm, const int MPAcross, const int loopTimes, con
     }
 }
 
+MPM initMPMOneMP(Mesh& mesh){
+    int numVtxs = mesh.getNumVertices();
+    int numElms = mesh.getNumElements();
+    Vector2View vtxCoords = mesh.getVtxCoords();   
+    auto elm2VtxConn = mesh.getElm2VtxConn(); 
+
+    int numMPs = 1;
+    Vector2View positions("MPpositions", numMPs);
+    BoolView isActive("MPstatus",numMPs);
+    IntView elm2MPs("elementToMPs",numElms*(maxMPsPerElm+1));
+    IntView MPs2Elm("MPToElementIDs",numMPs);
+
+    Vector2View::HostMirror h_positions = Kokkos::create_mirror_view(positions);
+    BoolView::HostMirror h_isActive = Kokkos::create_mirror_view(isActive);
+    IntView::HostMirror h_elm2MPs = Kokkos::create_mirror_view(elm2MPs);
+    IntView::HostMirror h_MPs2Elm = Kokkos::create_mirror_view(MPs2Elm);
+   
+    h_positions(0) = Vector2(315000,318000);
+    h_isActive(0) = true;
+    h_elm2MPs(226+0) = 1;
+    h_elm2MPs(226+1) = 0;
+    h_MPs2Elm(0) = 226;
+
+    Kokkos::deep_copy(positions, h_positions);
+    Kokkos::deep_copy(isActive, h_isActive);
+    Kokkos::deep_copy(elm2MPs, h_elm2MPs);
+    Kokkos::deep_copy(MPs2Elm, h_MPs2Elm);
+    auto p = MaterialPoints(numMPs,positions,isActive);
+    return MPM(mesh,p,elm2MPs,MPs2Elm);
+}
+
+Vector2View initOneDelta(){
+    Vector2View dx("OneDx",1);
+    Vector2View::HostMirror h_dx = Kokkos::create_mirror_view(dx);
+    //h_dx(0) = Vector2(426000-315000,448000-318000);
+    h_dx(0) = Vector2(368000-315000,471500-318000);
+    Kokkos::deep_copy(dx, h_dx);
+    return dx;
+}
+
 MPM initMPMWithCenterMPs(Mesh& mesh, int factor){
     int numVtxs = mesh.getNumVertices();
     int numElms = mesh.getNumElements();
@@ -684,6 +726,8 @@ MPM initMPMWithCenterMPs(Mesh& mesh, int factor){
     auto p = MaterialPoints(numMPs,positions,isActive);
     return MPM(mesh,p,elm2MPs,MPs2Elm);
 }
+
+
 
 void runCVTRandomWithProportion(MPM mpm, const double p0, const double p1, const double p2, const double p3, const int loopTimes, const int printVTP, const int randomSeed){
     printf("\tRun CVT Tracking Edge Center Based Random With Proportion: %.2f %.2f %.2f %.2f\n",p0,p1,p2,p3);

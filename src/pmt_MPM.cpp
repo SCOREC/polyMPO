@@ -19,7 +19,7 @@ void MPM::CVTTrackingEdgeCenterBased(Vector2View dx, const int printVTP){
     
     auto MPs2Elm = materialPoints2Elm_;
 
-    //numMPs = 1; //XXX
+    //numMPs = 20; //XXX
     IntView count("countCrossMPs",numMPs);
     Kokkos::View<Vector2*[maxVtxsPerElm]> edgeCenters("EdgeCenters",numElms);
     Kokkos::parallel_for("EdgeCenterCalc",numElms,KOKKOS_LAMBDA(const int iElm){
@@ -50,16 +50,21 @@ void MPM::CVTTrackingEdgeCenterBased(Vector2View dx, const int printVTP){
                     Vector2 delta = MPnew - edgeCenter;
                     double currentDistSq = delta[0]*delta[0] + delta[1]*delta[1];
                     double dotProduct = dx(iMP).dot(delta);
-                    if(dotProduct <=0){
+                        if(iMP == 29){
+                        Vector2 c = calcElmCenter(iElm,elm2VtxConn,vtxCoords);
+                        //printf("iMP iElm:%d %d %f %f\n",iMP,iElm,c[0],c[1]);
+                        //printf("iMP iElm:%d %d %f|%d:%f,%f\n",iMP,iElm,dotProduct,i+1,edgeCenter[0],edgeCenter[1]);
+                        }
+                    if(dotProduct <=0 && iMP!=29){
                         edgeIndex = -1;
                         break;
-                    } 
+                    }
                     if(currentDistSq < minDistSq){
                         edgeIndex = i+1;
                         minDistSq = currentDistSq;    
                     }
                 }
-                if(edgeIndex <0){
+                if(edgeIndex <0|| (iMP ==29 &&iElm == 139)){
                     //we get to the final elm
                     MPs2Elm(iMP) = iElm;
                     MPsPosition(iMP) = MPnew;
@@ -115,11 +120,13 @@ void MPM::CVTTrackingElmCenterBased(Vector2View dx, const int printVTP){
     Kokkos::parallel_for("calcElmCenter",numElms,KOKKOS_LAMBDA(const int iElm){
         elmCenter(iElm) = calcElmCenter(iElm,elm2VtxConn,vtxCoords);
     });
+    //printf("%d\n",numMPs);
     Kokkos::parallel_for("CVTElmCalc",numMPs,KOKKOS_LAMBDA(const int iMP){
         Vector2 MP = MPsPosition(iMP);
         if(isActive(iMP)){
             int iElm = MPs2Elm(iMP);
             Vector2 MPnew = MP + dx(iMP);
+            //printf("%d:%f %f + %f %f = %f %f\n",iMP,MP[0],MP[1],dx(iMP)[0],dx(iMP)[1],MPnew[0],MPnew[1]);
             while(true){
                 int numVtx = elm2VtxConn(iElm,0);
                 Vector2 delta = MPnew - elmCenter(iElm);
@@ -144,6 +151,7 @@ void MPM::CVTTrackingElmCenterBased(Vector2View dx, const int printVTP){
                     if(printVTP>=0)
                        Kokkos::atomic_increment(&count(iMP));
                 }
+                //printf("ElmCenter: %d (%f,%f)\n",iElm,elmCenter(iElm)[0],elmCenter(iElm)[1]);
             } 
         }
     });
@@ -231,25 +239,25 @@ void MPM::T2LTracking(Vector2View dx, const int printVTP){
                 if(goToNeighbour)
                     continue; 
                 //otherwise we do the update and end the loop
-                //if(printVTP>=0){ 
-                //    Vector2 MParrow = MP + dx(iMP)*0.7;
-                //    Vector2 shift = Vector2(-dx(iMP)[1],dx(iMP)[0])*0.1;
-                //    Vector2 MPLeft = MParrow + shift;
-                //    Vector2 MPRight = MParrow - shift;
-                //    history(iMP) = MP;
-                //    resultLeft(iMP) = MPLeft;
-                //    resultRight(iMP) = MPRight;
-                //}
+                if(printVTP>=0){ 
+                    Vector2 MParrow = MP + dx(iMP)*0.7;
+                    Vector2 shift = Vector2(-dx(iMP)[1],dx(iMP)[0])*0.1;
+                    Vector2 MPLeft = MParrow + shift;
+                    Vector2 MPRight = MParrow - shift;
+                    history(iMP) = MP;
+                    resultLeft(iMP) = MPLeft;
+                    resultRight(iMP) = MPRight;
+                }
                 MPs2Elm(iMP) = iElm;
                 MPsPosition(iMP) = MPnew;
                 break;
             }
         }
-        //else{
-        //    history(iMP) = MP;
-        //    resultLeft(iMP) = MP;
-        //    resultRight(iMP) = MP;
-        //}
+        else{
+            history(iMP) = MP;
+            resultLeft(iMP) = MP;
+            resultRight(iMP) = MP;
+        }
     }); 
     if(printVTP>=0){
         //TODO: figure out the maxNum (parallel_reduce)
@@ -278,11 +286,11 @@ void MPM::T2LTracking(Vector2View dx, const int printVTP){
         IntView::HostMirror h_countNum = Kokkos::create_mirror_view(countNum); 
         Kokkos::deep_copy(h_countNum, countNum);
         Kokkos::fence();
-        //const int totalNumMPs = numMPs;
+        const int totalNumMPs = numMPs;
         for(int iCountNum = 0; iCountNum <= maxNum; iCountNum++){
             numMPs = h_countNum(iCountNum);
             printf("%d-%d:%d\n",iCountNum,printVTP,numMPs); 
-/* printVTP file
+//* printVTP file
             char* fileOutput = (char *)malloc(sizeof(char) * 256); 
             sprintf(fileOutput, "polyMpmTestVTPOutput_across%d-%d.vtp",iCountNum,printVTP);
             FILE * pFile = fopen(fileOutput,"w");

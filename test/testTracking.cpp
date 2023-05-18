@@ -19,7 +19,9 @@ int main(int argc, char* argv[]) {
     printf("Test MPs tracking with a factor of: %d\n",factor);
     {
         //auto mesh = Mesh::readMPASMesh("./mesh.QU.1920km.151026.nc");
-        auto mesh = Mesh::readMPASMesh("./GIS.nc");//numElm == 6122 
+        //auto mesh = Mesh::readMPASMesh("./GIS.nc");//numElm == 6122 
+        auto mesh = Mesh::readMPASMesh("./grid_mesh_out.nc");//numElm == 512 
+        //auto mesh = Mesh::readMPASMesh("./grid_full.nc");//numElm == 
         MPM mpm = initMPMWithCenterMPs(mesh,factor); 
         //10,20,40,80,160,320,640
         //TODO: test 1M and 10M
@@ -32,6 +34,7 @@ int main(int argc, char* argv[]) {
         //runT2LRankineVortex(mpm, Vector2(150000,-2000000), 15, 11500, 1, 100, -1);
 
         //test for timing
+       // printMPs(mpm);
         if (MPAcross == 0){
             for(int i=0; i<5; i++){
                 mpm = initMPMWithCenterMPs(mesh,factor); 
@@ -85,15 +88,17 @@ int main(int argc, char* argv[]) {
         }else{
             mpm = initMPMWithRandomMPs(mesh,factor);
             auto dx = initDeltaRandomDir(mpm.getMesh().getNumElements()*factor,100000);
+            MPM mpmOneMP = initMPMOneMP(mesh);
+            auto dxOneMP = initOneDelta();
             if(MPAcross == 14)
                 mpm.T2LTracking(dx,0);
             else if(MPAcross == 15)
                 mpm.CVTTrackingEdgeCenterBased(dx,0);
             else if(MPAcross == 16)
-                mpm.CVTTrackingElmCenterBased(dx,0);
+                mpmOneMP.CVTTrackingElmCenterBased(dxOneMP,0);
             //PMT_ALWAYS_ASSERT(false);
         }
-        printMPs(mpm);
+        //printMPs(mpm);
     }    
     Kokkos::finalize();
     return 0;

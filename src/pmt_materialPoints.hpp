@@ -13,7 +13,16 @@ namespace polyMpmTest{
 using particle_structs::DPS;
 using particle_structs::MemberTypes;
 
-typedef MemberTypes<double[2]> MaterialPointTypes;
+typedef std::int32_t LO; //local ordinal - count things on a single process that are less than 2^31
+typedef std::int64_t GO; //global ordinal - count things across multiple processes that are greater than 2^31
+typedef double Real2[2];
+typedef double Real3[3];
+
+enum MaterialPointSlice {
+  MP_POSITION_R3 = 0
+};
+
+typedef MemberTypes<Real2> MaterialPointTypes;
 typedef ps::ParticleStructure<MaterialPointTypes> PS;
 
 PS* createDPS(int numElms, int numMPs, Vector2View positions, IntView mpsPerElm, IntView mp2elm);

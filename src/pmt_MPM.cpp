@@ -55,7 +55,7 @@ void MPM::CVTTrackingEdgeCenterBased(Vector2View dx, const int printVTP){
                         //printf("iMP iElm:%d %d %f %f\n",iMP,iElm,c[0],c[1]);
                         //printf("iMP iElm:%d %d %f|%d:%f,%f\n",iMP,iElm,dotProduct,i+1,edgeCenter[0],edgeCenter[1]);
                         }
-                    if(dotProduct <=0 && iMP!=29){
+                    if(dotProduct <=0){
                         edgeIndex = -1;
                         break;
                     }
@@ -64,7 +64,7 @@ void MPM::CVTTrackingEdgeCenterBased(Vector2View dx, const int printVTP){
                         minDistSq = currentDistSq;    
                     }
                 }
-                if(edgeIndex <0|| (iMP ==29 &&iElm == 139)){
+                if(edgeIndex <0){
                     //we get to the final elm
                     MPs2Elm(iMP) = iElm;
                     MPsPosition(iMP) = MPnew;
@@ -156,7 +156,7 @@ void MPM::CVTTrackingElmCenterBased(Vector2View dx, const int printVTP){
         }
     });
     if(printVTP>=0){
-        const int maxNum =5;
+        const int maxNum =11;
         IntView countNum("countNumCrossMPs",maxNum+1);
         Kokkos::parallel_for("countMPs",numMPs,KOKKOS_LAMBDA(const int iMP){
             for(int i=0; i<=maxNum; i++){

@@ -568,45 +568,61 @@ Vector2View initT2LTest3(MPM mpm, const int MPAcross, const double percent, cons
         if(generator.drand(1)<percent){
             numAcross = MPAcross;
         }
-        random_pool.free_state(generator);
         int initElm = MPs2Elm(iMP);
         int iElm = initElm;
-        int numElm = elm2ElmConn(iElm, 0);
-        int initDirection = 1;//[0:numElm)+1
-        int nextEdge = initDirection;//[0:numElm)+1
-        int nextElm = elm2ElmConn(iElm,nextEdge);
+        int numEdge = elm2ElmConn(iElm, 0);
+        int initEdge,nextElm;
+        do{
+            initEdge = generator.urand(0,numEdge)+1;
+            nextElm = elm2ElmConn(iElm,initEdge); 
+        }while(nextElm<0);
+        random_pool.free_state(generator);
+        Vector2 targetPosition = calcElmCenter(initElm,elm2VtxConn,vtxCoords);
+        MPsPosition(iMP) = targetPosition;
+        Vector2 v0 = vtxCoords(elm2VtxConn(initElm,initEdge)-1);
+        Vector2 v1 = vtxCoords(elm2VtxConn(initElm,initEdge%numEdge+1)-1);
+        Vector2 edgeCenter = (v1 + v0)*0.5;
+        Vector2 direction = edgeCenter - targetPosition;
+        direction = direction*(1/direction.magnitude());    
         for(int iAcross = 0; iAcross< numAcross; iAcross++){
-            if(nextElm < 0){//reInit to a new direction
-                iElm = initElm;
-                numElm = elm2ElmConn(iElm, 0);
-                if(initDirection == numElm){
-                    break;
-                }else{
-                    initDirection += 1;
-                }
-                nextEdge = initDirection;
-                nextElm = elm2ElmConn(iElm,nextEdge);
-                iAcross = -1;
-                continue;
+            if(nextElm <0){
+                targetPosition = calcElmCenter(initElm,elm2VtxConn,vtxCoords);
+                break;
             }
-            int oldElm = iElm;
-            iElm = nextElm;
-            numElm = elm2ElmConn(iElm, 0);
-            //update the nextEdge:
-            for(int i=1; i<=numElm; i++){
-                if(elm2ElmConn(iElm, i) == oldElm){
-                    nextEdge = i;
-                    break;
+            int numVtx = elm2VtxConn(nextElm,0);
+            int v[maxVtxsPerElm];
+            for(int i=0; i< numVtx; i++)
+                v[i] = elm2VtxConn(nextElm,i+1)-1;
+            Vector2 e[maxVtxsPerElm];
+            double pdx[maxVtxsPerElm];
+            for(int i=0; i< numVtx; i++){
+                Vector2 v_i = vtxCoords(v[i]);
+                Vector2 v_ip1 = vtxCoords(v[(i+1)%numVtx]);
+                e[i] = v_ip1 - v_i;
+                pdx[i] = (v_i - targetPosition).cross(direction);
+            }
+            
+            // update the nextElm and targetPosition  
+            int tempForNextElm = initEdge;
+            for(int i=0; i<numVtx; i++){
+                int ip1 = (i+1)%numVtx;
+                if(pdx[i]*pdx[ip1] <0){
+                    if(elm2ElmConn(nextElm,i+1) == iElm){
+                        Vector2 P2Vi = vtxCoords(v[i])-targetPosition; 
+                        Vector2 edgeIntersect = targetPosition + direction*direction.dot(P2Vi);
+                        targetPosition = edgeIntersect + direction*direction.dot(calcElmCenter(nextElm,elm2VtxConn,vtxCoords)-edgeIntersect);
+                    }
+                    else{
+                        // i+1 will be the next edge to across
+                        tempForNextElm = i+1;
+                    }
                 }
             }
-            nextEdge = (nextEdge + numElm/2)%numElm;
-            if(nextEdge == 0)
-                nextEdge = numElm;
-            nextElm = elm2ElmConn(iElm,nextEdge);
+            iElm = nextElm; 
+            nextElm = elm2ElmConn(nextElm,tempForNextElm);
         }
-        Vector2 targetPosition = calcElmCenter(iElm, elm2VtxConn, vtxCoords);
         returnDx(iMP) = targetPosition - MPPosition;
-    }}); 
+    }});
     Kokkos::fence();
     
     return returnDx;

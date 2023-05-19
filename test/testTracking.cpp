@@ -19,8 +19,8 @@ int main(int argc, char* argv[]) {
     printf("Test MPs tracking with a factor of: %d\n",factor);
     {
         //auto mesh = Mesh::readMPASMesh("./mesh.QU.1920km.151026.nc");
-        //auto mesh = Mesh::readMPASMesh("./GIS.nc");//numElm == 6122 
-        auto mesh = Mesh::readMPASMesh("./grid_mesh_out.nc");//numElm == 512 
+        auto mesh = Mesh::readMPASMesh("./GIS.nc");//numElm == 6122 
+        //auto mesh = Mesh::readMPASMesh("./grid_mesh_out.nc");//numElm == 512 
         //auto mesh = Mesh::readMPASMesh("./grid_full.nc");//numElm == 
         MPM mpm = initMPMWithCenterMPs(mesh,factor); 
         //10,20,40,80,160,320,640
@@ -83,7 +83,7 @@ int main(int argc, char* argv[]) {
         }else if(MPAcross == 13){
             for(int i=0; i<5; i++){
                 mpm = initMPMWithCenterMPs(mesh,factor); 
-                runCVTElmAllAcrossTest(mpm, 10, 0.4, 1, -1);
+                runCVTElmAllAcrossTest(mpm, 10, 0.5, 1, -1);
             }
         }else{
             mpm = initMPMWithRandomMPs(mesh,factor);

@@ -5,7 +5,7 @@ namespace polyMpmTest {
 PS* createDPS(int numElms, int numMPs, Vector2View positions, IntView mpsPerElm, IntView mp2elm) {
   PS::kkGidView elmGids("elementGlobalIds", numElms); //TODO - initialize this to [0..numElms)
   auto mpInfo = ps::createMemberViews<MaterialPointTypes>(numMPs);
-  auto mpPositions = ps::getMemberView<MaterialPointTypes, MP_CUR_POSITION_XYZ>(mpInfo);
+  auto mpPositions = ps::getMemberView<MaterialPointTypes, MP_CUR_POS_XYZ>(mpInfo);
   Kokkos::parallel_for("setMPinfo", numMPs, KOKKOS_LAMBDA(int i) {
     mpPositions(i,0) = positions[i][0];
     mpPositions(i,1) = positions[i][1];

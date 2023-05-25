@@ -12,7 +12,7 @@ DoubleView assembly(MPMesh& mpMesh){
     
     DoubleView vField("vField2",numVtxs);
     auto MPs = mpMesh.MPs;
-    auto mpPositions = MPs->getData<MP_CUR_POSITION_XYZ>(); //get the array of MP coordinates/positions
+    auto mpPositions = MPs->getData<MP_CUR_POS_XYZ>(); //get the array of MP coordinates/positions
     auto assemble = PS_LAMBDA(const int& elm, const int& mp, const int& mask) {
     //for elm in elementsInMesh { //pseudo code - the 'parallel_for' handles this
     //  for mp in materialPointsInElm { //pseudo code (cont.)

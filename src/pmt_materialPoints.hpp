@@ -59,7 +59,7 @@ typedef MemberTypes<mp_flag_t,              //MP_STATUS
                     mp_vec3d_t,             //MP_STRESS_DIV
                     mp_vec3d_t,             //MP_SHEAR_TRACTION
                     mp_constv_mdl_param_t   //MP_CONSTV_MDL_PARAM
-                    >getMemberViewgetMemberViewMaterialPointTypes;
+                    >MaterialPointTypes;
 typedef ps::ParticleStructure<MaterialPointTypes> PS;
 
 PS* createDPS(int numElms, int numMPs, Vector2View positions, IntView mpsPerElm, IntView mp2elm);
@@ -93,7 +93,7 @@ class MaterialPoints {
       ps::parallel_for(MPs, kernel, name);
     }
     int getCount() { return MPs->nPtcls(); }
-    auto getPositions() { return getData<MP_CUR_POSITION_XYZ>(); }
+    auto getPositions() { return getData<MP_CUR_POS_XYZ>(); }
 
 //TODO:MUTATOR  
     void T2LTracking(Vector2View dx);

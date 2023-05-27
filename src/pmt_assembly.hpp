@@ -31,5 +31,29 @@ DoubleView assembly(MPMesh& mpMesh){
     return vField;
 }
 
+template <MaterialPointSlice index>
+void assemblyNew(MPMesh& mpMesh){
+    auto mesh = mpMesh.getMesh();
+    int numVtxs = mesh.getNumVertices();
+    auto elm2VtxConn = mesh.getElm2VtxConn();
+    
+    DoubleView vField1("vField1",numVtxs);
+    DoubleView vField2("vField2",numVtxs);
+    auto MPs = mpMesh.MPs;
+    auto mpData = MPs->getData<index>();
+   
+    auto assemble = PS_LAMBDA(const int& elm, const int& mp, const int& mask) {
+          if(mask) { //if material point is 'active'/'enabled'
+            int nVtxE = elm2VtxConn(elm,0); //number of vertices bounding the element
+            for(int i=0; i<nVtxE; i++){
+              int vID = elm2VtxConn(elm,i+1)-1; //vID = vertex id
+              double distance = mpPositions(mp,0);
+              Kokkos::atomic_add(&vField(vID),distance);
+            }
+          }
+    };
+    MPs->parallel_for(assemble, "assembly");
+}
+
 } //end namespace polyMpmTest
 #endif

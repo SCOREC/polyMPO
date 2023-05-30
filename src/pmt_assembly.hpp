@@ -20,7 +20,7 @@ DoubleView assembly(MPMesh& mpMesh){
             int nVtxE = elm2VtxConn(elm,0); //number of vertices bounding the element
             for(int i=0; i<nVtxE; i++){
               int vID = elm2VtxConn(elm,i+1)-1; //vID = vertex id
-              double distance = mpPositions(mp,0);
+              double distance = mpPositions(mp,0) + mpPositions(mp,1) + mpPositions(mp,2);
               Kokkos::atomic_add(&vField(vID),distance);
             }
           }
@@ -70,7 +70,7 @@ DoubleView assemblyNew(MPMesh& mpMesh){
         case MP_FLAG_BASIS_VALS:
         case MP_BASIS_GRAD_VALS:
             PMT_ALWAYS_ASSERT(false);
-    }   
+    }  
     auto assemble = PS_LAMBDA(const int& elm, const int& mp, const int& mask) {
         if(mask) { //if material point is 'active'/'enabled'
             int nVtxE = elm2VtxConn(elm,0); //number of vertices bounding the element
@@ -78,12 +78,13 @@ DoubleView assemblyNew(MPMesh& mpMesh){
                 int vID = elm2VtxConn(elm,i+1)-1; //vID = vertex id
                 double distance = 0;
                 for(int i=0;i<loopNum;i++)
-                    distance += mpData(mp,0);
+                    distance += mpData(mp,i);
                 Kokkos::atomic_add(&vField(vID),distance);
             }
           }
     };
     MPs->parallel_for(assemble, "assembly");
+    mesh.setAssemblyReturn(vField);
     return vField;
 }
 

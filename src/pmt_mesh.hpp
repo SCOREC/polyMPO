@@ -18,6 +18,7 @@ class Mesh {
     Vector2View vtxCoords_;
     IntVtx2ElmView elm2VtxConn_;
     IntElm2VtxView vtx2ElmConn_;
+    DoubleView assemblyReturn_;
     static Mesh readMPASMesh(int ncid);
 
   public:
@@ -31,7 +32,7 @@ class Mesh {
           numElms_(numElms),
           vtxCoords_(vtxCoords),
           elm2VtxConn_(elm2VtxConn),
-          vtx2ElmConn_(vtx2ElmConn){};
+          vtx2ElmConn_(vtx2ElmConn){}
     static Mesh readMPASMesh(std::string filename);
 
     int getNumVertices() { return numVtxs_; }
@@ -39,9 +40,11 @@ class Mesh {
     Vector2View getVtxCoords() { return vtxCoords_; }
     IntVtx2ElmView getElm2VtxConn() { return elm2VtxConn_; }
     IntElm2VtxView getVtx2ElmConn() { return vtx2ElmConn_; }
+    DoubleView getAssemblyReturn() { return assemblyReturn_; }
 
-    void setVtx2ElmConn(IntElm2VtxView vtx2ElmConn) { vtx2ElmConn_ = vtx2ElmConn; }
-    void setElm2VtxConn(IntVtx2ElmView elm2VtxConn) { elm2VtxConn_ = elm2VtxConn; }
+    //void setVtx2ElmConn(IntElm2VtxView vtx2ElmConn) { vtx2ElmConn_ = vtx2ElmConn; }
+    //void setElm2VtxConn(IntVtx2ElmView elm2VtxConn) { elm2VtxConn_ = elm2VtxConn; }
+    void setAssemblyReturn(DoubleView asmReturn) { Kokkos::resize(assemblyReturn_, asmReturn.size());  Kokkos::deep_copy(assemblyReturn_,asmReturn); }
     
 };
 }

@@ -84,7 +84,7 @@ DoubleView assemblyNew(MPMesh& mpMesh){
           }
     };
     MPs->parallel_for(assemble, "assembly");
-    mesh.setAssemblyReturn(vField);
+    mpMesh.setAssembly(vField);
     return vField;
 }
 

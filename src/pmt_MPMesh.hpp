@@ -23,6 +23,7 @@ class MPMesh{
     }
 
     Mesh getMesh() { return mesh_; }
+    void setAssembly(DoubleView asmReturn) { mesh_.setAssemblyReturn(asmReturn); }
 };
 
 }//namespace polyMpmTest end

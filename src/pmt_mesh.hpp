@@ -44,7 +44,7 @@ class Mesh {
 
     //void setVtx2ElmConn(IntElm2VtxView vtx2ElmConn) { vtx2ElmConn_ = vtx2ElmConn; }
     //void setElm2VtxConn(IntVtx2ElmView elm2VtxConn) { elm2VtxConn_ = elm2VtxConn; }
-    void setAssemblyReturn(DoubleView asmReturn) { Kokkos::resize(assemblyReturn_, asmReturn.size());  Kokkos::deep_copy(assemblyReturn_,asmReturn); }
+    void setAssemblyReturn(DoubleView asmReturn) { Kokkos::resize(assemblyReturn_, numVtxs_);  Kokkos::deep_copy(assemblyReturn_,asmReturn); }
     
 };
 }

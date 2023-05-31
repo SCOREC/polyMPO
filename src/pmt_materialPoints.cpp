@@ -11,7 +11,9 @@ PS* createDPS(int numElms, int numMPs, Vector2View positions, IntView mpsPerElm,
     mpPositions(i,1) = positions[i][1];
   });
   Kokkos::TeamPolicy<Kokkos::DefaultExecutionSpace> policy(numElms,Kokkos::AUTO);
-  return new DPS<MaterialPointTypes>(policy, numElms, numMPs, mpsPerElm, elmGids, mp2elm, mpInfo);
+  auto dps = new DPS<MaterialPointTypes>(policy, numElms, numMPs, mpsPerElm, elmGids, mp2elm, mpInfo);
+  ps::destroyViews<MaterialPointTypes>(mpInfo);
+  return dps;
 }
 
 }

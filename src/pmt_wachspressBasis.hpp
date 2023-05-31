@@ -88,5 +88,71 @@ void getBasisAndGradByAreaGblForm(Vector2 MP,
     }
 }
 
+
+KOKKOS_INLINE_FUNCTION
+void getBasisByAreaGblForm(Vector2 MP, int numVtxs, Vector2* vtxCoords, double* basis) {
+    Vector2 e[maxVtxsPerElm + 1];
+    Vector2 p[maxVtxsPerElm];
+    double w[maxVtxsPerElm];
+    for (int i = 0; i < numVtxs; i++){
+        e[i + 1] = vtxCoords[i + 1] - vtxCoords[i];
+        p[i] = vtxCoords[i] - MP;
+    }
+    e[0] = e[numVtxs];
+
+    double c[maxVtxsPerElm];
+    double a[maxVtxsPerElm];
+    for (int i = 0; i < numVtxs; i++){
+        c[i] = e[i].cross(e[i + 1]);
+        a[i] = p[i].cross(e[i + 1]);
+    }
+    double wSum = 0.0;
+
+    for (int i = 0; i < numVtxs; i++){
+        double aProduct = 1.0;
+        for (int j = 0; j < numVtxs - 2; j++){
+            int index1 = (j + i + 1) % numVtxs;
+            aProduct *= a[index1];
+        }
+        w[i] = c[i] * aProduct;
+        wSum += w[i];
+    }
+
+    double wSumInv = 1.0 / wSum;
+    for (int i = 0; i < numVtxs; i++){
+        basis[i] = w[i] * wSumInv;
+    }
+}// getBasisByAreaBblForm
+
+/*
+KOKKOS_INLINE_FUNCTION
+void getBasisByAreaGblForm_1(Vector2 MP, int numVtxs, Vector2* vtxCoords, double* basis) {
+    double denominator, product;
+    Vector2 v1, v2;
+
+    denominator = 0.0;
+    for (int i = 1; i <= numVtxs; i++) {
+        v1 = vtxCoords[i] - vtxCoords[i-1];
+        v2 = vtxCoords[i+1] - vtxCoords[i];
+        product = 0.5 * v1.cross(v2);
+        for (int k = 1; k <= i-2; k++) {
+            v1 = vtxCoords[k] - MP;
+            v2 = vtxCoords[k+1] - MP;
+            product *= 0.5 * v1.cross(v2);
+        }
+        for (int k = i+1; k <= std::min(i-2,1) + numVtxs; k++) {
+            v1 = vtxCoords[k] - MP;
+            v2 = vtxCoords[k+1] - MP;
+            product *= 0.5 * v1.cross(v2);
+        }
+        basis[i-1] = product;
+        denominator += product;
+    }
+    for (int i = 0; i < numVtxs; i++) {
+        basis[i] /= denominator;
+    }
+} // getBasisByAreaBblForm_1
+*/
+
 } //namespace polyMpmTest end
 #endif

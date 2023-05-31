@@ -136,9 +136,8 @@ DoubleView wtScaAssembly(MPMesh& mpMesh){
         
         /* compute the values of basis functions at mp position */
         double basisByArea[maxElmsPerVtx];
-        Vector2 gradBasisByArea[maxVtxsPerElm]; // ??? for the assembly, gradient of basis function is not used
         Vector2 mpCoord(mpPositions(mp,0), mpPositions(mp,1));
-        getBasisAndGradByAreaGblForm(mpCoord, nElmVtxs, eVtxCoords, basisByArea, gradBasisByArea);
+        getBasisByAreaGblForm(mpCoord, nElmVtxs, eVtxCoords, basisByArea);
 
         /* get the mp's property that is assebled to vertices */
         double assValue = mpData(mp, 0); // ??? for scalar mp data, is index 0 always?
@@ -181,9 +180,8 @@ Vector2View wtVec2Assembly(MPMesh& mpMesh){
         
         /* compute the values of basis functions at mp position */
         double basisByArea[maxElmsPerVtx];
-        Vector2 gradBasisByArea[maxVtxsPerElm];
         Vector2 mpCoord(mpPositions(mp,0), mpPositions(mp,1));
-        getBasisAndGradByAreaGblForm(mpCoord, nElmVtxs, eVtxCoords, basisByArea, gradBasisByArea);
+        getBasisByAreaGblForm(mpCoord, nElmVtxs, eVtxCoords, basisByArea);
 
         /* get the mp's volume */
         double mpVolume = 1.0; // TODO: change to mp's volume here

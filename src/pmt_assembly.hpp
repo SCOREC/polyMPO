@@ -32,7 +32,7 @@ DoubleView assembly(MPMesh& mpMesh){
 }
 
 template <MaterialPointSlice index>
-DoubleView assemblyNew(MPMesh& mpMesh){
+DoubleView assemblyNew(MPMesh& mpMesh,bool basisWeightFlag=false){
     auto mesh = mpMesh.getMesh();
     int numVtxs = mesh.getNumVertices();
     auto elm2VtxConn = mesh.getElm2VtxConn();
@@ -77,14 +77,34 @@ DoubleView assemblyNew(MPMesh& mpMesh){
             for(int i=0; i<nVtxE; i++){
                 int vID = elm2VtxConn(elm,i+1)-1; //vID = vertex id
                 double distance = 0;
-                for(int i=0;i<loopNum;i++)
-                    distance += mpData(mp,i);
+                for(int j=0;j<loopNum;j++)
+                    distance += mpData(mp,j);
                 Kokkos::atomic_add(&vField(vID),distance);
             }
           }
     };
+    if(basisWeightFlag){
+        //TODO:check basis is set or not
+        auto basis = MPs->getData<MP_BASIS_VALS>();
+        auto assembleWithBasis = PS_LAMBDA(const int& elm, const int& mp, const int& mask) {
+            if(mask) { //if material point is 'active'/'enabled'
+                int nVtxE = elm2VtxConn(elm,0); //number of vertices bounding the element
+                for(int i=0; i<nVtxE; i++){
+                    int vID = elm2VtxConn(elm,i+1)-1; //vID = vertex id
+                    double distance = 0;
+                    for(int j=0;j<loopNum;j++)
+                        distance += mpData(mp,j);
+                    distance *= basis(mp,i);
+                    Kokkos::atomic_add(&vField(vID),distance);
+                }
+            }
+        };   
+        MPs->parallel_for(assembleWithBasis, "assemblyWithBasis");
+        //mpMesh.setAssembly(vField);
+        return vField;
+    }
     MPs->parallel_for(assemble, "assembly");
-    mpMesh.setAssembly(vField);
+    //mpMesh.setAssembly(vField);
     return vField;
 }
 

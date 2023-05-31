@@ -49,7 +49,7 @@ int main(int argc, char** argv) {
         //run non-physical assembly (mp -to- mesh vertex) kernel
         auto vtxFieldOld = polyMpmTest::assembly(mpMesh);
         auto vtxFieldNew = polyMpmTest::assemblyNew<MP_CUR_POS_XYZ>(mpMesh);
-        vtxFieldNew = mpMesh.getMesh().getAssemblyReturn();
+        //vtxFieldNew = mpMesh.getMesh().getAssemblyReturn();
         //check the result
         auto vtxField_h_Old = Kokkos::create_mirror_view(vtxFieldOld);
         auto vtxField_h_New = Kokkos::create_mirror_view(vtxFieldNew);

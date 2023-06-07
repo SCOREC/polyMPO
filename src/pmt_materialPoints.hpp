@@ -26,21 +26,22 @@ typedef double mp_constv_mdl_param_t[12];
 
 enum MaterialPointSlice {
   MP_STATUS = 0,
-  MP_CUR_ELM_ID = 1,
-  MP_TGT_ELM_ID = 2,
-  MP_CUR_POS_LAT_LON = 3,
-  MP_TGT_POS_LAT_LON = 4,
-  MP_CUR_POS_XYZ = 5,
-  MP_TGT_POS_XYZ = 6,
-  MP_FLAG_BASIS_VALS = 7,
-  MP_BASIS_VALS = 8,
-  MP_BASIS_GRAD_VALS = 9,
-  MP_VEL = 10,
-  MP_STRAIN_RATE = 11,
-  MP_STRESS = 12,
-  MP_STRESS_DIV = 13,
-  MP_SHEAR_TRACTION = 14,
-  MP_CONSTV_MDL_PARAM = 15
+  MP_CUR_ELM_ID,
+  MP_TGT_ELM_ID,
+  MP_CUR_POS_LAT_LON,
+  MP_TGT_POS_LAT_LON,
+  MP_CUR_POS_XYZ,
+  MP_TGT_POS_XYZ,
+  MP_FLAG_BASIS_VALS,
+  MP_BASIS_VALS,
+  MP_BASIS_GRAD_VALS,
+  MP_MASS,
+  MP_VEL,
+  MP_STRAIN_RATE,
+  MP_STRESS,
+  MP_STRESS_DIV,
+  MP_SHEAR_TRACTION,
+  MP_CONSTV_MDL_PARAM
 };
 
 typedef MemberTypes<mp_flag_t,              //MP_STATUS
@@ -53,6 +54,7 @@ typedef MemberTypes<mp_flag_t,              //MP_STATUS
                     mp_flag_t,              //MP_FLAG_BASIS_VALS
                     mp_basis_t,             //MP_BASIS_VALS
                     mp_basis_grad2d_t,      //MP_BASIS_GRAD_VALS
+                    double,                 //MP_MASS
                     mp_vec2d_t,             //MP_VEL
                     mp_sym_mat3d_t,         //MP_STRAIN_RATE
                     mp_sym_mat3d_t,         //MP_STRESS

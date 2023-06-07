@@ -13,7 +13,7 @@ DoubleView assembly(MPMesh& mpMesh){
     
     DoubleView vField("vField2",numVtxs);
     auto MPs = mpMesh.MPs;
-    auto mpPositions = MPs->getData<MP_CUR_POS_XYZ>(); //get the array of MP coordinates/positions
+    auto mpPositions = MPs->getData<MP_Cur_Pos_XYZ>(); //get the array of MP coordinates/positions
     auto assemble = PS_LAMBDA(const int& elm, const int& mp, const int& mask) {
     //for elm in elementsInMesh { //pseudo code - the 'parallel_for' handles this
     //  for mp in materialPointsInElm { //pseudo code (cont.)
@@ -41,37 +41,8 @@ DoubleView assemblyNew(MPMesh& mpMesh,bool basisWeightFlag=false){
     DoubleView vField("vField",numVtxs);
     auto MPs = mpMesh.MPs;
     auto mpData = MPs->getData<index>();
-    int loopNum = 0;
-    switch(index){
-        case MP_CUR_POS_LAT_LON:
-        case MP_TGT_POS_LAT_LON:
-        case MP_VEL:
-            loopNum = 2;
-            break;
-        case MP_CUR_POS_XYZ:
-        case MP_TGT_POS_XYZ:
-        case MP_STRESS_DIV:
-        case MP_SHEAR_TRACTION:
-            loopNum = 3;
-            break;
-        case MP_STRAIN_RATE:
-        case MP_STRESS:
-            loopNum = 6;
-            break;
-        case MP_BASIS_VALS:
-            loopNum = 8;
-            break;
-        case MP_CONSTV_MDL_PARAM:
-            loopNum = 12;
-            break;
-        //these case won't be assemble
-        case MP_STATUS:
-        case MP_CUR_ELM_ID:
-        case MP_TGT_ELM_ID:
-        case MP_FLAG_BASIS_VALS:
-        case MP_BASIS_GRAD_VALS:
-            PMT_ALWAYS_ASSERT(false);
-    }  
+    const int loopNum = mpSlice2MeshField.at(index).first;
+    //const int meshFieldIndex = mpSlice2MeshField[index].second;
     auto assemble = PS_LAMBDA(const int& elm, const int& mp, const int& mask) {
         if(mask) { //if material point is 'active'/'enabled'
             int nVtxE = elm2VtxConn(elm,0); //number of vertices bounding the element
@@ -86,7 +57,7 @@ DoubleView assemblyNew(MPMesh& mpMesh,bool basisWeightFlag=false){
     };
     if(basisWeightFlag){
         //TODO:check basis is set or not
-        auto basis = MPs->getData<MP_BASIS_VALS>();
+        auto basis = MPs->getData<MP_Basis_Vals>();
         auto assembleWithBasis = PS_LAMBDA(const int& elm, const int& mp, const int& mask) {
             if(mask) { //if material point is 'active'/'enabled'
                 int nVtxE = elm2VtxConn(elm,0); //number of vertices bounding the element
@@ -118,7 +89,7 @@ DoubleView wtScaAssembly(MPMesh& mpMesh){
     int numVtxs = mesh.getNumVertices(); // total number of vertices of the mesh
     auto elm2VtxConn = mesh.getElm2VtxConn();
     auto MPs = mpMesh.MPs;
-    auto mpPositions = MPs->getData<MP_CUR_POS_XYZ>();
+    auto mpPositions = MPs->getData<MP_Cur_Pos_XYZ>();
     
     DoubleView vField("wtScaField", numVtxs); // Kokkos array of double type, size = numVtxs
 
@@ -162,7 +133,7 @@ Vector2View wtVec2Assembly(MPMesh& mpMesh){
     int numVtxs = mesh.getNumVertices(); // total number of vertices of the mesh
     auto elm2VtxConn = mesh.getElm2VtxConn();
     auto MPs = mpMesh.MPs;
-    auto mpPositions = MPs->getData<MP_CUR_POS_XYZ>();
+    auto mpPositions = MPs->getData<MP_Cur_Pos_XYZ>();
     
     Vector2View vField("wtVec2Field", numVtxs); // Kokkos array of Vector2 type, size = numVtxs
 

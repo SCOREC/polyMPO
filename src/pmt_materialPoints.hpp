@@ -7,7 +7,7 @@
 #include <pumipic_kktypes.hpp>
 #include <particle_structs.hpp>
 #include <Kokkos_Core.hpp>
-
+#include <map>
 
 namespace polyMpmTest{
 
@@ -17,6 +17,7 @@ using particle_structs::MemberTypes;
 //typedef bool mp_flag_t;
 typedef int mp_flag_t;
 typedef int  mp_elem_id_t;
+//TODO: 
 typedef double mp_vec2d_t[2];
 typedef double mp_vec3d_t[3];
 typedef double mp_sym_mat3d_t[6];
@@ -25,42 +26,63 @@ typedef double mp_basis_grad2d_t[maxVtxsPerElm][2];
 typedef double mp_constv_mdl_param_t[12];
 
 enum MaterialPointSlice {
-  MP_STATUS = 0,
-  MP_CUR_ELM_ID,
-  MP_TGT_ELM_ID,
-  MP_CUR_POS_LAT_LON,
-  MP_TGT_POS_LAT_LON,
-  MP_CUR_POS_XYZ,
-  MP_TGT_POS_XYZ,
-  MP_FLAG_BASIS_VALS,
-  MP_BASIS_VALS,
-  MP_BASIS_GRAD_VALS,
-  MP_MASS,
-  MP_VEL,
-  MP_STRAIN_RATE,
-  MP_STRESS,
-  MP_STRESS_DIV,
-  MP_SHEAR_TRACTION,
-  MP_CONSTV_MDL_PARAM
+  MP_Status = 0,
+  MP_Cur_Elm_ID,        //1
+  MP_Tgt_Elm_ID, 
+  MP_Cur_Pos_Lat_Lon,
+  MP_Tgt_Pos_Lat_Lon,
+  MP_Cur_Pos_XYZ,       //5
+  MP_Tgt_Pos_XYZ,       
+  MP_Flag_Basis_Vals,
+  MP_Basis_Vals,
+  MP_Basis_Grad_Vals,
+  //MP_Basis_Grad_Vals,
+  MP_Mass,              //10
+  MP_Vel,               
+  MP_Strain_Rate,
+  MP_Stress,
+  MP_Stress_Div,
+  MP_Shear_Traction,    //15
+  MP_ConstV_MDL_Param
 };
 
-typedef MemberTypes<mp_flag_t,              //MP_STATUS
-                    mp_elem_id_t,           //MP_CUR_ELM_ID
-                    mp_elem_id_t,           //MP_TGT_ELM_ID
-                    mp_vec2d_t,             //MP_CUR_POS_LAT_LON
-                    mp_vec2d_t,             //MP_TGT_POS_LAT_LON
-                    mp_vec3d_t,             //MP_CUR_POS_XYZ
-                    mp_vec3d_t,             //MP_TGT_POS_XYZ
-                    mp_flag_t,              //MP_FLAG_BASIS_VALS
-                    mp_basis_t,             //MP_BASIS_VALS
-                    mp_basis_grad2d_t,      //MP_BASIS_GRAD_VALS
-                    double,                 //MP_MASS
-                    mp_vec2d_t,             //MP_VEL
-                    mp_sym_mat3d_t,         //MP_STRAIN_RATE
-                    mp_sym_mat3d_t,         //MP_STRESS
-                    mp_vec3d_t,             //MP_STRESS_DIV
-                    mp_vec3d_t,             //MP_SHEAR_TRACTION
-                    mp_constv_mdl_param_t   //MP_CONSTV_MDL_PARAM
+//const std::map<MaterialPointSlice,std::pair<int,MeshFields>> 
+const std::map<MaterialPointSlice,std::pair<int,MeshFieldIndex>> 
+      mpSlice2MeshField = {{MP_Status,          {1,meshFieldInvalid}},
+                           {MP_Cur_Elm_ID,      {1,meshFieldInvalid}},
+                           {MP_Tgt_Elm_ID,      {1,meshFieldInvalid}},
+                           {MP_Cur_Pos_Lat_Lon, {2,meshFieldInvalid}},
+                           {MP_Tgt_Pos_Lat_Lon, {2,meshFieldInvalid}},
+                           {MP_Cur_Pos_XYZ,{3,meshFieldInvalid}},
+                           {MP_Tgt_Pos_XYZ,{3,meshFieldInvalid}},
+                           {MP_Flag_Basis_Vals,{1,meshFieldInvalid}},
+                           {MP_Basis_Vals,{maxVtxsPerElm,meshFieldInvalid}},
+                           {MP_Basis_Grad_Vals,{-1,meshFieldInvalid}},//XXX:2d array
+                           {MP_Mass,{1,meshFieldUnsupported}},
+                           {MP_Vel,{2,meshFieldVelocity}},
+                           {MP_Strain_Rate,{6,meshFieldUnsupported}},
+                           {MP_Stress,{6,meshFieldUnsupported}},
+                           {MP_Stress_Div,{3,meshFieldUnsupported}},
+                           {MP_Shear_Traction,{3,meshFieldUnsupported}},
+                           {MP_ConstV_MDL_Param,{12,meshFieldUnsupported}}};
+
+typedef MemberTypes<mp_flag_t,              //MP_Status
+                    mp_elem_id_t,           //MP_Cur_ELM_ID
+                    mp_elem_id_t,           //MP_Tgt_ELM_ID
+                    mp_vec2d_t,             //MP_Cur_Pos_Lat_Lon
+                    mp_vec2d_t,             //MP_Tgt_Pos_Lat_Lon
+                    mp_vec3d_t,             //MP_Cur_Pos_XYZ
+                    mp_vec3d_t,             //MP_Tgt_Pos_XYZ
+                    mp_flag_t,              //MP_Flag_Basis_Vals
+                    mp_basis_t,             //MP_Basis_Vals
+                    mp_basis_grad2d_t,      //MP_Basis_Grad_Vals
+                    double,                 //MP_Mass
+                    mp_vec2d_t,             //MP_Vel
+                    mp_sym_mat3d_t,         //MP_Strain_Rate
+                    mp_sym_mat3d_t,         //MP_Stress
+                    mp_vec3d_t,             //MP_Stress_Div
+                    mp_vec3d_t,             //MP_Shear_Traction
+                    mp_constv_mdl_param_t   //MP_ConstV_MDL_Param
                     >MaterialPointTypes;
 typedef ps::ParticleStructure<MaterialPointTypes> PS;
 
@@ -95,7 +117,7 @@ class MaterialPoints {
       ps::parallel_for(MPs, kernel, name);
     }
     int getCount() { return MPs->nPtcls(); }
-    auto getPositions() { return getData<MP_CUR_POS_XYZ>(); }
+    auto getPositions() { return getData<MP_Cur_Pos_XYZ>(); }
 
 //TODO:MUTATOR  
     void T2LTracking(Vector2View dx);

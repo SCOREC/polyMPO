@@ -48,9 +48,9 @@ int main(int argc, char** argv) {
 
         //run non-physical assembly (mp -to- mesh vertex) kernel
         auto vtxFieldOld = polyMpmTest::assembly(mpMesh);
-        auto vtxFieldNew = polyMpmTest::assemblyNew<MP_CUR_POS_XYZ>(mpMesh);
+        auto vtxFieldNew = polyMpmTest::assemblyNew<MP_Cur_Pos_XYZ>(mpMesh);
         interpolateWachspress(mpMesh);
-        auto vtxFieldBasis = polyMpmTest::assemblyNew<MP_CUR_POS_XYZ>(mpMesh,true);
+        auto vtxFieldBasis = polyMpmTest::assemblyNew<MP_Cur_Pos_XYZ>(mpMesh,true);
         //vtxFieldNew = mpMesh.getMesh().getAssemblyReturn();
         //check the result
         auto vtxField_h_Old = Kokkos::create_mirror_view(vtxFieldOld);

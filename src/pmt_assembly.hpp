@@ -33,25 +33,26 @@ DoubleView assembly(MPMesh& mpMesh){
 }
 
 template <MaterialPointSlice index>
-DoubleView assemblyNew(MPMesh& mpMesh,bool basisWeightFlag=false){
+void assemblyNew(MPMesh& mpMesh,bool basisWeightFlag=false){
     auto mesh = mpMesh.getMesh();
     int numVtxs = mesh.getNumVertices();
     auto elm2VtxConn = mesh.getElm2VtxConn();
-    
-    DoubleView vField("vField",numVtxs);
+   
     auto MPs = mpMesh.MPs;
     auto mpData = MPs->getData<index>();
     const int loopNum = mpSlice2MeshField.at(index).first;
-    //const int meshFieldIndex = mpSlice2MeshField[index].second;
+    const int meshFieldIndex = mpSlice2MeshField.at(index).second;
+    auto meshField = mesh.getMeshField<meshFieldCurPosXYZ>(); 
     auto assemble = PS_LAMBDA(const int& elm, const int& mp, const int& mask) {
         if(mask) { //if material point is 'active'/'enabled'
             int nVtxE = elm2VtxConn(elm,0); //number of vertices bounding the element
             for(int i=0; i<nVtxE; i++){
                 int vID = elm2VtxConn(elm,i+1)-1; //vID = vertex id
-                double distance = 0;
-                for(int j=0;j<loopNum;j++)
-                    distance += mpData(mp,j);
-                Kokkos::atomic_add(&vField(vID),distance);
+                double fieldComponentVal;
+                for(int j=0;j<loopNum;j++){
+                    fieldComponentVal = mpData(mp,j);
+                    Kokkos::atomic_add(&meshField(vID,j),fieldComponentVal);
+                }
             }
           }
     };
@@ -63,21 +64,18 @@ DoubleView assemblyNew(MPMesh& mpMesh,bool basisWeightFlag=false){
                 int nVtxE = elm2VtxConn(elm,0); //number of vertices bounding the element
                 for(int i=0; i<nVtxE; i++){
                     int vID = elm2VtxConn(elm,i+1)-1; //vID = vertex id
-                    double distance = 0;
-                    for(int j=0;j<loopNum;j++)
-                        distance += mpData(mp,j);
-                    distance *= basis(mp,i);
-                    Kokkos::atomic_add(&vField(vID),distance);
+                    double fieldComponentVal;
+                    for(int j=0;j<loopNum;j++){
+                        fieldComponentVal = mpData(mp,j) * basis(mp,i);
+                        Kokkos::atomic_add(&meshField(vID,j), fieldComponentVal);
+                    }
                 }
             }
         };   
         MPs->parallel_for(assembleWithBasis, "assemblyWithBasis");
-        //mpMesh.setAssembly(vField);
-        return vField;
+        return;
     }
     MPs->parallel_for(assemble, "assembly");
-    //mpMesh.setAssembly(vField);
-    return vField;
 }
 
 

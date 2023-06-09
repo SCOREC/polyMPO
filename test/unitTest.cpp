@@ -48,14 +48,13 @@ int main(int argc, char** argv) {
 
         //run non-physical assembly (mp -to- mesh vertex) kernel
         auto vtxFieldOld = polyMpmTest::assembly(mpMesh);
-        auto vtxFieldNew = polyMpmTest::assemblyNew<MP_Cur_Pos_XYZ>(mpMesh);
-        interpolateWachspress(mpMesh);
-        auto vtxFieldBasis = polyMpmTest::assemblyNew<MP_Cur_Pos_XYZ>(mpMesh,true);
-        //vtxFieldNew = mpMesh.getMesh().getAssemblyReturn();
+        polyMpmTest::assemblyNew<MP_Cur_Pos_XYZ>(mpMesh);
+        //interpolateWachspress(mpMesh);
+        //auto vtxFieldBasis = polyMpmTest::assemblyNew<MP_Cur_Pos_XYZ>(mpMesh,true);
+        auto vtxFieldNew = mpMesh.getMesh().getMeshField<meshFieldCurPosXYZ>();
         //check the result
         auto vtxField_h_Old = Kokkos::create_mirror_view(vtxFieldOld);
         auto vtxField_h_New = Kokkos::create_mirror_view(vtxFieldNew);
-        auto vtxField_h_Basis = Kokkos::create_mirror_view(vtxFieldBasis);
         Kokkos::deep_copy(vtxField_h_Old, vtxFieldOld);
         Kokkos::deep_copy(vtxField_h_New, vtxFieldNew);
         const std::vector<double> vtxFieldExpected = {
@@ -65,18 +64,18 @@ int main(int argc, char** argv) {
           9.714286, 8.631786, 4.990000, 1.050000,
           2.830000, 5.694286, 3.914286
         };
-        //PMT_ALWAYS_ASSERT(vtxField_h.size() == vtxFieldExpected.size());
-        PMT_ALWAYS_ASSERT(vtxField_h_Old.size() == vtxField_h_New.size());
-        //for(size_t i=0; i<vtxField_h.size(); i++) {
+        PMT_ALWAYS_ASSERT(vtxField_h_Old.size()*3 == vtxField_h_New.size());
         for(size_t i=0; i<vtxField_h_Old.size(); i++) {
           //auto res = polyMpmTest::isEqual(vtxField_h(i),vtxFieldExpected[i], 1e-6);
-          auto res = polyMpmTest::isEqual(vtxField_h_Old(i),vtxField_h_New[i], 1e-6);
+            auto res = polyMpmTest::isEqual(vtxField_h_Old(i),vtxField_h_New(i,0)+vtxField_h_New(i,1)+vtxField_h_New(i,2), 1e-6);
           //printf("%.f\n",vtxField_h_Basis[i]);
           if(!res) {
+            fprintf(stderr, "%.6f = (%.6f, %.6f, %.6f)\n",
+                    vtxField_h_Old(i),vtxField_h_New(i,0),vtxField_h_New(i,1),vtxField_h_New(i,2));
             //fprintf(stderr, "computed value for vtx %ld, %.6f, does not match expected value %.6f\n",
             //        i, vtxField_h(i), vtxFieldExpected[i]);
-            printf("computed value for vtx %ld, %.6f, does not match expected value %.6f\n",
-                    i, vtxField_h_Old(i), vtxField_h_New[i]);
+            //printf("computed value for vtx %ld, %.6f, does not match expected value %.6f\n",
+            //        i, vtxField_h_Old(i), vtxField_h_New[i]);
           }
           PMT_ALWAYS_ASSERT(res);
         }

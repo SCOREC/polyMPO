@@ -14,6 +14,9 @@ set(SOURCES
 )
 
 add_library(polyMpmTest-core ${SOURCES})
+set_property(TARGET polyMpmTest-core PROPERTY CXX_STANDARD "17")
+set_property(TARGET polyMpmTest-core PROPERTY CXX_STANDARD_REQUIRED ON)
+set_property(TARGET polyMpmTest-core PROPERTY CXX_EXTENSIONS OFF)
 
 find_library(MATH_LIBRARY m)
 if(MATH_LIBRARY)

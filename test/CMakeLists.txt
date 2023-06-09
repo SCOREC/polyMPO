@@ -1,5 +1,9 @@
 add_library(pmtUtils testUtils.cpp)
 target_link_libraries(pmtUtils PRIVATE polyMpmTest)
+set_property(TARGET pmtUtils PROPERTY CXX_STANDARD "17")
+set_property(TARGET pmtUtils PROPERTY CXX_STANDARD_REQUIRED ON)
+set_property(TARGET pmtUtils PROPERTY CXX_EXTENSIONS OFF)
+ 
 target_include_directories(pmtUtils PRIVATE
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
     $<INSTALL_INTERFACE:include>
@@ -12,6 +16,9 @@ function(pmt_add_exe exename srcname)
     add_executable(${exename} EXCLUDE_FROM_ALL ${srcname})
   endif()
   target_link_libraries (${exename} polyMpmTest pmtUtils)
+  set_property(TARGET ${exename} PROPERTY CXX_STANDARD "17")
+  set_property(TARGET ${exename} PROPERTY CXX_STANDARD_REQUIRED ON)
+  set_property(TARGET ${exename} PROPERTY CXX_EXTENSIONS OFF)
   install(TARGETS ${exename} DESTINATION bin)
 endfunction()
 

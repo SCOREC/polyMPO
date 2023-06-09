@@ -53,17 +53,17 @@ const std::map<MaterialPointSlice,std::pair<int,MeshFieldIndex>>
                            {MP_Tgt_Elm_ID,      {1,meshFieldInvalid}},
                            {MP_Cur_Pos_Lat_Lon, {2,meshFieldInvalid}},
                            {MP_Tgt_Pos_Lat_Lon, {2,meshFieldInvalid}},
-                           {MP_Cur_Pos_XYZ,{3,meshFieldInvalid}},
-                           {MP_Tgt_Pos_XYZ,{3,meshFieldInvalid}},
-                           {MP_Flag_Basis_Vals,{1,meshFieldInvalid}},
-                           {MP_Basis_Vals,{maxVtxsPerElm,meshFieldInvalid}},
-                           {MP_Basis_Grad_Vals,{-1,meshFieldInvalid}},//XXX:2d array
-                           {MP_Mass,{1,meshFieldUnsupported}},
-                           {MP_Vel,{2,meshFieldVelocity}},
-                           {MP_Strain_Rate,{6,meshFieldUnsupported}},
-                           {MP_Stress,{6,meshFieldUnsupported}},
-                           {MP_Stress_Div,{3,meshFieldUnsupported}},
-                           {MP_Shear_Traction,{3,meshFieldUnsupported}},
+                           {MP_Cur_Pos_XYZ,     {3,meshFieldCurPosXYZ}},
+                           {MP_Tgt_Pos_XYZ,     {3,meshFieldInvalid}},
+                           {MP_Flag_Basis_Vals, {1,meshFieldInvalid}},
+                           {MP_Basis_Vals,      {maxVtxsPerElm,meshFieldInvalid}},
+                           {MP_Basis_Grad_Vals, {-1,meshFieldInvalid}},//XXX:2d array
+                           {MP_Mass,            {1,meshFieldUnsupported}},
+                           {MP_Vel,             {2,meshFieldVelocity}},
+                           {MP_Strain_Rate,     {6,meshFieldUnsupported}},
+                           {MP_Stress,          {6,meshFieldUnsupported}},
+                           {MP_Stress_Div,      {3,meshFieldUnsupported}},
+                           {MP_Shear_Traction,  {3,meshFieldUnsupported}},
                            {MP_ConstV_MDL_Param,{12,meshFieldUnsupported}}};
 
 typedef MemberTypes<mp_flag_t,              //MP_Status

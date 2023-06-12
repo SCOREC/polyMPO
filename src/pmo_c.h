@@ -1,0 +1,7 @@
+#ifndef PMO_C_H
+extern "C" {
+void polympo_initialize();
+void polympo_finalize();
+void polympo_modifyArray(double* array);
+}
+#endif

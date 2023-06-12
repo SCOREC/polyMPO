@@ -33,3 +33,12 @@ add_test(NAME mp_unit_test COMMAND ./mpUnitTest)
 add_test(NAME test_wachspress COMMAND ./testWachspress)
 add_test(NAME test_timing COMMAND ./timeAssmblyWachspress 5)
 add_test(NAME test_reconstruction COMMAND ./testReconstruction)
+
+pmt_add_exe(testFortran testFortran.f90)
+target_link_libraries(testFortran polympo_fortran polyMpmTest pmtUtils MPI::MPI_Fortran)
+set_property(TARGET testFortran PROPERTY LINKER_LANGUAGE Fortran)
+set_source_files_properties(testFortran.f90 PROPERTIES COMPILE_FLAGS -cpp)
+install(TARGETS testFortran DESTINATION bin)
+
+add_test(NAME testFortran COMMAND ./testFortran)
+

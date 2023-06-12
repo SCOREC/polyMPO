@@ -4,14 +4,17 @@ program main
   implicit none
   include 'mpif.h'
 
-  integer :: nverts
+  integer :: nverts = 3
   real(c_double), dimension(:), allocatable :: array
   integer :: ierr, self
   call mpi_init(ierr)
   call mpi_comm_rank(MPI_COMM_WORLD, self, ierr)
   call polympo_initialize()
   allocate(array(nverts))
+  array = 1
+  write (*,*) array
   call polympo_modifyArray(nverts,array)
+  write (*,*) array
   deallocate(array)
   call polympo_finalize()
   call mpi_finalize(ierr)

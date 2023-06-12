@@ -32,14 +32,14 @@ DoubleView assemblyV0(MPMesh& mpMesh){
     return vField;
 }
 
-template <MaterialPointSlice mpIndex, MeshFieldIndex mfIndex>
+template <MaterialPointSlice mpfIndex, MeshFieldIndex mfIndex>
 void assembly(MPMesh& mpMesh, bool basisWeightFlag, bool massWeightFlag){
     auto mesh = mpMesh.getMesh();
     int numVtxs = mesh.getNumVertices();
     auto elm2VtxConn = mesh.getElm2VtxConn();
    
     auto MPs = mpMesh.MPs;
-    auto mpData = MPs->getData<mpIndex>();
+    auto mpData = MPs->getData<mpfIndex>();
     auto massWeight = MPs->getData<MPF_Mass>();
     //TODO:massWeight is not used in the loop
     //if(!massWeightFlag){
@@ -48,8 +48,8 @@ void assembly(MPMesh& mpMesh, bool basisWeightFlag, bool massWeightFlag){
     auto basis = MPs->getData<MPF_Basis_Vals>();
     //if(!basisWeightFlag){
     //}
-    const int numEntries = mpSlice2MeshFieldIndex.at(mpIndex).first;
-    const MeshFieldIndex meshFieldIndex = mpSlice2MeshFieldIndex.at(mpIndex).second;
+    const int numEntries = mpSlice2MeshFieldIndex.at(mpfIndex).first;
+    const MeshFieldIndex meshFieldIndex = mpSlice2MeshFieldIndex.at(mpfIndex).second;
     PMT_ALWAYS_ASSERT(meshFieldIndex == mfIndex);
     auto meshField = mesh.getMeshField<mfIndex>(); 
     //auto meshField = mesh.getMeshField<Mesh_Field_Cur_Pos_XYZ>(); 

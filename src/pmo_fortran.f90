@@ -19,6 +19,14 @@ module polympo
     use :: iso_c_binding
   end subroutine
   !---------------------------------------------------------------------------
+  !> @brief initialize polympo, call this before any other polympo api
+  !---------------------------------------------------------------------------
+  function polympo_createMpMesh() bind(C, NAME='polympo_createMpMesh')
+    use :: iso_c_binding
+    type(c_ptr) polympo_createMpMesh
+  end function
+
+  !---------------------------------------------------------------------------
   !> @brief modify the specified array
   !> @param n(in) length of array
   !> @param ranks(in/out) array to modify

@@ -25,8 +25,12 @@ if(MATH_LIBRARY)
   target_link_libraries(polyMpmTest-core PUBLIC ${MATH_LIBRARY})
 endif()
 
-target_include_directories(polyMpmTest-core INTERFACE
+target_include_directories(polyMpmTest-core
+  PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+  $<INSTALL_INTERFACE:include>
+  PUBLIC
+  $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/test>
   $<INSTALL_INTERFACE:include>)
 target_link_libraries(polyMpmTest-core PUBLIC pumipic::pumipic)
 if(${NetCDF_FOUND})

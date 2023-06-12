@@ -6,14 +6,14 @@
 
 namespace polyMpmTest{
 
-DoubleView assembly(MPMesh& mpMesh){
+DoubleView assemblyV0(MPMesh& mpMesh){
     auto mesh = mpMesh.getMesh();
     int numVtxs = mesh.getNumVertices();
     auto elm2VtxConn = mesh.getElm2VtxConn();
     
     DoubleView vField("vField2",numVtxs);
     auto MPs = mpMesh.MPs;
-    auto mpPositions = MPs->getData<MP_Cur_Pos_XYZ>(); //get the array of MP coordinates/positions
+    auto mpPositions = MPs->getData<MPF_Cur_Pos_XYZ>(); //get the array of MP coordinates/positions
     auto assemble = PS_LAMBDA(const int& elm, const int& mp, const int& mask) {
     //for elm in elementsInMesh { //pseudo code - the 'parallel_for' handles this
     //  for mp in materialPointsInElm { //pseudo code (cont.)
@@ -32,52 +32,43 @@ DoubleView assembly(MPMesh& mpMesh){
     return vField;
 }
 
-template <MaterialPointSlice index>
-void assemblyNew(MPMesh& mpMesh,bool basisWeightFlag=false){
+template <MaterialPointSlice mpIndex, MeshFieldIndex mfIndex>
+void assembly(MPMesh& mpMesh, bool basisWeightFlag, bool massWeightFlag){
     auto mesh = mpMesh.getMesh();
     int numVtxs = mesh.getNumVertices();
     auto elm2VtxConn = mesh.getElm2VtxConn();
    
     auto MPs = mpMesh.MPs;
-    auto mpData = MPs->getData<index>();
-    const int loopNum = mpSlice2MeshField.at(index).first;
-    const int meshFieldIndex = mpSlice2MeshField.at(index).second;
-    auto meshField = mesh.getMeshField<meshFieldCurPosXYZ>(); 
+    auto mpData = MPs->getData<mpIndex>();
+    auto massWeight = MPs->getData<MPF_Mass>();
+    //TODO:massWeight is not used in the loop
+    //if(!massWeightFlag){
+        //massWeight =  
+    //}
+    auto basis = MPs->getData<MPF_Basis_Vals>();
+    //if(!basisWeightFlag){
+    //}
+    const int numEntries = mpSlice2MeshFieldIndex.at(mpIndex).first;
+    const MeshFieldIndex meshFieldIndex = mpSlice2MeshFieldIndex.at(mpIndex).second;
+    PMT_ALWAYS_ASSERT(meshFieldIndex == mfIndex);
+    auto meshField = mesh.getMeshField<mfIndex>(); 
+    //auto meshField = mesh.getMeshField<Mesh_Field_Cur_Pos_XYZ>(); 
     auto assemble = PS_LAMBDA(const int& elm, const int& mp, const int& mask) {
         if(mask) { //if material point is 'active'/'enabled'
             int nVtxE = elm2VtxConn(elm,0); //number of vertices bounding the element
+            double mpMass = massWeight(mp,0);
             for(int i=0; i<nVtxE; i++){
                 int vID = elm2VtxConn(elm,i+1)-1; //vID = vertex id
                 double fieldComponentVal;
-                for(int j=0;j<loopNum;j++){
-                    fieldComponentVal = mpData(mp,j);
+                for(int j=0;j<numEntries;j++){
+                    fieldComponentVal = mpData(mp,j)*basis(mp,i)*mpMass;
                     Kokkos::atomic_add(&meshField(vID,j),fieldComponentVal);
                 }
             }
-          }
+        }
     };
-    if(basisWeightFlag){
-        //TODO:check basis is set or not
-        auto basis = MPs->getData<MP_Basis_Vals>();
-        auto assembleWithBasis = PS_LAMBDA(const int& elm, const int& mp, const int& mask) {
-            if(mask) { //if material point is 'active'/'enabled'
-                int nVtxE = elm2VtxConn(elm,0); //number of vertices bounding the element
-                for(int i=0; i<nVtxE; i++){
-                    int vID = elm2VtxConn(elm,i+1)-1; //vID = vertex id
-                    double fieldComponentVal;
-                    for(int j=0;j<loopNum;j++){
-                        fieldComponentVal = mpData(mp,j) * basis(mp,i);
-                        Kokkos::atomic_add(&meshField(vID,j), fieldComponentVal);
-                    }
-                }
-            }
-        };   
-        MPs->parallel_for(assembleWithBasis, "assemblyWithBasis");
-        return;
-    }
     MPs->parallel_for(assemble, "assembly");
 }
-
 
 // (HDT) weighted assembly of scalar field
 template <MaterialPointSlice index>
@@ -87,7 +78,7 @@ DoubleView wtScaAssembly(MPMesh& mpMesh){
     int numVtxs = mesh.getNumVertices(); // total number of vertices of the mesh
     auto elm2VtxConn = mesh.getElm2VtxConn();
     auto MPs = mpMesh.MPs;
-    auto mpPositions = MPs->getData<MP_Cur_Pos_XYZ>();
+    auto mpPositions = MPs->getData<MPF_Cur_Pos_XYZ>();
     
     DoubleView vField("wtScaField", numVtxs); // Kokkos array of double type, size = numVtxs
 
@@ -131,7 +122,7 @@ Vector2View wtVec2Assembly(MPMesh& mpMesh){
     int numVtxs = mesh.getNumVertices(); // total number of vertices of the mesh
     auto elm2VtxConn = mesh.getElm2VtxConn();
     auto MPs = mpMesh.MPs;
-    auto mpPositions = MPs->getData<MP_Cur_Pos_XYZ>();
+    auto mpPositions = MPs->getData<MPF_Cur_Pos_XYZ>();
     
     Vector2View vField("wtVec2Field", numVtxs); // Kokkos array of Vector2 type, size = numVtxs
 

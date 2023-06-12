@@ -17,7 +17,7 @@ int main(int argc, char* argv[] ) {
         printf("Total MPs:%d\n",mpMesh.MPs->getCount());
         
         for(int i=0; i<5; i++){
-            polyMpmTest::assembly(mpMesh);
+            //polyMpmTest::assemblyV0(mpMesh);
             interpolateWachspress(mpMesh);
         }
     } 

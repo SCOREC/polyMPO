@@ -15,11 +15,12 @@ using DoubleVec2DView = Kokkos::View<double*[2]>;
 using DoubleEntVec3DView = Kokkos::View<double*[3]>;
 using DoubleSymMat3DView = Kokkos::View<double*[6]>;
 
+//TODO: letter case and underscore
 enum MeshFieldIndex{
-    meshFieldInvalid = -2,
-    meshFieldUnsupported,
-    meshFieldVelocity,
-    meshFieldCurPosXYZ
+    MeshF_Invalid = -2,
+    MeshF_Unsupported,
+    MeshF_Vel,
+    MeshF_Cur_Pos_XYZ
 };
 
 class Mesh {
@@ -30,11 +31,9 @@ class Mesh {
     IntVtx2ElmView elm2VtxConn_;
     IntElm2VtxView vtx2ElmConn_;
     //start of meshFields
-    //std::map<MeshFieldIndex,...> fieldMap;
-    DoubleVec2DView vtxVelocity_;
+    DoubleVec2DView vtxVel_; 
     DoubleEntVec3DView vtxCurXYZ_;
     //DoubleMat2DView vtxStress_;
-    //end of meshFields
 
     static Mesh readMPASMesh(int ncid);
 
@@ -50,7 +49,7 @@ class Mesh {
           vtxCoords_(vtxCoords),
           elm2VtxConn_(elm2VtxConn),
           vtx2ElmConn_(vtx2ElmConn){
-            vtxVelocity_ = DoubleVec2DView("vtxVelocity",numVtxs);    
+            vtxVel_ = DoubleVec2DView("vtxVelocity",numVtxs);    
             vtxCurXYZ_ = DoubleEntVec3DView("vtxCurrentPositionXYZ",numVtxs);    
         }
     static Mesh readMPASMesh(std::string filename);
@@ -70,14 +69,21 @@ class Mesh {
 
 template<MeshFieldIndex index>
 auto Mesh::getMeshField(){
-    if constexpr (index==meshFieldInvalid)         
-        return "meshFieldInvalid";                   
-    else if constexpr (index==meshFieldUnsupported)
-        return "meshFieldUnsupported";               
-    else if constexpr (index==meshFieldVelocity)   
-        return vtxVelocity_;                  
-    else if constexpr (index==meshFieldCurPosXYZ)   
-        return vtxCurXYZ_;                  
+    if constexpr (index==MeshF_Invalid){
+        fprintf(stderr,"Mesh Field Invalid!\n");
+        exit(1);
+    }
+    else if constexpr (index==MeshF_Unsupported){
+        fprintf(stderr,"Mesh Field Unsupported!\n");
+        exit(1);
+    }
+    else if constexpr (index==MeshF_Vel){
+        return vtxVel_;                  
+    }
+    else if constexpr (index==MeshF_Cur_Pos_XYZ){
+        return vtxCurXYZ_;
+    }
+    fprintf(stderr,"Mesh Field Index error!\n");
     exit(1);
 }
 

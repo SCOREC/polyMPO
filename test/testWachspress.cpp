@@ -19,7 +19,8 @@ int main(int argc, char** argv) {
         auto mpMesh = initTestMPMesh(mesh);
         
         //test assembly in assembly.hpp
-        polyMpmTest::assembly(mpMesh);
+        //TODO:change to MPF... MeshF...
+        polyMpmTest::assembly<MPF_Cur_Pos_XYZ,MeshF_Cur_Pos_XYZ>(mpMesh,false,false);
         interpolateWachspress(mpMesh);
     }
     

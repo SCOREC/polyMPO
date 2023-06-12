@@ -3,7 +3,7 @@
 #include <mpi.h>
 
 void checkPositions(polyMpmTest::MaterialPoints& MPs, std::string name) {
-  auto mpPositions = MPs.getData<polyMpmTest::MP_Cur_Pos_XYZ>();
+  auto mpPositions = MPs.getData<polyMpmTest::MPF_Cur_Pos_XYZ>();
   auto checkPositions = PS_LAMBDA(const int& elm, const int& mp, const int& mask) {
     if(mask) { //if material point is 'active'/'enabled'
       assert(mpPositions(mp,0) == elm*1.0);

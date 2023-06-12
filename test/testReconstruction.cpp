@@ -17,7 +17,7 @@ int main(int argc, char** argv) {
       PMT_ALWAYS_ASSERT(mesh.getNumElements() == 10);
 
       /* run the weighted assembly for Vector2 and scalar vertex fields */
-      auto vtxVec2Field = polyMpmTest::wtVec2Assembly<MP_Cur_Pos_XYZ>(mpMesh);
+      auto vtxVec2Field = polyMpmTest::wtVec2Assembly<MPF_Cur_Pos_XYZ>(mpMesh);
       //auto vtxScalarField = polyMpmTest::wtScaAssembly<MP_CUR_ELM_ID>(mpMesh); 
       
       auto nVtxs = mesh.getNumVertices();

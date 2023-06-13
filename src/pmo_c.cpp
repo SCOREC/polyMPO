@@ -4,9 +4,14 @@
 
 void polympo_initialize() {
   printf("polympo_initialize c++\n");
+  int isMpiInit;
+  MPI_Initialized(&isMpiInit);
+  PMT_ALWAYS_ASSERT(isMpiInit);
+  Kokkos::initialize();
 }
 void polympo_finalize() {
   printf("polympo_finalize c++\n");
+  Kokkos::finalize();
 }
 
 mpmesh polympo_createMpMesh() {

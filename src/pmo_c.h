@@ -5,6 +5,7 @@ typedef void* mpmesh;
 
 void polympo_initialize();
 mpmesh polympo_createMpMesh();
+void polympo_deleteMpMesh(mpmesh mpMesh);
 void polympo_finalize();
 void polympo_modifyArray(int size, double* array);
 }

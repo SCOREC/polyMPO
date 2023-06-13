@@ -1,7 +1,10 @@
 #include "pmt_MPMesh.hpp"
 #include "pmt_assembly.hpp"
+#include "pmo_createTestMPMesh.hpp"
 #include "testUtils.hpp"
 #include <mpi.h>
+
+using namespace polyMpmTest;
 
 int main(int argc, char** argv) {
     MPI_Init(&argc, &argv);

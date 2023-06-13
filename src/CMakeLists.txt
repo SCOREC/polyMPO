@@ -5,7 +5,8 @@ set(HEADERS
   pmt_MPMesh.hpp
   pmt_utils.hpp
   pmt_assembly.hpp
-  pmo_c.hpp
+  pmo_c.h
+  pmo_createTestMPMesh.hpp
 )
 
 set(SOURCES
@@ -13,6 +14,7 @@ set(SOURCES
   pmt_mesh.cpp
   pmt_utils.cpp
   pmo_c.cpp
+  pmo_createTestMPMesh.cpp
 )
 
 add_library(polyMpmTest-core ${SOURCES})

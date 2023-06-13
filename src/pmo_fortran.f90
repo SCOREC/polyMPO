@@ -19,13 +19,19 @@ module polympo
     use :: iso_c_binding
   end subroutine
   !---------------------------------------------------------------------------
-  !> @brief initialize polympo, call this before any other polympo api
+  !> @brief create MPMesh object
   !---------------------------------------------------------------------------
   function polympo_createMpMesh() bind(C, NAME='polympo_createMpMesh')
     use :: iso_c_binding
     type(c_ptr) polympo_createMpMesh
   end function
-
+  !---------------------------------------------------------------------------
+  !> @brief delete MPMesh object
+  !---------------------------------------------------------------------------
+  subroutine polympo_deleteMpMesh(mpMesh) bind(C, NAME='polympo_deleteMpMesh')
+    use :: iso_c_binding
+    type(c_ptr), value :: mpMesh
+  end subroutine
   !---------------------------------------------------------------------------
   !> @brief modify the specified array
   !> @param n(in) length of array

@@ -58,22 +58,27 @@ int main(int argc, char** argv) {
         auto vtxField_h = Kokkos::create_mirror_view(vtxField);
         //auto vtxFieldFromMesh_h_ = Kokkos::create_mirror_view(vtxFieldFromMesh);
         Kokkos::deep_copy(vtxField_h, vtxField);
-        /*const std::vector<double> vtxFieldExpected = {
-          1.768750, 4.528750, 17.660000, 8.228750,
-          8.406250, 2.818750, 4.978750, 5.708750,
-          6.486250, 10.551786, 13.014286, 15.114286,
-          9.714286, 8.631786, 4.990000, 1.050000,
-          2.830000, 5.694286, 3.914286
-        };*/
-        //TODO: DO NOT use the old assembly (assemblyV0) in this testing
+        const std::vector<std::vector<double>> vtxFieldExpected = {
+        {1.768750,1.812500,0.000000}, {4.528750,2.145833,0.000000},
+        {17.660000,5.803333,0.000000}, {8.228750,3.735833,0.000000},
+        {8.406250,5.952500,0.000000}, {2.818750,5.712500,0.000000},
+        {4.978750,9.712500,0.000000}, {5.708750,8.845833,0.000000},
+        {6.486250,7.395833,0.000000}, {10.551786,7.397143,0.000000},
+        {13.014286,6.687143,0.000000}, {15.114286,7.137143,0.000000},
+        {9.714286,5.297143,0.000000}, {8.631786,8.840476,0.000000},
+        {4.990000,10.933333,0.000000}, {1.050000,3.900000,0.000000},
+        {2.830000,6.933333,0.000000}, {5.694286,6.290476,0.000000},
+        {3.914286,3.257143,0.000000}         
+        };
         for(size_t i=0; i<vtxField_h.size(); i++) {
-            //auto res = polyMpmTest::isEqual(vtxField_h(i),vtxField_h_New(i,0)+vtxField_h_New(i,1)+vtxField_h_New(i,2), 1e-6);
-          //if(!res) {
-          //  fprintf(stderr, "%.6f = (%.6f, %.6f, %.6f)\n",
-          //          vtxField_h_Old(i),vtxField_h_New(i,0),vtxField_h_New(i,1),vtxField_h_New(i,2));
-          //}
-          //PMT_ALWAYS_ASSERT(res);
-          printf("%f\n",vtxField_h(i/3,i%3));
+            int j = i/3;
+            int k = i%3;
+            auto res = polyMpmTest::isEqual(vtxField_h(j,k),vtxFieldExpected[j][k], 1e-6);
+          if(!res) {
+            fprintf(stderr, "expected != calc Value!\n\t[%d][%d]: %.6lf != %.6lf\n",
+                                                j,k,vtxFieldExpected[j][k],vtxField_h(j,k));
+          }
+          PMT_ALWAYS_ASSERT(res);
         }
 
         interpolateWachspress(mpMesh);              

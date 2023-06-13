@@ -12,7 +12,7 @@ using IntVtx2ElmView = Kokkos::View<int*[maxVtxsPerElm+1]>;
 using IntElm2VtxView = Kokkos::View<int*[maxElmsPerVtx+1]>;
 
 using DoubleVec2DView = Kokkos::View<double*[2]>;
-using DoubleEntVec3DView = Kokkos::View<double*[3]>;
+using DoubleVec3DView = Kokkos::View<double*[3]>;
 using DoubleSymMat3DView = Kokkos::View<double*[6]>;
 
 //TODO: letter case and underscore
@@ -32,7 +32,7 @@ class Mesh {
     IntElm2VtxView vtx2ElmConn_;
     //start of meshFields
     DoubleVec2DView vtxVel_; 
-    DoubleEntVec3DView vtxCurXYZ_;
+    DoubleVec3DView vtxCurXYZ_;
     //DoubleMat2DView vtxStress_;
 
     static Mesh readMPASMesh(int ncid);
@@ -50,7 +50,7 @@ class Mesh {
           elm2VtxConn_(elm2VtxConn),
           vtx2ElmConn_(vtx2ElmConn){
             vtxVel_ = DoubleVec2DView("vtxVelocity",numVtxs);    
-            vtxCurXYZ_ = DoubleEntVec3DView("vtxCurrentPositionXYZ",numVtxs);    
+            vtxCurXYZ_ = DoubleVec3DView("vtxCurrentPositionXYZ",numVtxs);    
         }
     static Mesh readMPASMesh(std::string filename);
 

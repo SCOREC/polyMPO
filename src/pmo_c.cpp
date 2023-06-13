@@ -2,6 +2,7 @@
 #include "pmo_createTestMPMesh.hpp"
 #include <stdio.h>
 
+
 void polympo_initialize() {
   printf("polympo_initialize c++\n");
   int isMpiInit;
@@ -9,6 +10,7 @@ void polympo_initialize() {
   PMT_ALWAYS_ASSERT(isMpiInit);
   Kokkos::initialize();
 }
+
 void polympo_finalize() {
   printf("polympo_finalize c++\n");
   Kokkos::finalize();
@@ -26,7 +28,48 @@ void polympo_deleteMpMesh(mpmesh mpMeshIn) {
   delete mpMesh;
 }
 
-void polympo_modifyArray(int size, double* array) {
-  printf("polympo_modifyArray c++ size %d\n", size);
-  array[0] = 42.0;
+/**
+ * Attention: this typedef is LayoutLeft, meaning that the first
+ * index is the contiguous one. This matches the Fortran and GPU conventions for
+ * allocations.
+ */
+typedef Kokkos::View<
+          double*[3],
+          Kokkos::LayoutLeft,
+          Kokkos::DefaultHostExecutionSpace,
+          Kokkos::MemoryTraits<Kokkos::Unmanaged>
+        > kkDblViewHostU;
+
+void polympo_setMeshCurPosXYZArray(mpmesh mpMeshIn, int size, double* array) {
+  printf("polympo_setMeshArray c++ size %d\n", size);
+  polyMpmTest::MPMesh* mpMesh = (polyMpmTest::MPMesh*)mpMeshIn;
+  kkDblViewHostU arrayHost(array,size);
+
+  auto mesh = mpMesh->getMesh();
+  auto vtxField = mesh.getMeshField<polyMpmTest::MeshF_Cur_Pos_XYZ>();
+
+  //check the size
+  PMT_ALWAYS_ASSERT(static_cast<size_t>(size*3)==vtxField.size());
+
+  //copy the host array to the device
+  Kokkos::deep_copy(vtxField,arrayHost);
+
+  //modify the array - this is just for testing
+  Kokkos::parallel_for("setOneEntry", 1, KOKKOS_LAMBDA(int) {
+      vtxField(0,0) = 42.0;
+  });
+}
+
+void polympo_getMeshCurPosXYZArray(mpmesh mpMeshIn, int size, double* array) {
+  printf("polympo_getMeshArray c++ size %d\n", size);
+  polyMpmTest::MPMesh* mpMesh = (polyMpmTest::MPMesh*)mpMeshIn;
+  kkDblViewHostU arrayHost(array,size);
+
+  auto mesh = mpMesh->getMesh();
+  auto vtxField = mesh.getMeshField<polyMpmTest::MeshF_Cur_Pos_XYZ>();
+
+  //check the size
+  PMT_ALWAYS_ASSERT(static_cast<size_t>(size*3)==vtxField.size());
+
+  Kokkos::deep_copy(arrayHost, vtxField);
 }

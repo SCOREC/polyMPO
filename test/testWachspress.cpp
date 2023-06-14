@@ -2,7 +2,10 @@
 #include "pmt_wachspressBasis.hpp"
 #include "pmt_assembly.hpp"
 
+#include "pmo_createTestMPMesh.hpp"
 #include "testUtils.hpp"
+
+using namespace polyMpmTest;
 
 int main(int argc, char** argv) {
     MPI_Init(&argc, &argv);

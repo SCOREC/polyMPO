@@ -1,9 +1,12 @@
 #include "pmt_MPMesh.hpp"
 #include "pmt_assembly.hpp"
+#include "pmo_createTestMPMesh.hpp"
 #include "testUtils.hpp"
 #include <mpi.h>
 
 #define TEST_EPSILON 1e-6
+using namespace polyMpmTest;
+
 int main(int argc, char** argv) {
     MPI_Init(&argc, &argv);
     Kokkos::initialize(argc, argv);

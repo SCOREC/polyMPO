@@ -9,6 +9,7 @@ PS* createDPS(int numElms, int numMPs, Vector2View positions, IntView mpsPerElm,
   Kokkos::parallel_for("setMPinfo", numMPs, KOKKOS_LAMBDA(int i) {
     mpPositions(i,0) = positions[i][0];
     mpPositions(i,1) = positions[i][1];
+    mpPositions(i,2) = 0.0;//TODO:fix this based on positions array which should be vec3d_t
   });
   Kokkos::TeamPolicy<Kokkos::DefaultExecutionSpace> policy(numElms,Kokkos::AUTO);
   auto dps = new DPS<MaterialPointTypes>(policy, numElms, numMPs, mpsPerElm, elmGids, mp2elm, mpInfo);

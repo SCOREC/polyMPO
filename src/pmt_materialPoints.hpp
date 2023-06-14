@@ -17,12 +17,12 @@ using particle_structs::MemberTypes;
 //typedef bool mp_flag_t;
 typedef int mp_flag_t;
 typedef int  mp_elm_id_t;
-typedef double mp_sclr_t[1];
-typedef double mp_vec2d_t[2];
-typedef double mp_vec3d_t[3];
-typedef double mp_sym_mat3d_t[6];
+typedef double mp_sclr_t[1];//TODO
+typedef vec2d_t mp_vec2d_t;
+typedef double mp_vec3d_t[3];//TODO
+typedef double mp_sym_mat3d_t[6];//TODO
 typedef double mp_basis_t[maxVtxsPerElm];
-typedef double mp_basis_grad2d_t[maxVtxsPerElm*2];//TODO: change to 1D array
+typedef double mp_basis_grad2d_t[maxVtxsPerElm*2];
 typedef double mp_constv_mdl_param_t[12];
 
 enum MaterialPointSlice {

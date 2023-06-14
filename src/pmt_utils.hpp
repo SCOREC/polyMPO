@@ -21,6 +21,8 @@ void PMT_Assert_Fail(const char* msg) __attribute__ ((noreturn));
 
 namespace polyMpmTest{
 
+typedef double vec2d_t[2];
+
 class Vector2;
 // afterwards may have: Vector3
 using Vector2View = Kokkos::View<Vector2*>;

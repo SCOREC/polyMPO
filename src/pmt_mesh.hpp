@@ -15,7 +15,6 @@ using DoubleVec2DView = Kokkos::View<double*[2]>;
 using DoubleVec3DView = Kokkos::View<double*[3]>;
 using DoubleSymMat3DView = Kokkos::View<double*[6]>;
 
-//TODO: letter case and underscore
 enum MeshFieldIndex{
     MeshF_Invalid = -2,
     MeshF_Unsupported,

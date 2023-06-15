@@ -120,16 +120,16 @@ void polympo_getMPVelArray(mpmesh mpMeshIn, int size, double* array) {
   auto mpVel = MPs->getData<polyMpmTest::MPF_Vel>();
   auto mpVelCopy = polyMpmTest::DoubleVec2DView("copyOfMPVel",size);
     
-  //PMT_ALWAYS_ASSERT(mpVel.size()==mpVelCopy.size());
+  PMT_ALWAYS_ASSERT(MPs->getCount()*vec2d_nEntries==mpVelCopy.size());
 
-  auto copyVel = PS_LAMBDA(const int& elm, const int& mp, const int& mask){
+  /*auto copyVel = PS_LAMBDA(const int& elm, const int& mp, const int& mask){
     if(mask) { 
       for(int i=0; i<vec2d_nEntries; i++){
         mpVelCopy(mp,i) = mpVel(mp,i);
       }
     }
   };
-  MPs->parallel_for(copyVel, "copy mpVel to mpVelCopy");
+  MPs->parallel_for(copyVel, "copy mpVel to mpVelCopy");*/
 
   Kokkos::deep_copy(arrayHost,mpVelCopy); 
 }

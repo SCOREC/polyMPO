@@ -11,7 +11,8 @@ namespace polyMpmTest{
 using IntVtx2ElmView = Kokkos::View<int*[maxVtxsPerElm+1]>;
 using IntElm2VtxView = Kokkos::View<int*[maxElmsPerVtx+1]>;
 
-using DoubleVec2DView = Kokkos::View<double*[2]>;
+using DoubleVec2DView = Kokkos::View<double*[vec2d_nEntries]>;
+//DoubleVec2DViewHostU
 using DoubleVec3DView = Kokkos::View<double*[3]>;
 using DoubleSymMat3DView = Kokkos::View<double*[6]>;
 

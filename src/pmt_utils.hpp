@@ -21,7 +21,8 @@ void PMT_Assert_Fail(const char* msg) __attribute__ ((noreturn));
 
 namespace polyMpmTest{
 
-typedef double vec2d_t[2];
+#define vec2d_nEntries 2
+typedef double vec2d_t[vec2d_nEntries];
 
 class Vector2;
 // afterwards may have: Vector3

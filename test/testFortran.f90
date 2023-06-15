@@ -16,8 +16,9 @@ program main
   allocate(array(nverts*numComps))
   array = 1
   write (*,*) array
-  call polympo_setMeshCurPosXYZArray(mpMesh, nverts, array);
-  call polympo_getMeshCurPosXYZArray(mpMesh, nverts, array);
+  call polympo_setMPVelArray(mpMesh, nverts, array);
+  call polympo_getMeshVelArray(mpMesh, nverts, array);
+  !call polympo_getMeshCurPosXYZArray(mpMesh, nverts, array);
   write (*,*) array
   deallocate(array)
   call polympo_deleteMpMesh(mpMesh)

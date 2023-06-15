@@ -40,21 +40,73 @@ module polympo
   !> @param n(in) length of array
   !> @param ranks(in/out) array to modify
   !---------------------------------------------------------------------------
-  subroutine polympo_setMeshCurPosXYZArray(mpMesh, n, array) &
-             bind(C, NAME='polympo_setMeshCurPosXYZArray')
-    use :: iso_c_binding
-    type(c_ptr), value :: mpMesh
-    integer(c_int), value :: n
-    real(c_double), intent(inout), dimension(n) :: array
-  end subroutine
+  !subroutine polympo_setMeshCurPosXYZArray(mpMesh, n, array) &
+  !           bind(C, NAME='polympo_setMeshCurPosXYZArray')
+  !  use :: iso_c_binding
+  !  type(c_ptr), value :: mpMesh
+  !  integer(c_int), value :: n
+  !  real(c_double), intent(inout), dimension(n) :: array
+  !end subroutine
   !---------------------------------------------------------------------------
   !> @brief get the CurPosXYZ mesh array from a host array
   !> @param mpmesh(in/out) MPMesh object
   !> @param n(in) length of array
   !> @param ranks(in/out) array to modify
   !---------------------------------------------------------------------------
-  subroutine polympo_getMeshCurPosXYZArray(mpMesh, n, array) &
-             bind(C, NAME='polympo_getMeshCurPosXYZArray')
+  !subroutine polympo_getMeshCurPosXYZArray(mpMesh, n, array) &
+  !           bind(C, NAME='polympo_getMeshCurPosXYZArray')
+  !  use :: iso_c_binding
+  !  type(c_ptr), value :: mpMesh
+  !  integer(c_int), value :: n
+  !  real(c_double), intent(inout), dimension(n) :: array
+  !end subroutine
+  !---------------------------------------------------------------------------
+  !> @brief set the velocity MP array from a host array
+  !> @param mpmesh(in/out) MPMesh object
+  !> @param n(in) length of array
+  !> @param ranks(in/out) array to modify
+  !---------------------------------------------------------------------------
+  subroutine polympo_setMPVelArray(mpMesh, n, array) &
+             bind(C, NAME='polympo_setMPVelArray')
+    use :: iso_c_binding
+    type(c_ptr), value :: mpMesh
+    integer(c_int), value :: n
+    real(c_double), intent(inout), dimension(n) :: array
+  end subroutine
+  !---------------------------------------------------------------------------
+  !> @brief set the velocity mesh array from a host array
+  !> @param mpmesh(in/out) MPMesh object
+  !> @param n(in) length of array
+  !> @param ranks(in/out) array to modify
+  !---------------------------------------------------------------------------
+  subroutine polympo_setMeshVelArray(mpMesh, n, array) &
+             bind(C, NAME='polympo_setMeshVelArray')
+    use :: iso_c_binding
+    type(c_ptr), value :: mpMesh
+    integer(c_int), value :: n
+    real(c_double), intent(inout), dimension(n) :: array
+  end subroutine
+  !---------------------------------------------------------------------------
+  !> @brief get the velocity MP array from a host array
+  !> @param mpmesh(in/out) MPMesh object
+  !> @param n(in) length of array
+  !> @param ranks(in/out) array to modify
+  !---------------------------------------------------------------------------
+  subroutine polympo_getMPVelArray(mpMesh, n, array) &
+             bind(C, NAME='polympo_getMPVelArray')
+    use :: iso_c_binding
+    type(c_ptr), value :: mpMesh
+    integer(c_int), value :: n
+    real(c_double), intent(inout), dimension(n) :: array
+  end subroutine
+  !---------------------------------------------------------------------------
+  !> @brief get the velocity mesh array from a host array
+  !> @param mpmesh(in/out) MPMesh object
+  !> @param n(in) length of array
+  !> @param ranks(in/out) array to modify
+  !---------------------------------------------------------------------------
+  subroutine polympo_getMeshVelArray(mpMesh, n, array) &
+             bind(C, NAME='polympo_getMeshVelArray')
     use :: iso_c_binding
     type(c_ptr), value :: mpMesh
     integer(c_int), value :: n

@@ -32,6 +32,8 @@ program main
   MParray = 42
   call polympo_setMPVelArray(mpMesh, numMPs, MParray);
   call polympo_setMeshVelArray(mpMesh, nverts, Mesharray);
+  MParray = 1
+  Mesharray = 1
   call polympo_getMPVelArray(mpMesh, numMPs, MParray);
   call polympo_getMeshVelArray(mpMesh, nverts, Mesharray);
   
@@ -42,6 +44,7 @@ program main
   enddo
   MParray = 24
   call polympo_setMPVelArray(mpMesh, numMPs, MParray);
+  MParray = 1
   call polympo_getMPVelArray(mpMesh, numMPs, MParray);
   do, i=1,numMPs-1
     do, j=1,numComps-1
@@ -55,6 +58,7 @@ program main
   enddo
   Mesharray = 24
   call polympo_setMeshVelArray(mpMesh, nverts, Mesharray);
+  Mesharray = 1
   call polympo_getMeshVelArray(mpMesh, nverts, Mesharray);
   do, i=1,nverts-1
     do, j=1,numComps-1

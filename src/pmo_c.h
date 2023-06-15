@@ -7,8 +7,6 @@ void polympo_initialize();
 mpmesh polympo_createMpMesh();
 void polympo_deleteMpMesh(mpmesh mpMesh);
 void polympo_finalize();
-//void polympo_getMeshCurPosXYZArray(mpmesh mpMeshIn, int size, double* array);
-//void polympo_setMeshCurPosXYZArray(mpmesh mpMeshIn, int size, double* array);
 void polympo_setMPVelArray(mpmesh mpMeshIn, int size, double* array);
 void polympo_getMPVelArray(mpmesh mpMeshIn, int size, double* array);
 void polympo_setMeshVelArray(mpmesh mpMeshIn, int size, double* array);

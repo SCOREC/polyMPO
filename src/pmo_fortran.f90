@@ -35,32 +35,6 @@ module polympo
     type(c_ptr), value :: mpMesh
   end subroutine
   !---------------------------------------------------------------------------
-  !> @brief set the CurPosXYZ mesh array from a host array
-  !> @param mpmesh(in/out) MPMesh object
-  !> @param n(in) length of array
-  !> @param ranks(in/out) array to modify
-  !---------------------------------------------------------------------------
-  !subroutine polympo_setMeshCurPosXYZArray(mpMesh, n, array) &
-  !           bind(C, NAME='polympo_setMeshCurPosXYZArray')
-  !  use :: iso_c_binding
-  !  type(c_ptr), value :: mpMesh
-  !  integer(c_int), value :: n
-  !  real(c_double), intent(inout), dimension(n) :: array
-  !end subroutine
-  !---------------------------------------------------------------------------
-  !> @brief get the CurPosXYZ mesh array from a host array
-  !> @param mpmesh(in/out) MPMesh object
-  !> @param n(in) length of array
-  !> @param ranks(in/out) array to modify
-  !---------------------------------------------------------------------------
-  !subroutine polympo_getMeshCurPosXYZArray(mpMesh, n, array) &
-  !           bind(C, NAME='polympo_getMeshCurPosXYZArray')
-  !  use :: iso_c_binding
-  !  type(c_ptr), value :: mpMesh
-  !  integer(c_int), value :: n
-  !  real(c_double), intent(inout), dimension(n) :: array
-  !end subroutine
-  !---------------------------------------------------------------------------
   !> @brief set the velocity MP array from a host array
   !> @param mpmesh(in/out) MPMesh object
   !> @param n(in) length of array

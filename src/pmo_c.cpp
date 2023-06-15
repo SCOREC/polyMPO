@@ -38,40 +38,6 @@ typedef Kokkos::View<
           Kokkos::DefaultHostExecutionSpace,
           Kokkos::MemoryTraits<Kokkos::Unmanaged>
         > kkDblViewHostU;//TODO:put it to mesh.hpp
-/*
-void polympo_setMeshCurPosXYZArray(mpmesh mpMeshIn, int size, double* array) {
-  printf("polympo_setMeshArray c++ size %d\n", size);
-  polyMpmTest::MPMesh* mpMesh = (polyMpmTest::MPMesh*)mpMeshIn;
-  kkDblViewHostU arrayHost(array,size);
-
-  auto mesh = mpMesh->getMesh();
-  auto vtxField = mesh.getMeshField<polyMpmTest::MeshF_Cur_Pos_XYZ>();
-
-  //check the size
-  PMT_ALWAYS_ASSERT(static_cast<size_t>(size*3)==vtxField.size());
-
-  //copy the host array to the device
-  Kokkos::deep_copy(vtxField,arrayHost);
-
-  //modify the array - this is just for testing
-  Kokkos::parallel_for("setOneEntry", 1, KOKKOS_LAMBDA(int) {
-      vtxField(0,0) = 42.0;
-  });
-}
-
-void polympo_getMeshCurPosXYZArray(mpmesh mpMeshIn, int size, double* array) {
-  printf("polympo_getMeshArray c++ size %d\n", size);
-  polyMpmTest::MPMesh* mpMesh = (polyMpmTest::MPMesh*)mpMeshIn;
-  kkDblViewHostU arrayHost(array,size);
-
-  auto mesh = mpMesh->getMesh();
-  auto vtxField = mesh.getMeshField<polyMpmTest::MeshF_Cur_Pos_XYZ>();
-
-  //check the size
-  PMT_ALWAYS_ASSERT(static_cast<size_t>(size*3)==vtxField.size());
-
-  Kokkos::deep_copy(arrayHost, vtxField);
-}//===*/
 
 void polympo_setMPVelArray(mpmesh mpMeshIn, int size, double* array) {
   printf("polympo_setMPVelArray c++ size %d\n", size);
@@ -84,7 +50,7 @@ void polympo_setMPVelArray(mpmesh mpMeshIn, int size, double* array) {
   //copy the host array to the device
   Kokkos::deep_copy(mpVelCopy,arrayHost);
   
-  //modify the array - this is just for testing
+  //modify the MP array with the mpVelCopy copyed from the host array
   auto setVel = PS_LAMBDA(const int& elm, const int& mp, const int& mask){
     if(mask) { 
       for(int i=0; i<vec2d_nEntries; i++){
@@ -122,14 +88,14 @@ void polympo_getMPVelArray(mpmesh mpMeshIn, int size, double* array) {
     
   PMT_ALWAYS_ASSERT(MPs->getCount()*vec2d_nEntries==mpVelCopy.size());
 
-  /*auto copyVel = PS_LAMBDA(const int& elm, const int& mp, const int& mask){
+  auto copyVel = PS_LAMBDA(const int& elm, const int& mp, const int& mask){
     if(mask) { 
       for(int i=0; i<vec2d_nEntries; i++){
         mpVelCopy(mp,i) = mpVel(mp,i);
       }
     }
   };
-  MPs->parallel_for(copyVel, "copy mpVel to mpVelCopy");*/
+  MPs->parallel_for(copyVel, "copy mpVel to mpVelCopy");
 
   Kokkos::deep_copy(arrayHost,mpVelCopy); 
 }
@@ -143,7 +109,6 @@ void polympo_getMeshVelArray(mpmesh mpMeshIn, int size, double* array) {
   auto vtxField = mesh.getMeshField<polyMpmTest::MeshF_Vel>();
 
   //check the size
-  //int numEntries = polyMpmTest::mpSlice2MeshFieldIndex.at(polyMpmTest::MeshF_Vel).first;
   PMT_ALWAYS_ASSERT((size*2)==(int)vtxField.size());
 
   Kokkos::deep_copy(arrayHost, vtxField);

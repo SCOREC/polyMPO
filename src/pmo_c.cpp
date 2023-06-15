@@ -50,7 +50,7 @@ void polympo_setMPVelArray(mpmesh mpMeshIn, int size, double* array) {
   //copy the host array to the device
   Kokkos::deep_copy(mpVelCopy,arrayHost);
   
-  //modify the MP array with the mpVelCopy copyed from the host array
+  //modify the MP array with the mpVelCopy copied from the host array
   auto setVel = PS_LAMBDA(const int& elm, const int& mp, const int& mask){
     if(mask) { 
       for(int i=0; i<vec2d_nEntries; i++){

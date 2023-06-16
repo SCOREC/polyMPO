@@ -26,45 +26,34 @@ program main
   call mpi_comm_rank(MPI_COMM_WORLD, self, ierr)
   call polympo_initialize()
   mpMesh = polympo_createMpMesh() !creates test mesh
+
   allocate(Mesharray(nverts*numComps))
-  Mesharray = 42
   allocate(MParray(numMPs*numComps))
+
   MParray = 42
   call polympo_setMPVelArray(mpMesh, numMPs, MParray);
+  Mesharray = 42
   call polympo_setMeshVelArray(mpMesh, nverts, Mesharray);
+
   MParray = 1
-  Mesharray = 1
   call polympo_getMPVelArray(mpMesh, numMPs, MParray);
+  call assert(all(MParray .eq. 42), "Assert MParray == 42 Failed!")
+  Mesharray = 1
   call polympo_getMeshVelArray(mpMesh, nverts, Mesharray);
-  
-  do, i=1,numMPs-1
-    do, j=1,numComps-1
-      call assert(MParray(i*numComps+j)==42, "Assert MParray == 42 Failed!")
-    enddo
-  enddo
+  call assert(all(Mesharray .eq. 42), "Assert Mesharray == 42 Failed!")
+
   MParray = 24
   call polympo_setMPVelArray(mpMesh, numMPs, MParray);
   MParray = 1
   call polympo_getMPVelArray(mpMesh, numMPs, MParray);
-  do, i=1,numMPs-1
-    do, j=1,numComps-1
-      call assert(MParray(i*numComps+j)==24, "Assert MParray == 24 Failed!")
-    enddo
-  enddo
-  do, i=1,nverts-1
-    do, j=1,numComps-1
-      call assert(Mesharray(i*numComps+j)==42, "Assert Mesharray == 42 Failed!")
-    enddo
-  enddo
+  call assert(all(MParray .eq. 24), "Assert MParray == 24 Failed!")
+
   Mesharray = 24
   call polympo_setMeshVelArray(mpMesh, nverts, Mesharray);
   Mesharray = 1
   call polympo_getMeshVelArray(mpMesh, nverts, Mesharray);
-  do, i=1,nverts-1
-    do, j=1,numComps-1
-      call assert(Mesharray(i*numComps+j)==24, "Assert Mesharray == 24 Failed!")
-    enddo
-  enddo
+  call assert(all(Mesharray .eq. 24), "Assert Mesharray == 24 Failed!")
+
   deallocate(MParray)
   deallocate(Mesharray)
   call polympo_deleteMpMesh(mpMesh)

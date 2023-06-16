@@ -34,6 +34,9 @@ DoubleView assemblyV0(MPMesh& mpMesh){
 
 template <MaterialPointSlice mpfIndex, MeshFieldIndex mfIndex>
 void assembly(MPMesh& mpMesh, bool basisWeightFlag, bool massWeightFlag){
+    if(basisWeightFlag || massWeightFlag) {
+      std::cerr << "WARNING: basis and mass weight flags ignored\n";
+    }
     auto mesh = mpMesh.getMesh();
     int numVtxs = mesh.getNumVertices();
     auto elm2VtxConn = mesh.getElm2VtxConn();

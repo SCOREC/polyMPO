@@ -88,6 +88,9 @@ void polympo_getMPVelArray(mpmesh mpMeshIn, int size, double* array) {
     
   PMT_ALWAYS_ASSERT(static_cast<size_t>(MPs->getCount()*vec2d_nEntries)==mpVelCopy.size());
 
+  //the pumipic 'slices' are not guaranteed to be contiguous, so we run a
+  //pumipic parallel_for loop to fill a contigious array which will be copied to
+  //a contiguous host array
   auto copyVel = PS_LAMBDA(const int& elm, const int& mp, const int& mask){
     if(mask) { 
       for(int i=0; i<vec2d_nEntries; i++){
@@ -97,6 +100,7 @@ void polympo_getMPVelArray(mpmesh mpMeshIn, int size, double* array) {
   };
   MPs->parallel_for(copyVel, "copy mpVel to mpVelCopy");
 
+  //copy the device array to the host
   Kokkos::deep_copy(arrayHost,mpVelCopy); 
 }
 
@@ -109,7 +113,8 @@ void polympo_getMeshVelArray(mpmesh mpMeshIn, int size, double* array) {
   auto vtxField = mesh.getMeshField<polyMpmTest::MeshF_Vel>();
 
   //check the size
-  PMT_ALWAYS_ASSERT((size*2)==(int)vtxField.size());
+  PMT_ALWAYS_ASSERT(static_cast<size_t>(size*vec2d_nEntries)==vtxField.size());
 
+  //copy the device array to the host
   Kokkos::deep_copy(arrayHost, vtxField);
 }

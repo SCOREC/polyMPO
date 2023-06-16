@@ -8,12 +8,15 @@ module polympo
   interface
   !---------------------------------------------------------------------------
   !> @brief initialize polympo, call this before any other polympo api
+  !> @remark the user must initialize MPI prior to this call
+  !> @todo take mpi communicator from user
   !---------------------------------------------------------------------------
   subroutine polympo_initialize() bind(C, NAME='polympo_initialize')
     use :: iso_c_binding
   end subroutine
   !---------------------------------------------------------------------------
   !> @brief finalize polympo, no polympo apis may be called after this
+  !> @remark the user must not finalize MPI until after this call
   !---------------------------------------------------------------------------
   subroutine polympo_finalize() bind(C, NAME='polympo_finalize')
     use :: iso_c_binding
@@ -38,33 +41,33 @@ module polympo
   !> @brief set the velocity MP array from a host array
   !> @param mpmesh(in/out) MPMesh object
   !> @param n(in) length of array
-  !> @param ranks(in/out) array to modify
+  !> @param array(in) input MP velocity array
   !---------------------------------------------------------------------------
   subroutine polympo_setMPVelArray(mpMesh, n, array) &
              bind(C, NAME='polympo_setMPVelArray')
     use :: iso_c_binding
     type(c_ptr), value :: mpMesh
     integer(c_int), value :: n
-    real(c_double), intent(inout), dimension(n) :: array
+    real(c_double), intent(in), dimension(n) :: array
   end subroutine
   !---------------------------------------------------------------------------
   !> @brief set the velocity mesh array from a host array
   !> @param mpmesh(in/out) MPMesh object
   !> @param n(in) length of array
-  !> @param ranks(in/out) array to modify
+  !> @param array(in) input mesh velocity array
   !---------------------------------------------------------------------------
   subroutine polympo_setMeshVelArray(mpMesh, n, array) &
              bind(C, NAME='polympo_setMeshVelArray')
     use :: iso_c_binding
     type(c_ptr), value :: mpMesh
     integer(c_int), value :: n
-    real(c_double), intent(inout), dimension(n) :: array
+    real(c_double), intent(in), dimension(n) :: array
   end subroutine
   !---------------------------------------------------------------------------
-  !> @brief get the velocity MP array from a host array
+  !> @brief get the velocity MP array from a polympo array
   !> @param mpmesh(in/out) MPMesh object
   !> @param n(in) length of array
-  !> @param ranks(in/out) array to modify
+  !> @param array(in/out) output MP velocity array, allocated by user
   !---------------------------------------------------------------------------
   subroutine polympo_getMPVelArray(mpMesh, n, array) &
              bind(C, NAME='polympo_getMPVelArray')
@@ -74,10 +77,10 @@ module polympo
     real(c_double), intent(inout), dimension(n) :: array
   end subroutine
   !---------------------------------------------------------------------------
-  !> @brief get the velocity mesh array from a host array
+  !> @brief get the velocity mesh array from a polympo array
   !> @param mpmesh(in/out) MPMesh object
   !> @param n(in) length of array
-  !> @param ranks(in/out) array to modify
+  !> @param array(in/out) output mesh velocity array, allocated by user
   !---------------------------------------------------------------------------
   subroutine polympo_getMeshVelArray(mpMesh, n, array) &
              bind(C, NAME='polympo_getMeshVelArray')

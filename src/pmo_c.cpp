@@ -19,10 +19,17 @@ mpmesh polympo_createMpMesh() {
   auto mesh = polyMpmTest::initTestMesh(1);
   auto mpPerElement = std::vector<int>({5,4,5,6,6,5,4,6,5,5});
   auto mps = polyMpmTest::initTestMPs(mesh, mpPerElement);
-  return (mpmesh) new polyMpmTest::MPMesh(mesh,mps);
+  auto mpMeshReturn = (mpmesh) new polyMpmTest::MPMesh(mesh,mps);
+  mpMeshes.push_back(mpMeshReturn);
+  return mpMeshReturn;
 }
 
 void polympo_deleteMpMesh(mpmesh mpMeshIn) {
+  //chech mpMesh is valid
+  auto mpMeshInIter = std::find(mpMeshes.begin(),mpMeshes.end(),mpMeshIn);
+  PMT_ALWAYS_ASSERT(mpMeshInIter != mpMeshes.end());
+
+  mpMeshes.erase(mpMeshInIter);
   polyMpmTest::MPMesh* mpMesh = (polyMpmTest::MPMesh*)mpMeshIn;
   delete mpMesh;
 }
@@ -40,6 +47,9 @@ typedef Kokkos::View<
         > kkDblViewHostU;//TODO:put it to mesh.hpp
 
 void polympo_setMPVelArray(mpmesh mpMeshIn, int size, double* array) {
+  //chech mpMesh is valid
+  auto mpMeshInIter = std::find(mpMeshes.begin(),mpMeshes.end(),mpMeshIn);
+  PMT_ALWAYS_ASSERT(mpMeshInIter != mpMeshes.end());
   printf("polympo_setMPVelArray c++ size %d\n", size);
   polyMpmTest::MPMesh* mpMesh = (polyMpmTest::MPMesh*)mpMeshIn;
   kkDblViewHostU arrayHost(array,size);
@@ -62,6 +72,9 @@ void polympo_setMPVelArray(mpmesh mpMeshIn, int size, double* array) {
 }
 
 void polympo_setMeshVelArray(mpmesh mpMeshIn, int size, double* array) {
+  //chech mpMesh is valid
+  auto mpMeshInIter = std::find(mpMeshes.begin(),mpMeshes.end(),mpMeshIn);
+  PMT_ALWAYS_ASSERT(mpMeshInIter != mpMeshes.end());
   printf("polympo_setMeshVelArray c++ size %d\n", size);
   polyMpmTest::MPMesh* mpMesh = (polyMpmTest::MPMesh*)mpMeshIn;
   kkDblViewHostU arrayHost(array,size);
@@ -77,6 +90,9 @@ void polympo_setMeshVelArray(mpmesh mpMeshIn, int size, double* array) {
 }
 
 void polympo_getMPVelArray(mpmesh mpMeshIn, int size, double* array) {
+  //chech mpMesh is valid
+  auto mpMeshInIter = std::find(mpMeshes.begin(),mpMeshes.end(),mpMeshIn);
+  PMT_ALWAYS_ASSERT(mpMeshInIter != mpMeshes.end());
   printf("polympo_getMPVelArray c++ size %d\n", size);
   polyMpmTest::MPMesh* mpMesh = (polyMpmTest::MPMesh*)mpMeshIn;
   kkDblViewHostU arrayHost(array,size);
@@ -105,6 +121,9 @@ void polympo_getMPVelArray(mpmesh mpMeshIn, int size, double* array) {
 }
 
 void polympo_getMeshVelArray(mpmesh mpMeshIn, int size, double* array) {
+  //chech mpMesh is valid
+  auto mpMeshInIter = std::find(mpMeshes.begin(),mpMeshes.end(),mpMeshIn);
+  PMT_ALWAYS_ASSERT(mpMeshInIter != mpMeshes.end());
   printf("polympo_getMeshVelArray c++ size %d\n", size);
   polyMpmTest::MPMesh* mpMesh = (polyMpmTest::MPMesh*)mpMeshIn;
   kkDblViewHostU arrayHost(array,size);

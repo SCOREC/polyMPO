@@ -118,3 +118,8 @@ void polympo_getMeshVelArray(mpmesh mpMeshIn, int size, double* array) {
   //copy the device array to the host
   Kokkos::deep_copy(arrayHost, vtxField);
 }
+
+void polympo_setCommunicator(MPI_Fint fcomm){
+    MPI_Comm comm = MPI_Comm_f2c(fcomm);
+    printf("polympo_setCommunicator(not supported yet!) %d\n",comm);
+}

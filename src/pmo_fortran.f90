@@ -89,5 +89,14 @@ module polympo
     integer(c_int), value :: n
     real(c_double), intent(inout), dimension(n) :: array
   end subroutine
+  !---------------------------------------------------------------------------
+  !> @brief set the MPI communicator used by polympo
+  !> @param comm(in) MPI communicator
+  !---------------------------------------------------------------------------
+  subroutine polympo_setCommunicator(comm) &
+             bind(C, NAME='polympo_setCommunicator')
+    use :: iso_c_binding
+    integer(c_int), value :: comm
+  end subroutine
   end interface
 end module

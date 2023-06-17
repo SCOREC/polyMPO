@@ -24,6 +24,7 @@ program main
   type(c_ptr) :: mpMesh
   call mpi_init(ierr)
   call mpi_comm_rank(MPI_COMM_WORLD, self, ierr)
+  call polympo_setCommunicator(MPI_COMM_WORLD) !this is not supported yet! only for showing
   call polympo_initialize()
   mpMesh = polympo_createMpMesh() !creates test mesh
 

@@ -144,5 +144,7 @@ void polympo_getMeshVelArray(mpmesh mpMeshIn, int size, double* array) {
 
 void polympo_setCommunicator(MPI_Fint fcomm){
     MPI_Comm comm = MPI_Comm_f2c(fcomm);
-    printf("polympo_setCommunicator(not supported yet!) %d\n",comm);
+    int commSize;
+    MPI_Comm_size(comm,&commSize);
+    printf("polympo_setCommunicator with a communicator size: %d\n",commSize);
 }

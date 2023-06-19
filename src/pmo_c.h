@@ -5,7 +5,6 @@
 extern "C" {
 
 typedef void* mpmesh;
-std::vector<mpmesh> mpMeshes;//store the mpMeshes that is legal
 
 void polympo_initialize();
 mpmesh polympo_createMpMesh();

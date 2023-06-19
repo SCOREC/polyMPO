@@ -2,6 +2,10 @@
 #include "pmo_createTestMPMesh.hpp"
 #include <stdio.h>
 
+namespace{
+    std::vector<mpmesh> mpMeshes;////store the mpMeshes that is legal
+}
+
 void polympo_initialize() {
   printf("polympo_initialize c++\n");
   int isMpiInit;

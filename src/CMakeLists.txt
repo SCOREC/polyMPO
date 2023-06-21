@@ -15,6 +15,7 @@ set(SOURCES
   pmt_utils.cpp
   pmo_c.cpp
   pmo_createTestMPMesh.cpp
+  pmo_MPMesh.cpp
 )
 
 add_library(polyMpmTest-core ${SOURCES})

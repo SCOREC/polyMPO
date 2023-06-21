@@ -24,6 +24,10 @@ class MPMesh{
 
     Mesh getMesh() { return mesh_; }
     //void setAssembly(DoubleView asmReturn) { mesh_.setAssemblyReturn(asmReturn); }
+    
+    void CVTTrackingEdgeCenterBased(Vector2View dx, const int printFlag = -1);
+    void CVTTrackingElmCenterBased(Vector2View dx, const int printFlag = -1);
+    void T2LTracking(Vector2View dx, const int printFlag = -1);
 };
 
 }//namespace polyMpmTest end

@@ -101,15 +101,6 @@ class MaterialPoints {
       if(MPs != nullptr)
         delete MPs;
     }
-
-    void rebuild(IntView materialPoints2Elm) {
-      assert(materialPoints2Elm.size() == static_cast<size_t>(MPs->nPtcls()));
-      if( materialPoints2Elm.size() < static_cast<size_t>(MPs->capacity()) ) {
-        Kokkos::resize(Kokkos::WithoutInitializing, materialPoints2Elm, MPs->capacity());
-      }
-      MPs->rebuild(materialPoints2Elm);
-    }
-
     void rebuild() {
       IntView tgtElm("tgtElm", MPs->capacity());
       auto tgtMpElm = MPs->get<MPF_Tgt_Elm_ID>();

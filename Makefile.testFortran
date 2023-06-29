@@ -1,0 +1,84 @@
+###########################
+## edit the following paths
+###########################
+FC=gfortran
+
+CUDA_DIR=/usr/local/cuda-11.4/
+
+MPI_DIR=/opt/scorec/spack/v0154_2/install/linux-rhel7-x86_64/gcc-10.1.0/mpich-3.3.2-gi3wrjquyo564rk27x6r2c6ilr7ndmpl/
+
+KOKKOS_DIR=/space/cwsmith/pumipicDps/build-kokkos-cranium-cuda/install/
+KOKKOS_LIB_DIR=${KOKKOS_DIR}/lib64
+
+OMEGAH_DIR=/space/cwsmith/pumipicDps/build-omegah-cranium-cuda/install/
+
+ENGPAR_DIR=/space/cwsmith/pumipicDps/build-engpar-cranium-cuda/install/
+
+PUMIPIC_DIR=/space/cwsmith/pumipicDps/build-pumipic-cranium-cuda/install/
+
+CABANA_DIR=/space/cwsmith/pumipicDps/build-cabana-cranium-cuda/install/
+
+POLYMPO_DIR=/space/cwsmith/seaice/wachpressTesting/buildPolyMpmTestCudaNetCDFPumiPic/install
+
+######################################################################################
+## Dont't change the following unless you know exactly what you are doing...
+## The following was generated from the CMake generated compile and link commands in
+## a CUDA enabled build of polyMPO
+######################################################################################
+POLYMPO_LIBS=\
+-L${CUDA_DIR}/targets/x86_64-linux/lib/stubs \
+-L${CUDA_DIR}/targets/x86_64-linux/lib \
+-Wl,-rpath,${CUDA_DIR}/lib64: \
+${POLYMPO_DIR}/lib/libpolympo_fortran.a \
+${POLYMPO_DIR}/lib/libpolyMpmTest-core.a \
+-lm \
+${PUMIPIC_DIR}/lib/libpumipic-core.a \
+${PUMIPIC_DIR}/lib/libparticleStructs.a \
+${PUMIPIC_DIR}/lib/libsupport.a \
+${OMEGAH_DIR}/lib/libomega_h.a \
+${MPI_DIR}/lib/libmpicxx.so \
+${KOKKOS_LIB_DIR}/libkokkoscontainers.a \
+${KOKKOS_LIB_DIR}/libkokkoscore.a \
+-lcuda \
+-lcudart \
+-ldl \
+${KOKKOS_LIB_DIR}/libkokkossimd.a \
+-lz \
+${ENGPAR_DIR}/lib/libengpar.a \
+${ENGPAR_DIR}/lib/libdiffusive.a \
+${ENGPAR_DIR}/lib/libmultilevel.a \
+${ENGPAR_DIR}/lib/libengpar_metrics.a \
+${ENGPAR_DIR}/lib/libcoloring.a \
+${ENGPAR_DIR}/lib/libagi.a \
+${ENGPAR_DIR}/lib/libengpar_support.a \
+${ENGPAR_DIR}/lib/libpcu.a \
+${MPI_DIR}/lib/libmpifort.so \
+${MPI_DIR}/lib/libmpi.so \
+-lcudadevrt \
+-lcudart_static \
+-lrt \
+-lpthread \
+-ldl \
+-lstdc++
+
+POLYMPO_COMPILE_FLAGS=\
+-DFP64 \
+-DKOKKOS_ENABLED \
+-DLOCAL_ID_FTYPE=C_INT32_T \
+-DLOCAL_ID_TYPE=int32_t \
+-DPP_ENABLE_CAB \
+-DPP_USE_CUDA \
+-I${POLYMPO_DIR}/include \
+-I${PUMIPIC_DIR}/include \
+-I${KOKKOS_DIR}/include \
+-I${CUDA_DIR}/include \
+-I${CABANA_DIR}/include \
+-I${MPI_DIR}/include \
+-I${OMEGAH_DIR}/include \
+-I${ENGPAR_DIR}/include
+
+testFortran: testFortran.o
+		${FC} testFortran.o -o testFortran ${POLYMPO_LIBS}
+
+testFortran.o: testFortran.f90
+		${FC} ${POLYMPO_COMPILE_FLAGS} -c testFortran.f90 -o testFortran.o

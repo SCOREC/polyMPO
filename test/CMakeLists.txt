@@ -36,11 +36,18 @@ add_test(NAME test_timing COMMAND ./timeAssmblyWachspress 5)
 add_test(NAME test_reconstruction COMMAND ./testReconstruction)
 add_test(NAME test_rebuild COMMAND ./testRebuild)
 
-pmt_add_exe(testFortran testFortran.f90)
-target_link_libraries(testFortran pmtUtils polympo_fortran polyMpmTest MPI::MPI_Fortran)
-set_property(TARGET testFortran PROPERTY LINKER_LANGUAGE Fortran)
-set_source_files_properties(testFortran.f90 PROPERTIES COMPILE_FLAGS -cpp)
-install(TARGETS testFortran DESTINATION bin)
+function(pmt_add_fortran_exe exename srcname)
+  pmt_add_exe(${exename} ${srcname})
+  target_link_libraries(${exename} pmtUtils polympo_fortran polyMpmTest MPI::MPI_Fortran)
+  set_property(TARGET ${exename} PROPERTY LINKER_LANGUAGE Fortran)
+  set_source_files_properties(${scrname} PROPERTIES COMPILE_FLAGS -cpp)
+  install(TARGETS ${exename} DESTINATION bin)
+endfunction()
 
+pmt_add_fortran_exe(testFortranInit testFortranInit.f90)
+add_test(NAME testFortranInit COMMAND ./testFortranInit)
+
+pmt_add_fortran_exe(testFortran testFortran.f90)
 add_test(NAME testFortran COMMAND ./testFortran)
+
 

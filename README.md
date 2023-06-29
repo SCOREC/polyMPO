@@ -495,7 +495,7 @@ cmake --build $bdir --target install -j4
 Allocate an interactive node - be sure to set the `account` argument:
 
 ```
-salloc --nodes 1 --qos interactive --time 01:00:00 --account=m####
+salloc --nodes 1 --qos interactive --time 00:10:00 --constraint gpu --gpus 4 --account=mXXXX
 ```
 
 Once you are logged into the allocated node run the following commands to run

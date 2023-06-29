@@ -1,24 +1,39 @@
+############################################################################
+# The following is an minimal example of the compile and link commands
+# needed on Perlmutter.  The Perlmutter build of the polyMPO stack followed 
+# the build instructions in README.md - **no other configuration was tested**.
+# 
+# Using this Makefile on a different system is not advised as it will require 
+# editing the paths in the first section **and** modifying the compile and link
+# arguments.  This is not intended to be portable as there is no logic to
+# detect/discover compilers and other system software.
+############################################################################
+
+
 ###########################
 ## edit the following paths
 ###########################
 FC=gfortran
 
-CUDA_DIR=/usr/local/cuda-11.4/
+CUDA_DIR=/opt/nvidia/hpc_sdk/Linux_x86_64/22.7/cuda/11.7/
 
-MPI_DIR=/opt/scorec/spack/v0154_2/install/linux-rhel7-x86_64/gcc-10.1.0/mpich-3.3.2-gi3wrjquyo564rk27x6r2c6ilr7ndmpl/
+MPI_DIR=/opt/cray/pe/mpich/8.1.25/ofi/gnu/9.1/
+MPI_LIBS=${MPI_DIR}/lib/libmpifort_gnu_91.so ${MPI_DIR}/lib/libmpi_gnu_91.so
 
-KOKKOS_DIR=/space/cwsmith/pumipicDps/build-kokkos-cranium-cuda/install/
+devRoot=/global/homes/c/cwsmith/projects/seaice/polyMpoDev/
+
+KOKKOS_DIR=${devRoot}/build-kokkos-login10-cuda/install
 KOKKOS_LIB_DIR=${KOKKOS_DIR}/lib64
 
-OMEGAH_DIR=/space/cwsmith/pumipicDps/build-omegah-cranium-cuda/install/
+OMEGAH_DIR=${devRoot}/build-omegah-login10-cuda/install/
 
-ENGPAR_DIR=/space/cwsmith/pumipicDps/build-engpar-cranium-cuda/install/
+ENGPAR_DIR=${devRoot}/build-engpar-login10-cuda/install/
 
-PUMIPIC_DIR=/space/cwsmith/pumipicDps/build-pumipic-cranium-cuda/install/
+PUMIPIC_DIR=${devRoot}/build-pumipic-login10-cuda/install/
 
-CABANA_DIR=/space/cwsmith/pumipicDps/build-cabana-cranium-cuda/install/
+CABANA_DIR=${devRoot}/build-cabana-login10-cuda/install/
 
-POLYMPO_DIR=/space/cwsmith/seaice/wachpressTesting/buildPolyMpmTestCudaNetCDFPumiPic/install
+POLYMPO_DIR=${devRoot}/buildPolyMPO-GPU/install
 
 ######################################################################################
 ## Dont't change the following unless you know exactly what you are doing...
@@ -36,13 +51,11 @@ ${PUMIPIC_DIR}/lib/libpumipic-core.a \
 ${PUMIPIC_DIR}/lib/libparticleStructs.a \
 ${PUMIPIC_DIR}/lib/libsupport.a \
 ${OMEGAH_DIR}/lib/libomega_h.a \
-${MPI_DIR}/lib/libmpicxx.so \
 ${KOKKOS_LIB_DIR}/libkokkoscontainers.a \
 ${KOKKOS_LIB_DIR}/libkokkoscore.a \
 -lcuda \
 -lcudart \
 -ldl \
-${KOKKOS_LIB_DIR}/libkokkossimd.a \
 -lz \
 ${ENGPAR_DIR}/lib/libengpar.a \
 ${ENGPAR_DIR}/lib/libdiffusive.a \
@@ -52,8 +65,7 @@ ${ENGPAR_DIR}/lib/libcoloring.a \
 ${ENGPAR_DIR}/lib/libagi.a \
 ${ENGPAR_DIR}/lib/libengpar_support.a \
 ${ENGPAR_DIR}/lib/libpcu.a \
-${MPI_DIR}/lib/libmpifort.so \
-${MPI_DIR}/lib/libmpi.so \
+${MPI_LIBS} \
 -lcudadevrt \
 -lcudart_static \
 -lrt \

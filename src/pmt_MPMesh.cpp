@@ -13,24 +13,22 @@ void MPMesh::CVTTrackingEdgeCenterBased(Vector2View dx){
     auto elm2VtxConn = mesh.getElm2VtxConn();
     auto vtx2ElmConn = mesh.getVtx2ElmConn();
     auto elm2ElmConn = mesh.getElm2ElmConn();
+    auto MPs2Elm = MPs->getData<MPF_Tgt_Elm_ID>();
     const auto vtxCoords = mesh.getVtxCoords(); 
     auto mpPositions = MPs->getData<MPF_Cur_Pos_XYZ>();
     Kokkos::View<Vector2*[maxVtxsPerElm]> edgeCenters("EdgeCenters",numElms);
-    
-    auto calcCenter = PS_LAMBDA(const int& elm, const int& mp, const int& mask){
-        if(mask){
-            int numVtx = elm2VtxConn(elm,0);
-            int v[maxVtxsPerElm];
-            for(int i=0; i< numVtx; i++)
-                v[i] = elm2VtxConn(elm,i+1)-1;
-            for(int i=0; i< numVtx; i++){
-                Vector2 v_i = vtxCoords(v[i]);
-                Vector2 v_ip1 = vtxCoords(v[(i+1)%numVtx]);
-                edgeCenters(elm,i) = (v_ip1 + v_i)*0.5;
-            }
+  
+    Kokkos::parallel_for("calcEdgeCenter", numElms, KOKKOS_LAMBDA(const int elm){  
+        int numVtx = elm2VtxConn(elm,0);
+        int v[maxVtxsPerElm];
+        for(int i=0; i< numVtx; i++)
+            v[i] = elm2VtxConn(elm,i+1)-1;
+        for(int i=0; i< numVtx; i++){
+            Vector2 v_i = vtxCoords(v[i]);
+            Vector2 v_ip1 = vtxCoords(v[(i+1)%numVtx]);
+            edgeCenters(elm,i) = (v_ip1 + v_i)*0.5;
         }
-    };
-    MPs->parallel_for(calcCenter,"calcEdgeCenter");
+    });
    
     auto CVTEdgeTracking = PS_LAMBDA(const int& elm, const int& mp, const int& mask){
         Vector2 MP = Vector2(mpPositions(mp,0),mpPositions(mp,1));//XXX:the input is XYZ, but we only support 2d vector
@@ -59,7 +57,7 @@ void MPMesh::CVTTrackingEdgeCenterBased(Vector2View dx){
                 }
                 if(edgeIndex <0){
                     //we get to the final elm
-                    //MPs2Elm(mp) = elm; TODO:find a to set the new MP position
+                    MPs2Elm(mp) = iElm; 
                     mpPositions(mp,0) = MPnew[0];
                     mpPositions(mp,1) = MPnew[1];
                     mpPositions(mp,2) = 0.0; //XXX:we only have 2d vector
@@ -85,7 +83,7 @@ void MPMesh::CVTTrackingElmCenterBased(Vector2View dx){
     auto elm2ElmConn = mesh_.getElm2ElmConn();
 
     auto mpPositions = MPs->getData<MPF_Cur_Pos_XYZ>();
-    //auto MPs2Elm = materialPoints2Elm_;
+    auto MPs2Elm = MPs->getData<MPF_Tgt_Elm_ID>();;
 
     Vector2View elmCenter("elmentCenter",numElms);
     auto calcCenter = PS_LAMBDA(const int& elm, const int& mp, const int&mask){
@@ -120,7 +118,7 @@ void MPMesh::CVTTrackingElmCenterBased(Vector2View dx){
                     }
                 }
                 if(closestElm<0){
-                    //MPs2Elm(mp) = iElm;
+                    MPs2Elm(mp) = iElm;
                     mpPositions(mp,0) = MPnew[0];
                     mpPositions(mp,1) = MPnew[1];
                     mpPositions(mp,2) = 0.0; //XXX:we only have 2d vector
@@ -144,7 +142,8 @@ void MPMesh::T2LTracking(Vector2View dx){
     auto elm2ElmConn = mesh_.getElm2ElmConn();
 
     auto mpPositions = MPs->getData<MPF_Cur_Pos_XYZ>();
-    //auto MPs2Elm = materialPoints2Elm_;
+    auto MPs2Elm = MPs->getData<MPF_Tgt_Elm_ID>();
+    auto mpStatus = MPs->getData<MPF_Status>();
    
     auto T2LCalc = PS_LAMBDA(const int& elm, const int& mp, const int&mask){
         Vector2 MP = Vector2(mpPositions(mp,0),mpPositions(mp,1));//XXX:the input is XYZ, but we only support 2d vector
@@ -177,7 +176,8 @@ void MPMesh::T2LTracking(Vector2View dx){
                         iElm = elm2ElmConn(iElm,i+1);
                         goToNeighbour = true;
                         if(iElm <0){
-                            //mask = false;
+                            mpStatus(mp) = 0;                  
+                            MPs2Elm(mp) = -1;
                             goToNeighbour = false;
                         }
                     }
@@ -186,7 +186,7 @@ void MPMesh::T2LTracking(Vector2View dx){
                 if(goToNeighbour)
                     continue; 
                 //otherwise we do the update and end the loop
-                //MPs2Elm(iMP) = iElm; TODO
+                MPs2Elm(mp) = iElm;
                 mpPositions(mp,0) = MPnew[0];
                 mpPositions(mp,1) = MPnew[1];
                 mpPositions(mp,2) = 0.0; //XXX:we only have 2d vector

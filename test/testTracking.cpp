@@ -18,7 +18,7 @@ int main(int argc, char* argv[]) {
         auto MPs = mpMesh.MPs;
         
         Vector2View dx = polyMpmTest::Vector2View("positions",51);
-        Kokkos::deep_copy(dx,Vector2(0,0));
+        Kokkos::deep_copy(dx,Vector2(0.01,0.01));
         
         mpMesh.CVTTrackingEdgeCenterBased(dx);
         IntView TgtElmCVTEdge("TgtElmCVTEdge",mpMesh.MPs->getCount());
@@ -32,11 +32,14 @@ int main(int argc, char* argv[]) {
         IntView TgtElmT2L("TgtElmT2L",mpMesh.MPs->getCount());
         copyTgtElm(TgtElmT2L,mpMesh);
 
+        MPs->updateMPSlice();
+        IntView TgtElmAfter("TgtElmAfter",mpMesh.MPs->getCount());
+        copyTgtElm(TgtElmAfter,mpMesh);
         //TODO:check all the value
        Kokkos::parallel_for("checkTgtElm",MPs->getCount(),KOKKOS_LAMBDA(const int mp){
             //PMT_ALWAYS_ASSERT(TgtElmCVTEdge(mp) == TgtElmCVTCenter(mp)
             //                &&TgtElmCVTEdge(mp) == TgtElmT2L(mp) );
-            printf("%d %d %d\n",TgtElmCVTEdge(mp),TgtElmCVTCenter(mp),TgtElmT2L(mp));
+            printf("%d %d %d %d\n",TgtElmCVTEdge(mp),TgtElmCVTCenter(mp),TgtElmT2L(mp),TgtElmAfter(mp));
         });
         
     }
@@ -44,6 +47,7 @@ int main(int argc, char* argv[]) {
     return 0;
 }
 
+//TODO:change to a template function
 void copyTgtElm(IntView& returnView, MPMesh& mpMesh){
     auto mpTgtElm = mpMesh.MPs->getData<MPF_Tgt_Elm_ID>();
     auto copyVal = PS_LAMBDA(const int& elm, const int& mp, const int& mask){

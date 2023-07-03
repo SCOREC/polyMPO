@@ -96,10 +96,7 @@ module polympo
   subroutine polympo_setCommunicator(comm) &
              bind(C, NAME='polympo_setCommunicator')
     use :: iso_c_binding
-    !use :: mpi_c_interface_types
-    !integer(c_Comm), value :: comm
-    use :: mpi_f08
-    type(MPI_Comm), intent(in) :: comm
+    integer(c_int), value :: comm    
   end subroutine
   end interface
 end module

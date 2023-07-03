@@ -116,35 +116,39 @@ class MaterialPoints {
       ps::parallel_for(MPs, setTgtElm, "setTargetElement");
       MPs->rebuild(tgtElm);
     }
-    void updateMPSlice(){
-      //for(const auto swapPair : mpSliceSwap){
-        //auto cur = MPs->get<swapPair.first>();
-        //auto tgt = MPs->get<swapPair.second>();
-        //auto numEntries = mpSlice2MeshFieldIndex.at(cur).first;
-        auto curElmID = MPs->get<MPF_Cur_Elm_ID>();
-        auto tgtElmID = MPs->get<MPF_Tgt_Elm_ID>();
-        auto curPosLatLon = MPs->get<MPF_Cur_Pos_Lat_Lon>();
-        auto tgtPosLatLon = MPs->get<MPF_Tgt_Pos_Lat_Lon>();
-        auto curPosXYZ = MPs->get<MPF_Cur_Pos_XYZ>();
-        auto tgtPosXYZ = MPs->get<MPF_Tgt_Pos_XYZ>();
-        auto swap = PS_LAMBDA(const int& elm, const int& mp, const int& mask) {
-          if(mask){
+    void updateMPElmID(){
+      auto curElmID = MPs->get<MPF_Cur_Elm_ID>();
+      auto tgtElmID = MPs->get<MPF_Tgt_Elm_ID>();
+      auto swap = PS_LAMBDA(const int& elm, const int& mp, const int& mask) {
+        if(mask){
             curElmID(mp) = tgtElmID(mp);
-            curPosLatLon(mp,0) = tgtPosLatLon(mp,0);
-            curPosLatLon(mp,1) = tgtPosLatLon(mp,1);
-            curPosXYZ(mp,0) = tgtPosXYZ(mp,0);
-            curPosXYZ(mp,1) = tgtPosXYZ(mp,1);
-            curPosXYZ(mp,2) = tgtPosXYZ(mp,2);
             tgtElmID(mp) = -1;
-            tgtPosLatLon(mp,0) = -1;
-            tgtPosLatLon(mp,1) = -1;
-            tgtPosXYZ(mp,0) = -1;
-            tgtPosXYZ(mp,1) = -1;
-            tgtPosXYZ(mp,2) = -1;
+        }
+      };
+      ps::parallel_for(MPs, swap, "swap");
+    }
+    template <MaterialPointSlice mpfIndexCur, MaterialPointSlice mpfIndexTgt>
+    void updateMPSlice(){
+      auto curData = MPs->get<mpfIndexCur>();
+      auto tgtData = MPs->get<mpfIndexTgt>();
+      const int numEntriesCur = mpSlice2MeshFieldIndex.at(mpfIndexCur).first;
+      const int numEntriesTgt = mpSlice2MeshFieldIndex.at(mpfIndexTgt).first;
+      PMT_ALWAYS_ASSERT(numEntriesCur == numEntriesTgt);
+      
+      auto swap = PS_LAMBDA(const int& elm, const int& mp, const int& mask) {
+        if(mask){
+          for(int i=0; i<numEntriesCur; i++){
+            curData(mp,i) = tgtData(mp,i);
+            tgtData(mp,i) = -1;
           }
-        };
-        ps::parallel_for(MPs, swap, "swap");
-      //}
+        }
+      };
+      ps::parallel_for(MPs, swap, "swap");
+    }
+    void updateMPSliceAll(){
+        updateMPElmID();
+        updateMPSlice<MPF_Cur_Pos_Lat_Lon,MPF_Tgt_Pos_Lat_Lon>();
+        updateMPSlice<MPF_Cur_Pos_XYZ,MPF_Tgt_Pos_XYZ>();
     }
 
     template <int index>

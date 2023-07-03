@@ -32,7 +32,7 @@ int main(int argc, char* argv[]) {
         IntView TgtElmT2L("TgtElmT2L",mpMesh.MPs->getCount());
         copyTgtElm(TgtElmT2L,mpMesh);
 
-        MPs->updateMPSlice();
+        MPs->updateMPSliceAll();
         IntView TgtElmAfter("TgtElmAfter",mpMesh.MPs->getCount());
         copyTgtElm(TgtElmAfter,mpMesh);
         //TODO:check all the value

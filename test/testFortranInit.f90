@@ -1,13 +1,15 @@
 program main
   use polympo
   use iso_c_binding
+  use mpi_f08
   implicit none
-  include 'mpif.h'
 
   integer :: ierr, self
+  TYPE(MPI_Comm) :: mpi_comm_handle = MPI_COMM_WORLD
+
   call mpi_init(ierr)
-  call mpi_comm_rank(MPI_COMM_WORLD, self, ierr)
-  call polympo_setCommunicator(MPI_COMM_WORLD)
+  call mpi_comm_rank(mpi_comm_handle, self, ierr)
+  call polympo_setCommunicator(mpi_comm_handle%MPI_VAL)
   call polympo_initialize()
 
   call polympo_finalize()

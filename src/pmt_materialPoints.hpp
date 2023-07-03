@@ -45,11 +45,10 @@ enum MaterialPointSlice {
   MPF_Constv_Mdl_Param
 };
 
-//TODO: fix incantation
 const static std::map<MaterialPointSlice, std::pair<int,MeshFieldIndex>> 
       mpSlice2MeshFieldIndex = {{MPF_Status,     {1,MeshF_Invalid}},
-                           {MPF_Cur_Elm_ID,      {1,MeshF_Invalid}},
-                           {MPF_Tgt_Elm_ID,      {1,MeshF_Invalid}},
+                           {MPF_Cur_Elm_ID,      {0,MeshF_Invalid}},
+                           {MPF_Tgt_Elm_ID,      {0,MeshF_Invalid}},
                            {MPF_Cur_Pos_Lat_Lon, {2,MeshF_Invalid}},
                            {MPF_Tgt_Pos_Lat_Lon, {2,MeshF_Invalid}},
                            {MPF_Cur_Pos_XYZ,     {3,MeshF_Cur_Pos_XYZ}},
@@ -64,6 +63,11 @@ const static std::map<MaterialPointSlice, std::pair<int,MeshFieldIndex>>
                            {MPF_Stress_Div,      {3,MeshF_Unsupported}},
                            {MPF_Shear_Traction,  {3,MeshF_Unsupported}},
                            {MPF_Constv_Mdl_Param,{12,MeshF_Unsupported}}};
+
+const static std::vector<std::pair<MaterialPointSlice, MaterialPointSlice>>
+        mpSliceSwap = {{MPF_Cur_Elm_ID, MPF_Tgt_Elm_ID},
+                       {MPF_Cur_Pos_Lat_Lon, MPF_Tgt_Pos_Lat_Lon},
+                       {MPF_Cur_Pos_XYZ, MPF_Tgt_Pos_XYZ}};
 
 typedef MemberTypes<mp_flag_t,              //MP_Status
                     mp_elm_id_t,            //MP_Cur_Elm_ID
@@ -111,6 +115,36 @@ class MaterialPoints {
       };
       ps::parallel_for(MPs, setTgtElm, "setTargetElement");
       MPs->rebuild(tgtElm);
+    }
+    void updateMPSlice(){
+      //for(const auto swapPair : mpSliceSwap){
+        //auto cur = MPs->get<swapPair.first>();
+        //auto tgt = MPs->get<swapPair.second>();
+        //auto numEntries = mpSlice2MeshFieldIndex.at(cur).first;
+        auto curElmID = MPs->get<MPF_Cur_Elm_ID>();
+        auto tgtElmID = MPs->get<MPF_Tgt_Elm_ID>();
+        auto curPosLatLon = MPs->get<MPF_Cur_Pos_Lat_Lon>();
+        auto tgtPosLatLon = MPs->get<MPF_Tgt_Pos_Lat_Lon>();
+        auto curPosXYZ = MPs->get<MPF_Cur_Pos_XYZ>();
+        auto tgtPosXYZ = MPs->get<MPF_Tgt_Pos_XYZ>();
+        auto swap = PS_LAMBDA(const int& elm, const int& mp, const int& mask) {
+          if(mask){
+            curElmID(mp) = tgtElmID(mp);
+            curPosLatLon(mp,0) = tgtPosLatLon(mp,0);
+            curPosLatLon(mp,1) = tgtPosLatLon(mp,1);
+            curPosXYZ(mp,0) = tgtPosXYZ(mp,0);
+            curPosXYZ(mp,1) = tgtPosXYZ(mp,1);
+            curPosXYZ(mp,2) = tgtPosXYZ(mp,2);
+            tgtElmID(mp) = -1;
+            tgtPosLatLon(mp,0) = -1;
+            tgtPosLatLon(mp,1) = -1;
+            tgtPosXYZ(mp,0) = -1;
+            tgtPosXYZ(mp,1) = -1;
+            tgtPosXYZ(mp,2) = -1;
+          }
+        };
+        ps::parallel_for(MPs, swap, "swap");
+      //}
     }
 
     template <int index>

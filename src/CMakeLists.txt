@@ -13,6 +13,7 @@ set(SOURCES
   pmt_materialPoints.cpp
   pmt_mesh.cpp
   pmt_utils.cpp
+  pmt_MPMesh.cpp
   pmo_c.cpp
   pmo_createTestMPMesh.cpp
 )
@@ -48,6 +49,7 @@ export_target(polyMpmTest)
 
 ### Fortran inteface ###
 add_library(polympo_fortran pmo_fortran.f90)
+target_link_libraries(polympo_fortran MPI::MPI_Fortran)
 target_include_directories(polympo_fortran INTERFACE
   $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>
   $<INSTALL_INTERFACE:include>)

@@ -10,6 +10,7 @@ namespace polyMpmTest{
 
 using IntVtx2ElmView = Kokkos::View<int*[maxVtxsPerElm+1]>;
 using IntElm2VtxView = Kokkos::View<int*[maxElmsPerVtx+1]>;
+using IntElm2ElmView = Kokkos::View<int*[maxVtxsPerElm*2+1]>;
 
 using DoubleVec2DView = Kokkos::View<double*[vec2d_nEntries]>;
 //DoubleVec2DViewHostU
@@ -30,6 +31,7 @@ class Mesh {
     Vector2View vtxCoords_;
     IntVtx2ElmView elm2VtxConn_;
     IntElm2VtxView vtx2ElmConn_;
+    IntElm2ElmView elm2ElmConn_;
     //start of meshFields
     DoubleVec2DView vtxVel_; 
     DoubleVec3DView vtxCurXYZ_;
@@ -43,12 +45,14 @@ class Mesh {
           int numElms,
           Vector2View vtxCoords,
           IntVtx2ElmView elm2VtxConn,
-          IntElm2VtxView vtx2ElmConn):
+          IntElm2VtxView vtx2ElmConn,
+          IntElm2ElmView elm2ElmConn ):
           numVtxs_(numVtxs),
           numElms_(numElms),
           vtxCoords_(vtxCoords),
           elm2VtxConn_(elm2VtxConn),
-          vtx2ElmConn_(vtx2ElmConn){
+          vtx2ElmConn_(vtx2ElmConn),
+          elm2ElmConn_(elm2ElmConn){
             vtxVel_ = DoubleVec2DView("vtxVelocity",numVtxs);    
             vtxCurXYZ_ = DoubleVec3DView("vtxCurrentPositionXYZ",numVtxs);    
         }
@@ -59,6 +63,7 @@ class Mesh {
     Vector2View getVtxCoords() { return vtxCoords_; }
     IntVtx2ElmView getElm2VtxConn() { return elm2VtxConn_; }
     IntElm2VtxView getVtx2ElmConn() { return vtx2ElmConn_; }
+    IntElm2ElmView getElm2ElmConn() { return elm2ElmConn_; }
     template<MeshFieldIndex index> auto getMeshField();
 
     //void setVtx2ElmConn(IntElm2VtxView vtx2ElmConn) { vtx2ElmConn_ = vtx2ElmConn; }

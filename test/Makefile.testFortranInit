@@ -20,9 +20,9 @@ CUDA_DIR=/opt/nvidia/hpc_sdk/Linux_x86_64/22.7/cuda/11.7/
 MPI_DIR=/opt/cray/pe/mpich/8.1.25/ofi/gnu/9.1/
 MPI_LIBS=${MPI_DIR}/lib/libmpifort_gnu_91.so ${MPI_DIR}/lib/libmpi_gnu_91.so
 
-devRoot=/global/homes/y/yygong/develop/
+devRoot=/global/homes/y/yygong/develop
 
-KOKKOS_DIR=${devRoot}/build-kokkos-login21-cuda/install
+KOKKOS_DIR=${devRoot}/build-kokkos-login21-cuda/install/
 KOKKOS_LIB_DIR=${KOKKOS_DIR}/lib64
 
 OMEGAH_DIR=${devRoot}/build-omegah-login21-cuda/install/
@@ -89,9 +89,8 @@ POLYMPO_COMPILE_FLAGS=\
 -I${OMEGAH_DIR}/include \
 -I${ENGPAR_DIR}/include
 
-testFortran: testFortran.o
-		${FC} testFortran.o -o testFortran ${POLYMPO_LIBS}
+testFortranInit: testFortranInit.o
+		${FC} testFortranInit.o -o testFortranInit ${POLYMPO_LIBS}
 
-testFortran.o: testFortran.f90
-		${FC} ${POLYMPO_COMPILE_FLAGS} -c testFortran.f90 -o testFortran.o
-
+testFortranInit.o: testFortranInit.f90
+		${FC} ${POLYMPO_COMPILE_FLAGS} -c testFortranInit.f90 -o testFortranInit.o

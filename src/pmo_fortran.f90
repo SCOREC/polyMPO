@@ -98,5 +98,78 @@ module polympo
     use :: iso_c_binding
     integer(c_int), value :: comm    
   end subroutine
+  !---------------------------------------------------------------------------
+  !> @brief set the polympo mesh vertices coordinates
+  !> @param mpmesh(in/out) MPMesh object
+  !> @param n(in) number of the vertices coordinates 
+  !> @param array(in) the array of vertices coordinates
+  !---------------------------------------------------------------------------
+  subroutine polympo_setMeshVtxCoords(mpMesh, n, array) &
+             bind(C, NAME='polympo_setMeshVtxCoords')
+    use :: iso_c_binding
+    type(c_ptr), value :: mpMesh
+    integer(c_int), value :: n
+    real(c_double), intent(in), dimension(:,:) :: array
+  end subroutine
+  !---------------------------------------------------------------------------
+  !> @brief set the polympo mesh element to vertices connectivity
+  !> @param mpmesh(in/out) MPMesh object
+  !> @param n(in) length of array
+  !> @param array(in) element to vertices connectivity array (verticesOnCell)
+  !---------------------------------------------------------------------------
+  subroutine polympo_setMeshElm2VtxConn(mpMesh, n, array) &
+             bind(C, NAME='polympo_setMeshElm2VtxConn')
+    use :: iso_c_binding
+    type(c_ptr), value :: mpMesh
+    integer(c_int), value :: n
+    real(c_double), intent(in), dimension(:,:) :: array
+  end subroutine
+  !---------------------------------------------------------------------------
+  !> @brief set the polympo mesh vertex to elements connectivity
+  !> @param mpmesh(in/out) MPMesh object
+  !> @param n(in) length of array
+  !> @param array(in) vertex to elements connectivity array (cellsOnVertex) 
+  !---------------------------------------------------------------------------
+  subroutine polympo_setMeshVtx2ElmConn(mpMesh, n, array) &
+             bind(C, NAME='polympo_setMeshVtx2ElmConn')
+    use :: iso_c_binding
+    type(c_ptr), value :: mpMesh
+    integer(c_int), value :: n
+    real(c_double), intent(in), dimension(:,:) :: array
+  end subroutine
+  !---------------------------------------------------------------------------
+  !> @brief set the polympo mesh element to elements connectivity
+  !> @param mpmesh(in/out) MPMesh object
+  !> @param n(in) length of array
+  !> @param array(in) element to elements connectivity array (cellsOnCell)
+  !---------------------------------------------------------------------------
+  subroutine polympo_setMeshElm2ElmConn(mpMesh, n, array) &
+             bind(C, NAME='polympo_setMeshElm2ElmConn')
+    use :: iso_c_binding
+    type(c_ptr), value :: mpMesh
+    integer(c_int), value :: n
+    real(c_double), intent(in), dimension(:,:) :: array
+  end subroutine
+
+!=============================================================================
+  !---------------------------------------------------------------------------
+  !> @brief read MPAS mesh(Version 1.0)
+  !> @param filename(in)
+  !> 
+  !---------------------------------------------------------------------------
+  subroutine polympo_readMPASMesh(filename, &
+                                  nCells, nVertices, nEdgesOnCell, &
+                                  xVertex, yVertex, zVertex, &
+                                  verticesOnCell, cellsOnVertex, cellsOnCell)
+    !use :: netcdf
+    implicit none
+    
+    character (len=*), intent(in) :: filename
+    integer, intent(inout) :: nCells, nVertices
+    integer, dimension(:), pointer :: nEdgesOnCell
+    double precision, dimension(:), pointer :: xVertex, yVertex, zVertex
+    integer, dimension(:,:), pointer :: verticesOnCell, cellsOnVertex, cellsOnCell
+
+  end subroutine polympo_readMPASMesh
   end interface
 end module

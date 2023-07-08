@@ -10,10 +10,17 @@ void polympo_initialize();
 mpmesh polympo_createMpMesh();
 void polympo_deleteMpMesh(mpmesh mpMesh);
 void polympo_finalize();
+
 void polympo_setMPVelArray(mpmesh mpMeshIn, int size, double* array);
 void polympo_getMPVelArray(mpmesh mpMeshIn, int size, double* array);
+void polympo_setCommunicator(MPI_Fint fcomm);
+
 void polympo_setMeshVelArray(mpmesh mpMeshIn, int size, double* array);
 void polympo_getMeshVelArray(mpmesh mpMeshIn, int size, double* array);
-void polympo_setCommunicator(MPI_Fint fcomm);
+//TODO:finish the following functions
+void polympo_setMeshVtxCoords(mpmesh mpMeshIn, int size, double** array){}
+void polympo_setMeshElm2VtxConn(mpmesh mpMeshIn, int size, int** array){}
+void polympo_setMeshVtx2ElmConn(mpmesh mpMeshIn, int size, int** array){}
+void polympo_setMeshElm2ElmConn(mpmesh mpMeshIn, int size, int** array){}
 }
 #endif

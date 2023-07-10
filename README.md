@@ -30,6 +30,7 @@ module load gcc/10.1.0 cuda/11.4
 module load mpich/3.3.2
 module load cmake
 module load netcdf-c/4.7.3
+module load netcdf-fortran/4.5.2
 
 function getname() {
   name=$1
@@ -249,6 +250,7 @@ module load gcc/10.1.0
 module load mpich/3.3.2
 module load cmake
 module load netcdf-c/4.7.3
+module load netcdf-fortran/4.5.2
 
 function getname() {
   name=$1

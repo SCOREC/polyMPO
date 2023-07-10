@@ -161,7 +161,7 @@ module polympo
                                   nCells, nVertices, nEdgesOnCell, &
                                   xVertex, yVertex, zVertex, &
                                   verticesOnCell, cellsOnVertex, cellsOnCell)
-    use netcdf
+    use :: netcdf
     implicit none
     
     character (len=*), intent(in) :: filename

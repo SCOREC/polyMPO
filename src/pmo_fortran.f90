@@ -150,41 +150,38 @@ module polympo
     integer(c_int), value :: n
     integer(c_int), intent(in), dimension(:,:) :: array
   end subroutine
-
+  end interface
+  contains
 !=============================================================================
   !---------------------------------------------------------------------------
   !> @brief read MPAS mesh(Version 1.0)
   !> @param filename(in)
   !> 
   !---------------------------------------------------------------------------
-  subroutine polympo_readMPASMesh()!filename, &
-                                  !nCells, nVertices, nEdgesOnCell, &
-                                  !xVertex, yVertex, zVertex, &
-                                  !verticesOnCell, cellsOnVertex, cellsOnCell)
+
+  subroutine polympo_readMPASMesh(filename, &
+                                  nCells, nVertices, nEdgesOnCell, &
+                                  xVertex, yVertex, zVertex, &
+                                  verticesOnCell, cellsOnVertex, cellsOnCell)
     use :: netcdf
     implicit none
     
-    !character (len=*), intent(in) :: filename
-    !integer, intent(inout) :: nCells, nVertices
-    !integer, dimension(:), pointer :: nEdgesOnCell
-    !double precision, dimension(:), pointer :: xVertex, yVertex, zVertex
-    !integer, dimension(:,:), pointer :: verticesOnCell, cellsOnVertex, cellsOnCell
+    character (len=*), intent(in) :: filename
+    integer, intent(inout) :: nCells, nVertices
+    integer, dimension(:), pointer :: nEdgesOnCell
+    double precision, dimension(:), pointer :: xVertex, yVertex, zVertex
+    integer, dimension(:,:), pointer :: verticesOnCell, cellsOnVertex, cellsOnCell
 
-    !integer :: maxEdge, vertexDegree
-    integer :: ncid, s1!, nCellsID, nVerticesID, maxEdgeID, vertexDegreeID, &
-               !nEdgesOnCellID, xVertexID, yVertexID, zVertexID, &
-              ! verticesOnCellID, cellsOnVertexID, cellsOnCellID
+    integer :: maxEdge, vertexDegree
+    integer :: ncid, status, nCellsID, nVerticesID, maxEdgeID, vertexDegreeID, &
+               nEdgesOnCellID, xVertexID, yVertexID, zVertexID, &
+               verticesOnCellID, cellsOnVertexID, cellsOnCellID
     
-    !status1 = nf90_open(path=trim(filename), mode=nf90_nowrite, ncid=ncid)
-    !status1 = nf90_open(path = "foo.nc", mode = nf90_nowrite, ncid = ncid)
-    s1 = nf90_open(path = "foo.nc", mode = nf90_nowrite, ncid = ncid)
-    !if (status /= nf90_noerr) then
-    !    write(0,*) 'polympo_readMPASMesh: Error occured when opening MPAS grid:'//filename
-    !    write(0,*) trim(nf90_strerror(status))
-    !    stop 
-    !end if    
-    
-    
+    status = nf90_open(path=trim(filename), mode=nf90_nowrite, ncid=ncid)
+    if (status /= nf90_noerr) then
+        write(0,*) 'polympo_readMPASMesh: Error occured when opening MPAS grid:'//filename
+        write(0,*) trim(nf90_strerror(status))
+        stop 
+    end if    
   end subroutine polympo_readMPASMesh
-  end interface
 end module

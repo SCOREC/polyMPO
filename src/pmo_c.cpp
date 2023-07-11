@@ -29,7 +29,7 @@ mpmesh polympo_createMpMesh() {
 }
 
 void polympo_deleteMpMesh(mpmesh mpMeshIn) {
-  //chech mpMesh is valid
+  //check mpMesh is valid
   auto mpMeshInIter = std::find(mpMeshes.begin(),mpMeshes.end(),mpMeshIn);
   PMT_ALWAYS_ASSERT(mpMeshInIter != mpMeshes.end());
 
@@ -94,7 +94,7 @@ void polympo_setMeshVelArray(mpmesh mpMeshIn, int size, double* array) {
 }
 
 void polympo_getMPVelArray(mpmesh mpMeshIn, int size, double* array) {
-  //chech mpMesh is valid
+  //check mpMesh is valid
   auto mpMeshInIter = std::find(mpMeshes.begin(),mpMeshes.end(),mpMeshIn);
   PMT_ALWAYS_ASSERT(mpMeshInIter != mpMeshes.end());
   printf("polympo_getMPVelArray c++ size %d\n", size);
@@ -125,7 +125,7 @@ void polympo_getMPVelArray(mpmesh mpMeshIn, int size, double* array) {
 }
 
 void polympo_getMeshVelArray(mpmesh mpMeshIn, int size, double* array) {
-  //chech mpMesh is valid
+  //check mpMesh is valid
   auto mpMeshInIter = std::find(mpMeshes.begin(),mpMeshes.end(),mpMeshIn);
   PMT_ALWAYS_ASSERT(mpMeshInIter != mpMeshes.end());
   printf("polympo_getMeshVelArray c++ size %d\n", size);

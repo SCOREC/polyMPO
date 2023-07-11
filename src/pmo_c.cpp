@@ -51,7 +51,7 @@ typedef Kokkos::View<
         > kkDblViewHostU;//TODO:put it to mesh.hpp
 
 void polympo_setMPVelArray(mpmesh mpMeshIn, int size, double* array) {
-  //chech mpMesh is valid
+  //check mpMesh is valid
   auto mpMeshInIter = std::find(mpMeshes.begin(),mpMeshes.end(),mpMeshIn);
   PMT_ALWAYS_ASSERT(mpMeshInIter != mpMeshes.end());
   printf("polympo_setMPVelArray c++ size %d\n", size);
@@ -76,7 +76,7 @@ void polympo_setMPVelArray(mpmesh mpMeshIn, int size, double* array) {
 }
 
 void polympo_setMeshVelArray(mpmesh mpMeshIn, int size, double* array) {
-  //chech mpMesh is valid
+  //check mpMesh is valid
   auto mpMeshInIter = std::find(mpMeshes.begin(),mpMeshes.end(),mpMeshIn);
   PMT_ALWAYS_ASSERT(mpMeshInIter != mpMeshes.end());
   printf("polympo_setMeshVelArray c++ size %d\n", size);

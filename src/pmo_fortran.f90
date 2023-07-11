@@ -102,14 +102,14 @@ module polympo
   !> @brief set the polympo mesh vertices coordinates
   !> @param mpmesh(in/out) MPMesh object
   !> @param n(in) number of the vertices coordinates 
-  !> @param array(in) the array of vertices coordinates
+  !> @param x/y/zArray(in) the arrays of vertices coordinates
   !---------------------------------------------------------------------------
-  subroutine polympo_setMeshVtxCoords(mpMesh, n, array) &
+  subroutine polympo_setMeshVtxCoords(mpMesh, n, xArray, yArray, zArray) &
              bind(C, NAME='polympo_setMeshVtxCoords')
     use :: iso_c_binding
     type(c_ptr), value :: mpMesh
     integer(c_int), value :: n
-    real(c_double), intent(in), dimension(:,:) :: array
+    real(c_double), intent(in), dimension(:,:) :: xArray, yArray, zArray
   end subroutine
   !---------------------------------------------------------------------------
   !> @brief set the polympo mesh element to vertices connectivity
@@ -122,7 +122,7 @@ module polympo
     use :: iso_c_binding
     type(c_ptr), value :: mpMesh
     integer(c_int), value :: n
-    real(c_double), intent(in), dimension(:,:) :: array
+    integer(c_int), intent(in), dimension(:,:) :: array
   end subroutine
   !---------------------------------------------------------------------------
   !> @brief set the polympo mesh vertex to elements connectivity
@@ -135,7 +135,7 @@ module polympo
     use :: iso_c_binding
     type(c_ptr), value :: mpMesh
     integer(c_int), value :: n
-    real(c_double), intent(in), dimension(:,:) :: array
+    integer(c_int), intent(in), dimension(:,:) :: array
   end subroutine
   !---------------------------------------------------------------------------
   !> @brief set the polympo mesh element to elements connectivity
@@ -148,7 +148,7 @@ module polympo
     use :: iso_c_binding
     type(c_ptr), value :: mpMesh
     integer(c_int), value :: n
-    real(c_double), intent(in), dimension(:,:) :: array
+    integer(c_int), intent(in), dimension(:,:) :: array
   end subroutine
 
 !=============================================================================
@@ -170,6 +170,19 @@ module polympo
     double precision, dimension(:), pointer :: xVertex, yVertex, zVertex
     integer, dimension(:,:), pointer :: verticesOnCell, cellsOnVertex, cellsOnCell
 
+    integer :: maxEdge, vertexDegree
+    integer :: ncid, nCellsID, nVerticesID, maxEdgeID, vertexDegreeID, &
+               nEdgesOnCellID, xVertexID, yVertexID, zVertexID, &
+               verticesOnCellID, cellsOnVertexID, cellsOnCellID
+    
+    status = nf90_open(path=trim(filename), mode=nf90_nowrite, ncid=ncid)
+    !if (status /= nf90_noerr) then
+    !    write(0,*) 'polympo_readMPASMesh: Error occured when opening MPAS grid:'//filename
+    !    write(0,*) trim(nf90_strerror(status))
+    !    stop 
+    !end if    
+    
+    
   end subroutine polympo_readMPASMesh
   end interface
 end module

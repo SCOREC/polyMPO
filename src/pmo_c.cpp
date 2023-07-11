@@ -1,5 +1,5 @@
-#include "pmo_c.h"
 #include "pmo_createTestMPMesh.hpp"
+#include "pmo_c.h"
 #include <stdio.h>
 
 namespace{
@@ -38,17 +38,6 @@ void polympo_deleteMpMesh(mpmesh mpMeshIn) {
   delete mpMesh;
 }
 
-/**
- * Attention: this typedef is LayoutLeft, meaning that the first
- * index is the contiguous one. This matches the Fortran and GPU conventions for
- * allocations.
- */
-typedef Kokkos::View<
-          double*[vec2d_nEntries],
-          Kokkos::LayoutLeft,
-          Kokkos::DefaultHostExecutionSpace,
-          Kokkos::MemoryTraits<Kokkos::Unmanaged>
-        > kkDblViewHostU;//TODO:put it to mesh.hpp
 
 void polympo_setMPVelArray(mpmesh mpMeshIn, int size, double* array) {
   //chech mpMesh is valid
@@ -148,3 +137,44 @@ void polympo_setCommunicator(MPI_Fint fcomm){
     MPI_Comm_size(comm,&commSize);
     printf("polympo_setCommunicator with a communicator size: %d\n",commSize);
 }
+
+void polympo_setMeshVtxCoords(mpmesh mpMeshIn, int size, double* xArray, double* yArray, double* zArray){
+  //chech validity
+  auto mpMeshInIter = std::find(mpMeshes.begin(),mpMeshes.end(),mpMeshIn);
+  PMT_ALWAYS_ASSERT(mpMeshInIter != mpMeshes.end());
+  polyMpmTest::MPMesh* mpMesh = (polyMpmTest::MPMesh*)mpMeshIn;
+  PMT_ALWAYS_ASSERT(size == mpMesh->getMesh().getNumVertices());
+
+  polyMpmTest::Vector2View vtxCoords("vtxCoords set by fortran", size);
+  kkDblViewHostU xArrayHost(xArray,size); 
+  kkDblViewHostU yArrayHost(yArray,size); 
+  kkDblViewHostU zArrayHost(zArray,size); 
+
+  Kokkos::parallel_for("set vtxCoords", size, KOKKOS_LAMBDA(const int elm){
+      vtxCoords(elm) = polyMpmTest::Vector2(xArrayHost(elm,0),yArrayHost(elm,0)); //XXX: we only have Vector2 now,so zArray is not used
+  });
+  mpMesh->getMesh().setVtxCoords(vtxCoords); 
+}
+
+void polympo_setMeshElm2VtxConn(mpmesh mpMeshIn, int size, int** array){
+  //chech vailidity
+  auto mpMeshInIter = std::find(mpMeshes.begin(),mpMeshes.end(),mpMeshIn);
+  PMT_ALWAYS_ASSERT(mpMeshInIter != mpMeshes.end());
+  //kkInt2DViewHostU arrayHost(array,size,maxElmsPerVtx+1); 
+
+}
+
+void polympo_setMeshVtx2ElmConn(mpmesh mpMeshIn, int size, int** array){
+  //chech validity
+  auto mpMeshInIter = std::find(mpMeshes.begin(),mpMeshes.end(),mpMeshIn);
+  PMT_ALWAYS_ASSERT(mpMeshInIter != mpMeshes.end());
+  //kkInt2DViewHostU arrayHost(array,size,maxVtxsPerElm+1); 
+}
+
+void polympo_setMeshElm2ElmConn(mpmesh mpMeshIn, int size, int** array){
+  //chech validity
+  auto mpMeshInIter = std::find(mpMeshes.begin(),mpMeshes.end(),mpMeshIn);
+  //PMT_ALWAYS_ASSERT(mpMeshInIter != mpMeshes.end());
+  //kkInt2DViewHostU arrayHost(array,size,maxVtxsPerElm+1);
+}
+

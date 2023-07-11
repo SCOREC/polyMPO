@@ -33,7 +33,7 @@ using BoolView = Kokkos::View<bool*>;
 
 class Vector2 {
   private:
-    double coords_[2];
+    vec2d_t coords_;
 
   public:
     //constructors

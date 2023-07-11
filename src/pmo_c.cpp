@@ -68,7 +68,7 @@ void polympo_setMP2dVelArray(mpmesh mpMeshIn, int rank1size, int rank2size, doub
     for(int j=0; j<rank2size; j++) {
       double kkval = arrayHost(i,j);
       double expected = i*rank2size+j;
-      fprintf(stderr, "%d %d has %.3f kkVal %.3f expected %.3f\n", i, j, array[i*rank2size+j], kkval, expected);
+      fprintf(stderr, "%d %d kkVal %.3f expected %.3f\n", i, j, kkval, expected);
     }
   }
 }

@@ -29,7 +29,7 @@ mpmesh polympo_createMpMesh() {
 }
 
 void polympo_deleteMpMesh(mpmesh mpMeshIn) {
-  //chech mpMesh is valid
+  //check mpMesh is valid
   auto mpMeshInIter = std::find(mpMeshes.begin(),mpMeshes.end(),mpMeshIn);
   PMT_ALWAYS_ASSERT(mpMeshInIter != mpMeshes.end());
 
@@ -38,9 +38,43 @@ void polympo_deleteMpMesh(mpmesh mpMeshIn) {
   delete mpMesh;
 }
 
+/**
+ * Attention: this typedef is LayoutLeft, meaning that the first
+ * index is the contiguous one. This matches the Fortran and GPU conventions for
+ * allocations.
+ */
+typedef Kokkos::View<
+          double*[vec2d_nEntries],
+          Kokkos::LayoutLeft,
+          Kokkos::DefaultHostExecutionSpace,
+          Kokkos::MemoryTraits<Kokkos::Unmanaged>
+        > kkDblViewHostU;//TODO:put it to mesh.hpp
+                         
+typedef Kokkos::View<
+          double**,
+          Kokkos::LayoutLeft,
+          Kokkos::DefaultHostExecutionSpace,
+          Kokkos::MemoryTraits<Kokkos::Unmanaged>
+        > kkDbl2dViewHostU;//TODO:put it to mesh.hpp
+
+void polympo_setMP2dVelArray(mpmesh mpMeshIn, int rank1size, int rank2size, double* array) {
+  //check mpMesh is valid
+  auto mpMeshInIter = std::find(mpMeshes.begin(),mpMeshes.end(),mpMeshIn);
+  PMT_ALWAYS_ASSERT(mpMeshInIter != mpMeshes.end());
+  printf("polympo_setMP2dVelArray c++ size %d %d\n", rank1size, rank2size);
+  polyMpmTest::MPMesh* mpMesh = (polyMpmTest::MPMesh*)mpMeshIn;
+  kkDbl2dViewHostU arrayHost(array,rank1size,rank2size);
+  for(int i=0; i<rank1size; i++) {
+    for(int j=0; j<rank2size; j++) {
+      double kkval = arrayHost(i,j);
+      double expected = i*rank2size+j;
+      fprintf(stderr, "%d %d has %.3f kkVal %.3f expected %.3f\n", i, j, array[i*rank2size+j], kkval, expected);
+    }
+  }
+}
 
 void polympo_setMPVelArray(mpmesh mpMeshIn, int size, double* array) {
-  //chech mpMesh is valid
+  //check mpMesh is valid
   auto mpMeshInIter = std::find(mpMeshes.begin(),mpMeshes.end(),mpMeshIn);
   PMT_ALWAYS_ASSERT(mpMeshInIter != mpMeshes.end());
   printf("polympo_setMPVelArray c++ size %d\n", size);
@@ -65,7 +99,7 @@ void polympo_setMPVelArray(mpmesh mpMeshIn, int size, double* array) {
 }
 
 void polympo_setMeshVelArray(mpmesh mpMeshIn, int size, double* array) {
-  //chech mpMesh is valid
+  //check mpMesh is valid
   auto mpMeshInIter = std::find(mpMeshes.begin(),mpMeshes.end(),mpMeshIn);
   PMT_ALWAYS_ASSERT(mpMeshInIter != mpMeshes.end());
   printf("polympo_setMeshVelArray c++ size %d\n", size);
@@ -83,7 +117,7 @@ void polympo_setMeshVelArray(mpmesh mpMeshIn, int size, double* array) {
 }
 
 void polympo_getMPVelArray(mpmesh mpMeshIn, int size, double* array) {
-  //chech mpMesh is valid
+  //check mpMesh is valid
   auto mpMeshInIter = std::find(mpMeshes.begin(),mpMeshes.end(),mpMeshIn);
   PMT_ALWAYS_ASSERT(mpMeshInIter != mpMeshes.end());
   printf("polympo_getMPVelArray c++ size %d\n", size);
@@ -114,7 +148,7 @@ void polympo_getMPVelArray(mpmesh mpMeshIn, int size, double* array) {
 }
 
 void polympo_getMeshVelArray(mpmesh mpMeshIn, int size, double* array) {
-  //chech mpMesh is valid
+  //check mpMesh is valid
   auto mpMeshInIter = std::find(mpMeshes.begin(),mpMeshes.end(),mpMeshIn);
   PMT_ALWAYS_ASSERT(mpMeshInIter != mpMeshes.end());
   printf("polympo_getMeshVelArray c++ size %d\n", size);

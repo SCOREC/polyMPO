@@ -49,6 +49,24 @@ typedef Kokkos::View<
           Kokkos::DefaultHostExecutionSpace,
           Kokkos::MemoryTraits<Kokkos::Unmanaged>
         > kkDblViewHostU;//TODO:put it to mesh.hpp
+                         
+typedef Kokkos::View<
+          double**,
+          Kokkos::LayoutLeft,
+          Kokkos::DefaultHostExecutionSpace,
+          Kokkos::MemoryTraits<Kokkos::Unmanaged>
+        > kkDbl2dViewHostU;//TODO:put it to mesh.hpp
+
+void polympo_setMP2dVelArray(mpmesh mpMeshIn, int rank1size, int rank2size, double* array) {
+  //check mpMesh is valid
+  auto mpMeshInIter = std::find(mpMeshes.begin(),mpMeshes.end(),mpMeshIn);
+  PMT_ALWAYS_ASSERT(mpMeshInIter != mpMeshes.end());
+  printf("polympo_setMP2dVelArray c++ size %d %d\n", rank1size, rank2size);
+  polyMpmTest::MPMesh* mpMesh = (polyMpmTest::MPMesh*)mpMeshIn;
+  kkDbl2dViewHostU arrayHost(array,rank1size,rank2size);
+}
+
+
 
 void polympo_setMPVelArray(mpmesh mpMeshIn, int size, double* array) {
   //check mpMesh is valid

@@ -51,6 +51,20 @@ module polympo
     real(c_double), intent(in), dimension(n) :: array
   end subroutine
   !---------------------------------------------------------------------------
+  !> @brief set the 2d velocity MP array from a host array
+  !> @param mpmesh(in/out) MPMesh object
+  !> @param n(in) number of items
+  !> @param m(in) components per item
+  !> @param array(in) input MP velocity array
+  !---------------------------------------------------------------------------
+  subroutine polympo_setMP2dVelArray(mpMesh, n, m, array) &
+             bind(C, NAME='polympo_setMP2dVelArray')
+    use :: iso_c_binding
+    type(c_ptr), value :: mpMesh
+    integer(c_int), value :: n, m
+    real(c_double), intent(in), dimension(:) :: array
+  end subroutine
+  !---------------------------------------------------------------------------
   !> @brief set the velocity mesh array from a host array
   !> @param mpmesh(in/out) MPMesh object
   !> @param n(in) length of array

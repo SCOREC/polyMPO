@@ -19,6 +19,7 @@ program main
   integer :: numMPs = 51 !matches the MPs created in createMpMesh
   integer :: i, j
   real(c_double), dimension(:), allocatable :: MParray
+  real(c_double), dimension(:,:), allocatable :: MP2dArray
   real(c_double), dimension(:), allocatable :: Mesharray
   integer :: ierr, self
   type(c_ptr) :: mpMesh
@@ -30,7 +31,10 @@ program main
 
   allocate(Mesharray(nverts*numComps))
   allocate(MParray(numMPs*numComps))
+  allocate(MP2dArray(numMPs,numComps))
 
+  MP2dArray = 1337
+  call polympo_setMP2dVelArray(mpMesh, numMPs, numComps, MP2dArray);
   MParray = 42
   call polympo_setMPVelArray(mpMesh, numMPs, MParray);
   Mesharray = 42

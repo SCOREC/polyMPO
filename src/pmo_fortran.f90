@@ -62,7 +62,7 @@ module polympo
     use :: iso_c_binding
     type(c_ptr), value :: mpMesh
     integer(c_int), value :: n, m
-    real(c_double), intent(in), dimension(:,:) :: array
+    type(c_ptr), intent(in), value :: array
   end subroutine
   !---------------------------------------------------------------------------
   !> @brief set the velocity mesh array from a host array

@@ -52,4 +52,6 @@ add_test(NAME testFortranInit COMMAND ./testFortranInit)
 pmt_add_fortran_exe(testFortran testFortran.f90)
 add_test(NAME testFortran COMMAND ./testFortran)
 
+pmt_add_fortran_exe(testFortranReadMPAS testFortranReadMPAS.f90)
+add_test(NAME testFortranReadMPAS COMMAND ./testFortranReadMPAS)
 

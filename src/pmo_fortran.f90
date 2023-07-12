@@ -165,18 +165,11 @@ module polympo
     integer(c_int), intent(in), dimension(:,:) :: array
   end subroutine
   end interface
-  contains
-!=============================================================================
-  !---------------------------------------------------------------------------
-  !> @brief read MPAS mesh(Version 1.0)
-  !> @param filename(in)
-  !> 
-  !---------------------------------------------------------------------------
-
-  subroutine polympo_readMPASMesh(filename, &
-                                  nCells, nVertices, nEdgesOnCell, &
-                                  xVertex, yVertex, zVertex, &
-                                  verticesOnCell, cellsOnVertex, cellsOnCell)
+contains
+subroutine polympo_readMPASMesh(filename, &
+                                nCells, nVertices, nEdgesOnCell, &
+                                xVertex, yVertex, zVertex, &
+                                verticesOnCell, cellsOnVertex, cellsOnCell)
     use :: netcdf
     implicit none
     
@@ -184,10 +177,10 @@ module polympo
     integer, intent(inout) :: nCells, nVertices
     integer, dimension(:), pointer :: nEdgesOnCell
     double precision, dimension(:), pointer :: xVertex, yVertex, zVertex
-    integer, dimension(:,:), pointer :: verticesOnCell, cellsOnVertex, cellsOnCell
+    integer(c_int), dimension(:,:), allocatable, target :: verticesOnCell, cellsOnVertex, cellsOnCell
 
-    integer :: maxEdge, vertexDegree
-    integer :: ncid, status, nCellsID, nVerticesID, maxEdgeID, vertexDegreeID, &
+    integer :: maxEdges, vertexDegree
+    integer :: ncid, status, nCellsID, nVerticesID, maxEdgesID, vertexDegreeID, &
                nEdgesOnCellID, xVertexID, yVertexID, zVertexID, &
                verticesOnCellID, cellsOnVertexID, cellsOnCellID
     
@@ -196,6 +189,156 @@ module polympo
         write(0,*) 'polympo_readMPASMesh: Error occured when opening MPAS grid:'//filename
         write(0,*) trim(nf90_strerror(status))
         stop 
-    end if    
-  end subroutine polympo_readMPASMesh
+    end if
+
+   status = nf90_inq_dimid(ncid, 'nCells', nCellsID)
+    if (status /= nf90_noerr) then
+        write(0, *) "polympo_readMPASMesh: Error when getting dimid of 'nCells'"
+        write(0, *) trim(nf90_strerror(status))
+        stop
+    end if
+
+    status = nf90_inq_dimid(ncid, 'nVertices', nVerticesID)
+    if (status /= nf90_noerr) then
+        write(0, *) "polympo_readMPASMesh: Error when getting dimid of 'nVertices'"
+        write(0, *) trim(nf90_strerror(status))
+        stop
+    end if
+
+    status = nf90_inq_dimid(ncid, 'maxEdges', maxEdgesID)
+    if (status /= nf90_noerr) then
+        write(0, *) "polympo_readMPASMesh: Error when getting dimid of 'maxEdges'"
+        write(0, *) trim(nf90_strerror(status))
+        stop
+    end if
+
+    status = nf90_inquire_dimension(ncid, nCellsID, len = nCells)
+    if (status /= nf90_noerr) then
+        write(0, *) "polympo_readMPASMesh: Error on inquire dimension of 'nCellsID'"
+        write(0, *) trim(nf90_strerror(status))
+        stop
+    end if
+
+    status = nf90_inquire_dimension(ncid, nVerticesID, len = nVertices)
+    if (status /= nf90_noerr) then
+        write(0, *) "polympo_readMPASMesh: Error on inquire dimension of 'nVerticesID'"
+        write(0, *) trim(nf90_strerror(status))
+        stop
+    end if
+
+    status = nf90_inquire_dimension(ncid, maxEdgesID, len = maxEdges)
+    if (status /= nf90_noerr) then
+        write(0, *) "polympo_readMPASMesh: Error on inquire dimension of 'maxEdgesID'"
+        write(0, *) trim(nf90_strerror(status))
+        stop
+    end if
+
+    allocate(xVertex(nVertices))
+    allocate(yVertex(nVertices))
+    allocate(zVertex(nVertices))
+    allocate(nEdgesOnCell(nCells))
+    allocate(verticesOnCell(maxEdges, nCells))
+    allocate(cellsOnVertex(maxEdges, nCells))
+    allocate(cellsOnCell(maxEdges, nCells))
+
+    status = nf90_inq_varid(ncid, 'xVertex', xVertexID)
+    if (status /= nf90_noerr) then
+        write(0, *) "polympo_readMPASMesh: Error on inquire varid of 'xVertex'"
+        write(0, *) trim(nf90_strerror(status))
+        stop
+    end if
+
+    status = nf90_inq_varid(ncid, 'yVertex', yVertexID)
+    if (status /= nf90_noerr) then
+        write(0, *) "polympo_readMPASMesh: Error on inquire varid of 'yVertex'"
+        write(0, *) trim(nf90_strerror(status))
+        stop
+    end if
+
+    status = nf90_inq_varid(ncid, 'zVertex', zVertexID)
+    if (status /= nf90_noerr) then
+        write(0, *) "polympo_readMPASMesh: Error on inquire varid of 'zVertex'"
+        write(0, *) trim(nf90_strerror(status))
+        stop
+    end if
+
+    status = nf90_inq_varid(ncid, 'nEdgesOnCell', nEdgesOnCellID)
+    if (status /= nf90_noerr) then
+        write(0, *) "polympo_readMPASMesh: Error on inquire varid of 'nEdgesOnCell'"
+        write(0, *) trim(nf90_strerror(status))
+        stop
+    end if
+    status = nf90_inq_varid(ncid, 'verticesOnCell', verticesOnCellID)
+
+    if (status /= nf90_noerr) then
+        write(0, *) "polympo_readMPASMesh: Error on inquire varid of 'verticesOnCellID'"
+        write(0, *) trim(nf90_strerror(status))
+        stop
+    end if
+
+    status = nf90_inq_varid(ncid, 'verticesOnCell', cellsOnVertexID)
+    if (status /= nf90_noerr) then
+        write(0, *) "polympo_readMPASMesh: Error on inquire varid of 'cellsOnVertexID'"
+        write(0, *) trim(nf90_strerror(status))
+        stop
+    end if
+
+    status = nf90_inq_varid(ncid, 'verticesOnCell', cellsOnCellID)
+    if (status /= nf90_noerr) then
+        write(0, *) "polympo_readMPASMesh: Error on inquire varid of 'cellsOnCellID'"
+        write(0, *) trim(nf90_strerror(status))
+        stop
+    end if
+
+    status = nf90_get_var(ncid, xVertexID, xVertex)
+    if (status /= nf90_noerr) then
+        write(0, *) "polympo_readMPASMesh: Error on get var of 'xVertex'"
+        write(0, *) trim(nf90_strerror(status))
+        stop
+    end if
+    status = nf90_get_var(ncid, yVertexID, yVertex)
+
+    if (status /= nf90_noerr) then
+        write(0, *) "polympo_readMPASMesh: Error on get var of 'yVertex'"
+        write(0, *) trim(nf90_strerror(status))
+        stop
+    end if
+
+    status = nf90_get_var(ncid, zVertexID, zVertex)
+    if (status /= nf90_noerr) then
+        write(0, *) "polympo_readMPASMesh: Error on get var of 'zVertex'"
+        write(0, *) trim(nf90_strerror(status))
+        stop
+    end if
+
+    status = nf90_get_var(ncid, nEdgesOnCellID, nEdgesOnCell)
+    if (status /= nf90_noerr) then
+        write(0, *) "polympo_readMPASMesh: Error on get var of 'nEdgesOnCell'"
+        write(0, *) trim(nf90_strerror(status))
+        stop
+    end if
+
+    status = nf90_get_var(ncid, verticesOnCellID, verticesOnCell)
+    if (status /= nf90_noerr) then
+        write(0, *) "polympo_readMPASMesh: Error on get var of 'verticesOnCell'"
+        write(0, *) trim(nf90_strerror(status))
+        stop
+    end if
+
+    status = nf90_get_var(ncid, cellsOnVertexID, cellsOnVertex)
+    if (status /= nf90_noerr) then
+        write(0, *) "polympo_readMPASMesh: Error on get var of 'cellsOnVertex'"
+        write(0, *) trim(nf90_strerror(status))
+        stop
+    end if
+
+    status = nf90_get_var(ncid, cellsOnCellID, cellsOnCell)
+    if (status /= nf90_noerr) then
+        write(0, *) "polympo_readMPASMesh: Error on get var of 'cellsOnCell'"
+        write(0, *) trim(nf90_strerror(status))
+        stop
+    end if
+
+    status = nf90_close(ncid)   
+end subroutine polympo_readMPASMesh
 end module

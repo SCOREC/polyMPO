@@ -21,8 +21,13 @@ void polympo_setMeshVelArray(mpmesh mpMeshIn, int size, double* array);
 void polympo_getMeshVelArray(mpmesh mpMeshIn, int size, double* array);
 
 void polympo_setMeshVtxCoords(mpmesh mpMeshIn, int size, double* xArray, double* yArray, double* zArray);
-void polympo_setMeshElm2VtxConn(mpmesh mpMeshIn, int size, int** array);
-void polympo_setMeshVtx2ElmConn(mpmesh mpMeshIn, int size, int** array);
-void polympo_setMeshElm2ElmConn(mpmesh mpMeshIn, int size, int** array);
+void polympo_setMeshElm2VtxConn(mpmesh mpMeshIn, int size, int* array);
+void polympo_setMeshVtx2ElmConn(mpmesh mpMeshIn, int size, int* array);
+void polympo_setMeshElm2ElmConn(mpmesh mpMeshIn, int size1, int size2, int* array);
+
+void polympo_checkMeshSetting(mpmesh mpMeshIn,int maxEdges,int vertexDegree);
+void polympo_setNumVtxs(mpmesh mpMeshIn, int numVtxs);
+void polympo_setNumElms(mpmesh mpMeshIn, int numElms);
+void polympo_printMesh(mpmesh mpMeshIn);
 }
 #endif

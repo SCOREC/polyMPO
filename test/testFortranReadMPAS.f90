@@ -1,27 +1,45 @@
 program main
-  use polympo
-  use iso_c_binding
-  use mpi_f08
+  use :: polympo
+  use :: iso_c_binding
+  use :: mpi_f08
   implicit none
 
   integer :: ierr, self
   TYPE(MPI_Comm) :: mpi_comm_handle = MPI_COMM_WORLD
   character (len=128) :: filename = "./grid_full.nc"
-  integer :: nCells, nVertices
+  integer(c_int) :: maxEdges, vertexDegree, nCells, nVertices
   integer(c_int), dimension(:), pointer :: nEdgesOnCell
   real(c_double), dimension(:), pointer :: xVertex, yVertex, zVertex
-  integer(c_int), dimension(:,:), allocatable, target :: verticesOnCell, cellsOnVertex, cellsOnCell
+  integer(c_int), dimension(:,:), pointer :: verticesOnCell, cellsOnVertex, cellsOnCell
+  type(c_ptr) :: mpMesh
 
   call mpi_init(ierr)
   call mpi_comm_rank(mpi_comm_handle, self, ierr)
+
   call polympo_setCommunicator(mpi_comm_handle%MPI_VAL)
   call polympo_initialize()
 
-  call polympo_readMPASMesh(filename, &
+  mpMesh = polympo_createMpMesh() !creates test mesh
+  call polympo_readMPASMesh(filename, maxEdges, vertexDegree, &
                             nCells, nVertices, nEdgesOnCell, &
                             xVertex, yVertex, zVertex, &
                             verticesOnCell, cellsOnVertex, cellsOnCell)
 
+  !check on maxEdges and vertexDegree
+  call polympo_checkMeshSetting(mpMesh,maxEdges,vertexDegree)
+  !set nCells nVertices
+  call polympo_setNumVtxs(mpMesh,nVertices)
+  call polympo_setNumElms(mpMesh,nCells)
+  !todo 1d array 2d array
+  call polympo_setMeshVtxCoords(mpMesh,nVertices,c_loc(xVertex),c_loc(yVertex),c_loc(zVertex))
+  
+  !call polympo_setMeshElm2VtxConn(mpMesh,nCells,maxEdges,c_loc(verticesOnCell))
+  !call polympo_setMeshVtx2ElmConn(mpMesh,nVertices,vertexDegree,c_loc(cellsOnVertex))
+  call polympo_setMeshElm2ElmConn(mpMesh,nCells,maxEdges,c_loc(cellsOnCell))
+
+  !todo how to check the value 
+  call polympo_printMesh(mpMesh)
+  !unloadMPASMesh to deallocated
   deallocate(nEdgesOnCell)
   deallocate(xVertex)
   deallocate(yVertex)
@@ -34,20 +52,20 @@ program main
   stop
 
 contains
-subroutine polympo_readMPASMesh(filename, &
+subroutine polympo_readMPASMesh(filename, maxEdges, vertexDegree, &
                                 nCells, nVertices, nEdgesOnCell, &
                                 xVertex, yVertex, zVertex, &
                                 verticesOnCell, cellsOnVertex, cellsOnCell)
     use :: netcdf
+    use :: iso_c_binding
     implicit none
     
     character (len=*), intent(in) :: filename
-    integer, intent(inout) :: nCells, nVertices
-    integer, dimension(:), pointer :: nEdgesOnCell
-    double precision, dimension(:), pointer :: xVertex, yVertex, zVertex
-    integer(c_int), dimension(:,:), allocatable, target :: verticesOnCell, cellsOnVertex, cellsOnCell
+    integer(c_int), intent(inout) :: maxEdges, vertexDegree, nCells, nVertices
+    integer(c_int), dimension(:), pointer :: nEdgesOnCell
+    real(c_double), dimension(:), pointer :: xVertex, yVertex, zVertex
+    integer(c_int), dimension(:,:), pointer :: verticesOnCell, cellsOnVertex, cellsOnCell
 
-    integer :: maxEdges, vertexDegree
     integer :: ncid, status, nCellsID, nVerticesID, maxEdgesID, vertexDegreeID, &
                nEdgesOnCellID, xVertexID, yVertexID, zVertexID, &
                verticesOnCellID, cellsOnVertexID, cellsOnCellID

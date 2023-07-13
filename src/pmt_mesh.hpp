@@ -66,6 +66,8 @@ class Mesh {
     IntElm2ElmView getElm2ElmConn() { return elm2ElmConn_; }
     template<MeshFieldIndex index> auto getMeshField();
 
+    void setNumVtxs(int numVtxs) {numVtxs_ = numVtxs;}
+    void setNumElms(int numElms) {numElms_ = numElms;}
     void setVtxCoords(Vector2View vtxCoordsIn) {Kokkos::deep_copy(vtxCoords_,vtxCoordsIn);}
     //void setVtx2ElmConn(IntElm2VtxView vtx2ElmConn) { vtx2ElmConn_ = vtx2ElmConn; }
     //void setElm2VtxConn(IntVtx2ElmView elm2VtxConn) { elm2VtxConn_ = elm2VtxConn; }

@@ -7,7 +7,7 @@
 namespace polyMpmTest{
 
 DoubleView assemblyV0(MPMesh& mpMesh){
-    auto mesh = mpMesh.getMesh();
+    auto mesh = *mpMesh.mesh;
     int numVtxs = mesh.getNumVertices();
     auto elm2VtxConn = mesh.getElm2VtxConn();
     
@@ -37,7 +37,7 @@ void assembly(MPMesh& mpMesh, bool basisWeightFlag, bool massWeightFlag){
     if(basisWeightFlag || massWeightFlag) {
       std::cerr << "WARNING: basis and mass weight flags ignored\n";
     }
-    auto mesh = mpMesh.getMesh();
+    auto mesh = *mpMesh.mesh;
     int numVtxs = mesh.getNumVertices();
     auto elm2VtxConn = mesh.getElm2VtxConn();
    
@@ -76,7 +76,7 @@ void assembly(MPMesh& mpMesh, bool basisWeightFlag, bool massWeightFlag){
 // (HDT) weighted assembly of scalar field
 template <MaterialPointSlice index>
 DoubleView wtScaAssembly(MPMesh& mpMesh){
-    auto mesh = mpMesh.getMesh();
+    auto mesh = *mpMesh.mesh;
     auto vtxCoords = mesh.getVtxCoords();
     int numVtxs = mesh.getNumVertices(); // total number of vertices of the mesh
     auto elm2VtxConn = mesh.getElm2VtxConn();
@@ -120,7 +120,7 @@ DoubleView wtScaAssembly(MPMesh& mpMesh){
 // (HDT) weighted assembly of vector2 field (not weighted by mass/volume)
 template <MaterialPointSlice index>
 Vector2View wtVec2Assembly(MPMesh& mpMesh){
-    auto mesh = mpMesh.getMesh();
+    auto mesh = *mpMesh.mesh;
     auto vtxCoords = mesh.getVtxCoords();
     int numVtxs = mesh.getNumVertices(); // total number of vertices of the mesh
     auto elm2VtxConn = mesh.getElm2VtxConn();

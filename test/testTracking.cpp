@@ -13,8 +13,7 @@ int main(int argc, char* argv[]) {
 
     {//runTracking
         auto testMesh = initTestMesh(1); //creates simple test mesh, '1' is a replication factor
-        auto mpPerElement = std::vector<int>({5,4,5,6,6,5,4,6,5,5});
-        auto mpMesh = initTestMPMesh(testMesh, mpPerElement); //creates test MPs
+        auto mpMesh = initTestMPMesh(testMesh, 1); //creates test MPs
         auto MPs = mpMesh.MPs;
         
         Vector2View dx = polyMpmTest::Vector2View("positions",51);

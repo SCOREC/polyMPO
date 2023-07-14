@@ -13,7 +13,7 @@ namespace polyMpmTest {
  *
  *  \return return the hard-coded mesh. 
  */
-polyMpmTest::Mesh initTestMesh(int factor);
+polyMpmTest::Mesh* initTestMesh(int scaleFactor, int testMeshOption = 1);
 
 /*
  * \brief Initialize test particles to a given mesh and return the MPMesh object
@@ -23,14 +23,14 @@ polyMpmTest::Mesh initTestMesh(int factor);
  * with a rand 4-6 duplicate of the particles and link them in an MPMesh object
  * 
  * \param meshObj (in) a mesh
- * \param mpPerElement (in) number of material points per element
+ *
+ * \param setMPOption (in) assign to every elements with 4,5,6,4,5,6...4,5,6 random MPs
  *
  * \return the MPMesh object with the meshObj and test MPs
  */
-polyMpmTest::MPMesh initTestMPMesh(polyMpmTest::Mesh& meshObj,
-                                   std::vector<int>& mpPerElement);
-polyMpmTest::MPMesh initTestMPMesh(polyMpmTest::Mesh& meshObj);
-polyMpmTest::MaterialPoints* initTestMPs(polyMpmTest::Mesh& mesh,
-                                         std::vector<int>& mpPerElement);
+polyMpmTest::MPMesh initTestMPMesh(polyMpmTest::Mesh* meshObj,
+                                   int setMPOption = 0);
+polyMpmTest::MaterialPoints* initTestMPs(polyMpmTest::Mesh* mesh,
+                                         int testMPsOption = 1);
 
 }

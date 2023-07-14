@@ -29,8 +29,9 @@ class Mesh {
     int numVtxs_;
     int numElms_;
     Vector2View vtxCoords_;
+    //IntView nEdgesPerElm_;
     IntVtx2ElmView elm2VtxConn_;
-    IntElm2VtxView vtx2ElmConn_;
+    IntElm2VtxView vtx2ElmConn_;//TODO check if this is needed, remove?
     IntElm2ElmView elm2ElmConn_;
     //start of meshFields
     DoubleVec2DView vtxVel_; 
@@ -66,9 +67,9 @@ class Mesh {
     IntElm2ElmView getElm2ElmConn() { return elm2ElmConn_; }
     template<MeshFieldIndex index> auto getMeshField();
 
-    void setNumVtxs(int numVtxs) {numVtxs_ = numVtxs;}
+    void setNumVtxs(int numVtxs) {numVtxs_ = numVtxs;} 
     void setNumElms(int numElms) {numElms_ = numElms;}
-    void setVtxCoords(Vector2View vtxCoordsIn) {Kokkos::deep_copy(vtxCoords_,vtxCoordsIn);}
+    void setVtxCoords(Vector2View vtxCoordsIn) {vtxCoords_=vtxCoordsIn;}
     //void setVtx2ElmConn(IntElm2VtxView vtx2ElmConn) { vtx2ElmConn_ = vtx2ElmConn; }
     //void setElm2VtxConn(IntVtx2ElmView elm2VtxConn) { elm2VtxConn_ = elm2VtxConn; }
     //void setAssemblyReturn(DoubleView asmReturn) { Kokkos::resize(assemblyReturn_, numVtxs_);  Kokkos::deep_copy(assemblyReturn_,asmReturn); }

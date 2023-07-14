@@ -25,9 +25,10 @@ module polympo
   !> @brief create MPMesh object
   !> @return mpmesh(in/out) MPMesh object
   !---------------------------------------------------------------------------
-  function polympo_createMpMesh() bind(C, NAME='polympo_createMpMesh')
+  function polympo_createMpMesh(setMeshOption, setMPOption) bind(C, NAME='polympo_createMpMesh')
     use :: iso_c_binding
     type(c_ptr) polympo_createMpMesh
+    integer(c_int), value :: setMeshOption, setMPOption
   end function
   !---------------------------------------------------------------------------
   !> @brief delete MPMesh object
@@ -107,8 +108,8 @@ module polympo
   !> @brief set the MPI communicator used by polympo
   !> @param comm(in) MPI communicator
   !---------------------------------------------------------------------------
-  subroutine polympo_setCommunicator(comm) &
-             bind(C, NAME='polympo_setCommunicator')
+  subroutine polympo_setMPICommunicator(comm) &
+             bind(C, NAME='polympo_setMPICommunicator')
     use :: iso_c_binding
     integer(c_int), value :: comm    
   end subroutine
@@ -172,14 +173,14 @@ module polympo
     type(c_ptr), value :: mpMesh
     integer(c_int), value :: maxEdges, vertexDegree
   end subroutine
-  subroutine polympo_setNumVtxs(mpMesh,numVtxs) &
-             bind(C, NAME='polympo_setNumVtxs')
+  subroutine polympo_setMeshNumVtxs(mpMesh,numVtxs) &
+             bind(C, NAME='polympo_setMeshNumVtxs')
     use :: iso_c_binding
     type(c_ptr), value :: mpMesh
     integer(c_int), value :: numVtxs
   end subroutine
-  subroutine polympo_setNumElms(mpMesh,numElms) &
-             bind(C, NAME='polympo_setNumElms')
+  subroutine polympo_setMeshNumElms(mpMesh,numElms) &
+             bind(C, NAME='polympo_setMeshNumElms')
     use :: iso_c_binding
     type(c_ptr), value :: mpMesh
     integer(c_int), value :: numElms

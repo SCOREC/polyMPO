@@ -12,10 +12,10 @@ int main(int argc, char** argv) {
 
     {
       auto testMesh = initTestMesh(1); //creates simple test mesh, '1' is a replication factor
-      auto mpPerElement = std::vector<int>({5,4,5,6,6,5,4,6,5,5});
-      auto mpMesh = initTestMPMesh(testMesh, mpPerElement); //creates test MPs based on testMesh and mpPerElement
+      //auto mpPerElement = std::vector<int>({5,4,5,6,6,5,4,6,5,5});
+      auto mpMesh = initTestMPMesh(testMesh, 1); //creates test MPs based on testMesh and mpPerElement
       
-      auto mesh = mpMesh.getMesh();
+      auto mesh = *mpMesh.mesh;
       PMT_ALWAYS_ASSERT(mesh.getNumVertices() == 19);
       PMT_ALWAYS_ASSERT(mesh.getNumElements() == 10);
 

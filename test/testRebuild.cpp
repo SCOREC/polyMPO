@@ -9,9 +9,9 @@ int main(int argc, char** argv) {
   MPI_Init(&argc, &argv);
   Kokkos::initialize(argc, argv);
   {
-    auto testMesh = initTestMesh(1); //creates simple test mesh, '1' is a replication factor
-    auto mpPerElement = std::vector<int>({5,4,5,6,6,5,4,6,5,5});
-    auto mpMesh = initTestMPMesh(testMesh, mpPerElement); //creates test MPs
+    polyMpmTest::Mesh* testMesh = initTestMesh(1); //creates simple test mesh, '1' is a replication factor
+    //auto mpPerElement = std::vector<int>({5,4,5,6,6,5,4,6,5,5});
+    auto mpMesh = initTestMPMesh(testMesh, 1); //creates test MPs
     auto MPs = mpMesh.MPs;
 
     //move the mps to their current element id % 2

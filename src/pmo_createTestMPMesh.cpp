@@ -5,29 +5,18 @@ namespace polyMpmTest {
 
 const int randSeed = 12345;
 
-Mesh initTestMesh(int factor){
-    const int nCells_size = 10;//10 tri-oct
-    const int nVertices_size = 19;//arbi <20
-    int nCells = nCells_size*factor;
-    int nVertices = nVertices_size*factor;
-    const double v_array[19][2] = {{0.00,0.00},{0.47,0.00},{1.00,0.00},{0.60,0.25},{0.60,0.40},{0.00,0.50},{0.31,0.60},{0.40,0.60},{0.45,0.55},{0.70,0.49},{0.80,0.45},{0.90,0.47},{1.00,0.55},{0.60,0.60},{0.37,0.80},{0.00,1.00},{0.37,1.00},{0.48,1.00},{1.00,1.00}};
-    const int elm2VtxConn_array[10][8] = {{1,2,4,5,9,8,7,6},{2,3,4,-1,-1,-1,-1,-1},{4,3,11,10,5,-1,-1,-1},
-    {3,12,11,-1,-1,-1,-1,-1},{3,13,12,-1,-1,-1,-1,-1},
-    {5,10,14,9,-1,-1,-1,-1},{9,14,18,17,15,8,-1,-1},
-    {7,8,15,-1,-1,-1,-1,-1},{6,7,15,17,16,-1,-1,-1},
-    {14,10,11,12,13,19,18,-1}};
-    const int vtxCoords_array[10] = {8,3,5,3,3,4,6,3,5,7};
-    const int vtx2ElmConn_array[19][6] = {{1,0,-1,-1,-1,-1},{2,0,1,-1,-1,-1},{4,1,2,3,4,-1},{3,0,1,2,-1,-1},{3,0,2,5,-1,-1},{2,0,8,-1,-1,-1},{3,0,7,8,-1,-1},{3,0,6,7,-1,-1},{3,0,5,6,-1,-1},{3,2,5,9,-1,-1},{3,2,3,9,-1,-1},{3,3,4,9,-1,-1},{2,4,9,-1,-1,-1},{3,5,6,9,-1,-1},{3,6,7,8,-1,-1},{1,8,-1,-1,-1,-1},{2,6,8,-1,-1,-1},{2,6,9,-1,-1,-1},{1,9,-1,-1,-1,-1}};
-    const int elm2ElmConn_array[10][8] = {{-2,1,2,5,6,7,8,-2},{-2,2,0,-1,-1,-1,-1,-1},
-        {1,3,9,5,0,-1,-1,-1},{4,9,2,-1,-1,-1,-1,-1},{-2,9,3,-1,-1,-1,-1,-1},
-        {2,9,6,0,-1,-1,-1,-1},{5,9,-2,8,7,0,-1,-1},{0,6,8,-1,-1,-1,-1,-1},
-        {0,7,6,-2,-2,-1,-1,-1},{5,2,3,4,-2,-2,6,-1}}; 
-
+template <int nCells_size, int nVertices_size, int vec_dimension>
+Mesh* createMesh(const double (&v_array)[nVertices_size][vec_dimension],
+                const int (&elm2VtxConn_array)[nCells_size][maxVtxsPerElm],
+                const int (&vtxCoords_array)[nCells_size],
+                const int (&vtx2ElmConn_array)[nVertices_size][maxElmsPerVtx+1],
+                const int (&elm2ElmConn_array)[nCells_size][maxVtxsPerElm],
+                const int scaleFactor, const int nCells, const int nVertices){
     Vector2View vtxCoords("verticesCoordinates", nVertices);
     IntElm2VtxView vtx2ElmConn("vertexToElementsConnection",nVertices);    
     Vector2View::HostMirror h_vtxCoords = Kokkos::create_mirror_view(vtxCoords);
     IntElm2VtxView::HostMirror h_vtx2ElmConn = Kokkos::create_mirror_view(vtx2ElmConn);
-    for(int f=0; f<factor; f++){
+    for(int f=0; f<scaleFactor; f++){
         for(int i=0; i<nVertices_size; i++){
             h_vtxCoords(i+f*nVertices_size) = Vector2(v_array[i][0],v_array[i][1]); 
             h_vtx2ElmConn(i+f*nVertices_size,0) = vtx2ElmConn_array[i][0];
@@ -40,9 +29,8 @@ Mesh initTestMesh(int factor){
     Kokkos::deep_copy(vtx2ElmConn,h_vtx2ElmConn);
 
     IntVtx2ElmView elm2VtxConn("elementToVerticesConnection",nCells);
-    
     IntVtx2ElmView::HostMirror h_elm2VtxConn = Kokkos::create_mirror_view(elm2VtxConn);
-    for(int f=0; f<factor; f++){
+    for(int f=0; f<scaleFactor; f++){
         for(int i=0; i<nCells_size; i++){
             h_elm2VtxConn(i+f*nCells_size,0) = vtxCoords_array[i];
             for(int j=0; j<h_elm2VtxConn(i,0); j++){
@@ -54,7 +42,7 @@ Mesh initTestMesh(int factor){
 
     IntElm2ElmView elm2ElmConn("elementToElementsConnection",nCells);
     IntElm2ElmView::HostMirror h_elm2ElmConn = Kokkos::create_mirror_view(elm2ElmConn);
-    for(int f=0; f<factor; f++){
+    for(int f=0; f<scaleFactor; f++){
         for(int i=0; i<nCells_size; i++){
             h_elm2ElmConn(i+f*nCells_size,0) = vtxCoords_array[i];
             for(int j=0; j<h_elm2ElmConn(i,0); j++){
@@ -64,21 +52,71 @@ Mesh initTestMesh(int factor){
     }
     Kokkos::deep_copy(elm2ElmConn, h_elm2ElmConn);
 
-    return Mesh(nVertices,
-                nCells,
-                vtxCoords,
-                elm2VtxConn,
-                vtx2ElmConn,
-                elm2ElmConn);
+    return new Mesh(nVertices,
+                    nCells,
+                    vtxCoords,
+                    elm2VtxConn,
+                    vtx2ElmConn,
+                    elm2ElmConn);
+}
+Mesh* initTestMesh(const int scaleFactor, const int testMeshOption){
+    //add a switch statement testMeshOption
+    if(testMeshOption == 1){ //this is a 2d mesh with 10 tri-oct elements
+        const int nCells_size = 10;
+        const int nVertices_size = 19;
+        const int nCells = nCells_size*scaleFactor;
+        const int nVertices = nVertices_size*scaleFactor;
+        const double v_array[19][2] = {{0.00,0.00},{0.47,0.00},{1.00,0.00},{0.60,0.25},{0.60,0.40}, //5
+                                       {0.00,0.50},{0.31,0.60},{0.40,0.60},{0.45,0.55},{0.70,0.49}, //10
+                                       {0.80,0.45},{0.90,0.47},{1.00,0.55},{0.60,0.60},{0.37,0.80}, //15
+                                       {0.00,1.00},{0.37,1.00},{0.48,1.00},{1.00,1.00}};            //19
+        const int elm2VtxConn_array[10][maxVtxsPerElm] = {{1,2,4,5,9,8,7,6},       {2,3,4,-1,-1,-1,-1,-1},
+                                              {4,3,11,10,5,-1,-1,-1},  {3,12,11,-1,-1,-1,-1,-1},
+                                              {3,13,12,-1,-1,-1,-1,-1},{5,10,14,9,-1,-1,-1,-1},
+                                              {9,14,18,17,15,8,-1,-1}, {7,8,15,-1,-1,-1,-1,-1},
+                                              {6,7,15,17,16,-1,-1,-1}, {14,10,11,12,13,19,18,-1}};
+        const int vtxCoords_array[10] = {8,3,5,3,3,4,6,3,5,7};
+        const int vtx2ElmConn_array[19][maxElmsPerVtx+1] = 
+                                             {{1,0,-1,-1,-1,-1},{2,0,1,-1,-1,-1},{4,1,2,3,4,-1},   //3
+                                              {3,0,1,2,-1,-1},  {3,0,2,5,-1,-1}, {2,0,8,-1,-1,-1}, //6
+                                              {3,0,7,8,-1,-1},  {3,0,6,7,-1,-1}, {3,0,5,6,-1,-1},  //9
+                                              {3,2,5,9,-1,-1},  {3,2,3,9,-1,-1}, {3,3,4,9,-1,-1},  //12
+                                              {2,4,9,-1,-1,-1}, {3,5,6,9,-1,-1}, {3,6,7,8,-1,-1},  //15
+                                              {1,8,-1,-1,-1,-1},{2,6,8,-1,-1,-1},{2,6,9,-1,-1,-1}, //18
+                                              {1,9,-1,-1,-1,-1}};                     
+        const int elm2ElmConn_array[10][8] = {{-2,1,2,5,6,7,8,-2},    {-2,2,0,-1,-1,-1,-1,-1},
+                                              {1,3,9,5,0,-1,-1,-1},   {4,9,2,-1,-1,-1,-1,-1},
+                                              {-2,9,3,-1,-1,-1,-1,-1},{2,9,6,0,-1,-1,-1,-1},
+                                              {5,9,-2,8,7,0,-1,-1},   {0,6,8,-1,-1,-1,-1,-1},
+                                              {0,7,6,-2,-2,-1,-1,-1}, {5,2,3,4,-2,-2,6,-1}}; 
+        return createMesh<nCells_size, nVertices_size, vec2d_nEntries>
+                        (v_array, elm2VtxConn_array,
+                         vtxCoords_array, vtx2ElmConn_array,
+                         elm2ElmConn_array,
+                         scaleFactor, nCells, nVertices);
+    }else{
+        fprintf(stderr,"TestMeshOption not avaiable! return an empty mesh!");
+        return new Mesh();
+    }
+    
 }
 
-MaterialPoints* initTestMPs(Mesh& mesh, std::vector<int>& mpPerElement){
-    int numElms = mesh.getNumElements();
-    Vector2View vtxCoords = mesh.getVtxCoords();   
-    IntVtx2ElmView elm2VtxConn = mesh.getElm2VtxConn();
+MaterialPoints* initTestMPs(Mesh* mesh, int testMPOption){
+    std::vector<int> mpPerElement;
+    int numElms = mesh->getNumElements();
+    switch(testMPOption){
+        case 1:
+            for(int i=0; i<numElms; i++){
+                mpPerElement.push_back(i%3+4);
+            }
+        break;
+        default:
+            fprintf(stderr,"TestMPOption not avaiable! return an empty one!");
+    }
+    Vector2View vtxCoords = mesh->getVtxCoords();   
+    IntVtx2ElmView elm2VtxConn = mesh->getElm2VtxConn();
 
     int numMPs = 0;
-   
     IntView numMPsPerElement("numMaterialPointsPerElement",numElms);
     if(mpPerElement.empty()) {
       Kokkos::Random_XorShift64_Pool<> random_pool(randSeed);
@@ -88,7 +126,7 @@ MaterialPoints* initTestMPs(Mesh& mesh, std::vector<int>& mpPerElement){
           random_pool.free_state(generator);
       });
     } else {
-      PMT_ALWAYS_ASSERT(static_cast<size_t>(mesh.getNumElements()) == mpPerElement.size());
+      PMT_ALWAYS_ASSERT(static_cast<size_t>(mesh->getNumElements()) == mpPerElement.size());
       Kokkos::View<int*, Kokkos::HostSpace> mpPerElement_hv(mpPerElement.data(),mpPerElement.size());
       Kokkos::deep_copy(numMPsPerElement,mpPerElement_hv);
     }
@@ -124,14 +162,8 @@ MaterialPoints* initTestMPs(Mesh& mesh, std::vector<int>& mpPerElement){
     return new MaterialPoints(numElms,numMPs,positions,numMPsPerElement,MPToElement);
 }
 
-MPMesh initTestMPMesh(Mesh& mesh) {
-  std::vector<int> ignored;
-  auto mps = initTestMPs(mesh, ignored);
-  return MPMesh(mesh,mps);
-}
-
-MPMesh initTestMPMesh(Mesh& mesh, std::vector<int>& mpPerElement) {
-  auto mps = initTestMPs(mesh, mpPerElement);
+MPMesh initTestMPMesh(Mesh* mesh, int setMPOption) {
+  auto mps = initTestMPs(mesh, setMPOption);
   return MPMesh(mesh,mps);
 }
 

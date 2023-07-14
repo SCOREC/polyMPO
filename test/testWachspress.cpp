@@ -19,7 +19,7 @@ int main(int argc, char** argv) {
         auto v = polyMpmTest::Vector2();
         
         auto mesh = initTestMesh(100);
-        auto mpMesh = initTestMPMesh(mesh);
+        auto mpMesh = initTestMPMesh(mesh,1);
         
         //test assembly in assembly.hpp
         polyMpmTest::assembly<MPF_Cur_Pos_XYZ,MeshF_Cur_Pos_XYZ>(mpMesh,false,false);

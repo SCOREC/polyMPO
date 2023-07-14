@@ -15,7 +15,7 @@ int main(int argc, char* argv[] ) {
     printf("Time assembly and wachspress with factor: %d\n",factor);
     {
         auto mesh = initTestMesh(factor);
-        auto mpMesh = initTestMPMesh(mesh);
+        auto mpMesh = initTestMPMesh(mesh,1);
         
         printf("Total MPs:%d\n",mpMesh.MPs->getCount());
         

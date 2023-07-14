@@ -4,7 +4,7 @@
 using namespace polyMpmTest;
 
 void interpolateWachspress(MPMesh& mpMesh){
-    auto mesh = mpMesh.getMesh();
+    auto mesh = *mpMesh.mesh;
     auto vtxCoords = mesh.getVtxCoords();
     auto elm2VtxConn = mesh.getElm2VtxConn();
 

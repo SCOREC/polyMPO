@@ -5,16 +5,15 @@
 namespace polyMpmTest{
 
 void MPMesh::CVTTrackingEdgeCenterBased(Vector2View dx){
-    auto mesh = getMesh();
-    int numVtxs = mesh.getNumVertices();
-    int numElms = mesh.getNumElements();
+    int numVtxs = mesh->getNumVertices();
+    int numElms = mesh->getNumElements();
     auto numMPs = MPs->getCount();
 
-    auto elm2VtxConn = mesh.getElm2VtxConn();
-    auto vtx2ElmConn = mesh.getVtx2ElmConn();
-    auto elm2ElmConn = mesh.getElm2ElmConn();
+    auto elm2VtxConn = mesh->getElm2VtxConn();
+    auto vtx2ElmConn = mesh->getVtx2ElmConn();
+    auto elm2ElmConn = mesh->getElm2ElmConn();
     auto MPs2Elm = MPs->getData<MPF_Tgt_Elm_ID>();
-    const auto vtxCoords = mesh.getVtxCoords(); 
+    const auto vtxCoords = mesh->getVtxCoords(); 
     auto mpPositions = MPs->getData<MPF_Cur_Pos_XYZ>();
     Kokkos::View<Vector2*[maxVtxsPerElm]> edgeCenters("EdgeCenters",numElms);
   
@@ -74,13 +73,13 @@ void MPMesh::CVTTrackingEdgeCenterBased(Vector2View dx){
 
 
 void MPMesh::CVTTrackingElmCenterBased(Vector2View dx){
-    int numVtxs = mesh_.getNumVertices();
-    int numElms = mesh_.getNumElements();
+    int numVtxs = mesh->getNumVertices();
+    int numElms = mesh->getNumElements();
     
-    const auto vtxCoords = mesh_.getVtxCoords(); 
-    auto elm2VtxConn = mesh_.getElm2VtxConn();
-    auto vtx2ElmConn = mesh_.getVtx2ElmConn();
-    auto elm2ElmConn = mesh_.getElm2ElmConn();
+    const auto vtxCoords = mesh->getVtxCoords(); 
+    auto elm2VtxConn = mesh->getElm2VtxConn();
+    auto vtx2ElmConn = mesh->getVtx2ElmConn();
+    auto elm2ElmConn = mesh->getElm2ElmConn();
 
     auto mpPositions = MPs->getData<MPF_Cur_Pos_XYZ>();
     auto MPs2Elm = MPs->getData<MPF_Tgt_Elm_ID>();;
@@ -133,13 +132,13 @@ void MPMesh::CVTTrackingElmCenterBased(Vector2View dx){
 }
 
 void MPMesh::T2LTracking(Vector2View dx){
-    int numVtxs = mesh_.getNumVertices();
-    int numElms = mesh_.getNumElements();
+    int numVtxs = mesh->getNumVertices();
+    int numElms = mesh->getNumElements();
     
-    const auto vtxCoords = mesh_.getVtxCoords(); 
-    auto elm2VtxConn = mesh_.getElm2VtxConn();
-    auto vtx2ElmConn = mesh_.getVtx2ElmConn();
-    auto elm2ElmConn = mesh_.getElm2ElmConn();
+    const auto vtxCoords = mesh->getVtxCoords(); 
+    auto elm2VtxConn = mesh->getElm2VtxConn();
+    auto vtx2ElmConn = mesh->getVtx2ElmConn();
+    auto elm2ElmConn = mesh->getElm2ElmConn();
 
     auto mpPositions = MPs->getData<MPF_Cur_Pos_XYZ>();
     auto MPs2Elm = MPs->getData<MPF_Tgt_Elm_ID>();

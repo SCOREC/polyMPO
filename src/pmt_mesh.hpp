@@ -70,8 +70,9 @@ class Mesh {
     void setNumVtxs(int numVtxs) {numVtxs_ = numVtxs;} 
     void setNumElms(int numElms) {numElms_ = numElms;}
     void setVtxCoords(Vector2View vtxCoordsIn) {vtxCoords_=vtxCoordsIn;}
-    //void setVtx2ElmConn(IntElm2VtxView vtx2ElmConn) { vtx2ElmConn_ = vtx2ElmConn; }
-    //void setElm2VtxConn(IntVtx2ElmView elm2VtxConn) { elm2VtxConn_ = elm2VtxConn; }
+    void setVtx2ElmConn(IntElm2VtxView vtx2ElmConn) { vtx2ElmConn_ = vtx2ElmConn; }
+    void setElm2VtxConn(IntVtx2ElmView elm2VtxConn) { elm2VtxConn_ = elm2VtxConn; }
+    void setElm2ElmConn(IntElm2ElmView elm2ElmConn) { elm2ElmConn_ = elm2ElmConn; }
     //void setAssemblyReturn(DoubleView asmReturn) { Kokkos::resize(assemblyReturn_, numVtxs_);  Kokkos::deep_copy(assemblyReturn_,asmReturn); }
     
 };

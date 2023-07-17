@@ -25,12 +25,12 @@ void polympo_setMP2dVelArray(mpmesh mpMeshIn, int rank1size, int rank2size, doub
 void polympo_getMPVelArray(mpmesh mpMeshIn, int size, double* array);
 
 //Mesh builds
-void polympo_checkMeshSetting(mpmesh mpMeshIn,int maxEdges,int vertexDegree);
+void polympo_checkMeshSetting(mpmesh mpMeshIn, int maxEdges, int vertexDegree);
 void polympo_setMeshNumVtxs(mpmesh mpMeshIn, int numVtxs);
 void polympo_setMeshNumElms(mpmesh mpMeshIn, int numElms);
 void polympo_setMeshVtxCoords(mpmesh mpMeshIn, int size, double* xArray, double* yArray, double* zArray);
-void polympo_setMeshElm2VtxConn(mpmesh mpMeshIn, int size, int* array);
-void polympo_setMeshVtx2ElmConn(mpmesh mpMeshIn, int size, int* array);
+void polympo_setMeshElm2VtxConn(mpmesh mpMeshIn, int size1, int size2, int* array);
+void polympo_setMeshVtx2ElmConn(mpmesh mpMeshIn, int size1, int size2, int* array);
 void polympo_setMeshElm2ElmConn(mpmesh mpMeshIn, int size1, int size2, int* array);
 //Mesh fields
 void polympo_setMeshVelArray(mpmesh mpMeshIn, int size, double* array);

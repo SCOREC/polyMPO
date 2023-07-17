@@ -40,8 +40,8 @@ program main
   call polympo_setMeshVtxCoords(mpMesh,nVertices,c_loc(xVertex),c_loc(yVertex),c_loc(zVertex))
   
   call polympo_setMeshElm2VtxConn(mpMesh,nCells,maxEdges,c_loc(verticesOnCell))
-  call polympo_setMeshVtx2ElmConn(mpMesh,nVertices,vertexDegree,c_loc(cellsOnVertex))
-  call polympo_setMeshElm2ElmConn(mpMesh,nCells,maxEdges,c_loc(cellsOnCell))
+  call polympo_setMeshNumEdgesPerElm(mpMesh,nCells,c_loc(nEdgesOnCell))
+  !call polympo_setMeshElm2ElmConn(mpMesh,nCells,maxEdges,c_loc(cellsOnCell))
 
   !todo how to check the value 
   !call polympo_printMeshInfo(mpMesh) numVtx numElms elmConn
@@ -55,6 +55,7 @@ program main
   deallocate(cellsOnVertex)
   deallocate(cellsOnCell)
 
+  call polympo_deleteMpMesh(mpMesh)
   call polympo_finalize()
 
   call mpi_finalize(ierr)

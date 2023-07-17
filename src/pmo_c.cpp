@@ -74,6 +74,13 @@ typedef Kokkos::View<
           Kokkos::MemoryTraits<Kokkos::Unmanaged>
         > kkInt2dViewHostU;//TODO:put it somewhere else (maybe)
 
+typedef Kokkos::View<
+          int*,
+          Kokkos::LayoutLeft,
+          Kokkos::DefaultHostExecutionSpace,
+          Kokkos::MemoryTraits<Kokkos::Unmanaged>
+        > kkIntViewHostU;//TODO:put it somewhere else (maybe)
+
 void polympo_setMP2dVelArray(mpmesh mpMeshIn, int rank1size, int rank2size, double* array) {
   //check mpMesh is valid
   auto mpMeshInIter = std::find(mpMeshes.begin(),mpMeshes.end(),mpMeshIn);
@@ -221,16 +228,32 @@ void polympo_setMeshElm2VtxConn(mpmesh mpMeshIn, int size1, int size2, int* arra
   auto mesh = *(mpMesh->mesh); 
   PMT_ALWAYS_ASSERT(size1 == mesh.getNumElements());
   PMT_ALWAYS_ASSERT(size2 <=  maxVtxsPerElm);
+  
+  Kokkos::View<int**> elm2VtxArray("MeshElementsToVertices",size1,size2);
+  Kokkos::deep_copy(elm2VtxArray, arrayHost);
+  auto elm2VtxConn = mesh.getElm2VtxConn();
+  Kokkos::parallel_for("set elm2VtxConn", size1, KOKKOS_LAMBDA(const int elm){
+    for(int i=0; i<size2; i++){
+        elm2VtxConn(elm,i+1) = elm2VtxArray(elm,i);//TODO XXX will change to i,j =i,j
+    }  
+  });
+}
 
-  auto elm2Vtx = polyMpmTest::IntVtx2ElmView("MeshElementsToVertices",size1); 
-  polyMpmTest::IntVtx2ElmView::HostMirror h_Elm2Vtx = Kokkos::create_mirror_view(elm2Vtx);
-  for(int i=0; i<size1; i++){
-    for(int j=0; j<size2; j++){
-      h_Elm2Vtx(i,j+1) =  arrayHost(i,j);//TODO XXX will change to i,j =i,j
-    } 
-  }
-  Kokkos::deep_copy(elm2Vtx, h_Elm2Vtx);
-  mesh.setElm2VtxConn(elm2Vtx);
+void polympo_setMeshNumEdgesPerElm(mpmesh mpMeshIn, int size, int* array){
+  //chech vailidity
+  auto mpMeshInIter = std::find(mpMeshes.begin(),mpMeshes.end(),mpMeshIn);
+  PMT_ALWAYS_ASSERT(mpMeshInIter != mpMeshes.end());
+  kkIntViewHostU arrayHost(array,size);
+  polyMpmTest::MPMesh* mpMesh = (polyMpmTest::MPMesh*)mpMeshIn;
+  auto mesh = *(mpMesh->mesh); 
+  PMT_ALWAYS_ASSERT(size == mesh.getNumElements());
+  
+  polyMpmTest::IntView nEdgesPerElm("MeshNumEdgesPerElm",size);
+  Kokkos::deep_copy(nEdgesPerElm, arrayHost);
+  auto elm2VtxConn = mesh.getElm2VtxConn();
+  Kokkos::parallel_for("set nEdgesPerElm", size, KOKKOS_LAMBDA(const int elm){
+    elm2VtxConn(elm,0) = nEdgesPerElm(elm);//TODO XXX will change to i,j =i,j
+  });
 }
 
 void polympo_setMeshVtx2ElmConn(mpmesh mpMeshIn, int size1, int size2, int* array){
@@ -293,24 +316,11 @@ void polympo_setMeshNumElms(mpmesh mpMeshIn, int numElms){
   auto mpMeshInIter = std::find(mpMeshes.begin(),mpMeshes.end(),mpMeshIn);
   PMT_ALWAYS_ASSERT(mpMeshInIter != mpMeshes.end());
   polyMpmTest::MPMesh* mpMesh = (polyMpmTest::MPMesh*)mpMeshIn;
-  mpMesh->mesh->setNumElms(numElms);
+  auto elm2Vtx = polyMpmTest::IntVtx2ElmView("MeshElementsToVertices",numElms); 
+  auto elm2Elm = polyMpmTest::IntElm2ElmView("MeshElementsToElements",numElms); 
+  auto mesh = mpMesh->mesh;
+  mesh->setNumElms(numElms);
+  mesh->setElm2VtxConn(elm2Vtx);
+  mesh->setElm2ElmConn(elm2Elm);
 }
 
-void polympo_printMesh(mpmesh mpMeshIn){
-  auto mpMeshInIter = std::find(mpMeshes.begin(),mpMeshes.end(),mpMeshIn);
-  PMT_ALWAYS_ASSERT(mpMeshInIter != mpMeshes.end());
- 
-  polyMpmTest::MPMesh* mpMesh = (polyMpmTest::MPMesh*)mpMeshIn;
-  auto mesh = *(mpMesh->mesh);
-  auto MPs = mpMesh->MPs;
-  /*auto mpPositions = polyMpmTest::DoubleVec2DView("mpPositions",);
-
-  auto copyMPs = PS_LAMBDA(const int& elm, const int& mp, const int& mask){
-    if(mask) { 
-      for(int i=0; i<vec2d_nEntries; i++){
-        mpVelCopy(mp,i) = mpVel(mp,i);
-      }
-    }
-  };
-  MPs->parallel_for(copyMPs, "copy MPs data"); */
-}

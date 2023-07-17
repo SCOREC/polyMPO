@@ -31,7 +31,7 @@ class Mesh {
     Vector2View vtxCoords_;
     //IntView nEdgesPerElm_;
     IntVtx2ElmView elm2VtxConn_;
-    IntElm2VtxView vtx2ElmConn_;//TODO check if this is needed, remove?
+    IntElm2VtxView vtx2ElmConn_;//TODO remove
     IntElm2ElmView elm2ElmConn_;
     //start of meshFields
     DoubleVec2DView vtxVel_; 

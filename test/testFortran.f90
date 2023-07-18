@@ -49,8 +49,7 @@ program main
       MP2dArray(i,j) = (i-1)*numComps+(j-1)
     end do
   end do
-  call polympo_setMP2dVelArray(mpMesh, numMPs, numComps, c_loc(MP2dArray))
-
+  
   value1 = 42
   MParray = value1
   call polympo_setMPVelArray(mpMesh, numMPs, MParray)

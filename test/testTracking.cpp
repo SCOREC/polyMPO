@@ -11,31 +11,34 @@ int main(int argc, char* argv[]) {
     MPI_Init(&argc, &argv);
     Kokkos::initialize(argc, argv);
 
+    const int testMeshOption = 1;
+    const int scaleFactor = 1;
+    const int testMPOption = 1;
     {//runTracking
-        auto testMesh = initTestMesh(1); //creates simple test mesh, '1' is a replication factor
-        auto mpMesh = initTestMPMesh(testMesh, 1); //creates test MPs
-        auto MPs = mpMesh.MPs;
+        auto testMesh = initTestMesh(testMeshOption, scaleFactor); 
+        auto mpMesh = initTestMPMesh(testMesh, testMPOption); 
+        auto p_MPs = mpMesh.p_MPs;
         
         Vector2View dx = polyMpmTest::Vector2View("positions",51);
         Kokkos::deep_copy(dx,Vector2(0.01,0.01));
         
         mpMesh.CVTTrackingEdgeCenterBased(dx);
-        IntView TgtElmCVTEdge("TgtElmCVTEdge",mpMesh.MPs->getCount());
+        IntView TgtElmCVTEdge("TgtElmCVTEdge",p_MPs->getCount());
         copyTgtElm(TgtElmCVTEdge,mpMesh);
 
         mpMesh.CVTTrackingElmCenterBased(dx);
-        IntView TgtElmCVTCenter("TgtElmCVTCenter",mpMesh.MPs->getCount());
+        IntView TgtElmCVTCenter("TgtElmCVTCenter",p_MPs->getCount());
         copyTgtElm(TgtElmCVTCenter,mpMesh);
 
         mpMesh.T2LTracking(dx);
-        IntView TgtElmT2L("TgtElmT2L",mpMesh.MPs->getCount());
+        IntView TgtElmT2L("TgtElmT2L",p_MPs->getCount());
         copyTgtElm(TgtElmT2L,mpMesh);
 
-        MPs->updateMPSliceAll();
-        IntView TgtElmAfter("TgtElmAfter",mpMesh.MPs->getCount());
+        p_MPs->updateMPSliceAll();
+        IntView TgtElmAfter("TgtElmAfter",p_MPs->getCount());
         copyTgtElm(TgtElmAfter,mpMesh);
         //TODO:check all the value
-       Kokkos::parallel_for("checkTgtElm",MPs->getCount(),KOKKOS_LAMBDA(const int mp){
+       Kokkos::parallel_for("checkTgtElm",p_MPs->getCount(),KOKKOS_LAMBDA(const int mp){
             //PMT_ALWAYS_ASSERT(TgtElmCVTEdge(mp) == TgtElmCVTCenter(mp)
             //                &&TgtElmCVTEdge(mp) == TgtElmT2L(mp) );
             printf("%d %d %d %d\n",TgtElmCVTEdge(mp),TgtElmCVTCenter(mp),TgtElmT2L(mp),TgtElmAfter(mp));
@@ -48,11 +51,11 @@ int main(int argc, char* argv[]) {
 
 //TODO:change to a template function
 void copyTgtElm(IntView& returnView, MPMesh& mpMesh){
-    auto mpTgtElm = mpMesh.MPs->getData<MPF_Tgt_Elm_ID>();
+    auto mpTgtElm = mpMesh.p_MPs->getData<MPF_Tgt_Elm_ID>();
     auto copyVal = PS_LAMBDA(const int& elm, const int& mp, const int& mask){
         if(mask){
             returnView(mp) = mpTgtElm(mp);
         }
     };
-    mpMesh.MPs->parallel_for(copyVal,"copyTgtElmID");
+    mpMesh.p_MPs->parallel_for(copyVal,"copyTgtElmID");
 }

@@ -39,19 +39,22 @@ int main(int argc, char** argv) {
     auto v9 = v1.magnitude();
     PMT_ALWAYS_ASSERT(v9 - sqrt(5) < 1e-6);
 
+    //this test is only designed to work with the following option values:
+    const int testMeshOption = 1;
+    const int scaleFactor = 1;
+    const int testMPOption = 1;
+
     //run assembly and test Wachspress
     {
         //auto testMesh = Mesh::readMPASMesh("/path/to/mpas/mesh.nc"); //read from MPAS via netcdf
-        auto testMesh = initTestMesh(1); //creates simple test mesh, '1' is a replication factor
-        //auto mpPerElement = std::vector<int>({5,4,5,6,6,5,4,6,5,5});
-        //                                      4 5 6 4 5 6 4 5 6 4 = 49 
-        auto mpMesh = initTestMPMesh(testMesh, 1); //creates test MPs
-        auto MPs = mpMesh.MPs;
-        MPs->fillData<MPF_Mass>(1.0); //set MPF_Mass to 1.0
-        MPs->fillData<MPF_Basis_Vals>(1.0);//TODO: change this to real basis value based on the basis computation routine
+        auto testMesh = initTestMesh(testMeshOption,scaleFactor); 
+        auto mpMesh = initTestMPMesh(testMesh, testMPOption); //creates test MPs 
+        auto p_MPs = mpMesh.p_MPs;
+        p_MPs->fillData<MPF_Mass>(1.0); //set MPF_Mass to 1.0
+        p_MPs->fillData<MPF_Basis_Vals>(1.0);//TODO: change this to real basis value based on the basis computation routine
         //TODO: write PS_LAMBDA to assign 2 velocity component to be position[0] and [1]
-        auto mpVel = MPs->getData<MPF_Vel>();
-        auto mpCurPosXYZ = MPs->getData<MPF_Cur_Pos_XYZ>();
+        auto mpVel = p_MPs->getData<MPF_Vel>();
+        auto mpCurPosXYZ = p_MPs->getData<MPF_Cur_Pos_XYZ>();
         auto setVel = PS_LAMBDA(const int& elm, const int& mp, const int& mask){
             if(mask) { 
                 for(int i=0; i<2; i++){
@@ -59,14 +62,14 @@ int main(int argc, char** argv) {
                 }
             }
         };
-        mpMesh.MPs->parallel_for(setVel, "setVel=CurPosXY");
-        auto mesh = *mpMesh.mesh;
-        PMT_ALWAYS_ASSERT(mesh.getNumVertices() == 19);
-        PMT_ALWAYS_ASSERT(mesh.getNumElements() == 10);
+        mpMesh.p_MPs->parallel_for(setVel, "setVel=CurPosXY");
+        auto p_mesh = mpMesh.p_mesh;
+        PMT_ALWAYS_ASSERT(p_mesh->getNumVertices() == 19);
+        PMT_ALWAYS_ASSERT(p_mesh->getNumElements() == 10);
 
         //run non-physical assembly (mp -to- mesh vertex) kernel
         polyMpmTest::assembly<MPF_Vel,MeshF_Vel>(mpMesh,false,false);//TODO: two flags not supported yet
-        auto vtxField = mesh.getMeshField<MeshF_Vel>();
+        auto vtxField = p_mesh->getMeshField<MeshF_Vel>();
         //interpolateWachspress(mpMesh);
         //auto vtxFieldBasis = polyMpmTest::assemblyNew<MP_Cur_Pos_XYZ>(mpMesh,true);
         //check the result

@@ -25,16 +25,16 @@ module polympo
   !> @brief create MPMesh object
   !> @return mpmesh(in/out) MPMesh object
   !---------------------------------------------------------------------------
-  function polympo_createMpMesh(setMeshOption, setMPOption) bind(C, NAME='polympo_createMpMesh')
+  function polympo_createMPMesh(setMeshOption, setMPOption) bind(C, NAME='polympo_createMPMesh')
     use :: iso_c_binding
-    type(c_ptr) polympo_createMpMesh
+    type(c_ptr) polympo_createMPMesh
     integer(c_int), value :: setMeshOption, setMPOption
   end function
   !---------------------------------------------------------------------------
   !> @brief delete MPMesh object
   !> @param mpmesh(in/out) MPMesh object
   !---------------------------------------------------------------------------
-  subroutine polympo_deleteMpMesh(mpMesh) bind(C, NAME='polympo_deleteMpMesh')
+  subroutine polympo_deleteMPMesh(mpMesh) bind(C, NAME='polympo_deleteMPMesh')
     use :: iso_c_binding
     type(c_ptr), value :: mpMesh
   end subroutine

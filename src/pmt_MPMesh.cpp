@@ -5,16 +5,16 @@
 namespace polyMpmTest{
 
 void MPMesh::CVTTrackingEdgeCenterBased(Vector2View dx){
-    int numVtxs = mesh->getNumVertices();
-    int numElms = mesh->getNumElements();
-    auto numMPs = MPs->getCount();
+    int numVtxs = p_mesh->getNumVertices();
+    int numElms = p_mesh->getNumElements();
+    auto numMPs = p_MPs->getCount();
 
-    auto elm2VtxConn = mesh->getElm2VtxConn();
-    auto vtx2ElmConn = mesh->getVtx2ElmConn();
-    auto elm2ElmConn = mesh->getElm2ElmConn();
-    auto MPs2Elm = MPs->getData<MPF_Tgt_Elm_ID>();
-    const auto vtxCoords = mesh->getVtxCoords(); 
-    auto mpPositions = MPs->getData<MPF_Cur_Pos_XYZ>();
+    auto elm2VtxConn = p_mesh->getElm2VtxConn();
+    auto vtx2ElmConn = p_mesh->getVtx2ElmConn();
+    auto elm2ElmConn = p_mesh->getElm2ElmConn();
+    auto MPs2Elm = p_MPs->getData<MPF_Tgt_Elm_ID>();
+    const auto vtxCoords = p_mesh->getVtxCoords(); 
+    auto mpPositions = p_MPs->getData<MPF_Cur_Pos_XYZ>();
     Kokkos::View<Vector2*[maxVtxsPerElm]> edgeCenters("EdgeCenters",numElms);
   
     Kokkos::parallel_for("calcEdgeCenter", numElms, KOKKOS_LAMBDA(const int elm){  
@@ -68,21 +68,21 @@ void MPMesh::CVTTrackingEdgeCenterBased(Vector2View dx){
             } 
         }
     };
-    MPs->parallel_for(CVTEdgeTracking,"CVTTrackingEdgeCenterBasedCalc");
+    p_MPs->parallel_for(CVTEdgeTracking,"CVTTrackingEdgeCenterBasedCalc");
 }
 
 
 void MPMesh::CVTTrackingElmCenterBased(Vector2View dx){
-    int numVtxs = mesh->getNumVertices();
-    int numElms = mesh->getNumElements();
+    int numVtxs = p_mesh->getNumVertices();
+    int numElms = p_mesh->getNumElements();
     
-    const auto vtxCoords = mesh->getVtxCoords(); 
-    auto elm2VtxConn = mesh->getElm2VtxConn();
-    auto vtx2ElmConn = mesh->getVtx2ElmConn();
-    auto elm2ElmConn = mesh->getElm2ElmConn();
+    const auto vtxCoords = p_mesh->getVtxCoords(); 
+    auto elm2VtxConn = p_mesh->getElm2VtxConn();
+    auto vtx2ElmConn = p_mesh->getVtx2ElmConn();
+    auto elm2ElmConn = p_mesh->getElm2ElmConn();
 
-    auto mpPositions = MPs->getData<MPF_Cur_Pos_XYZ>();
-    auto MPs2Elm = MPs->getData<MPF_Tgt_Elm_ID>();;
+    auto mpPositions = p_MPs->getData<MPF_Cur_Pos_XYZ>();
+    auto MPs2Elm = p_MPs->getData<MPF_Tgt_Elm_ID>();;
 
     Vector2View elmCenter("elmentCenter",numElms);
     auto calcCenter = PS_LAMBDA(const int& elm, const int& mp, const int&mask){
@@ -94,7 +94,7 @@ void MPMesh::CVTTrackingElmCenterBased(Vector2View dx){
             sum_y += vtxCoords(elm2VtxConn(elm,i)-1)[1];
         }
     };
-    MPs->parallel_for(calcCenter,"calcElmCenter");
+    p_MPs->parallel_for(calcCenter,"calcElmCenter");
 
     auto CVTElmCalc = PS_LAMBDA(const int& elm, const int& mp, const int&mask){
         Vector2 MP = Vector2(mpPositions(mp,0),mpPositions(mp,1));//XXX:the input is XYZ, but we only support 2d vector
@@ -128,21 +128,21 @@ void MPMesh::CVTTrackingElmCenterBased(Vector2View dx){
             } 
         }
     };
-    MPs->parallel_for(CVTElmCalc,"CVTTrackingElmCenterBasedCalc");
+    p_MPs->parallel_for(CVTElmCalc,"CVTTrackingElmCenterBasedCalc");
 }
 
 void MPMesh::T2LTracking(Vector2View dx){
-    int numVtxs = mesh->getNumVertices();
-    int numElms = mesh->getNumElements();
+    int numVtxs = p_mesh->getNumVertices();
+    int numElms = p_mesh->getNumElements();
     
-    const auto vtxCoords = mesh->getVtxCoords(); 
-    auto elm2VtxConn = mesh->getElm2VtxConn();
-    auto vtx2ElmConn = mesh->getVtx2ElmConn();
-    auto elm2ElmConn = mesh->getElm2ElmConn();
+    const auto vtxCoords = p_mesh->getVtxCoords(); 
+    auto elm2VtxConn = p_mesh->getElm2VtxConn();
+    auto vtx2ElmConn = p_mesh->getVtx2ElmConn();
+    auto elm2ElmConn = p_mesh->getElm2ElmConn();
 
-    auto mpPositions = MPs->getData<MPF_Cur_Pos_XYZ>();
-    auto MPs2Elm = MPs->getData<MPF_Tgt_Elm_ID>();
-    auto mpStatus = MPs->getData<MPF_Status>();
+    auto mpPositions = p_MPs->getData<MPF_Cur_Pos_XYZ>();
+    auto MPs2Elm = p_MPs->getData<MPF_Tgt_Elm_ID>();
+    auto mpStatus = p_MPs->getData<MPF_Status>();
    
     auto T2LCalc = PS_LAMBDA(const int& elm, const int& mp, const int&mask){
         Vector2 MP = Vector2(mpPositions(mp,0),mpPositions(mp,1));//XXX:the input is XYZ, but we only support 2d vector
@@ -193,7 +193,7 @@ void MPMesh::T2LTracking(Vector2View dx){
             }
         }
     }; 
-    MPs->parallel_for(T2LCalc,"T2lTrackingCalc");
+    p_MPs->parallel_for(T2LCalc,"T2lTrackingCalc");
 }
 
 } 

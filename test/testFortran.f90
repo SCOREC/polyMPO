@@ -34,7 +34,7 @@ program main
 
   setMeshOption = 1
   setMPOption = 1    
-  mpMesh = polympo_createMpMesh(setMeshOption,setMPOption) !creates test mesh
+  mpMesh = polympo_createMPMesh(setMeshOption,setMPOption) !creates test mesh
   
   nverts = 19 !todo use getNumVtx from the Mesh object
   numComps = 2 !todo use getNumComps from velocity fields
@@ -66,24 +66,25 @@ program main
   call polympo_getMeshVelArray(mpMesh, nverts, Mesharray)
   call assert(all(Mesharray .eq. value1), "Assert Mesharray == value1 Failed!")
 
-  MParray = 24
+  value2 = 24
+  MParray = value2
   call polympo_setMPVelArray(mpMesh, numMPs, MParray)
 
   MParray = 1
   call polympo_getMPVelArray(mpMesh, numMPs, MParray)
-  call assert(all(MParray .eq. 24), "Assert MParray == 24 Failed!")
+  call assert(all(MParray .eq. value2), "Assert MParray == value2 Failed!")
 
-  Mesharray = 24
+  Mesharray = value2
   call polympo_setMeshVelArray(mpMesh, nverts, Mesharray)
 
   Mesharray = 1
   call polympo_getMeshVelArray(mpMesh, nverts, Mesharray)
-  call assert(all(Mesharray .eq. 24), "Assert Mesharray == 24 Failed!")
+  call assert(all(Mesharray .eq. value2), "Assert Mesharray == value2 Failed!")
 
   deallocate(MParray)
   deallocate(Mesharray)
 
-  call polympo_deleteMpMesh(mpMesh)
+  call polympo_deleteMPMesh(mpMesh)
   call polympo_finalize()
 
   call mpi_finalize(ierr)

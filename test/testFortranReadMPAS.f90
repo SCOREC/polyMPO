@@ -22,7 +22,7 @@ program main
 
   setMeshOption = 1 !create a test mesh
   setMPOption = 1   !create a test set of MPs
-  mpMesh = polympo_createMpMesh(setMeshOption, setMPOption)
+  mpMesh = polympo_createMPMesh(setMeshOption, setMPOption)
 
   call polympo_readMPASMesh(filename, maxEdges, vertexDegree, &
                             nCells, nVertices, nEdgesOnCell, &
@@ -55,7 +55,7 @@ program main
   deallocate(cellsOnVertex)
   deallocate(cellsOnCell)
 
-  call polympo_deleteMpMesh(mpMesh)
+  call polympo_deleteMPMesh(mpMesh)
   call polympo_finalize()
 
   call mpi_finalize(ierr)

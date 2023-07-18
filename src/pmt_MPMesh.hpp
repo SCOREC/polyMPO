@@ -11,15 +11,15 @@ namespace polyMpmTest{
 
 class MPMesh{
   public:
-    Mesh* mesh;
-    MaterialPoints* MPs;
+    Mesh* p_mesh;
+    MaterialPoints* p_MPs;
     
     MPMesh(Mesh* inMesh, MaterialPoints* inMPs):
-        mesh(inMesh), MPs(inMPs) {
+        p_mesh(inMesh), p_MPs(inMPs) {
     };
     ~MPMesh() {
-      delete mesh;
-      delete MPs;
+      delete p_mesh;
+      delete p_MPs;
     }
 
     void CVTTrackingEdgeCenterBased(Vector2View dx);

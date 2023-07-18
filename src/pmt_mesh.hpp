@@ -34,7 +34,7 @@ class Mesh {
     IntElm2VtxView vtx2ElmConn_;//TODO remove
     IntElm2ElmView elm2ElmConn_;
     //start of meshFields
-    DoubleVec2DView vtxVel_; 
+    DoubleVec2DView vtxVel_;
     DoubleVec3DView vtxCurXYZ_;
     //DoubleMat2DView vtxStress_;
 
@@ -54,8 +54,8 @@ class Mesh {
           elm2VtxConn_(elm2VtxConn),
           vtx2ElmConn_(vtx2ElmConn),
           elm2ElmConn_(elm2ElmConn){
-            vtxVel_ = DoubleVec2DView("vtxVelocity",numVtxs);    
-            vtxCurXYZ_ = DoubleVec3DView("vtxCurrentPositionXYZ",numVtxs);    
+            vtxVel_ = DoubleVec2DView("vtxVelocity",numVtxs);
+            vtxCurXYZ_ = DoubleVec3DView("vtxCurrentPositionXYZ",numVtxs);
         }
     static Mesh readMPASMesh(std::string filename);
 
@@ -67,7 +67,7 @@ class Mesh {
     IntElm2ElmView getElm2ElmConn() { return elm2ElmConn_; }
     template<MeshFieldIndex index> auto getMeshField();
 
-    void setNumVtxs(int numVtxs) {numVtxs_ = numVtxs;} 
+    void setNumVtxs(int numVtxs) {numVtxs_ = numVtxs;}
     void setNumElms(int numElms) {numElms_ = numElms;}
     void setVtxCoords(Vector2View vtxCoordsIn) {vtxCoords_=vtxCoordsIn;}
     void setVtx2ElmConn(IntElm2VtxView vtx2ElmConn) { vtx2ElmConn_ = vtx2ElmConn; }
@@ -88,7 +88,7 @@ auto Mesh::getMeshField(){
         exit(1);
     }
     else if constexpr (index==MeshF_Vel){
-        return vtxVel_;                  
+        return vtxVel_;
     }
     else if constexpr (index==MeshF_Cur_Pos_XYZ){
         return vtxCurXYZ_;

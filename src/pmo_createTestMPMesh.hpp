@@ -13,7 +13,7 @@ namespace polyMpmTest {
  *
  *  \return return the hard-coded mesh. 
  */
-polyMpmTest::Mesh* initTestMesh(int scaleFactor, int testMeshOption = 1);
+polyMpmTest::Mesh* initTestMesh(int testMeshOption, int scaleFactor);
 
 /*
  * \brief Initialize test particles to a given mesh and return the MPMesh object
@@ -29,8 +29,8 @@ polyMpmTest::Mesh* initTestMesh(int scaleFactor, int testMeshOption = 1);
  * \return the MPMesh object with the meshObj and test MPs
  */
 polyMpmTest::MPMesh initTestMPMesh(polyMpmTest::Mesh* meshObj,
-                                   int setMPOption = 0);
+                                   int setMPOption);
 polyMpmTest::MaterialPoints* initTestMPs(polyMpmTest::Mesh* mesh,
-                                         int testMPsOption = 1);
+                                         int testMPsOption);
 
 }

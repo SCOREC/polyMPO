@@ -59,7 +59,7 @@ Mesh* createMesh(const double (&v_array)[nVertices_size][vec_dimension],
                     vtx2ElmConn,
                     elm2ElmConn);
 }
-Mesh* initTestMesh(const int scaleFactor, const int testMeshOption){
+Mesh* initTestMesh(const int testMeshOption, const int scaleFactor){
     //add a switch statement testMeshOption
     if(testMeshOption == 1){ //this is a 2d mesh with 10 tri-oct elements
         const int nCells_size = 10;

@@ -47,6 +47,13 @@ void polympo_deleteMPMesh(MPMesh_ptr p_mpmesh) {
   delete (polyMpmTest::MPMesh*)p_mpmesh;
 }
 
+void polympo_setMPICommunicator(MPI_Fint fcomm){
+    MPI_Comm comm = MPI_Comm_f2c(fcomm);
+    int commSize;
+    MPI_Comm_size(comm,&commSize);
+    printf("polympo_setMPICommunicator with a communicator size: %d\n",commSize);
+}
+
 /**
  * Attention: this typedef is LayoutLeft, meaning that the first
  * index is the contiguous one. This matches the Fortran and GPU conventions for
@@ -111,23 +118,6 @@ void polympo_setMPVelArray(MPMesh_ptr p_mpmesh, int size, double* array) {
   p_MPs->parallel_for(setVel, "setVel to array");
 }
 
-void polympo_setMeshVelArray(MPMesh_ptr p_mpmesh, int size, double* array) {
-  //check mpMesh is valid
-  auto p_mpmeshIter = std::find(p_mpmeshes.begin(),p_mpmeshes.end(),p_mpmesh);
-  PMT_ALWAYS_ASSERT(p_mpmeshIter != p_mpmeshes.end());
-  printf("polympo_setMeshVelArray c++ size %d\n", size);
-  auto p_mesh = ((polyMpmTest::MPMesh*)p_mpmesh)->p_mesh;
-  kkVec2dViewHostU arrayHost(array,size);
-
-  auto vtxField = p_mesh->getMeshField<polyMpmTest::MeshF_Vel>();
-
-  //check the size
-  PMT_ALWAYS_ASSERT(static_cast<size_t>(size*vec2d_nEntries)==vtxField.size());
-
-  //copy the host array to the device
-  Kokkos::deep_copy(vtxField,arrayHost);
-}
-
 void polympo_getMPVelArray(MPMesh_ptr p_mpmesh, int size, double* array) {
   //check mpMesh is valid
   auto p_mpmeshIter = std::find(p_mpmeshes.begin(),p_mpmeshes.end(),p_mpmesh);
@@ -158,29 +148,30 @@ void polympo_getMPVelArray(MPMesh_ptr p_mpmesh, int size, double* array) {
   Kokkos::deep_copy(arrayHost,mpVelCopy); 
 }
 
-void polympo_getMeshVelArray(MPMesh_ptr p_mpmesh, int size, double* array) {
-  //check mpMesh is valid
+void polympo_checkMeshSetting(MPMesh_ptr p_mpmesh, int maxEdges, int vertexDegree){
   auto p_mpmeshIter = std::find(p_mpmeshes.begin(),p_mpmeshes.end(),p_mpmesh);
   PMT_ALWAYS_ASSERT(p_mpmeshIter != p_mpmeshes.end());
-  printf("polympo_getMeshVelArray c++ size %d\n", size);
-  auto p_mesh = ((polyMpmTest::MPMesh*)p_mpmesh)->p_mesh;
-  kkVec2dViewHostU arrayHost(array,size);
-
-  auto vtxField = p_mesh->getMeshField<polyMpmTest::MeshF_Vel>();
-
-  //check the size
-  PMT_ALWAYS_ASSERT(p_mesh->getNumVertices()==size); 
-  PMT_ALWAYS_ASSERT(static_cast<size_t>(size*vec2d_nEntries)==vtxField.size());
-
-  //copy the device array to the host
-  Kokkos::deep_copy(arrayHost, vtxField);
+  PMT_ALWAYS_ASSERT(maxEdges <= maxVtxsPerElm);
+  PMT_ALWAYS_ASSERT(vertexDegree <=  maxElmsPerVtx);
 }
 
-void polympo_setMPICommunicator(MPI_Fint fcomm){
-    MPI_Comm comm = MPI_Comm_f2c(fcomm);
-    int commSize;
-    MPI_Comm_size(comm,&commSize);
-    printf("polympo_setMPICommunicator with a communicator size: %d\n",commSize);
+void polympo_setMeshNumVtxs(MPMesh_ptr p_mpmesh, int numVtxs){
+  auto p_mpmeshIter = std::find(p_mpmeshes.begin(),p_mpmeshes.end(),p_mpmesh);
+  PMT_ALWAYS_ASSERT(p_mpmeshIter != p_mpmeshes.end());
+  ((polyMpmTest::MPMesh*)p_mpmesh)->p_mesh->setNumVtxs(numVtxs);
+}
+
+void polympo_setMeshNumElms(MPMesh_ptr p_mpmesh, int numElms){
+  auto p_mpmeshIter = std::find(p_mpmeshes.begin(),p_mpmeshes.end(),p_mpmesh);
+  PMT_ALWAYS_ASSERT(p_mpmeshIter != p_mpmeshes.end());
+  auto p_mesh = ((polyMpmTest::MPMesh*)p_mpmesh)->p_mesh;
+
+  auto elm2Vtx = polyMpmTest::IntVtx2ElmView("MeshElementsToVertices",numElms); 
+  auto elm2Elm = polyMpmTest::IntElm2ElmView("MeshElementsToElements",numElms); 
+
+  p_mesh->setNumElms(numElms);
+  p_mesh->setElm2VtxConn(elm2Vtx);
+  p_mesh->setElm2ElmConn(elm2Elm);
 }
 
 void polympo_setMeshVtxCoords(MPMesh_ptr p_mpmesh, int size, double* xArray, double* yArray, double* zArray){
@@ -208,6 +199,26 @@ void polympo_setMeshVtxCoords(MPMesh_ptr p_mpmesh, int size, double* xArray, dou
   p_mesh->setVtxCoords(coordsArray);
 }
 
+void polympo_setMeshNumEdgesPerElm(MPMesh_ptr p_mpmesh, int size, int* array){
+  //chech vailidity
+  auto p_mpmeshIter = std::find(p_mpmeshes.begin(),p_mpmeshes.end(),p_mpmesh);
+  PMT_ALWAYS_ASSERT(p_mpmeshIter != p_mpmeshes.end());
+  kkIntViewHostU arrayHost(array,size);
+  auto p_mesh = ((polyMpmTest::MPMesh*)p_mpmesh)->p_mesh;
+
+  //check the size
+  PMT_ALWAYS_ASSERT(p_mesh->getNumElements()==size);
+  
+  polyMpmTest::IntView nEdgesPerElm("MeshNumEdgesPerElm",size);
+  Kokkos::deep_copy(nEdgesPerElm, arrayHost);
+  auto elm2VtxConn = p_mesh->getElm2VtxConn();
+  auto elm2ElmConn = p_mesh->getElm2ElmConn();
+  Kokkos::parallel_for("set nEdgesPerElm", size, KOKKOS_LAMBDA(const int elm){
+    elm2VtxConn(elm,0) = nEdgesPerElm(elm);
+    elm2ElmConn(elm,0) = nEdgesPerElm(elm);
+  });
+}
+
 void polympo_setMeshElm2VtxConn(MPMesh_ptr p_mpmesh, int size1, int size2, int* array){
   //chech vailidity
   auto p_mpmeshIter = std::find(p_mpmeshes.begin(),p_mpmeshes.end(),p_mpmesh);
@@ -226,26 +237,6 @@ void polympo_setMeshElm2VtxConn(MPMesh_ptr p_mpmesh, int size1, int size2, int* 
     for(int i=0; i<size2; i++){
         elm2VtxConn(elm,i+1) = elm2VtxArray(elm,i);
     }  
-  });
-}
-
-void polympo_setMeshNumEdgesPerElm(MPMesh_ptr p_mpmesh, int size, int* array){
-  //chech vailidity
-  auto p_mpmeshIter = std::find(p_mpmeshes.begin(),p_mpmeshes.end(),p_mpmesh);
-  PMT_ALWAYS_ASSERT(p_mpmeshIter != p_mpmeshes.end());
-  kkIntViewHostU arrayHost(array,size);
-  auto p_mesh = ((polyMpmTest::MPMesh*)p_mpmesh)->p_mesh;
-
-  //check the size
-  PMT_ALWAYS_ASSERT(p_mesh->getNumElements()==size);
-  
-  polyMpmTest::IntView nEdgesPerElm("MeshNumEdgesPerElm",size);
-  Kokkos::deep_copy(nEdgesPerElm, arrayHost);
-  auto elm2VtxConn = p_mesh->getElm2VtxConn();
-  auto elm2ElmConn = p_mesh->getElm2ElmConn();
-  Kokkos::parallel_for("set nEdgesPerElm", size, KOKKOS_LAMBDA(const int elm){
-    elm2VtxConn(elm,0) = nEdgesPerElm(elm);
-    elm2ElmConn(elm,0) = nEdgesPerElm(elm);
   });
 }
 
@@ -270,29 +261,38 @@ void polympo_setMeshElm2ElmConn(MPMesh_ptr p_mpmesh, int size1, int size2, int* 
   });
 }
 
-void polympo_checkMeshSetting(MPMesh_ptr p_mpmesh, int maxEdges, int vertexDegree){
+void polympo_setMeshVelArray(MPMesh_ptr p_mpmesh, int size, double* array) {
+  //check mpMesh is valid
   auto p_mpmeshIter = std::find(p_mpmeshes.begin(),p_mpmeshes.end(),p_mpmesh);
   PMT_ALWAYS_ASSERT(p_mpmeshIter != p_mpmeshes.end());
-  PMT_ALWAYS_ASSERT(maxEdges <= maxVtxsPerElm);
-  PMT_ALWAYS_ASSERT(vertexDegree <=  maxElmsPerVtx);
-}
-
-void polympo_setMeshNumVtxs(MPMesh_ptr p_mpmesh, int numVtxs){
-  auto p_mpmeshIter = std::find(p_mpmeshes.begin(),p_mpmeshes.end(),p_mpmesh);
-  PMT_ALWAYS_ASSERT(p_mpmeshIter != p_mpmeshes.end());
-  ((polyMpmTest::MPMesh*)p_mpmesh)->p_mesh->setNumVtxs(numVtxs);
-}
-
-void polympo_setMeshNumElms(MPMesh_ptr p_mpmesh, int numElms){
-  auto p_mpmeshIter = std::find(p_mpmeshes.begin(),p_mpmeshes.end(),p_mpmesh);
-  PMT_ALWAYS_ASSERT(p_mpmeshIter != p_mpmeshes.end());
+  printf("polympo_setMeshVelArray c++ size %d\n", size);
   auto p_mesh = ((polyMpmTest::MPMesh*)p_mpmesh)->p_mesh;
+  kkVec2dViewHostU arrayHost(array,size);
 
-  auto elm2Vtx = polyMpmTest::IntVtx2ElmView("MeshElementsToVertices",numElms); 
-  auto elm2Elm = polyMpmTest::IntElm2ElmView("MeshElementsToElements",numElms); 
+  auto vtxField = p_mesh->getMeshField<polyMpmTest::MeshF_Vel>();
 
-  p_mesh->setNumElms(numElms);
-  p_mesh->setElm2VtxConn(elm2Vtx);
-  p_mesh->setElm2ElmConn(elm2Elm);
+  //check the size
+  PMT_ALWAYS_ASSERT(static_cast<size_t>(size*vec2d_nEntries)==vtxField.size());
+
+  //copy the host array to the device
+  Kokkos::deep_copy(vtxField,arrayHost);
+}
+
+void polympo_getMeshVelArray(MPMesh_ptr p_mpmesh, int size, double* array) {
+  //check mpMesh is valid
+  auto p_mpmeshIter = std::find(p_mpmeshes.begin(),p_mpmeshes.end(),p_mpmesh);
+  PMT_ALWAYS_ASSERT(p_mpmeshIter != p_mpmeshes.end());
+  printf("polympo_getMeshVelArray c++ size %d\n", size);
+  auto p_mesh = ((polyMpmTest::MPMesh*)p_mpmesh)->p_mesh;
+  kkVec2dViewHostU arrayHost(array,size);
+
+  auto vtxField = p_mesh->getMeshField<polyMpmTest::MeshF_Vel>();
+
+  //check the size
+  PMT_ALWAYS_ASSERT(p_mesh->getNumVertices()==size); 
+  PMT_ALWAYS_ASSERT(static_cast<size_t>(size*vec2d_nEntries)==vtxField.size());
+
+  //copy the device array to the host
+  Kokkos::deep_copy(arrayHost, vtxField);
 }
 

@@ -7,7 +7,6 @@ namespace{
 }
 
 void polympo_initialize() {
-  printf("polympo_initialize c++\n");
   int isMPIInit;
   MPI_Initialized(&isMPIInit);
   PMT_ALWAYS_ASSERT(isMPIInit);
@@ -15,7 +14,6 @@ void polympo_initialize() {
 }
 
 void polympo_finalize() {
-  printf("polympo_finalize c++\n");
   Kokkos::finalize();
 }
 
@@ -51,7 +49,6 @@ void polympo_setMPICommunicator(MPI_Fint fcomm){
     MPI_Comm comm = MPI_Comm_f2c(fcomm);
     int commSize;
     MPI_Comm_size(comm,&commSize);
-    printf("polympo_setMPICommunicator with a communicator size: %d\n",commSize);
 }
 
 /**
@@ -98,7 +95,6 @@ typedef Kokkos::View<
 void polympo_setMPVelArray(MPMesh_ptr p_mpmesh, int size, double* array) {
   auto p_mpmeshIter = std::find(p_mpmeshes.begin(),p_mpmeshes.end(),p_mpmesh);
   PMT_ALWAYS_ASSERT(p_mpmeshIter != p_mpmeshes.end());
-  printf("polympo_setMPVelArray c++ size %d\n", size);
   auto p_MPs = ((polyMpmTest::MPMesh*)p_mpmesh)->p_MPs;
   kkVec2dViewHostU arrayHost(array,size);
   auto mpVel = p_MPs->getData<polyMpmTest::MPF_Vel>();
@@ -122,7 +118,6 @@ void polympo_getMPVelArray(MPMesh_ptr p_mpmesh, int size, double* array) {
   //check mpMesh is valid
   auto p_mpmeshIter = std::find(p_mpmeshes.begin(),p_mpmeshes.end(),p_mpmesh);
   PMT_ALWAYS_ASSERT(p_mpmeshIter != p_mpmeshes.end());
-  printf("polympo_getMPVelArray c++ size %d\n", size);
   kkVec2dViewHostU arrayHost(array,size);
 
   auto p_MPs = ((polyMpmTest::MPMesh*)p_mpmesh)->p_MPs;
@@ -265,7 +260,6 @@ void polympo_setMeshVelArray(MPMesh_ptr p_mpmesh, int size, double* array) {
   //check mpMesh is valid
   auto p_mpmeshIter = std::find(p_mpmeshes.begin(),p_mpmeshes.end(),p_mpmesh);
   PMT_ALWAYS_ASSERT(p_mpmeshIter != p_mpmeshes.end());
-  printf("polympo_setMeshVelArray c++ size %d\n", size);
   auto p_mesh = ((polyMpmTest::MPMesh*)p_mpmesh)->p_mesh;
   kkVec2dViewHostU arrayHost(array,size);
 
@@ -282,7 +276,6 @@ void polympo_getMeshVelArray(MPMesh_ptr p_mpmesh, int size, double* array) {
   //check mpMesh is valid
   auto p_mpmeshIter = std::find(p_mpmeshes.begin(),p_mpmeshes.end(),p_mpmesh);
   PMT_ALWAYS_ASSERT(p_mpmeshIter != p_mpmeshes.end());
-  printf("polympo_getMeshVelArray c++ size %d\n", size);
   auto p_mesh = ((polyMpmTest::MPMesh*)p_mpmesh)->p_mesh;
   kkVec2dViewHostU arrayHost(array,size);
 

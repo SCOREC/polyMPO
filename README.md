@@ -363,7 +363,7 @@ cmake --build $bdir --target install -j4
 
 ## Perlmutter GPU Build Instructions
 
-The following instructions were succesfully tested on 5/10/2023 using the following default modules:
+The following instructions were succesfully tested on 7/17/2023 using the following default modules:
 
 ```
 Currently Loaded Modules:
@@ -378,6 +378,8 @@ Currently Loaded Modules:
 ```
 export root=$PWD
 module load cmake/3.24.3
+module load cray-hdf5
+module load cray-netcdf/4.9.0.1
 
 function getname() {
   name=$1

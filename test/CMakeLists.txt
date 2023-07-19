@@ -56,6 +56,8 @@ add_test(NAME testFortranInit COMMAND ./testFortranInit)
 pmt_add_fortran_exe(testFortran testFortran.f90)
 add_test(NAME testFortran COMMAND ./testFortran)
 
+set(TEST_NC_FILE "${CMAKE_SOURCE_DIR}/test/sample_mpas_meshes/planar_nonuniform_cvt_for_square_737elms.nc")
 pmt_add_fortran_exe(testFortranReadMPAS testFortranReadMPAS.f90)
-add_test(NAME testFortranReadMPAS COMMAND ./testFortranReadMPAS)
+add_test(NAME testFortranReadMPAS 
+         COMMAND ./testFortranReadMPAS ${TEST_NC_FILE})
 

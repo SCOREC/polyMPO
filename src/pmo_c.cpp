@@ -104,7 +104,7 @@ void polympo_setMPVelArray(MPMesh_ptr p_mpmesh, int size, double* array) {
  
   auto mpVelCopy = polyMpmTest::DoubleVec2DView("mpVelNewValue",size);
   //copy the host array to the device
-  Kokkos::deep_copy(mpVelCopy,arrayHost);//TODO: double check the cpu memory peak usage 
+  Kokkos::deep_copy(mpVelCopy,arrayHost);
   
   //modify the MP array with the mpVelCopy copied from the host array
   auto setVel = PS_LAMBDA(const int& elm, const int& mp, const int& mask){
@@ -144,7 +144,7 @@ void polympo_getMPVelArray(MPMesh_ptr p_mpmesh, int size, double* array) {
   Kokkos::deep_copy(arrayHost,mpVelCopy); 
 }
 
-void polympo_checkMeshSetting(MPMesh_ptr p_mpmesh, int maxEdges, int vertexDegree){
+void polympo_checkMeshMaxSettings(MPMesh_ptr p_mpmesh, int maxEdges, int vertexDegree){
   checkMPMeshValid(p_mpmesh);
   PMT_ALWAYS_ASSERT(maxEdges <= maxVtxsPerElm);
   PMT_ALWAYS_ASSERT(vertexDegree <=  maxElmsPerVtx);

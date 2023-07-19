@@ -5,13 +5,14 @@ program main
   include 'mpif.h'
 
   integer :: ierr, self
+  integer :: argc, i, arglen
   integer :: setMeshOption, setMPOption
   integer(c_int) :: mpi_comm_handle = MPI_COMM_WORLD
-  character (len=128) :: filename = "/users/gongy2/develop/polyMpoDev/grid_full.nc"
+  character (len=2048) :: filename
   integer(c_int) :: maxEdges, vertexDegree, nCells, nVertices
   integer(c_int), dimension(:), pointer :: nEdgesOnCell
   real(c_double), dimension(:), pointer :: xVertex, yVertex, zVertex
-  integer(c_int), dimension(:,:), pointer :: verticesOnCell, cellsOnVertex, cellsOnCell
+  integer(c_int), dimension(:,:), pointer :: verticesOnCell, cellsOnCell
   type(c_ptr) :: mpMesh
 
   call mpi_init(ierr)
@@ -20,17 +21,24 @@ program main
   call polympo_setMPICommunicator(mpi_comm_handle)
   call polympo_initialize()
 
+  argc = command_argument_count()
+  if(argc == 1) then
+    call get_command_argument(1, filename)
+  else
+    write(0, *) "Usage: ./testFortranReadMPAS <path to the nc file>"
+  end if
+
   setMeshOption = 1 !create a test mesh
   setMPOption = 1   !create a test set of MPs
   mpMesh = polympo_createMPMesh(setMeshOption, setMPOption)
 
-  call polympo_readMPASMesh(filename, maxEdges, vertexDegree, &
+  call polympo_readMPASMesh(trim(filename), maxEdges, vertexDegree, &
                             nCells, nVertices, nEdgesOnCell, &
                             xVertex, yVertex, zVertex, &
-                            verticesOnCell, cellsOnVertex, cellsOnCell)
+                            verticesOnCell, cellsOnCell)
 
   !check on maxEdges and vertexDegree
-  call polympo_checkMeshSetting(mpMesh,maxEdges,vertexDegree)
+  call polympo_checkMeshMaxSettings(mpMesh,maxEdges,vertexDegree)
 
   !set nCells nVertices
   call polympo_setMeshNumVtxs(mpMesh,nVertices)
@@ -52,7 +60,6 @@ program main
   deallocate(yVertex)
   deallocate(zVertex)
   deallocate(verticesOnCell)
-  deallocate(cellsOnVertex)
   deallocate(cellsOnCell)
 
   call polympo_deleteMPMesh(mpMesh)
@@ -66,7 +73,7 @@ contains
 subroutine polympo_readMPASMesh(filename, maxEdges, vertexDegree, &
                                 nCells, nVertices, nEdgesOnCell, &
                                 xVertex, yVertex, zVertex, &
-                                verticesOnCell, cellsOnVertex, cellsOnCell)
+                                verticesOnCell, cellsOnCell)
     use :: netcdf
     use :: iso_c_binding
     implicit none
@@ -75,11 +82,11 @@ subroutine polympo_readMPASMesh(filename, maxEdges, vertexDegree, &
     integer(c_int), intent(inout) :: maxEdges, vertexDegree, nCells, nVertices
     integer(c_int), dimension(:), pointer :: nEdgesOnCell
     real(c_double), dimension(:), pointer :: xVertex, yVertex, zVertex
-    integer(c_int), dimension(:,:), pointer :: verticesOnCell, cellsOnVertex, cellsOnCell
+    integer(c_int), dimension(:,:), pointer :: verticesOnCell, cellsOnCell
 
     integer :: ncid, status, nCellsID, nVerticesID, maxEdgesID, vertexDegreeID, &
                nEdgesOnCellID, xVertexID, yVertexID, zVertexID, &
-               verticesOnCellID, cellsOnVertexID, cellsOnCellID
+               verticesOnCellID, cellsOnCellID
     
     status = nf90_open(path=trim(filename), mode=nf90_nowrite, ncid=ncid)
     if (status /= nf90_noerr) then
@@ -102,16 +109,23 @@ subroutine polympo_readMPASMesh(filename, maxEdges, vertexDegree, &
         stop
     end if
 
+    status = nf90_inquire_dimension(ncid, nCellsID, len = nCells)
+    if (status /= nf90_noerr) then
+        write(0, *) "polympo_readMPASMesh: Error on inquire dimension of 'nCellsID'"
+        write(0, *) trim(nf90_strerror(status))
+        stop
+end if
+
     status = nf90_inq_dimid(ncid, 'maxEdges', maxEdgesID)
     if (status /= nf90_noerr) then
-        write(0, *) "polympo_readMPASMesh: Error when getting dimid of 'maxEdges'"
+        write(0, *) "polympo_readMPASMesh: Error when getting dimid of 'maxEdgesID'"
         write(0, *) trim(nf90_strerror(status))
         stop
     end if
 
-    status = nf90_inquire_dimension(ncid, nCellsID, len = nCells)
+    status = nf90_inq_dimid(ncid, 'vertexDegree', vertexDegreeID)
     if (status /= nf90_noerr) then
-        write(0, *) "polympo_readMPASMesh: Error on inquire dimension of 'nCellsID'"
+        write(0, *) "polympo_readMPASMesh: Error when getting dimid of 'vertexDegreeID'"
         write(0, *) trim(nf90_strerror(status))
         stop
     end if
@@ -130,12 +144,18 @@ subroutine polympo_readMPASMesh(filename, maxEdges, vertexDegree, &
         stop
     end if
 
+    status = nf90_inquire_dimension(ncid, vertexDegreeID, len = vertexDegree)
+    if (status /= nf90_noerr) then
+        write(0, *) "polympo_readMPASMesh: Error on inquire dimension of 'vertexDegreeID'"
+        write(0, *) trim(nf90_strerror(status))
+        stop
+    end if
+
     allocate(xVertex(nVertices))
     allocate(yVertex(nVertices))
     allocate(zVertex(nVertices))
     allocate(nEdgesOnCell(nCells))
     allocate(verticesOnCell(maxEdges, nCells))
-    allocate(cellsOnVertex(vertexDegree, nCells))
     allocate(cellsOnCell(maxEdges, nCells))
 
     status = nf90_inq_varid(ncid, 'xVertex', xVertexID)
@@ -169,13 +189,6 @@ subroutine polympo_readMPASMesh(filename, maxEdges, vertexDegree, &
     status = nf90_inq_varid(ncid, 'verticesOnCell', verticesOnCellID)
     if (status /= nf90_noerr) then
         write(0, *) "polympo_readMPASMesh: Error on inquire varid of 'verticesOnCellID'"
-        write(0, *) trim(nf90_strerror(status))
-        stop
-    end if
-
-    status = nf90_inq_varid(ncid, 'cellsOnVertex', cellsOnVertexID)
-    if (status /= nf90_noerr) then
-        write(0, *) "polympo_readMPASMesh: Error on inquire varid of 'cellsOnVertexID'"
         write(0, *) trim(nf90_strerror(status))
         stop
     end if
@@ -218,13 +231,6 @@ subroutine polympo_readMPASMesh(filename, maxEdges, vertexDegree, &
     status = nf90_get_var(ncid, verticesOnCellID, verticesOnCell)
     if (status /= nf90_noerr) then
         write(0, *) "polympo_readMPASMesh: Error on get var of 'verticesOnCell'"
-        write(0, *) trim(nf90_strerror(status))
-        stop
-    end if
-
-    status = nf90_get_var(ncid, cellsOnVertexID, cellsOnVertex)
-    if (status /= nf90_noerr) then
-        write(0, *) "polympo_readMPASMesh: Error on get var of 'cellsOnVertex'"
         write(0, *) trim(nf90_strerror(status))
         stop
     end if

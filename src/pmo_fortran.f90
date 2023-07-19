@@ -79,8 +79,8 @@ module polympo
   !> @param maxEdges(in) the maxEdges per Cell of your mesh 
   !> @param vertexDegree(in) the max vertexDegree of a vertex 
   !---------------------------------------------------------------------------
-  subroutine polympo_checkMeshSetting(mpMesh,maxEdges,vertexDegree) &
-             bind(C, NAME='polympo_checkMeshSetting')
+  subroutine polympo_checkMeshMaxSettings(mpMesh,maxEdges,vertexDegree) &
+             bind(C, NAME='polympo_checkMeshMaxSettings')
     use :: iso_c_binding
     type(c_ptr), value :: mpMesh
     integer(c_int), value :: maxEdges, vertexDegree

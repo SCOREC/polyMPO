@@ -3,7 +3,12 @@
 #include <stdio.h>
 
 namespace{
-    std::vector<MPMesh_ptr> p_mpmeshes;////store the p_mpmeshes that is legal
+  std::vector<MPMesh_ptr> p_mpmeshes;////store the p_mpmeshes that is legal
+    
+  void checkMPMeshValid(MPMesh_ptr p_mpmesh){
+    auto p_mpmeshIter = std::find(p_mpmeshes.begin(),p_mpmeshes.end(),p_mpmesh);
+    PMT_ALWAYS_ASSERT(p_mpmeshIter != p_mpmeshes.end());
+  }
 }
 
 void polympo_initialize() {
@@ -40,7 +45,6 @@ void polympo_deleteMPMesh(MPMesh_ptr p_mpmesh) {
   //check mpMesh is valid
   auto p_mpmeshIter = std::find(p_mpmeshes.begin(),p_mpmeshes.end(),p_mpmesh);
   PMT_ALWAYS_ASSERT(p_mpmeshIter != p_mpmeshes.end());
-
   p_mpmeshes.erase(p_mpmeshIter);
   delete (polyMpmTest::MPMesh*)p_mpmesh;
 }
@@ -93,8 +97,7 @@ typedef Kokkos::View<
         > kkIntViewHostU;//TODO:put it somewhere else (maybe)
 
 void polympo_setMPVelArray(MPMesh_ptr p_mpmesh, int size, double* array) {
-  auto p_mpmeshIter = std::find(p_mpmeshes.begin(),p_mpmeshes.end(),p_mpmesh);
-  PMT_ALWAYS_ASSERT(p_mpmeshIter != p_mpmeshes.end());
+  checkMPMeshValid(p_mpmesh);
   auto p_MPs = ((polyMpmTest::MPMesh*)p_mpmesh)->p_MPs;
   kkVec2dViewHostU arrayHost(array,size);
   auto mpVel = p_MPs->getData<polyMpmTest::MPF_Vel>();
@@ -115,9 +118,7 @@ void polympo_setMPVelArray(MPMesh_ptr p_mpmesh, int size, double* array) {
 }
 
 void polympo_getMPVelArray(MPMesh_ptr p_mpmesh, int size, double* array) {
-  //check mpMesh is valid
-  auto p_mpmeshIter = std::find(p_mpmeshes.begin(),p_mpmeshes.end(),p_mpmesh);
-  PMT_ALWAYS_ASSERT(p_mpmeshIter != p_mpmeshes.end());
+  checkMPMeshValid(p_mpmesh);
   kkVec2dViewHostU arrayHost(array,size);
 
   auto p_MPs = ((polyMpmTest::MPMesh*)p_mpmesh)->p_MPs;
@@ -144,21 +145,18 @@ void polympo_getMPVelArray(MPMesh_ptr p_mpmesh, int size, double* array) {
 }
 
 void polympo_checkMeshSetting(MPMesh_ptr p_mpmesh, int maxEdges, int vertexDegree){
-  auto p_mpmeshIter = std::find(p_mpmeshes.begin(),p_mpmeshes.end(),p_mpmesh);
-  PMT_ALWAYS_ASSERT(p_mpmeshIter != p_mpmeshes.end());
+  checkMPMeshValid(p_mpmesh);
   PMT_ALWAYS_ASSERT(maxEdges <= maxVtxsPerElm);
   PMT_ALWAYS_ASSERT(vertexDegree <=  maxElmsPerVtx);
 }
 
 void polympo_setMeshNumVtxs(MPMesh_ptr p_mpmesh, int numVtxs){
-  auto p_mpmeshIter = std::find(p_mpmeshes.begin(),p_mpmeshes.end(),p_mpmesh);
-  PMT_ALWAYS_ASSERT(p_mpmeshIter != p_mpmeshes.end());
+  checkMPMeshValid(p_mpmesh);
   ((polyMpmTest::MPMesh*)p_mpmesh)->p_mesh->setNumVtxs(numVtxs);
 }
 
 void polympo_setMeshNumElms(MPMesh_ptr p_mpmesh, int numElms){
-  auto p_mpmeshIter = std::find(p_mpmeshes.begin(),p_mpmeshes.end(),p_mpmesh);
-  PMT_ALWAYS_ASSERT(p_mpmeshIter != p_mpmeshes.end());
+  checkMPMeshValid(p_mpmesh);
   auto p_mesh = ((polyMpmTest::MPMesh*)p_mpmesh)->p_mesh;
 
   auto elm2Vtx = polyMpmTest::IntVtx2ElmView("MeshElementsToVertices",numElms); 
@@ -171,8 +169,7 @@ void polympo_setMeshNumElms(MPMesh_ptr p_mpmesh, int numElms){
 
 void polympo_setMeshVtxCoords(MPMesh_ptr p_mpmesh, int size, double* xArray, double* yArray, double* zArray){
   //chech validity
-  auto p_mpmeshIter = std::find(p_mpmeshes.begin(),p_mpmeshes.end(),p_mpmesh);
-  PMT_ALWAYS_ASSERT(p_mpmeshIter != p_mpmeshes.end());
+  checkMPMeshValid(p_mpmesh);
   auto p_mesh = ((polyMpmTest::MPMesh*)p_mpmesh)->p_mesh;
 
   //check the size
@@ -196,8 +193,7 @@ void polympo_setMeshVtxCoords(MPMesh_ptr p_mpmesh, int size, double* xArray, dou
 
 void polympo_setMeshNumEdgesPerElm(MPMesh_ptr p_mpmesh, int size, int* array){
   //chech vailidity
-  auto p_mpmeshIter = std::find(p_mpmeshes.begin(),p_mpmeshes.end(),p_mpmesh);
-  PMT_ALWAYS_ASSERT(p_mpmeshIter != p_mpmeshes.end());
+  checkMPMeshValid(p_mpmesh);
   kkIntViewHostU arrayHost(array,size);
   auto p_mesh = ((polyMpmTest::MPMesh*)p_mpmesh)->p_mesh;
 
@@ -216,8 +212,7 @@ void polympo_setMeshNumEdgesPerElm(MPMesh_ptr p_mpmesh, int size, int* array){
 
 void polympo_setMeshElm2VtxConn(MPMesh_ptr p_mpmesh, int size1, int size2, int* array){
   //chech vailidity
-  auto p_mpmeshIter = std::find(p_mpmeshes.begin(),p_mpmeshes.end(),p_mpmesh);
-  PMT_ALWAYS_ASSERT(p_mpmeshIter != p_mpmeshes.end());
+  checkMPMeshValid(p_mpmesh);
   kkInt2dViewHostU arrayHost(array,size1,size2);
   auto p_mesh = ((polyMpmTest::MPMesh*)p_mpmesh)->p_mesh; 
 
@@ -237,8 +232,7 @@ void polympo_setMeshElm2VtxConn(MPMesh_ptr p_mpmesh, int size1, int size2, int* 
 
 void polympo_setMeshElm2ElmConn(MPMesh_ptr p_mpmesh, int size1, int size2, int* array){
   //chech vailidity
-  auto p_mpmeshIter = std::find(p_mpmeshes.begin(),p_mpmeshes.end(),p_mpmesh);
-  PMT_ALWAYS_ASSERT(p_mpmeshIter != p_mpmeshes.end());
+  checkMPMeshValid(p_mpmesh);
   kkInt2dViewHostU arrayHost(array,size1,size2);
   auto p_mesh = ((polyMpmTest::MPMesh*)p_mpmesh)->p_mesh; 
 
@@ -258,8 +252,7 @@ void polympo_setMeshElm2ElmConn(MPMesh_ptr p_mpmesh, int size1, int size2, int* 
 
 void polympo_setMeshVelArray(MPMesh_ptr p_mpmesh, int size, double* array) {
   //check mpMesh is valid
-  auto p_mpmeshIter = std::find(p_mpmeshes.begin(),p_mpmeshes.end(),p_mpmesh);
-  PMT_ALWAYS_ASSERT(p_mpmeshIter != p_mpmeshes.end());
+  checkMPMeshValid(p_mpmesh);
   auto p_mesh = ((polyMpmTest::MPMesh*)p_mpmesh)->p_mesh;
   kkVec2dViewHostU arrayHost(array,size);
 
@@ -274,8 +267,7 @@ void polympo_setMeshVelArray(MPMesh_ptr p_mpmesh, int size, double* array) {
 
 void polympo_getMeshVelArray(MPMesh_ptr p_mpmesh, int size, double* array) {
   //check mpMesh is valid
-  auto p_mpmeshIter = std::find(p_mpmeshes.begin(),p_mpmeshes.end(),p_mpmesh);
-  PMT_ALWAYS_ASSERT(p_mpmeshIter != p_mpmeshes.end());
+  checkMPMeshValid(p_mpmesh);
   auto p_mesh = ((polyMpmTest::MPMesh*)p_mpmesh)->p_mesh;
   kkVec2dViewHostU arrayHost(array,size);
 

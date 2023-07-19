@@ -21,7 +21,6 @@ program main
   integer :: setMeshOption, setMPOption
   real(c_double) :: value1, value2
   real(c_double), dimension(:), allocatable :: MParray
-  real(c_double), dimension(:,:), allocatable, target :: MP2dArray
   real(c_double), dimension(:), allocatable :: Mesharray
   integer :: ierr, self
   type(c_ptr) :: mpMesh
@@ -42,14 +41,7 @@ program main
 
   allocate(Mesharray(nverts*numComps))
   allocate(MParray(numMPs*numComps))
-  allocate(MP2dArray(numMPs,numComps))
 
-  do i = 1,numMPs
-    do j = 1,numComps
-      MP2dArray(i,j) = (i-1)*numComps+(j-1)
-    end do
-  end do
-  
   value1 = 42
   MParray = value1
   call polympo_setMPVelArray(mpMesh, numMPs, MParray)

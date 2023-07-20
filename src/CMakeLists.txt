@@ -49,7 +49,12 @@ export_target(polyMpmTest)
 
 ### Fortran inteface ###
 add_library(polympo_fortran pmo_fortran.f90)
-target_link_libraries(polympo_fortran MPI::MPI_Fortran)
+target_link_libraries(polympo_fortran PUBLIC MPI::MPI_Fortran)
+if(${NetCDF_Fortran_FOUND})
+  target_link_libraries(polympo_fortran PRIVATE PkgConfig::NetCDF_Fortran)
+  # why doesn't target_link_libraries do the following?
+  target_include_directories(polympo_fortran PRIVATE ${NetCDF_Fortran_INCLUDEDIR})
+endif()
 target_include_directories(polympo_fortran INTERFACE
   $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>
   $<INSTALL_INTERFACE:include>)

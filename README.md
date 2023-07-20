@@ -30,6 +30,7 @@ module load gcc/10.1.0 cuda/11.4
 module load mpich/3.3.2
 module load cmake
 module load netcdf-c/4.7.3
+module load netcdf-fortran/4.5.2
 
 function getname() {
   name=$1
@@ -249,6 +250,7 @@ module load gcc/10.1.0
 module load mpich/3.3.2
 module load cmake
 module load netcdf-c/4.7.3
+module load netcdf-fortran/4.5.2
 
 function getname() {
   name=$1
@@ -361,7 +363,7 @@ cmake --build $bdir --target install -j4
 
 ## Perlmutter GPU Build Instructions
 
-The following instructions were succesfully tested on 5/10/2023 using the following default modules:
+The following instructions were succesfully tested on 7/17/2023 using the following default modules:
 
 ```
 Currently Loaded Modules:
@@ -376,6 +378,8 @@ Currently Loaded Modules:
 ```
 export root=$PWD
 module load cmake/3.24.3
+module load cray-hdf5
+module load cray-netcdf/4.9.0.1
 
 function getname() {
   name=$1

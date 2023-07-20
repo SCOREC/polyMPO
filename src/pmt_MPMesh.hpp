@@ -10,21 +10,18 @@ namespace polyMpmTest{
 #define maxMPsPerElm 8
 
 class MPMesh{
-  private:
-    Mesh mesh_;
-    
   public:
-    MaterialPoints* MPs;
-    MPMesh(Mesh& mesh, MaterialPoints* inMPs):
-        mesh_(mesh), MPs(inMPs) {
+    Mesh* p_mesh;
+    MaterialPoints* p_MPs;
+    
+    MPMesh(Mesh* inMesh, MaterialPoints* inMPs):
+        p_mesh(inMesh), p_MPs(inMPs) {
     };
     ~MPMesh() {
-      delete MPs;
+      delete p_mesh;
+      delete p_MPs;
     }
 
-    Mesh getMesh() { return mesh_; }
-    //void setAssembly(DoubleView asmReturn) { mesh_.setAssemblyReturn(asmReturn); }
-    
     void CVTTrackingEdgeCenterBased(Vector2View dx);
     void CVTTrackingElmCenterBased(Vector2View dx);
     void T2LTracking(Vector2View dx);

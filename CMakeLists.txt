@@ -31,10 +31,11 @@ set_property(TARGET Omega_h::omega_h PROPERTY INTERFACE_COMPILE_OPTIONS "")
 #kokkos - pumipic should provide this
 find_package(Kokkos REQUIRED)
 
-option(POLYMPO_USE_NETCDF "Enable the use of NetCDF" OFF)
+option(POLYMPO_USE_NETCDF "Enable the use of NetCDF" ON)
 if(POLYMPO_USE_NETCDF)
   find_package(PkgConfig REQUIRED)
   pkg_check_modules(NetCDF REQUIRED IMPORTED_TARGET netcdf>=4.7.3)
+  pkg_check_modules(NetCDF_Fortran REQUIRED IMPORTED_TARGET netcdf-fortran>=4.5.2)
 endif()
 
 # Set a default build type if none was specified

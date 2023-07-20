@@ -11,15 +11,17 @@ int main(int argc, char** argv) {
     MPI_Init(&argc, &argv);
     Kokkos::initialize(argc, argv);
 
-    
+    const int testMeshOption = 1;
+    const int scaleFactor = 100;
+    const int testMPOption = 1;
     //test init Test Mesh and run assembly and Wachspress
     {
         auto m = polyMpmTest::Mesh();
         auto mp = polyMpmTest::MaterialPoints();
         auto v = polyMpmTest::Vector2();
         
-        auto mesh = initTestMesh(100);
-        auto mpMesh = initTestMPMesh(mesh);
+        auto mesh = initTestMesh(testMeshOption, scaleFactor);
+        auto mpMesh = initTestMPMesh(mesh,testMPOption);
         
         //test assembly in assembly.hpp
         polyMpmTest::assembly<MPF_Cur_Pos_XYZ,MeshF_Cur_Pos_XYZ>(mpMesh,false,false);

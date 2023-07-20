@@ -4,12 +4,12 @@
 using namespace polyMpmTest;
 
 void interpolateWachspress(MPMesh& mpMesh){
-    auto mesh = mpMesh.getMesh();
-    auto vtxCoords = mesh.getVtxCoords();
-    auto elm2VtxConn = mesh.getElm2VtxConn();
+    auto p_mesh = mpMesh.p_mesh;
+    auto vtxCoords = p_mesh->getVtxCoords();
+    auto elm2VtxConn = p_mesh->getElm2VtxConn();
 
-    auto MPs = mpMesh.MPs;
-    auto MPsPosition = MPs->getPositions();
+    auto p_MPs = mpMesh.p_MPs;
+    auto MPsPosition = p_MPs->getPositions();
     auto eval = PS_LAMBDA(const int& elm, const int& mp, const int mask){
         if (mask) {
             Vector2 v[maxVtxsPerElm+1] = {vtxCoords(elm2VtxConn(elm,1))};
@@ -33,5 +33,5 @@ void interpolateWachspress(MPMesh& mpMesh){
             }
         }        
     };
-    MPs->parallel_for(eval, "getBasisAndGradByAreaGblForm");
+    p_MPs->parallel_for(eval, "getBasisAndGradByAreaGblForm");
 }

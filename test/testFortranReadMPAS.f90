@@ -50,8 +50,7 @@ program main
   call polympo_setMeshNumEdgesPerElm(mpMesh,nCells,c_loc(nEdgesOnCell))
   call polympo_setMeshElm2ElmConn(mpMesh,nCells,maxEdges,c_loc(cellsOnCell))
 
-  !todo check the value 
-  !call polympo_printMeshInfo(mpMesh) numVtx numElms elmConn
+  !todo check the value using get functions. 
   
   !unloadMPASMesh to deallocated
   deallocate(nEdgesOnCell)

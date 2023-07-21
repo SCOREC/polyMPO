@@ -22,9 +22,9 @@ class MPMesh{
       delete p_MPs;
     }
 
-    void CVTTrackingEdgeCenterBased(Vector2View dx);
-    void CVTTrackingElmCenterBased(Vector2View dx);
-    void T2LTracking(Vector2View dx);
+    void CVTTrackingEdgeCenterBased(Vec2dView dx);
+    void CVTTrackingElmCenterBased(Vec2dView dx);
+    void T2LTracking(Vec2dView dx);
 };
 
 }//namespace polyMpmTest end

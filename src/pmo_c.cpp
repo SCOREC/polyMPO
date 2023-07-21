@@ -181,10 +181,10 @@ void polympo_setMeshVtxCoords(MPMesh_ptr p_mpmesh, int size, double* xArray, dou
   kkDblViewHostU zArrayHost(zArray,size); 
   
   //copy the host array to the device
-  auto coordsArray = polyMpmTest::Vector2View("MeshVtxCoords",size);
-  polyMpmTest::Vector2View::HostMirror h_coordsArray = Kokkos::create_mirror_view(coordsArray);
+  auto coordsArray = polyMpmTest::Vec2dView("MeshVtxCoords",size);
+  polyMpmTest::Vec2dView::HostMirror h_coordsArray = Kokkos::create_mirror_view(coordsArray);
   for(int i=0; i<size; i++){
-    //we only have Vector2 now,so zArray is not used
+    //we only have Vec2d now,so zArray is not used
     h_coordsArray(i)[0] = xArrayHost(i);
     h_coordsArray(i)[1] = yArrayHost(i);
   }

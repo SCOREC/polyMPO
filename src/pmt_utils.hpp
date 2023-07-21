@@ -23,30 +23,32 @@ namespace polyMpmTest{
 
 #define vec2d_nEntries 2
 typedef double vec2d_t[vec2d_nEntries];
+#define vec3d_nEntries 3
+typedef double vec3d_t[vec3d_nEntries];
 
-class Vector2;
-// afterwards may have: Vector3
-using Vector2View = Kokkos::View<Vector2*>;
+class Vec2d;
+class Vec3d;
+using Vec2dView = Kokkos::View<Vec2d*>;
 using DoubleView = Kokkos::View<double*>;
 using IntView = Kokkos::View<int*>;
 using BoolView = Kokkos::View<bool*>;
 
-class Vector2 {
+class Vec2d {
   private:
     vec2d_t coords_;
 
   public:
     //constructors
     KOKKOS_INLINE_FUNCTION
-    Vector2():coords_{0.0, 0.0}{}
+    Vec2d():coords_{0.0, 0.0}{}
     
-    ~Vector2() = default;
-    
-    KOKKOS_INLINE_FUNCTION
-    Vector2(double x1, double x2):coords_{x1,x2}{}
+    ~Vec2d() = default;
     
     KOKKOS_INLINE_FUNCTION
-    Vector2(double x[2]):coords_{x[0], x[1]}{}
+    Vec2d(double x1, double x2):coords_{x1,x2}{}
+    
+    KOKKOS_INLINE_FUNCTION
+    Vec2d(double x[2]):coords_{x[0], x[1]}{}
 
     //operators 
     KOKKOS_INLINE_FUNCTION
@@ -57,25 +59,25 @@ class Vector2 {
 
     
     KOKKOS_INLINE_FUNCTION
-    Vector2 operator-() { return Vector2(-coords_[0], -coords_[1]); }
+    Vec2d operator-() { return Vec2d(-coords_[0], -coords_[1]); }
     
     KOKKOS_INLINE_FUNCTION
-    Vector2 operator+(Vector2 v) { return Vector2(coords_[0] + v[0],
+    Vec2d operator+(Vec2d v) { return Vec2d(coords_[0] + v[0],
                                                  coords_[1] + v[1]); }
     
     KOKKOS_INLINE_FUNCTION
-    Vector2 operator-(Vector2 v) { return Vector2(coords_[0] - v[0],
+    Vec2d operator-(Vec2d v) { return Vec2d(coords_[0] - v[0],
                                                  coords_[1] - v[1]); }
     
     KOKKOS_INLINE_FUNCTION
-    Vector2 operator*(double scalar) const { return Vector2(coords_[0]*scalar,
+    Vec2d operator*(double scalar) const { return Vec2d(coords_[0]*scalar,
                                                             coords_[1]*scalar); }
     
     KOKKOS_INLINE_FUNCTION
-    double dot(Vector2 v) { return  coords_[0]*v[0]+coords_[1]*v[1]; }
+    double dot(Vec2d v) { return  coords_[0]*v[0]+coords_[1]*v[1]; }
     
     KOKKOS_INLINE_FUNCTION
-    double cross(Vector2 v) { return (coords_[0]*v[1] - coords_[1]*v[0]); }
+    double cross(Vec2d v) { return (coords_[0]*v[1] - coords_[1]*v[0]); }
     
     KOKKOS_INLINE_FUNCTION
     double magnitude() {return sqrt(coords_[0]*coords_[0] +
@@ -83,18 +85,18 @@ class Vector2 {
     
     KOKKOS_FUNCTION
     void operator=(const double &scalar);
-    //Vector2 &operator+=(const Vector2 &v);
+    //Vec2d &operator+=(const Vec2d &v);
    
 };
 
 KOKKOS_INLINE_FUNCTION
-void Vector2::operator=(const double &scalar){
+void Vec2d::operator=(const double &scalar){
     coords_[0] = scalar;
     coords_[1] = scalar;
 }
 
 KOKKOS_INLINE_FUNCTION
-void initArray(Vector2* arr, int n, Vector2 fill){
+void initArray(Vec2d* arr, int n, Vec2d fill){
     for(int i=0; i<n; i++){
         arr[i] = fill;
     }
@@ -106,6 +108,26 @@ void initArray(double* arr, int n, double fill){
         arr[i] = fill;
     }
 }
+
+class Vec3d{
+  private:
+    vec3d_t coords_;
+
+  public:
+    //constructors
+    KOKKOS_INLINE_FUNCTION
+    Vec3d():coords_{0.0, 0.0, 0.0}{}
+    
+    ~Vec3d() = default;
+    
+    KOKKOS_INLINE_FUNCTION
+    Vec3d(double x1, double x2, double x3):coords_{x1,x2,x3}{}
+    
+    KOKKOS_INLINE_FUNCTION
+    Vec3d(double x[3]):coords_{x[0], x[1], x[2]}{}
+
+    //operators 
+};
 
 //this is a lazy comparison and shouldn't be relied on beyond simple testing
 bool isEqual(double a, double b, double tol=1e-9);

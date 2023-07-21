@@ -18,7 +18,7 @@ int main(int argc, char** argv) {
     {
         auto m = polyMpmTest::Mesh();
         auto mp = polyMpmTest::MaterialPoints();
-        auto v = polyMpmTest::Vector2();
+        auto v = polyMpmTest::Vec2d();
         
         auto mesh = initTestMesh(testMeshOption, scaleFactor);
         auto mpMesh = initTestMPMesh(mesh,testMPOption);

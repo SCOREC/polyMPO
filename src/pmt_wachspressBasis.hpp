@@ -22,13 +22,13 @@ namespace polyMpmTest{
  *  \return basis and gradient of basis
  * */
 KOKKOS_INLINE_FUNCTION
-void getBasisAndGradByAreaGblForm(Vector2 MP,
+void getBasisAndGradByAreaGblForm(Vec2d MP,
                                   int numVtxs,
-                                  Vector2* vtxCoords,
+                                  Vec2d* vtxCoords,
                                   double* basis,
-                                  Vector2* gradBasis){
-    Vector2 e[maxVtxsPerElm + 1];
-    Vector2 p[maxVtxsPerElm];
+                                  Vec2d* gradBasis){
+    Vec2d e[maxVtxsPerElm + 1];
+    Vec2d p[maxVtxsPerElm];
     double w[maxVtxsPerElm];
     for (int i = 0; i < numVtxs; i++){
         e[i + 1] = vtxCoords[i + 1] - vtxCoords[i];
@@ -84,15 +84,15 @@ void getBasisAndGradByAreaGblForm(Vector2 MP,
     double wSumInv = 1.0 / wSum;
     for (int i = 0; i < numVtxs; i++){
         basis[i] = w[i] * wSumInv;
-        gradBasis[i] = Vector2(wdx[i] * wSumInv - w[i] * wSumInv * wSumInv * wdxSum, wdy[i] * wSumInv - w[i] * wSumInv * wSumInv * wdySum);
+        gradBasis[i] = Vec2d(wdx[i] * wSumInv - w[i] * wSumInv * wSumInv * wdxSum, wdy[i] * wSumInv - w[i] * wSumInv * wSumInv * wdySum);
     }
 }
 
 
 KOKKOS_INLINE_FUNCTION
-void getBasisByAreaGblForm(Vector2 MP, int numVtxs, Vector2* vtxCoords, double* basis) {
-    Vector2 e[maxVtxsPerElm + 1];
-    Vector2 p[maxVtxsPerElm];
+void getBasisByAreaGblForm(Vec2d MP, int numVtxs, Vec2d* vtxCoords, double* basis) {
+    Vec2d e[maxVtxsPerElm + 1];
+    Vec2d p[maxVtxsPerElm];
     double w[maxVtxsPerElm];
     for (int i = 0; i < numVtxs; i++){
         e[i + 1] = vtxCoords[i + 1] - vtxCoords[i];
@@ -126,9 +126,9 @@ void getBasisByAreaGblForm(Vector2 MP, int numVtxs, Vector2* vtxCoords, double* 
 
 /*
 KOKKOS_INLINE_FUNCTION
-void getBasisByAreaGblForm_1(Vector2 MP, int numVtxs, Vector2* vtxCoords, double* basis) {
+void getBasisByAreaGblForm_1(Vec2d MP, int numVtxs, Vec2d* vtxCoords, double* basis) {
     double denominator, product;
-    Vector2 v1, v2;
+    Vec2d v1, v2;
 
     denominator = 0.0;
     for (int i = 1; i <= numVtxs; i++) {

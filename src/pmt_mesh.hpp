@@ -28,7 +28,7 @@ class Mesh {
   private:
     int numVtxs_;
     int numElms_;
-    Vector2View vtxCoords_;
+    Vec2dView vtxCoords_;
     //IntView nEdgesPerElm_;
     IntVtx2ElmView elm2VtxConn_;
     IntElm2VtxView vtx2ElmConn_;//TODO remove
@@ -44,7 +44,7 @@ class Mesh {
     Mesh(){};
     Mesh( int numVtxs,
           int numElms,
-          Vector2View vtxCoords,
+          Vec2dView vtxCoords,
           IntVtx2ElmView elm2VtxConn,
           IntElm2VtxView vtx2ElmConn,
           IntElm2ElmView elm2ElmConn ):
@@ -61,7 +61,7 @@ class Mesh {
 
     int getNumVertices() { return numVtxs_; }
     int getNumElements() { return numElms_; }
-    Vector2View getVtxCoords() { return vtxCoords_; }
+    Vec2dView getVtxCoords() { return vtxCoords_; }
     IntVtx2ElmView getElm2VtxConn() { return elm2VtxConn_; }
     IntElm2VtxView getVtx2ElmConn() { return vtx2ElmConn_; }
     IntElm2ElmView getElm2ElmConn() { return elm2ElmConn_; }
@@ -69,7 +69,7 @@ class Mesh {
 
     void setNumVtxs(int numVtxs) {numVtxs_ = numVtxs;}
     void setNumElms(int numElms) {numElms_ = numElms;}
-    void setVtxCoords(Vector2View vtxCoordsIn) {vtxCoords_=vtxCoordsIn;}
+    void setVtxCoords(Vec2dView vtxCoordsIn) {vtxCoords_=vtxCoordsIn;}
     void setVtx2ElmConn(IntElm2VtxView vtx2ElmConn) { vtx2ElmConn_ = vtx2ElmConn; }
     void setElm2VtxConn(IntVtx2ElmView elm2VtxConn) { elm2VtxConn_ = elm2VtxConn; }
     void setElm2ElmConn(IntElm2ElmView elm2ElmConn) { elm2ElmConn_ = elm2ElmConn; }

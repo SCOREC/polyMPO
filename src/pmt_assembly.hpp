@@ -91,7 +91,7 @@ DoubleView wtScaAssembly(MPMesh& mpMesh){
       if (mask) {
         /* get the coordinates of all the vertices of elm */
         int nElmVtxs = elm2VtxConn(elm,0);      // number of vertices bounding the element
-        Vector2 eVtxCoords[maxVtxsPerElm + 1];
+        Vec2d eVtxCoords[maxVtxsPerElm + 1];
         for (int i = 1; i <= nElmVtxs; i++) {
           eVtxCoords[i-1] = vtxCoords(elm2VtxConn(elm,i)-1);    // elm2VtxConn(elm,i) is the vertex ID (1-based index) of vertex #i of elm
         }
@@ -99,7 +99,7 @@ DoubleView wtScaAssembly(MPMesh& mpMesh){
         
         /* compute the values of basis functions at mp position */
         double basisByArea[maxElmsPerVtx];
-        Vector2 mpCoord(mpPositions(mp,0), mpPositions(mp,1));
+        Vec2d mpCoord(mpPositions(mp,0), mpPositions(mp,1));
         getBasisByAreaGblForm(mpCoord, nElmVtxs, eVtxCoords, basisByArea);
 
         /* get the mp's property that is assebled to vertices */
@@ -119,7 +119,7 @@ DoubleView wtScaAssembly(MPMesh& mpMesh){
 
 // (HDT) weighted assembly of vector2 field (not weighted by mass/volume)
 template <MaterialPointSlice index>
-Vector2View wtVec2Assembly(MPMesh& mpMesh){
+Vec2dView wtVec2Assembly(MPMesh& mpMesh){
     auto p_mesh = mpMesh.p_mesh;
     auto vtxCoords = p_mesh->getVtxCoords();
     int numVtxs = p_mesh->getNumVertices(); // total number of vertices of the mesh
@@ -127,7 +127,7 @@ Vector2View wtVec2Assembly(MPMesh& mpMesh){
     auto p_MPs = mpMesh.p_MPs;
     auto mpPositions = p_MPs->getData<MPF_Cur_Pos_XYZ>();
     
-    Vector2View vField("wtVec2Field", numVtxs); // Kokkos array of Vector2 type, size = numVtxs
+    Vec2dView vField("wtVec2Field", numVtxs); // Kokkos array of Vec2d type, size = numVtxs
 
     auto mpData = p_MPs->getData<index>();
     
@@ -135,7 +135,7 @@ Vector2View wtVec2Assembly(MPMesh& mpMesh){
       if (mask) {
         /* collect the coordinates of all the vertices of elm */
         int nElmVtxs = elm2VtxConn(elm,0);      // number of vertices bounding the element
-        Vector2 eVtxCoords[maxVtxsPerElm + 1];
+        Vec2d eVtxCoords[maxVtxsPerElm + 1];
         for (int i = 1; i <= nElmVtxs; i++) {
           eVtxCoords[i-1] = vtxCoords(elm2VtxConn(elm,i)-1);    // elm2VtxConn(elm,i) is the vertex ID (1-based index) of vertex #i of elm
         }
@@ -143,14 +143,14 @@ Vector2View wtVec2Assembly(MPMesh& mpMesh){
         
         /* compute the values of basis functions at mp position */
         double basisByArea[maxElmsPerVtx];
-        Vector2 mpCoord(mpPositions(mp,0), mpPositions(mp,1));
+        Vec2d mpCoord(mpPositions(mp,0), mpPositions(mp,1));
         getBasisByAreaGblForm(mpCoord, nElmVtxs, eVtxCoords, basisByArea);
 
         /* get the mp's volume */
         double mpVolume = 1.0; // TODO: change to mp's volume here
 
         /* get the mp's property to be assembled */
-        Vector2 assValue;
+        Vec2d assValue;
         assValue[0] =  mpData(mp, 0) * mpVolume;
         assValue[1] =  mpData(mp, 1) * mpVolume;
 
@@ -162,7 +162,7 @@ Vector2View wtVec2Assembly(MPMesh& mpMesh){
         }
       }
     };
-    p_MPs->parallel_for(assemble, "weightedVector2Assembly");
+    p_MPs->parallel_for(assemble, "weightedVec2dAssembly");
     return vField;
 } // wtVec2Assembly
 

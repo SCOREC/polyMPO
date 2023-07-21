@@ -11,15 +11,15 @@ int main(int argc, char** argv) {
     MPI_Init(&argc, &argv);
     Kokkos::initialize(argc, argv);
 
-//  test Vector2
-    auto v = polyMpmTest::Vector2();
+//  test Vec2d
+    auto v = polyMpmTest::Vec2d();
     v[0] = 1;
     v[1] = 2;
     PMT_ALWAYS_ASSERT(v[0] == 1);
     PMT_ALWAYS_ASSERT(v[1] == 2);
 //  test Vector operator
-    auto v1 = polyMpmTest::Vector2(1,2);
-    auto v2 = polyMpmTest::Vector2(3,4);
+    auto v1 = polyMpmTest::Vec2d(1,2);
+    auto v2 = polyMpmTest::Vec2d(3,4);
     auto v3 = v1 + v2;
     PMT_ALWAYS_ASSERT(v3[0] == 4);
     PMT_ALWAYS_ASSERT(v3[1] == 6);

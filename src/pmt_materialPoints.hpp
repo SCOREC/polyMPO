@@ -90,7 +90,7 @@ typedef MemberTypes<mp_flag_t,              //MP_Status
 typedef ps::ParticleStructure<MaterialPointTypes> PS;
 
 
-PS* createDPS(int numElms, int numMPs, Vector2View positions, IntView mpsPerElm, IntView mp2elm);
+PS* createDPS(int numElms, int numMPs, Vec2dView positions, IntView mpsPerElm, IntView mp2elm);
 
 class MaterialPoints {
   private:
@@ -98,7 +98,7 @@ class MaterialPoints {
 
   public:
     MaterialPoints() : MPs(nullptr) {};
-    MaterialPoints(int numElms, int numMPs, Vector2View positions, IntView mpsPerElm, IntView mp2elm) {
+    MaterialPoints(int numElms, int numMPs, Vec2dView positions, IntView mpsPerElm, IntView mp2elm) {
       MPs = createDPS(numElms, numMPs, positions, mpsPerElm, mp2elm);
     };
     ~MaterialPoints() {
@@ -164,7 +164,7 @@ class MaterialPoints {
 
 //MUTATOR  
     template <MaterialPointSlice index> void fillData(double value);//use PS_LAMBDA fill up to 1
-    void T2LTracking(Vector2View dx);
+    void T2LTracking(Vec2dView dx);
     
 };
 

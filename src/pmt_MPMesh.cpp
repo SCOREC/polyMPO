@@ -4,7 +4,7 @@
 
 namespace polyMpmTest{
 
-void MPMesh::CVTTrackingEdgeCenterBased(Vector2View dx){
+void MPMesh::CVTTrackingEdgeCenterBased(Vec2dView dx){
     int numVtxs = p_mesh->getNumVertices();
     int numElms = p_mesh->getNumElements();
     auto numMPs = p_MPs->getCount();
@@ -15,7 +15,7 @@ void MPMesh::CVTTrackingEdgeCenterBased(Vector2View dx){
     auto MPs2Elm = p_MPs->getData<MPF_Tgt_Elm_ID>();
     const auto vtxCoords = p_mesh->getVtxCoords(); 
     auto mpPositions = p_MPs->getData<MPF_Cur_Pos_XYZ>();
-    Kokkos::View<Vector2*[maxVtxsPerElm]> edgeCenters("EdgeCenters",numElms);
+    Kokkos::View<Vec2d*[maxVtxsPerElm]> edgeCenters("EdgeCenters",numElms);
   
     Kokkos::parallel_for("calcEdgeCenter", numElms, KOKKOS_LAMBDA(const int elm){  
         int numVtx = elm2VtxConn(elm,0);
@@ -23,16 +23,16 @@ void MPMesh::CVTTrackingEdgeCenterBased(Vector2View dx){
         for(int i=0; i< numVtx; i++)
             v[i] = elm2VtxConn(elm,i+1)-1;
         for(int i=0; i< numVtx; i++){
-            Vector2 v_i = vtxCoords(v[i]);
-            Vector2 v_ip1 = vtxCoords(v[(i+1)%numVtx]);
+            Vec2d v_i = vtxCoords(v[i]);
+            Vec2d v_ip1 = vtxCoords(v[(i+1)%numVtx]);
             edgeCenters(elm,i) = (v_ip1 + v_i)*0.5;
         }
     });
    
     auto CVTEdgeTracking = PS_LAMBDA(const int& elm, const int& mp, const int& mask){
-        Vector2 MP = Vector2(mpPositions(mp,0),mpPositions(mp,1));//XXX:the input is XYZ, but we only support 2d vector
+        Vec2d MP = Vec2d(mpPositions(mp,0),mpPositions(mp,1));//XXX:the input is XYZ, but we only support 2d vector
         if(mask){
-            Vector2 MPnew = MP + dx(mp);
+            Vec2d MPnew = MP + dx(mp);
             int iElm = elm;
             while(true){
                 int numVtx = elm2VtxConn(iElm,0);
@@ -41,8 +41,8 @@ void MPMesh::CVTTrackingEdgeCenterBased(Vector2View dx){
                 int edgeIndex = -1;
                 double minDistSq = DBL_MAX;
                 for(int i=0; i< numVtx; i++){
-                    Vector2 edgeCenter = edgeCenters(iElm,i);
-                    Vector2 delta = MPnew - edgeCenter;
+                    Vec2d edgeCenter = edgeCenters(iElm,i);
+                    Vec2d delta = MPnew - edgeCenter;
                     double currentDistSq = delta[0]*delta[0] + delta[1]*delta[1];
                     double dotProduct = dx(mp).dot(delta);
                     if(dotProduct <=0){
@@ -72,7 +72,7 @@ void MPMesh::CVTTrackingEdgeCenterBased(Vector2View dx){
 }
 
 
-void MPMesh::CVTTrackingElmCenterBased(Vector2View dx){
+void MPMesh::CVTTrackingElmCenterBased(Vec2dView dx){
     int numVtxs = p_mesh->getNumVertices();
     int numElms = p_mesh->getNumElements();
     
@@ -84,7 +84,7 @@ void MPMesh::CVTTrackingElmCenterBased(Vector2View dx){
     auto mpPositions = p_MPs->getData<MPF_Cur_Pos_XYZ>();
     auto MPs2Elm = p_MPs->getData<MPF_Tgt_Elm_ID>();;
 
-    Vector2View elmCenter("elmentCenter",numElms);
+    Vec2dView elmCenter("elmentCenter",numElms);
     auto calcCenter = PS_LAMBDA(const int& elm, const int& mp, const int&mask){
 //        elmCenter(iElm) = calcElmCenter(iElm,elm2VtxConn,vtxCoords);
         int numVtx = elm2VtxConn(elm,0);
@@ -97,13 +97,13 @@ void MPMesh::CVTTrackingElmCenterBased(Vector2View dx){
     p_MPs->parallel_for(calcCenter,"calcElmCenter");
 
     auto CVTElmCalc = PS_LAMBDA(const int& elm, const int& mp, const int&mask){
-        Vector2 MP = Vector2(mpPositions(mp,0),mpPositions(mp,1));//XXX:the input is XYZ, but we only support 2d vector
+        Vec2d MP = Vec2d(mpPositions(mp,0),mpPositions(mp,1));//XXX:the input is XYZ, but we only support 2d vector
         if(mask){
             int iElm = elm;
-            Vector2 MPnew = MP + dx(mp);
+            Vec2d MPnew = MP + dx(mp);
             while(true){
                 int numVtx = elm2VtxConn(iElm,0);
-                Vector2 delta = MPnew - elmCenter(iElm);
+                Vec2d delta = MPnew - elmCenter(iElm);
                 double minDistSq = delta[0]*delta[0] + delta[1]*delta[1];
                 int closestElm = -1;
                 //go through all the connected elm, calc distance
@@ -131,7 +131,7 @@ void MPMesh::CVTTrackingElmCenterBased(Vector2View dx){
     p_MPs->parallel_for(CVTElmCalc,"CVTTrackingElmCenterBasedCalc");
 }
 
-void MPMesh::T2LTracking(Vector2View dx){
+void MPMesh::T2LTracking(Vec2dView dx){
     int numVtxs = p_mesh->getNumVertices();
     int numElms = p_mesh->getNumElements();
     
@@ -145,10 +145,10 @@ void MPMesh::T2LTracking(Vector2View dx){
     auto mpStatus = p_MPs->getData<MPF_Status>();
    
     auto T2LCalc = PS_LAMBDA(const int& elm, const int& mp, const int&mask){
-        Vector2 MP = Vector2(mpPositions(mp,0),mpPositions(mp,1));//XXX:the input is XYZ, but we only support 2d vector
+        Vec2d MP = Vec2d(mpPositions(mp,0),mpPositions(mp,1));//XXX:the input is XYZ, but we only support 2d vector
         if(mask){
             int iElm = elm;
-            Vector2 MPnew = MP + dx(mp);    
+            Vec2d MPnew = MP + dx(mp);    
             
             while(true){
                 int numVtx = elm2VtxConn(iElm,0);
@@ -158,11 +158,11 @@ void MPMesh::T2LTracking(Vector2View dx){
                 for(int i=0; i< numVtx; i++)
                     v[i] = elm2VtxConn(iElm,i+1)-1;
                 //get edges and perpendiculardx
-                Vector2 e[maxVtxsPerElm];
+                Vec2d e[maxVtxsPerElm];
                 double pdx[maxVtxsPerElm];                    
                 for(int i=0; i< numVtx; i++){
-                    Vector2 v_i = vtxCoords(v[i]);
-                    Vector2 v_ip1 = vtxCoords(v[(i+1)%numVtx]);
+                    Vec2d v_i = vtxCoords(v[i]);
+                    Vec2d v_ip1 = vtxCoords(v[(i+1)%numVtx]);
                     e[i] = v_ip1 - v_i;
                     pdx[i] = (v_i - MP).cross(dx(mp));
                 }

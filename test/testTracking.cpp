@@ -19,8 +19,8 @@ int main(int argc, char* argv[]) {
         auto mpMesh = initTestMPMesh(testMesh, testMPOption); 
         auto p_MPs = mpMesh.p_MPs;
         
-        Vector2View dx = polyMpmTest::Vector2View("positions",51);
-        Kokkos::deep_copy(dx,Vector2(0.01,0.01));
+        Vec2dView dx = polyMpmTest::Vec2dView("positions",51);
+        Kokkos::deep_copy(dx,Vec2d(0.01,0.01));
         
         mpMesh.CVTTrackingEdgeCenterBased(dx);
         IntView TgtElmCVTEdge("TgtElmCVTEdge",p_MPs->getCount());

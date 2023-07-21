@@ -82,32 +82,7 @@ class Vec2d {
     KOKKOS_INLINE_FUNCTION
     double magnitude() {return sqrt(coords_[0]*coords_[0] +
                                     coords_[1]*coords_[1]); }
-    
-    KOKKOS_FUNCTION
-    void operator=(const double &scalar);
-    //Vec2d &operator+=(const Vec2d &v);
-   
 };
-
-KOKKOS_INLINE_FUNCTION
-void Vec2d::operator=(const double &scalar){
-    coords_[0] = scalar;
-    coords_[1] = scalar;
-}
-
-KOKKOS_INLINE_FUNCTION
-void initArray(Vec2d* arr, int n, Vec2d fill){
-    for(int i=0; i<n; i++){
-        arr[i] = fill;
-    }
-}
-
-KOKKOS_INLINE_FUNCTION
-void initArray(double* arr, int n, double fill){
-    for(int i=0; i<n; i++){
-        arr[i] = fill;
-    }
-}
 
 class Vec3d{
   private:
@@ -126,8 +101,48 @@ class Vec3d{
     KOKKOS_INLINE_FUNCTION
     Vec3d(double x[3]):coords_{x[0], x[1], x[2]}{}
 
-    //operators 
+    //operators
+    Vec3d operator+(const Vec3d& v) const {
+        return Vec3d(coords_[0] + v.coords_[0], coords_[1] + v.coords_[1], coords_[2] + v.coords_[2]);
+    }
+
+    Vec3d operator-(const Vec3d& v) const {
+        return Vec3d(coords_[0] - v.coords_[0], coords_[1] - v.coords_[1], coords_[2] - v.coords_[2]);
+    }
+
+    Vec3d operator*(double scalar) const {
+        return Vec3d(coords_[0] * scalar, coords_[1] * scalar, coords_[2] * scalar);
+    }
+
+
+    double dot(const Vec3d& v) const {
+        return coords_[0] * v.coords_[0] + coords_[1] * v.coords_[1] + coords_[2] * v.coords_[2];
+    }
+
+    Vec3d cross(const Vec3d& v) const {
+        return Vec3d(coords_[1] * v.coords_[2] - coords_[2] * v.coords_[1],
+                     coords_[2] * v.coords_[0] - coords_[0] * v.coords_[2],
+                     coords_[0] * v.coords_[1] - coords_[1] * v.coords_[0]);
+    }
+
+    double magnitude() const {
+        return std::sqrt(coords_[0] * coords_[0] + coords_[1] * coords_[1] + coords_[2] * coords_[2]);
+    }
 };
+
+KOKKOS_INLINE_FUNCTION
+void initArray(Vec2d* arr, int n, Vec2d fill){
+    for(int i=0; i<n; i++){
+        arr[i] = fill;
+    }
+}
+
+KOKKOS_INLINE_FUNCTION
+void initArray(double* arr, int n, double fill){
+    for(int i=0; i<n; i++){
+        arr[i] = fill;
+    }
+}
 
 //this is a lazy comparison and shouldn't be relied on beyond simple testing
 bool isEqual(double a, double b, double tol=1e-9);

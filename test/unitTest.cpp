@@ -11,13 +11,13 @@ int main(int argc, char** argv) {
     MPI_Init(&argc, &argv);
     Kokkos::initialize(argc, argv);
 
-//  test Vec2d
+    //test Vec2d
     auto v = polyMpmTest::Vec2d();
     v[0] = 1;
     v[1] = 2;
     PMT_ALWAYS_ASSERT(v[0] == 1);
     PMT_ALWAYS_ASSERT(v[1] == 2);
-//  test Vector operator
+    //test Vector operator
     auto v1 = polyMpmTest::Vec2d(1,2);
     auto v2 = polyMpmTest::Vec2d(3,4);
     auto v3 = v1 + v2;
@@ -39,11 +39,46 @@ int main(int argc, char** argv) {
     auto v9 = v1.magnitude();
     PMT_ALWAYS_ASSERT(v9 - sqrt(5) < 1e-6);
 
+    //test Vec3d
+    auto v10 = polyMpmTest::Vec3d();
+    v10[0] = 1;
+    v10[1] = 2;
+    v10[2] = 3;
+    PMT_ALWAYS_ASSERT(v10[0] == 1);
+    PMT_ALWAYS_ASSERT(v10[1] == 2);
+    PMT_ALWAYS_ASSERT(v10[2] == 3);
+    //test Vec3d operators
+    auto v11 = polyMpmTest::Vec3d(1,2,3);
+    auto v12 = polyMpmTest::Vec3d(4,5,6);
+    auto v13 = v11 + v12;
+    PMT_ALWAYS_ASSERT(v13[0] == 5);
+    PMT_ALWAYS_ASSERT(v13[1] == 7);
+    PMT_ALWAYS_ASSERT(v13[2] == 9);
+    auto v14 = v11 - v12;
+    PMT_ALWAYS_ASSERT(v14[0] == -3);
+    PMT_ALWAYS_ASSERT(v14[1] == -3);
+    PMT_ALWAYS_ASSERT(v14[2] == -3);
+    auto v15 = v11 * 2;
+    PMT_ALWAYS_ASSERT(v15[0] == 2);
+    PMT_ALWAYS_ASSERT(v15[1] == 4);
+    PMT_ALWAYS_ASSERT(v15[2] == 6);
+    auto v16 = -v11;
+    PMT_ALWAYS_ASSERT(v16[0] == -1);
+    PMT_ALWAYS_ASSERT(v16[1] == -2);
+    PMT_ALWAYS_ASSERT(v16[2] == -3);
+    auto v17 = v11.dot(v12);
+    PMT_ALWAYS_ASSERT(v17 == 32);
+    auto v18 = v11.cross(v12);
+    PMT_ALWAYS_ASSERT(v18[0] == -3);
+    PMT_ALWAYS_ASSERT(v18[1] == 6);
+    PMT_ALWAYS_ASSERT(v18[2] == -3);
+    auto v19 = v11.magnitude();
+    PMT_ALWAYS_ASSERT(v19 - sqrt(14) < 1e-6); 
+
     //this test is only designed to work with the following option values:
     const int testMeshOption = 1;
     const int scaleFactor = 1;
     const int testMPOption = 1;
-
     //run assembly and test Wachspress
     {
         //auto testMesh = Mesh::readMPASMesh("/path/to/mpas/mesh.nc"); //read from MPAS via netcdf

@@ -57,7 +57,6 @@ class Vec2d {
     KOKKOS_INLINE_FUNCTION
     double &operator[](int i) { return coords_[i]; }
 
-    
     KOKKOS_INLINE_FUNCTION
     Vec2d operator-() { return Vec2d(-coords_[0], -coords_[1]); }
     
@@ -102,29 +101,43 @@ class Vec3d{
     Vec3d(double x[3]):coords_{x[0], x[1], x[2]}{}
 
     //operators
+    KOKKOS_INLINE_FUNCTION
+    double operator[](int i) const { return coords_[i]; }
+    
+    KOKKOS_INLINE_FUNCTION
+    double &operator[](int i) { return coords_[i]; }
+    
+    KOKKOS_INLINE_FUNCTION
     Vec3d operator+(const Vec3d& v) const {
         return Vec3d(coords_[0] + v.coords_[0], coords_[1] + v.coords_[1], coords_[2] + v.coords_[2]);
     }
 
+    KOKKOS_INLINE_FUNCTION
     Vec3d operator-(const Vec3d& v) const {
         return Vec3d(coords_[0] - v.coords_[0], coords_[1] - v.coords_[1], coords_[2] - v.coords_[2]);
     }
+    
+    KOKKOS_INLINE_FUNCTION
+    Vec3d operator-() { return Vec3d(-coords_[0], -coords_[1], -coords_[2]); }
 
+    KOKKOS_INLINE_FUNCTION
     Vec3d operator*(double scalar) const {
         return Vec3d(coords_[0] * scalar, coords_[1] * scalar, coords_[2] * scalar);
     }
 
-
+    KOKKOS_INLINE_FUNCTION
     double dot(const Vec3d& v) const {
         return coords_[0] * v.coords_[0] + coords_[1] * v.coords_[1] + coords_[2] * v.coords_[2];
     }
 
+    KOKKOS_INLINE_FUNCTION
     Vec3d cross(const Vec3d& v) const {
         return Vec3d(coords_[1] * v.coords_[2] - coords_[2] * v.coords_[1],
                      coords_[2] * v.coords_[0] - coords_[0] * v.coords_[2],
                      coords_[0] * v.coords_[1] - coords_[1] * v.coords_[0]);
     }
 
+    KOKKOS_INLINE_FUNCTION
     double magnitude() const {
         return std::sqrt(coords_[0] * coords_[0] + coords_[1] * coords_[1] + coords_[2] * coords_[2]);
     }
@@ -132,6 +145,13 @@ class Vec3d{
 
 KOKKOS_INLINE_FUNCTION
 void initArray(Vec2d* arr, int n, Vec2d fill){
+    for(int i=0; i<n; i++){
+        arr[i] = fill;
+    }
+}
+
+KOKKOS_INLINE_FUNCTION
+void initArray(Vec3d* arr, int n, Vec3d fill){
     for(int i=0; i<n; i++){
         arr[i] = fill;
     }

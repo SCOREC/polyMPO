@@ -21,7 +21,6 @@ enum MeshFieldIndex{
     MeshF_Invalid = -2,
     MeshF_Unsupported,
     MeshF_Vel,
-    MeshF_Cur_Pos_XYZ
 };
 
 class Mesh {
@@ -35,7 +34,6 @@ class Mesh {
     IntElm2ElmView elm2ElmConn_;
     //start of meshFields
     DoubleVec2DView vtxVel_;
-    DoubleVec3DView vtxCurXYZ_;
     //DoubleMat2DView vtxStress_;
 
     static Mesh readMPASMesh(int ncid);
@@ -55,7 +53,6 @@ class Mesh {
           vtx2ElmConn_(vtx2ElmConn),
           elm2ElmConn_(elm2ElmConn){
             vtxVel_ = DoubleVec2DView("vtxVelocity",numVtxs);
-            vtxCurXYZ_ = DoubleVec3DView("vtxCurrentPositionXYZ",numVtxs);
         }
     static Mesh readMPASMesh(std::string filename);
 
@@ -89,9 +86,6 @@ auto Mesh::getMeshField(){
     }
     else if constexpr (index==MeshF_Vel){
         return vtxVel_;
-    }
-    else if constexpr (index==MeshF_Cur_Pos_XYZ){
-        return vtxCurXYZ_;
     }
     fprintf(stderr,"Mesh Field Index error!\n");
     exit(1);

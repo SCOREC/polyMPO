@@ -57,6 +57,9 @@ class Vec2d {
     KOKKOS_INLINE_FUNCTION
     double &operator[](int i) { return coords_[i]; }
 
+    //KOKKOS_INLINE_FUNCTION
+    //Vec2d& operator=(double v[3]) { return Vec2d(v[0],v[1]); }
+
     KOKKOS_INLINE_FUNCTION
     Vec2d operator-() { return Vec2d(-coords_[0], -coords_[1]); }
     

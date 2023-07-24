@@ -2,15 +2,15 @@
 
 namespace polyMpmTest {
 
-PS* createDPS(int numElms, int numMPs, Vec2dView positions, IntView mpsPerElm, IntView mp2elm) {
+PS* createDPS(int numElms, int numMPs, DoubleVec3dView positions, IntView mpsPerElm, IntView mp2elm) {
   PS::kkGidView elmGids("elementGlobalIds", numElms); //TODO - initialize this to [0..numElms)
   auto mpInfo = ps::createMemberViews<MaterialPointTypes>(numMPs);
   auto mpPositions = ps::getMemberView<MaterialPointTypes, MPF_Cur_Pos_XYZ>(mpInfo);
   auto mpCurElmPos = ps::getMemberView<MaterialPointTypes, MPF_Cur_Elm_ID>(mpInfo);
   auto mpStatus = ps::getMemberView<MaterialPointTypes, MPF_Status>(mpInfo);
   Kokkos::parallel_for("setMPinfo", numMPs, KOKKOS_LAMBDA(int i) {
-    mpPositions(i,0) = positions[i][0];
-    mpPositions(i,1) = positions[i][1];
+    mpPositions(i,0) = positions(i,0);
+    mpPositions(i,1) = positions(i,1);
     mpPositions(i,2) = 0.0;//TODO:fix this based on positions array which should be vec3d_t
     mpCurElmPos(i) = mp2elm(i);
     mpStatus(i) = 1; 

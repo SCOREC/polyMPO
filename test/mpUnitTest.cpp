@@ -44,11 +44,13 @@ int main(int argc, char** argv) {
     auto mpToElement_d = copyToDevice<int>(mpToElement, "mpToElement");
     auto mpPerElement_d = copyToDevice<int>(mpPerElement, "mpPerElement");
 
-    auto mpPositions = polyMpmTest::Vec2dView("positions",numMPs);
+    auto mpPositions = polyMpmTest::DoubleVec3dView("positions",numMPs);
     Kokkos::parallel_for("intializeMPsPosition", numMPs, KOKKOS_LAMBDA(const int i){
         const auto x = mpToElement_d(i)*1.0;
         const auto y = mpToElement_d(i)*-1.0;
-        mpPositions(i) = polyMpmTest::Vec2d(x,y);
+        mpPositions(i,0) = x;
+        mpPositions(i,1) = y;
+        mpPositions(i,2) = 0.0;
     });
 
     auto MPs = polyMpmTest::MaterialPoints(numElms, numMPs, mpPositions, mpPerElement_d, mpToElement_d);

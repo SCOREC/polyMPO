@@ -93,9 +93,13 @@ DoubleView wtScaAssembly(MPMesh& mpMesh){
         int nElmVtxs = elm2VtxConn(elm,0);      // number of vertices bounding the element
         Vec2d eVtxCoords[maxVtxsPerElm + 1];
         for (int i = 1; i <= nElmVtxs; i++) {
-          eVtxCoords[i-1] = vtxCoords(elm2VtxConn(elm,i)-1);    // elm2VtxConn(elm,i) is the vertex ID (1-based index) of vertex #i of elm
+          // elm2VtxConn(elm,i) is the vertex ID (1-based index) of vertex #i of elm
+          eVtxCoords[i-1][0] = vtxCoords(elm2VtxConn(elm,i)-1,0);    
+          eVtxCoords[i-1][1] = vtxCoords(elm2VtxConn(elm,i)-1,1);
         }
-        eVtxCoords[nElmVtxs] = vtxCoords(elm2VtxConn(elm,1)-1); // last component of eVtxCoords stores the firs vertex (to avoid if-condition in the Wachspress computation)
+        // last component of eVtxCoords stores the firs vertex (to avoid if-condition in the Wachspress computation)
+        eVtxCoords[nElmVtxs][0] = vtxCoords(elm2VtxConn(elm,1)-1,0);
+        eVtxCoords[nElmVtxs][1] = vtxCoords(elm2VtxConn(elm,1)-1,1);
         
         /* compute the values of basis functions at mp position */
         double basisByArea[maxElmsPerVtx];
@@ -137,9 +141,13 @@ Vec2dView wtVec2Assembly(MPMesh& mpMesh){
         int nElmVtxs = elm2VtxConn(elm,0);      // number of vertices bounding the element
         Vec2d eVtxCoords[maxVtxsPerElm + 1];
         for (int i = 1; i <= nElmVtxs; i++) {
-          eVtxCoords[i-1] = vtxCoords(elm2VtxConn(elm,i)-1);    // elm2VtxConn(elm,i) is the vertex ID (1-based index) of vertex #i of elm
+          // elm2VtxConn(elm,i) is the vertex ID (1-based index) of vertex #i of elm
+          eVtxCoords[i-1][0] = vtxCoords(elm2VtxConn(elm,i)-1,0);    
+          eVtxCoords[i-1][1] = vtxCoords(elm2VtxConn(elm,i)-1,1);
         }
-        eVtxCoords[nElmVtxs] = vtxCoords(elm2VtxConn(elm,1)-1); // last component of eVtxCoords stores the firs vertex (to avoid if-condition in the Wachspress computation)
+        // last component of eVtxCoords stores the firs vertex (to avoid if-condition in the Wachspress computation)
+        eVtxCoords[nElmVtxs][0] = vtxCoords(elm2VtxConn(elm,1)-1,0);
+        eVtxCoords[nElmVtxs][1] = vtxCoords(elm2VtxConn(elm,1)-1,1);
         
         /* compute the values of basis functions at mp position */
         double basisByArea[maxElmsPerVtx];

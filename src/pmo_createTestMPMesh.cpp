@@ -12,13 +12,15 @@ Mesh* createMesh(const double (&v_array)[nVertices_size][vec_dimension],
                 const int (&vtx2ElmConn_array)[nVertices_size][maxElmsPerVtx+1],
                 const int (&elm2ElmConn_array)[nCells_size][maxVtxsPerElm],
                 const int scaleFactor, const int nCells, const int nVertices){
-    Vec2dView vtxCoords("verticesCoordinates", nVertices);
+    DoubleVec3dView vtxCoords("verticesCoordinates", nVertices);
     IntElm2VtxView vtx2ElmConn("vertexToElementsConnection",nVertices);    
-    Vec2dView::HostMirror h_vtxCoords = Kokkos::create_mirror_view(vtxCoords);
+    DoubleVec3dView::HostMirror h_vtxCoords = Kokkos::create_mirror_view(vtxCoords);
     IntElm2VtxView::HostMirror h_vtx2ElmConn = Kokkos::create_mirror_view(vtx2ElmConn);
     for(int f=0; f<scaleFactor; f++){
         for(int i=0; i<nVertices_size; i++){
-            h_vtxCoords(i+f*nVertices_size) = Vec2d(v_array[i][0],v_array[i][1]); 
+            h_vtxCoords(i+f*nVertices_size,0) = v_array[i][0]; 
+            h_vtxCoords(i+f*nVertices_size,1) = v_array[i][1]; 
+            h_vtxCoords(i+f*nVertices_size,2) = 0.0; 
             h_vtx2ElmConn(i+f*nVertices_size,0) = vtx2ElmConn_array[i][0];
             for(int j=1; j<=vtx2ElmConn_array[i][0]; j++){
                 h_vtx2ElmConn(i+f*nVertices_size,j) = vtx2ElmConn_array[i][j]+f*nCells_size; 
@@ -113,7 +115,7 @@ MaterialPoints* initTestMPs(Mesh* mesh, int testMPOption){
         default:
             fprintf(stderr,"TestMPOption not avaiable! return an empty one!");
     }
-    Vec2dView vtxCoords = mesh->getVtxCoords();   
+    DoubleVec3dView vtxCoords = mesh->getVtxCoords();   
     IntVtx2ElmView elm2VtxConn = mesh->getElm2VtxConn();
 
     int numMPs = 0;
@@ -145,18 +147,19 @@ MaterialPoints* initTestMPs(Mesh* mesh, int testMPOption){
         iMP += numMPsPerElement(i); 
     },numMPs);
 
-    Vec2dView positions("MPpositions",numMPs);
+    DoubleVec3dView positions("MPpositions",numMPs);
      
     Kokkos::parallel_for("intializeMPsPosition", numMPs, KOKKOS_LAMBDA(const int iMP){
         int ielm = MPToElement(iMP);
         int numVtx = elm2VtxConn(ielm,0);
         double sum_x = 0.0, sum_y = 0.0;
         for(int i=1; i<= numVtx; i++){
-            sum_x += vtxCoords(elm2VtxConn(ielm,i)-1)[0];
-            sum_y += vtxCoords(elm2VtxConn(ielm,i)-1)[1];
+            sum_x += vtxCoords(elm2VtxConn(ielm,i)-1,0);
+            sum_y += vtxCoords(elm2VtxConn(ielm,i)-1,1);
         }
-        positions(iMP) = Vec2d(sum_x/numVtx, sum_y/numVtx);
-        //printf("%d: (%f,%f)\n",iMP,positions(iMP)[0],positions(iMP)[1]);
+        positions(iMP,0) = sum_x/numVtx;
+        positions(iMP,1) = sum_y/numVtx;
+        positions(iMP,2) = 0.0;
     });
     
     return new MaterialPoints(numElms,numMPs,positions,numMPsPerElement,MPToElement);

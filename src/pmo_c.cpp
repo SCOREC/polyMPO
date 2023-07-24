@@ -102,7 +102,7 @@ void polympo_setMPVelArray(MPMesh_ptr p_mpmesh, int size, double* array) {
   kkVec2dViewHostU arrayHost(array,size);
   auto mpVel = p_MPs->getData<polyMpmTest::MPF_Vel>();
  
-  auto mpVelCopy = polyMpmTest::DoubleVec2DView("mpVelNewValue",size);
+  auto mpVelCopy = polyMpmTest::DoubleVec2dView("mpVelNewValue",size);
   //copy the host array to the device
   Kokkos::deep_copy(mpVelCopy,arrayHost);
   
@@ -123,7 +123,7 @@ void polympo_getMPVelArray(MPMesh_ptr p_mpmesh, int size, double* array) {
 
   auto p_MPs = ((polyMpmTest::MPMesh*)p_mpmesh)->p_MPs;
   auto mpVel = p_MPs->getData<polyMpmTest::MPF_Vel>();
-  auto mpVelCopy = polyMpmTest::DoubleVec2DView("copyOfMPVel",size);
+  auto mpVelCopy = polyMpmTest::DoubleVec2dView("copyOfMPVel",size);
    
   PMT_ALWAYS_ASSERT(p_MPs->getCount()==size); 
   PMT_ALWAYS_ASSERT(static_cast<size_t>(p_MPs->getCount()*vec2d_nEntries)==mpVelCopy.size());
@@ -181,12 +181,13 @@ void polympo_setMeshVtxCoords(MPMesh_ptr p_mpmesh, int size, double* xArray, dou
   kkDblViewHostU zArrayHost(zArray,size); 
   
   //copy the host array to the device
-  auto coordsArray = polyMpmTest::Vec2dView("MeshVtxCoords",size);
-  polyMpmTest::Vec2dView::HostMirror h_coordsArray = Kokkos::create_mirror_view(coordsArray);
+  auto coordsArray = polyMpmTest::DoubleVec3dView("MeshVtxCoords",size);
+  polyMpmTest::DoubleVec3dView::HostMirror h_coordsArray = Kokkos::create_mirror_view(coordsArray);
   for(int i=0; i<size; i++){
     //we only have Vec2d now,so zArray is not used
-    h_coordsArray(i)[0] = xArrayHost(i);
-    h_coordsArray(i)[1] = yArrayHost(i);
+    h_coordsArray(i,0) = xArrayHost(i);
+    h_coordsArray(i,1) = yArrayHost(i);
+    h_coordsArray(i,2) = 0.0;
   }
   Kokkos::deep_copy(coordsArray, h_coordsArray);
   p_mesh->setVtxCoords(coordsArray);

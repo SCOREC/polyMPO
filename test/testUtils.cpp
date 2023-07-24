@@ -12,13 +12,16 @@ void interpolateWachspress(MPMesh& mpMesh){
     auto MPsPosition = p_MPs->getPositions();
     auto eval = PS_LAMBDA(const int& elm, const int& mp, const int mask){
         if (mask) {
-            Vec2d v[maxVtxsPerElm+1] = {vtxCoords(elm2VtxConn(elm,1))};
-            initArray(v,maxVtxsPerElm+1,vtxCoords(elm2VtxConn(elm,1)));
+            //convert the double[] to Vec2d 
+            Vec2d v[maxVtxsPerElm+1];
+            initArray(v,maxVtxsPerElm+1,Vec2d());
             int numVtx = elm2VtxConn(elm,0);
             for(int i = 1; i<=numVtx; i++){
-                v[i-1] = vtxCoords(elm2VtxConn(elm,i)-1);
+                v[i-1][0] = vtxCoords(elm2VtxConn(elm,i)-1,0);
+                v[i-1][1] = vtxCoords(elm2VtxConn(elm,i)-1,1);
             }
-            v[numVtx] = vtxCoords(elm2VtxConn(elm,1)-1);
+            v[numVtx][0] = vtxCoords(elm2VtxConn(elm,1)-1,0);
+            v[numVtx][1] = vtxCoords(elm2VtxConn(elm,1)-1,1);
             double basisByArea[maxVtxsPerElm] = {0.0};
             initArray(basisByArea,maxVtxsPerElm,0.0);
             Vec2d gradBasisByArea[maxVtxsPerElm];

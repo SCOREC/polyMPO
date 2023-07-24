@@ -113,10 +113,10 @@ Mesh Mesh::readMPASMesh(int ncid){
   if ((retval = nc_get_var(ncid, nEdgesOnCellID, nEdgesOnCell)))
     ERRexit(retval);
 
-  Vec2dView vtxCoords("verticesCoordinates", nVertices);
+  DoubleVec3dView vtxCoords("verticesCoordinates", nVertices);
   IntElm2VtxView vtx2ElmConn("vertexToElementsConnection", nVertices); // 4 = vertexDegree + 1
 
-  Vec2dView::HostMirror h_vtxCoords = Kokkos::create_mirror_view(vtxCoords);
+  DoubleVec3dView::HostMirror h_vtxCoords = Kokkos::create_mirror_view(vtxCoords);
   IntElm2VtxView::HostMirror h_vtx2ElmConn = Kokkos::create_mirror_view(vtx2ElmConn);
   for (int i = 0; i < nVertices; i++)
   {

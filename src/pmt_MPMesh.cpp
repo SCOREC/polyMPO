@@ -23,8 +23,12 @@ void MPMesh::CVTTrackingEdgeCenterBased(Vec2dView dx){
         for(int i=0; i< numVtx; i++)
             v[i] = elm2VtxConn(elm,i+1)-1;
         for(int i=0; i< numVtx; i++){
-            Vec2d v_i = vtxCoords(v[i]);
-            Vec2d v_ip1 = vtxCoords(v[(i+1)%numVtx]);
+            //auto v_i_array = vtxCoords(v[i]);
+            //auto v_ip1_array = vtxCoords(v[(i+1)%numVtx]);
+            //TODO: double check if vtxCoords(v[i],0),vtxCoords(v[i],1)) is the best way to access the memory
+            int idx_ip1 = (i+1)%numVtx;
+            Vec2d v_i = Vec2d(vtxCoords(v[i],0),vtxCoords(v[i],1));
+            Vec2d v_ip1 = Vec2d(vtxCoords(v[idx_ip1],0),vtxCoords(v[idx_ip1],1));
             edgeCenters(elm,i) = (v_ip1 + v_i)*0.5;
         }
     });
@@ -90,8 +94,8 @@ void MPMesh::CVTTrackingElmCenterBased(Vec2dView dx){
         int numVtx = elm2VtxConn(elm,0);
         double sum_x = 0.0, sum_y = 0.0;
         for(int i=1; i<= numVtx; i++){
-            sum_x += vtxCoords(elm2VtxConn(elm,i)-1)[0];
-            sum_y += vtxCoords(elm2VtxConn(elm,i)-1)[1];
+            sum_x += vtxCoords(elm2VtxConn(elm,i)-1,0);
+            sum_y += vtxCoords(elm2VtxConn(elm,i)-1,1);
         }
     };
     p_MPs->parallel_for(calcCenter,"calcElmCenter");
@@ -161,16 +165,18 @@ void MPMesh::T2LTracking(Vec2dView dx){
                 Vec2d e[maxVtxsPerElm];
                 double pdx[maxVtxsPerElm];                    
                 for(int i=0; i< numVtx; i++){
-                    Vec2d v_i = vtxCoords(v[i]);
-                    Vec2d v_ip1 = vtxCoords(v[(i+1)%numVtx]);
+                    int idx_ip1 = (i+1)%numVtx;
+                    Vec2d v_i = Vec2d(vtxCoords(v[i],0),vtxCoords(v[i],1));
+                    Vec2d v_ip1 = Vec2d(vtxCoords(v[idx_ip1],0),vtxCoords(v[idx_ip1],1));
                     e[i] = v_ip1 - v_i;
                     pdx[i] = (v_i - MP).cross(dx(mp));
                 }
                 
                 for(int i=0; i<numVtx; i++){
                     int ip1 = (i+1)%numVtx;
-                    //pdx*pdx<0 and
-                    if(pdx[i]*pdx[ip1] <0 && e[i].cross(MPnew-vtxCoords(v[i]))<0){
+                    //pdx*pdx<0 and edge is acrossed 
+                    if(pdx[i]*pdx[ip1] <0 && e[i].cross(Vec2d(MPnew[0]-vtxCoords(v[i],0),
+                                                              MPnew[1]-vtxCoords(v[i],1)))<0){
                         //go to the next elm
                         iElm = elm2ElmConn(iElm,i+1);
                         goToNeighbour = true;

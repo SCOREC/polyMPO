@@ -4,7 +4,7 @@
 #include "pmt_utils.hpp"
 #include "pmt_MPMesh.hpp"
 
-namespace polyMpmTest{
+namespace polyMPO{
 
 /** \brief calculate the basis and gradient of Basis for a give MP with its element Vtxs
  *
@@ -154,5 +154,5 @@ void getBasisByAreaGblForm_1(Vec2d MP, int numVtxs, Vec2d* vtxCoords, double* ba
 } // getBasisByAreaBblForm_1
 */
 
-} //namespace polyMpmTest end
+} //namespace polyMPO end
 #endif

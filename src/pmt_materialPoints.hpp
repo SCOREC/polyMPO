@@ -9,7 +9,7 @@
 #include <Kokkos_Core.hpp>
 #include <map>
 
-namespace polyMpmTest{
+namespace polyMPO{
 
 using particle_structs::DPS;
 using particle_structs::MemberTypes;

@@ -4,7 +4,7 @@
 #include "pmt_MPMesh.hpp"
 #include "pmt_wachspressBasis.hpp"
 
-namespace polyMpmTest{
+namespace polyMPO{
 
 DoubleView assemblyV0(MPMesh& mpMesh){
     auto p_mesh = mpMesh.p_mesh;
@@ -174,5 +174,5 @@ Vec2dView wtVec2Assembly(MPMesh& mpMesh){
     return vField;
 } // wtVec2Assembly
 
-} //end namespace polyMpmTest
+} //end namespace polyMPO
 #endif

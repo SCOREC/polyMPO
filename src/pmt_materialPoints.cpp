@@ -1,6 +1,6 @@
 #include "pmt_materialPoints.hpp"
 
-namespace polyMpmTest {
+namespace polyMPO {
 
 PS* createDPS(int numElms, int numMPs, DoubleVec3dView positions, IntView mpsPerElm, IntView mp2elm) {
   PS::kkGidView elmGids("elementGlobalIds", numElms); //TODO - initialize this to [0..numElms)

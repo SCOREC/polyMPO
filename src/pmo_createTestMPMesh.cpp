@@ -1,7 +1,7 @@
 #include <Kokkos_Random.hpp>
 #include "pmo_createTestMPMesh.hpp"
 
-namespace polyMpmTest {
+namespace polyMPO {
 
 const int randSeed = 12345;
 

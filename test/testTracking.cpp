@@ -3,7 +3,7 @@
 #include "testUtils.hpp"
 #include <mpi.h>
 
-using namespace polyMpmTest;
+using namespace polyMPO;
 
 void copyTgtElm(IntView& returnView, MPMesh& mpMesh);
 
@@ -19,7 +19,7 @@ int main(int argc, char* argv[]) {
         auto mpMesh = initTestMPMesh(testMesh, testMPOption); 
         auto p_MPs = mpMesh.p_MPs;
         
-        Vec2dView dx = polyMpmTest::Vec2dView("positions",51);
+        Vec2dView dx = polyMPO::Vec2dView("positions",51);
         Kokkos::deep_copy(dx,Vec2d(0.01,0.01));
         
         mpMesh.CVTTrackingEdgeCenterBased(dx);

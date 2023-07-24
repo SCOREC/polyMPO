@@ -5,7 +5,7 @@
 #include "pmt_mesh.hpp"
 #include "pmt_materialPoints.hpp"
 
-namespace polyMpmTest{
+namespace polyMPO{
 
 #define maxMPsPerElm 8
 
@@ -27,7 +27,7 @@ class MPMesh{
     void T2LTracking(Vec2dView dx);
 };
 
-}//namespace polyMpmTest end
+}//namespace polyMPO end
 
 #endif
 

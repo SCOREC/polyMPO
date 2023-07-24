@@ -5,21 +5,21 @@
 #include <mpi.h>
 
 #define TEST_EPSILON 1e-6
-using namespace polyMpmTest;
+using namespace polyMPO;
 
 int main(int argc, char** argv) {
     MPI_Init(&argc, &argv);
     Kokkos::initialize(argc, argv);
 
     //test Vec2d
-    auto v = polyMpmTest::Vec2d();
+    auto v = polyMPO::Vec2d();
     v[0] = 1;
     v[1] = 2;
     PMT_ALWAYS_ASSERT(v[0] == 1);
     PMT_ALWAYS_ASSERT(v[1] == 2);
     //test Vector operator
-    auto v1 = polyMpmTest::Vec2d(1,2);
-    auto v2 = polyMpmTest::Vec2d(3,4);
+    auto v1 = polyMPO::Vec2d(1,2);
+    auto v2 = polyMPO::Vec2d(3,4);
     auto v3 = v1 + v2;
     PMT_ALWAYS_ASSERT(v3[0] == 4);
     PMT_ALWAYS_ASSERT(v3[1] == 6);
@@ -40,7 +40,7 @@ int main(int argc, char** argv) {
     PMT_ALWAYS_ASSERT(v9 - sqrt(5) < 1e-6);
 
     //test Vec3d
-    auto v10 = polyMpmTest::Vec3d();
+    auto v10 = polyMPO::Vec3d();
     v10[0] = 1;
     v10[1] = 2;
     v10[2] = 3;
@@ -48,8 +48,8 @@ int main(int argc, char** argv) {
     PMT_ALWAYS_ASSERT(v10[1] == 2);
     PMT_ALWAYS_ASSERT(v10[2] == 3);
     //test Vec3d operators
-    auto v11 = polyMpmTest::Vec3d(1,2,3);
-    auto v12 = polyMpmTest::Vec3d(4,5,6);
+    auto v11 = polyMPO::Vec3d(1,2,3);
+    auto v12 = polyMPO::Vec3d(4,5,6);
     auto v13 = v11 + v12;
     PMT_ALWAYS_ASSERT(v13[0] == 5);
     PMT_ALWAYS_ASSERT(v13[1] == 7);
@@ -103,10 +103,10 @@ int main(int argc, char** argv) {
         PMT_ALWAYS_ASSERT(p_mesh->getNumElements() == 10);
 
         //run non-physical assembly (mp -to- mesh vertex) kernel
-        polyMpmTest::assembly<MPF_Vel,MeshF_Vel>(mpMesh,false,false);//TODO: two flags not supported yet
+        polyMPO::assembly<MPF_Vel,MeshF_Vel>(mpMesh,false,false);//TODO: two flags not supported yet
         auto vtxField = p_mesh->getMeshField<MeshF_Vel>();
         //interpolateWachspress(mpMesh);
-        //auto vtxFieldBasis = polyMpmTest::assemblyNew<MP_Cur_Pos_XYZ>(mpMesh,true);
+        //auto vtxFieldBasis = polyMPO::assemblyNew<MP_Cur_Pos_XYZ>(mpMesh,true);
         //check the result
         auto vtxField_h = Kokkos::create_mirror_view(vtxField);
         //auto vtxFieldFromMesh_h_ = Kokkos::create_mirror_view(vtxFieldFromMesh);
@@ -125,7 +125,7 @@ int main(int argc, char** argv) {
         for(size_t i=0; i<vtxField_h.size(); i++) {
             int j = i/2;
             int k = i%2;
-            auto res = polyMpmTest::isEqual(vtxField_h(j,k),vtxFieldExpected[j][k], TEST_EPSILON);
+            auto res = polyMPO::isEqual(vtxField_h(j,k),vtxFieldExpected[j][k], TEST_EPSILON);
           if(!res) {
             fprintf(stderr, "expected != calc Value!\n\t[%d][%d]: %.6lf != %.6lf\n",
                                                 j,k,vtxFieldExpected[j][k],vtxField_h(j,k));

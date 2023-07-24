@@ -2,8 +2,8 @@
 #include "pmt_utils.hpp"
 #include <mpi.h>
 
-void checkPositions(polyMpmTest::MaterialPoints& MPs, std::string name) {
-  auto mpPositions = MPs.getData<polyMpmTest::MPF_Cur_Pos_XYZ>();
+void checkPositions(polyMPO::MaterialPoints& MPs, std::string name) {
+  auto mpPositions = MPs.getData<polyMPO::MPF_Cur_Pos_XYZ>();
   auto checkPositions = PS_LAMBDA(const int& elm, const int& mp, const int& mask) {
     if(mask) { //if material point is 'active'/'enabled'
       assert(mpPositions(mp,0) == elm*1.0);
@@ -44,7 +44,7 @@ int main(int argc, char** argv) {
     auto mpToElement_d = copyToDevice<int>(mpToElement, "mpToElement");
     auto mpPerElement_d = copyToDevice<int>(mpPerElement, "mpPerElement");
 
-    auto mpPositions = polyMpmTest::DoubleVec3dView("positions",numMPs);
+    auto mpPositions = polyMPO::DoubleVec3dView("positions",numMPs);
     Kokkos::parallel_for("intializeMPsPosition", numMPs, KOKKOS_LAMBDA(const int i){
         const auto x = mpToElement_d(i)*1.0;
         const auto y = mpToElement_d(i)*-1.0;
@@ -53,7 +53,7 @@ int main(int argc, char** argv) {
         mpPositions(i,2) = 0.0;
     });
 
-    auto MPs = polyMpmTest::MaterialPoints(numElms, numMPs, mpPositions, mpPerElement_d, mpToElement_d);
+    auto MPs = polyMPO::MaterialPoints(numElms, numMPs, mpPositions, mpPerElement_d, mpToElement_d);
     checkPositions(MPs, "afterConstruction");
   }
   Kokkos::finalize();

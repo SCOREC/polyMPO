@@ -3,7 +3,7 @@
 #include "testUtils.hpp"
 #include <mpi.h>
 
-using namespace polyMpmTest;
+using namespace polyMPO;
 
 int main(int argc, char** argv) {
   MPI_Init(&argc, &argv);
@@ -13,7 +13,7 @@ int main(int argc, char** argv) {
   const int scaleFactor = 1;
   const int testMPOption = 1;
   {
-    polyMpmTest::Mesh* testMesh = initTestMesh(testMeshOption, scaleFactor); 
+    polyMPO::Mesh* testMesh = initTestMesh(testMeshOption, scaleFactor); 
     auto mpMesh = initTestMPMesh(testMesh, testMPOption); //creates test MPs
     auto p_MPs = mpMesh.p_MPs;
 

@@ -18,34 +18,34 @@ set(SOURCES
   pmo_createTestMPMesh.cpp
 )
 
-add_library(polyMpmTest-core ${SOURCES})
-set_property(TARGET polyMpmTest-core PROPERTY CXX_STANDARD "17")
-set_property(TARGET polyMpmTest-core PROPERTY CXX_STANDARD_REQUIRED ON)
-set_property(TARGET polyMpmTest-core PROPERTY CXX_EXTENSIONS OFF)
+add_library(polyMPO-core ${SOURCES})
+set_property(TARGET polyMPO-core PROPERTY CXX_STANDARD "17")
+set_property(TARGET polyMPO-core PROPERTY CXX_STANDARD_REQUIRED ON)
+set_property(TARGET polyMPO-core PROPERTY CXX_EXTENSIONS OFF)
 
 find_library(MATH_LIBRARY m)
 if(MATH_LIBRARY)
-  target_link_libraries(polyMpmTest-core PUBLIC ${MATH_LIBRARY})
+  target_link_libraries(polyMPO-core PUBLIC ${MATH_LIBRARY})
 endif()
 
-target_include_directories(polyMpmTest-core
+target_include_directories(polyMPO-core
   PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
   $<INSTALL_INTERFACE:include>
   PUBLIC
   $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/test>
   $<INSTALL_INTERFACE:include>)
-target_link_libraries(polyMpmTest-core PUBLIC pumipic::pumipic)
+target_link_libraries(polyMPO-core PUBLIC pumipic::pumipic)
 if(${NetCDF_FOUND})
-  target_compile_definitions(polyMpmTest-core PRIVATE POLYMPO_HAS_NETCDF)
-  target_link_libraries(polyMpmTest-core PRIVATE PkgConfig::NetCDF)
+  target_compile_definitions(polyMPO-core PRIVATE POLYMPO_HAS_NETCDF)
+  target_link_libraries(polyMPO-core PRIVATE PkgConfig::NetCDF)
 endif()
 
-polyMpmTest_export_lib(polyMpmTest-core "${HEADERS}")
+polyMPO_export_lib(polyMPO-core "${HEADERS}")
 
-add_library(polyMpmTest INTERFACE)
-target_link_libraries(polyMpmTest INTERFACE ${polyMpmTest_EXPORTED_TARGETS})
-export_target(polyMpmTest)
+add_library(polyMPO INTERFACE)
+target_link_libraries(polyMPO INTERFACE ${polyMPO_EXPORTED_TARGETS})
+export_target(polyMPO)
 
 ### Fortran inteface ###
 add_library(polympo_fortran pmo_fortran.f90)
@@ -59,5 +59,5 @@ target_include_directories(polympo_fortran INTERFACE
   $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>
   $<INSTALL_INTERFACE:include>)
 set(HEADERS)
-polyMpmTest_export_lib(polympo_fortran "${HEADERS}")
+polyMPO_export_lib(polympo_fortran "${HEADERS}")
 

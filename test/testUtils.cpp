@@ -1,7 +1,7 @@
 #include <Kokkos_Random.hpp>
 #include "testUtils.hpp"
 
-using namespace polyMpmTest;
+using namespace polyMPO;
 
 void interpolateWachspress(MPMesh& mpMesh){
     auto p_mesh = mpMesh.p_mesh;

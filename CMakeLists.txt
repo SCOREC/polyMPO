@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.19)
-project(polyMpmTest VERSION 0.0.1 LANGUAGES CXX Fortran)
+project(polyMPO VERSION 0.0.1 LANGUAGES CXX Fortran)
 
 include(CTest)
 enable_testing()
@@ -15,10 +15,10 @@ function(export_target tgt_name)
       ${${PROJECT_NAME}_EXPORTED_TARGETS} ${tgt_name} PARENT_SCOPE)
 endfunction(export_target)
 
-macro(polyMpmTest_export_lib target headers)
+macro(polyMPO_export_lib target headers)
   export_target(${target})
   install(FILES ${headers} DESTINATION include)
-endmacro(polyMpmTest_export_lib)
+endmacro(polyMPO_export_lib)
 
 #pumipic dependency
 set(CMAKE_CXX_EXTENSIONS Off) #kokkos does not allow extensions

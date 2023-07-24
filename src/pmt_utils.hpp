@@ -19,7 +19,7 @@ void PMT_Assert_Fail(const char* msg) __attribute__ ((noreturn));
     }                                             \
   } while (0)
 
-namespace polyMpmTest{
+namespace polyMPO{
 
 #define vec2d_nEntries 2
 typedef double vec2d_t[vec2d_nEntries];
@@ -170,7 +170,7 @@ void initArray(double* arr, int n, double fill){
 //this is a lazy comparison and shouldn't be relied on beyond simple testing
 bool isEqual(double a, double b, double tol=1e-9);
 
-}//namespace polyMpmTest end
+}//namespace polyMPO end
 
 #endif
 

@@ -5,7 +5,7 @@
 #include "pmo_createTestMPMesh.hpp"
 #include "testUtils.hpp"
 
-using namespace polyMpmTest;
+using namespace polyMPO;
 
 int main(int argc, char* argv[] ) {
     PMT_ALWAYS_ASSERT(argc == 2);
@@ -22,7 +22,7 @@ int main(int argc, char* argv[] ) {
         printf("Total MPs:%d\n",mpMesh.p_MPs->getCount());
         
         for(int i=0; i<5; i++){
-            //polyMpmTest::assemblyV0(mpMesh);
+            //polyMPO::assemblyV0(mpMesh);
             interpolateWachspress(mpMesh);
         }
     } 

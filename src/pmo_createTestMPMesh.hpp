@@ -1,7 +1,7 @@
 #include "pmt_MPMesh.hpp"
 #include "pmt_wachspressBasis.hpp"
 
-namespace polyMpmTest {
+namespace polyMPO {
 
 /*  \breif Init a simple test square mesh
  * 
@@ -13,7 +13,7 @@ namespace polyMpmTest {
  *
  *  \return return the hard-coded mesh. 
  */
-polyMpmTest::Mesh* initTestMesh(int testMeshOption, int scaleFactor);
+polyMPO::Mesh* initTestMesh(int testMeshOption, int scaleFactor);
 
 /*
  * \brief Initialize test particles to a given mesh and return the MPMesh object
@@ -28,9 +28,9 @@ polyMpmTest::Mesh* initTestMesh(int testMeshOption, int scaleFactor);
  *
  * \return the MPMesh object with the meshObj and test MPs
  */
-polyMpmTest::MPMesh initTestMPMesh(polyMpmTest::Mesh* meshObj,
+polyMPO::MPMesh initTestMPMesh(polyMPO::Mesh* meshObj,
                                    int setMPOption);
-polyMpmTest::MaterialPoints* initTestMPs(polyMpmTest::Mesh* mesh,
+polyMPO::MaterialPoints* initTestMPs(polyMPO::Mesh* mesh,
                                          int testMPsOption);
 
 }

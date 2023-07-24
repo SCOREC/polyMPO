@@ -5,7 +5,7 @@
 
 #define ERRexit(e){ printf("Error: %s\n", nc_strerror(e)); exit(2);}
 
-namespace polyMpmTest{
+namespace polyMPO{
 
 Mesh Mesh::readMPASMesh(std::string filename){
   int ncid;
@@ -161,7 +161,7 @@ Mesh Mesh::readMPASMesh(int ncid){
 }
 #else
 
-namespace polyMpmTest{
+namespace polyMPO{
   Mesh Mesh::readMPASMesh(std::string) {
     return readMPASMesh(0);
   }
@@ -172,4 +172,4 @@ namespace polyMpmTest{
   }
 #endif
 
-} // namespace polyMpmTest
+} // namespace polyMPO

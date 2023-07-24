@@ -2,7 +2,7 @@
 #include "pmt_utils.hpp"
 #include "pmt_MPMesh.hpp"
 
-namespace polyMpmTest{
+namespace polyMPO{
 
 void MPMesh::CVTTrackingEdgeCenterBased(Vec2dView dx){
     int numVtxs = p_mesh->getNumVertices();

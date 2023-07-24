@@ -9,4 +9,4 @@
  *
  * \param any resonable mpm to test
  */
-void interpolateWachspress(polyMpmTest::MPMesh& mpMesh);
+void interpolateWachspress(polyMPO::MPMesh& mpMesh);

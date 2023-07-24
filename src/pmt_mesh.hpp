@@ -1,11 +1,11 @@
-#ifndef POLYMPMTEST_MESH_H
-#define POLYMPMTEST_MESH_H
+#ifndef POLYMPO_MESH_H
+#define POLYMPO_MESH_H
 
 #include "pmt_utils.hpp"
 
 //namespace polyMPO
 //file names in pmpo_*
-namespace polyMpmTest{
+namespace polyMPO{
 
 #define maxVtxsPerElm 8
 #define maxElmsPerVtx 5

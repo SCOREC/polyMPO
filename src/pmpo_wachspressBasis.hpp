@@ -1,8 +1,8 @@
-#ifndef POLYMPMTEST_WACHSPRESS_BASIS_H
-#define POLYMPMTEST_WACHSPRESS_BASIS_H
+#ifndef POLYMPO_WACHSPRESS_BASIS_H
+#define POLYMPO_WACHSPRESS_BASIS_H
 
-#include "pmt_utils.hpp"
-#include "pmt_MPMesh.hpp"
+#include "pmpo_utils.hpp"
+#include "pmpo_MPMesh.hpp"
 
 namespace polyMPO{
 

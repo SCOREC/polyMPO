@@ -1,4 +1,4 @@
-#include "pmt_mesh.hpp"
+#include "pmpo_mesh.hpp"
 
 #ifdef POLYMPI_HAS_NETCDF
 #include <netcdf.h>

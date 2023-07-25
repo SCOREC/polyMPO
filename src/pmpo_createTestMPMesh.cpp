@@ -1,5 +1,5 @@
 #include <Kokkos_Random.hpp>
-#include "pmo_createTestMPMesh.hpp"
+#include "pmpo_createTestMPMesh.hpp"
 
 namespace polyMPO {
 

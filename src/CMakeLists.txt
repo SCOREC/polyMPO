@@ -1,21 +1,21 @@
 set(HEADERS
-  pmt_mesh.hpp
-  pmt_materialPoints.hpp
-  pmt_wachspressBasis.hpp
-  pmt_MPMesh.hpp
-  pmt_utils.hpp
-  pmt_assembly.hpp
-  pmo_c.h
-  pmo_createTestMPMesh.hpp
+  pmpo_mesh.hpp
+  pmpo_materialPoints.hpp
+  pmpo_wachspressBasis.hpp
+  pmpo_MPMesh.hpp
+  pmpo_utils.hpp
+  pmpo_assembly.hpp
+  pmpo_c.h
+  pmpo_createTestMPMesh.hpp
 )
 
 set(SOURCES
-  pmt_materialPoints.cpp
-  pmt_mesh.cpp
-  pmt_utils.cpp
-  pmt_MPMesh.cpp
-  pmo_c.cpp
-  pmo_createTestMPMesh.cpp
+  pmpo_materialPoints.cpp
+  pmpo_mesh.cpp
+  pmpo_utils.cpp
+  pmpo_MPMesh.cpp
+  pmpo_c.cpp
+  pmpo_createTestMPMesh.cpp
 )
 
 add_library(polyMPO-core ${SOURCES})
@@ -48,7 +48,7 @@ target_link_libraries(polyMPO INTERFACE ${polyMPO_EXPORTED_TARGETS})
 export_target(polyMPO)
 
 ### Fortran inteface ###
-add_library(polympo_fortran pmo_fortran.f90)
+add_library(polympo_fortran pmpo_fortran.f90)
 target_link_libraries(polympo_fortran PUBLIC MPI::MPI_Fortran)
 if(${NetCDF_Fortran_FOUND})
   target_link_libraries(polympo_fortran PRIVATE PkgConfig::NetCDF_Fortran)

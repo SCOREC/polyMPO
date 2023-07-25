@@ -1,8 +1,8 @@
-#ifndef POLYMPMTEST_ASSEMBLY_H
-#define POLYMPMTEST_ASSEMBLY_H
+#ifndef POLYMPO_ASSEMBLY_H
+#define POLYMPO_ASSEMBLY_H
 
-#include "pmt_MPMesh.hpp"
-#include "pmt_wachspressBasis.hpp"
+#include "pmpo_MPMesh.hpp"
+#include "pmpo_wachspressBasis.hpp"
 
 namespace polyMPO{
 

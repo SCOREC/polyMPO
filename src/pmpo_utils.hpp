@@ -1,5 +1,5 @@
-#ifndef POLYMPMTEST_UTILS_H
-#define POLYMPMTEST_UTILS_H
+#ifndef POLYMPO_UTILS_H
+#define POLYMPO_UTILS_H
 
 #include <stdlib.h>
 #include <iostream>

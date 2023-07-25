@@ -1,8 +1,8 @@
-#ifndef POLYMPMTEST_MATERIALPOINTS_H
-#define POLYMPMTEST_MATERIALPOINTS_H
+#ifndef POLYMPO_MATERIALPOINTS_H
+#define POLYMPO_MATERIALPOINTS_H
 
-#include "pmt_utils.hpp"
-#include "pmt_mesh.hpp"
+#include "pmpo_utils.hpp"
+#include "pmpo_mesh.hpp"
 
 #include <pumipic_kktypes.hpp>
 #include <particle_structs.hpp>

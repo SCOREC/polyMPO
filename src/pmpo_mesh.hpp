@@ -1,10 +1,8 @@
 #ifndef POLYMPO_MESH_H
 #define POLYMPO_MESH_H
 
-#include "pmt_utils.hpp"
+#include "pmpo_utils.hpp"
 
-//namespace polyMPO
-//file names in pmpo_*
 namespace polyMPO{
 
 #define maxVtxsPerElm 8

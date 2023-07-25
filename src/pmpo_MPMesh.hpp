@@ -1,9 +1,9 @@
-#ifndef POLYMPMTEST_MPM_H
-#define POLYMPMTEST_MPM_H
+#ifndef POLYMPO_MPM_H
+#define POLYMPO_MPM_H
 
-#include "pmt_utils.hpp"
-#include "pmt_mesh.hpp"
-#include "pmt_materialPoints.hpp"
+#include "pmpo_utils.hpp"
+#include "pmpo_mesh.hpp"
+#include "pmpo_materialPoints.hpp"
 
 namespace polyMPO{
 

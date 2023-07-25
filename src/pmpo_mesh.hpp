@@ -26,7 +26,7 @@ class Mesh {
   private:
     int numVtxs_;
     int numElms_;
-    DoubleVec3dView vtxCoords_; //TODO
+    DoubleVec3dView vtxCoords_;
     //IntView nEdgesPerElm_;
     IntVtx2ElmView elm2VtxConn_;
     IntElm2VtxView vtx2ElmConn_;//TODO remove

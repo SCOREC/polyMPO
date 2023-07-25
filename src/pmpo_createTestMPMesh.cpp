@@ -19,8 +19,8 @@ Mesh* createMesh(const double (&v_array)[nVertices_size][vec_dimension],
     for(int f=0; f<scaleFactor; f++){
         for(int i=0; i<nVertices_size; i++){
             h_vtxCoords(i+f*nVertices_size,0) = v_array[i][0]; 
-            h_vtxCoords(i+f*nVertices_size,1) = v_array[i][1]; 
-            h_vtxCoords(i+f*nVertices_size,2) = 0.0; 
+            h_vtxCoords(i+f*nVertices_size,1) = v_array[i][1];
+            h_vtxCoords(i+f*nVertices_size,2) = v_array[i][2]; 
             h_vtx2ElmConn(i+f*nVertices_size,0) = vtx2ElmConn_array[i][0];
             for(int j=1; j<=vtx2ElmConn_array[i][0]; j++){
                 h_vtx2ElmConn(i+f*nVertices_size,j) = vtx2ElmConn_array[i][j]+f*nCells_size; 
@@ -68,10 +68,10 @@ Mesh* initTestMesh(const int testMeshOption, const int scaleFactor){
         const int nVertices_size = 19;
         const int nCells = nCells_size*scaleFactor;
         const int nVertices = nVertices_size*scaleFactor;
-        const double v_array[19][2] = {{0.00,0.00},{0.47,0.00},{1.00,0.00},{0.60,0.25},{0.60,0.40}, //5
-                                       {0.00,0.50},{0.31,0.60},{0.40,0.60},{0.45,0.55},{0.70,0.49}, //10
-                                       {0.80,0.45},{0.90,0.47},{1.00,0.55},{0.60,0.60},{0.37,0.80}, //15
-                                       {0.00,1.00},{0.37,1.00},{0.48,1.00},{1.00,1.00}};            //19
+        const double v_array[19][3] = {{0.00,0.00,1.1},{0.47,0.00,1.1},{1.00,0.00,1.1},{0.60,0.25,1.1},{0.60,0.40,1.1}, //5
+                                       {0.00,0.50,1.1},{0.31,0.60,1.1},{0.40,0.60,1.1},{0.45,0.55,1.1},{0.70,0.49,1.1}, //10
+                                       {0.80,0.45,1.1},{0.90,0.47,1.1},{1.00,0.55,1.1},{0.60,0.60,1.1},{0.37,0.80,1.1}, //15
+                                       {0.00,1.00,1.1},{0.37,1.00,1.1},{0.48,1.00,1.1},{1.00,1.00,1.1}};            //19
         const int elm2VtxConn_array[10][maxVtxsPerElm] = {{1,2,4,5,9,8,7,6},       {2,3,4,-1,-1,-1,-1,-1},
                                               {4,3,11,10,5,-1,-1,-1},  {3,12,11,-1,-1,-1,-1,-1},
                                               {3,13,12,-1,-1,-1,-1,-1},{5,10,14,9,-1,-1,-1,-1},
@@ -91,7 +91,7 @@ Mesh* initTestMesh(const int testMeshOption, const int scaleFactor){
                                               {-2,9,3,-1,-1,-1,-1,-1},{2,9,6,0,-1,-1,-1,-1},
                                               {5,9,-2,8,7,0,-1,-1},   {0,6,8,-1,-1,-1,-1,-1},
                                               {0,7,6,-2,-2,-1,-1,-1}, {5,2,3,4,-2,-2,6,-1}}; 
-        return createMesh<nCells_size, nVertices_size, vec2d_nEntries>
+        return createMesh<nCells_size, nVertices_size, vec3d_nEntries>
                         (v_array, elm2VtxConn_array,
                          vtxCoords_array, vtx2ElmConn_array,
                          elm2ElmConn_array,
@@ -152,14 +152,15 @@ MaterialPoints* initTestMPs(Mesh* mesh, int testMPOption){
     Kokkos::parallel_for("intializeMPsPosition", numMPs, KOKKOS_LAMBDA(const int iMP){
         int ielm = MPToElement(iMP);
         int numVtx = elm2VtxConn(ielm,0);
-        double sum_x = 0.0, sum_y = 0.0;
+        double sum_x = 0.0, sum_y = 0.0, sum_z = 0.0;
         for(int i=1; i<= numVtx; i++){
             sum_x += vtxCoords(elm2VtxConn(ielm,i)-1,0);
             sum_y += vtxCoords(elm2VtxConn(ielm,i)-1,1);
+            sum_z += vtxCoords(elm2VtxConn(ielm,i)-1,2);
         }
         positions(iMP,0) = sum_x/numVtx;
         positions(iMP,1) = sum_y/numVtx;
-        positions(iMP,2) = 0.0;
+        positions(iMP,2) = sum_z/numVtx;
     });
     
     return new MaterialPoints(numElms,numMPs,positions,numMPsPerElement,MPToElement);

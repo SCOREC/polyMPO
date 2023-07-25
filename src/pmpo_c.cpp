@@ -187,7 +187,7 @@ void polympo_setMeshVtxCoords(MPMesh_ptr p_mpmesh, int size, double* xArray, dou
     //we only have Vec2d now,so zArray is not used
     h_coordsArray(i,0) = xArrayHost(i);
     h_coordsArray(i,1) = yArrayHost(i);
-    h_coordsArray(i,2) = 0.0;
+    h_coordsArray(i,2) = zArrayHost(i);
   }
   Kokkos::deep_copy(coordsArray, h_coordsArray);
   p_mesh->setVtxCoords(coordsArray);

@@ -11,7 +11,7 @@ PS* createDPS(int numElms, int numMPs, DoubleVec3dView positions, IntView mpsPer
   Kokkos::parallel_for("setMPinfo", numMPs, KOKKOS_LAMBDA(int i) {
     mpPositions(i,0) = positions(i,0);
     mpPositions(i,1) = positions(i,1);
-    mpPositions(i,2) = 0.0;//TODO:fix this based on positions array which should be vec3d_t
+    mpPositions(i,2) = positions(i,2);
     mpCurElmPos(i) = mp2elm(i);
     mpStatus(i) = 1; 
   });

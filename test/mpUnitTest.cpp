@@ -8,6 +8,7 @@ void checkPositions(polyMPO::MaterialPoints& MPs, std::string name) {
     if(mask) { //if material point is 'active'/'enabled'
       assert(mpPositions(mp,0) == elm*1.0);
       assert(mpPositions(mp,1) == elm*-1.0);
+      assert(mpPositions(mp,2) == elm*1.1);
     }
   };
   MPs.parallel_for(checkPositions, "checkPositions_"+name);
@@ -48,9 +49,10 @@ int main(int argc, char** argv) {
     Kokkos::parallel_for("intializeMPsPosition", numMPs, KOKKOS_LAMBDA(const int i){
         const auto x = mpToElement_d(i)*1.0;
         const auto y = mpToElement_d(i)*-1.0;
+        const auto z = mpToElement_d(i)*1.1;
         mpPositions(i,0) = x;
         mpPositions(i,1) = y;
-        mpPositions(i,2) = 0.0;
+        mpPositions(i,2) = z;
     });
 
     auto MPs = polyMPO::MaterialPoints(numElms, numMPs, mpPositions, mpPerElement_d, mpToElement_d);

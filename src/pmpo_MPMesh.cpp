@@ -23,12 +23,9 @@ void MPMesh::CVTTrackingEdgeCenterBased(Vec2dView dx){
         for(int i=0; i< numVtx; i++)
             v[i] = elm2VtxConn(elm,i+1)-1;
         for(int i=0; i< numVtx; i++){
-            //auto v_i_array = vtxCoords(v[i]);
-            //auto v_ip1_array = vtxCoords(v[(i+1)%numVtx]);
-            //TODO: double check if vtxCoords(v[i],0),vtxCoords(v[i],1)) is the best way to access the memory
             int idx_ip1 = (i+1)%numVtx;
-            Vec2d v_i = Vec2d(vtxCoords(v[i],0),vtxCoords(v[i],1));
-            Vec2d v_ip1 = Vec2d(vtxCoords(v[idx_ip1],0),vtxCoords(v[idx_ip1],1));
+            Vec2d v_i(vtxCoords(v[i],0),vtxCoords(v[i],1));
+            Vec2d v_ip1(vtxCoords(v[idx_ip1],0),vtxCoords(v[idx_ip1],1));
             edgeCenters(elm,i) = (v_ip1 + v_i)*0.5;
         }
     });

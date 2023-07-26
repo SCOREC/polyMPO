@@ -31,7 +31,7 @@ void MPMesh::CVTTrackingEdgeCenterBased(Vec2dView dx){
     });
    
     auto CVTEdgeTracking = PS_LAMBDA(const int& elm, const int& mp, const int& mask){
-        Vec2d MP = Vec2d(mpPositions(mp,0),mpPositions(mp,1));//XXX:the input is XYZ, but we only support 2d vector
+        Vec2d MP(mpPositions(mp,0),mpPositions(mp,1));//XXX:the input is XYZ, but we only support 2d vector
         if(mask){
             Vec2d MPnew = MP + dx(mp);
             int iElm = elm;
@@ -98,7 +98,7 @@ void MPMesh::CVTTrackingElmCenterBased(Vec2dView dx){
     p_MPs->parallel_for(calcCenter,"calcElmCenter");
 
     auto CVTElmCalc = PS_LAMBDA(const int& elm, const int& mp, const int&mask){
-        Vec2d MP = Vec2d(mpPositions(mp,0),mpPositions(mp,1));//XXX:the input is XYZ, but we only support 2d vector
+        Vec2d MP(mpPositions(mp,0),mpPositions(mp,1));//XXX:the input is XYZ, but we only support 2d vector
         if(mask){
             int iElm = elm;
             Vec2d MPnew = MP + dx(mp);
@@ -146,7 +146,7 @@ void MPMesh::T2LTracking(Vec2dView dx){
     auto mpStatus = p_MPs->getData<MPF_Status>();
    
     auto T2LCalc = PS_LAMBDA(const int& elm, const int& mp, const int&mask){
-        Vec2d MP = Vec2d(mpPositions(mp,0),mpPositions(mp,1));//XXX:the input is XYZ, but we only support 2d vector
+        Vec2d MP(mpPositions(mp,0),mpPositions(mp,1));//XXX:the input is XYZ, but we only support 2d vector
         if(mask){
             int iElm = elm;
             Vec2d MPnew = MP + dx(mp);    
@@ -163,8 +163,8 @@ void MPMesh::T2LTracking(Vec2dView dx){
                 double pdx[maxVtxsPerElm];                    
                 for(int i=0; i< numVtx; i++){
                     int idx_ip1 = (i+1)%numVtx;
-                    Vec2d v_i = Vec2d(vtxCoords(v[i],0),vtxCoords(v[i],1));
-                    Vec2d v_ip1 = Vec2d(vtxCoords(v[idx_ip1],0),vtxCoords(v[idx_ip1],1));
+                    Vec2d v_i(vtxCoords(v[i],0),vtxCoords(v[i],1));
+                    Vec2d v_ip1(vtxCoords(v[idx_ip1],0),vtxCoords(v[idx_ip1],1));
                     e[i] = v_ip1 - v_i;
                     pdx[i] = (v_i - MP).cross(dx(mp));
                 }

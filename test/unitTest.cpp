@@ -1,4 +1,5 @@
 #include "pmpo_MPMesh.hpp"
+#include "pmpo_mesh.hpp"
 #include "pmpo_assembly.hpp"
 #include "pmpo_createTestMPMesh.hpp"
 #include "testUtils.hpp"
@@ -75,6 +76,14 @@ int main(int argc, char** argv) {
     auto v19 = v11.magnitude();
     PMT_ALWAYS_ASSERT(v19 - sqrt(14) < 1e-6); 
 
+    //test calc sphereTriangleArea
+    auto a = polyMPO::Vec3d(0,0,1);
+    auto b = polyMPO::Vec3d(0,1,0);
+    auto c = polyMPO::Vec3d(1,0,0);
+    double radius = 1.0;
+    auto area = polyMPO::sphereTriangleArea(a,b,c,radius);
+    printf("sphereTriangle area: %f\n",area);
+    
     //this test is only designed to work with the following option values:
     const int testMeshOption = 1;
     const int scaleFactor = 1;

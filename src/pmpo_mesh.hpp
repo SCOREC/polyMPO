@@ -70,7 +70,6 @@ class Mesh {
     void setElm2VtxConn(IntVtx2ElmView elm2VtxConn) { elm2VtxConn_ = elm2VtxConn; }
     void setElm2ElmConn(IntElm2ElmView elm2ElmConn) { elm2ElmConn_ = elm2ElmConn; }
     
-    double sphereTriangleArea(Vec3d &a, Vec3d &b, Vec3d &c, double radius);
 };
 
 template<MeshFieldIndex index>
@@ -90,6 +89,7 @@ auto Mesh::getMeshField(){
     exit(1);
 }
 
+double sphereTriangleArea(Vec3d &a, Vec3d &b, Vec3d &c, double radius);
 
 }
 

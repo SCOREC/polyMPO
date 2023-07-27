@@ -9,6 +9,8 @@
 #define TEST_PI 3.14159265359
 using namespace polyMPO;
 
+void matrixMultiply(double matrix[3][3], Vec3d &v, Vec3d &result);
+
 int main(int argc, char** argv) {
     MPI_Init(&argc, &argv);
     Kokkos::initialize(argc, argv);
@@ -79,13 +81,31 @@ int main(int argc, char** argv) {
 
     //test calc sphereTriangleArea
     double radius = 1.03;
-    auto a = polyMPO::Vec3d(0,0,radius);
-    auto b = polyMPO::Vec3d(0,radius,0);
-    auto c = polyMPO::Vec3d(radius,0,0);
-    auto area = polyMPO::sphereTriangleArea(a,b,c,radius);
-    PMT_ALWAYS_ASSERT((4*TEST_PI*radius*radius)/8 + area < TEST_EPSILON); 
-    // 2 rotations  z 30 degree
-    //              y 45 degree
+    auto a1 = polyMPO::Vec3d(0,0,radius);
+    auto b1 = polyMPO::Vec3d(0,radius,0);
+    auto c1 = polyMPO::Vec3d(radius,0,0);
+    auto area1 = polyMPO::sphereTriangleArea(a1,b1,c1,radius);
+    PMT_ALWAYS_ASSERT((4*TEST_PI*radius*radius)/8 + area1 < TEST_EPSILON); 
+    //rotate Z by 30 degrees
+    double rotateZ[3][3] = {{std::sqrt(3)/2, -1.0/2,         0.0}, 
+                            {1.0/2,          std::sqrt(3)/2, 0.0},
+                            {0.0,            0.0,            1.0}};
+    //rotate Y by 45 degrees
+    double rotateY[3][3] = {{std::sqrt(2)/2,  0.0, std::sqrt(2)/2},   
+                            {0.0,             1.0, 0.0},
+                            {-std::sqrt(2)/2, 0.0, std::sqrt(2)/2}};
+    Vec3d a2, b2, c2;
+    matrixMultiply(rotateZ, a1, a2);
+    matrixMultiply(rotateZ, b1, b2);
+    matrixMultiply(rotateZ, c1, c2);
+    auto area2 = polyMPO::sphereTriangleArea(a2,b2,c2,radius);
+    PMT_ALWAYS_ASSERT((4*TEST_PI*radius*radius)/8 + area2 < TEST_EPSILON); 
+    Vec3d a3, b3, c3;
+    matrixMultiply(rotateY, a2, a3);
+    matrixMultiply(rotateY, b2, b3);
+    matrixMultiply(rotateY, c2, c3);
+    auto area3 = polyMPO::sphereTriangleArea(a3,b3,c3,radius);
+    PMT_ALWAYS_ASSERT((4*TEST_PI*radius*radius)/8 + area3 < TEST_EPSILON); 
     
     //this test is only designed to work with the following option values:
     const int testMeshOption = 1;
@@ -150,4 +170,13 @@ int main(int argc, char** argv) {
     Kokkos::finalize();
 
     return 0;
+}
+
+void matrixMultiply(double matrix[3][3], Vec3d &v, Vec3d &result) {
+    for (int i = 0; i < 3; i++) {
+        result[i] = 0.0;
+        for (int j = 0; j < 3; j++) {
+            result[i] += matrix[i][j] * v[j];
+        }
+    }
 }

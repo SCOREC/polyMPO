@@ -193,7 +193,6 @@ double sphereTriangleArea(Vec3d &a, Vec3d &b, Vec3d &c, double radius){
     tanqe = tanqe > 0.0 ? tanqe : 0.0;
 
     double triangleArea = 4.0 * radius * radius * std::atan(tanqe);
-    printf("triangleArea before sign detection: %f\n",triangleArea);
 
     ablen = b-a;
     aclen = c-a;
@@ -203,7 +202,6 @@ double sphereTriangleArea(Vec3d &a, Vec3d &b, Vec3d &c, double radius){
     dlen[2] =  (ablen[0] * aclen[1]) - (ablen[1] * aclen[0]);
 
     if ((dlen[0] * a[0] + dlen[1] * a[1] + dlen[2] * a[2]) < 0.0) {
-        printf("triangleArea triggered\n");
         triangleArea = -triangleArea;
     }
 

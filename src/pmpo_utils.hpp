@@ -190,7 +190,7 @@ double sphereTriangleArea(Vec3d &a, Vec3d &b, Vec3d &c, double radius){
                       std::tan(0.5 * (semiperim - ab)) *
                       std::tan(0.5 * (semiperim - bc)) * 
                       std::tan(0.5 * (semiperim - ca)));
-    tanqe = tanqe < 0.0 ? tanqe : 0.0;
+    tanqe = tanqe > 0.0 ? tanqe : 0.0;
 
     double triangleArea = 4.0 * radius * radius * std::atan(tanqe);
     printf("triangleArea before sign detection: %f\n",triangleArea);

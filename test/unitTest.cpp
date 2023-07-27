@@ -6,6 +6,7 @@
 #include <mpi.h>
 
 #define TEST_EPSILON 1e-6
+#define TEST_PI 3.14159265359
 using namespace polyMPO;
 
 int main(int argc, char** argv) {
@@ -38,7 +39,7 @@ int main(int argc, char** argv) {
     auto v8 = v1.cross(v2);
     PMT_ALWAYS_ASSERT(v8 == -2);
     auto v9 = v1.magnitude();
-    PMT_ALWAYS_ASSERT(v9 - sqrt(5) < 1e-6);
+    PMT_ALWAYS_ASSERT(v9 - sqrt(5) < TEST_EPSILON);
 
     //test Vec3d
     auto v10 = polyMPO::Vec3d();
@@ -74,7 +75,7 @@ int main(int argc, char** argv) {
     PMT_ALWAYS_ASSERT(v18[1] == 6);
     PMT_ALWAYS_ASSERT(v18[2] == -3);
     auto v19 = v11.magnitude();
-    PMT_ALWAYS_ASSERT(v19 - sqrt(14) < 1e-6); 
+    PMT_ALWAYS_ASSERT(v19 - sqrt(14) < TEST_EPSILON); 
 
     //test calc sphereTriangleArea
     double radius = 1.03;
@@ -82,10 +83,9 @@ int main(int argc, char** argv) {
     auto b = polyMPO::Vec3d(0,radius,0);
     auto c = polyMPO::Vec3d(radius,0,0);
     auto area = polyMPO::sphereTriangleArea(a,b,c,radius);
-    //PMT_ALWAYS_ASSERT();
+    PMT_ALWAYS_ASSERT((4*TEST_PI*radius*radius)/8 + area < TEST_EPSILON); 
     // 2 rotations  z 30 degree
     //              y 45 degree
-    printf("sphereTriangle area: %f\n",area);
     
     //this test is only designed to work with the following option values:
     const int testMeshOption = 1;

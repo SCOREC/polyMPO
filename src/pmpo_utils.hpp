@@ -176,7 +176,7 @@ double arcLength(Vec3d &a, Vec3d &b){
 //double check the inline function
 //check for more effcient calculation
 KOKKOS_INLINE_FUNCTION
-double sphereTriangleArea(Vec3d &a, Vec3d &b, Vec3d &c, double radius){
+double sphericalTriangleArea(Vec3d &a, Vec3d &b, Vec3d &c, double radius){
     double ab, bc, ca, semiperim, tanqe;
     Vec3d ablen, aclen, dlen;
     //PMT_ALWAYS_ASSERT();

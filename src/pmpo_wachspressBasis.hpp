@@ -27,6 +27,15 @@ void getBasisAndGradByAreaGblForm(Vec2d MP,
                                   Vec2d* vtxCoords,
                                   double* basis,
                                   Vec2d* gradBasis){
+    Vec2d e[maxVtxsPerElm + 1];
+    Vec2d p[maxVtxsPerElm];
+    double w[maxVtxsPerElm];
+    for (int i = 0; i < numVtxs; i++){
+        e[i + 1] = vtxCoords[i + 1] - vtxCoords[i];
+        p[i] = vtxCoords[i] - MP;
+    }
+    e[0] = e[numVtxs];
+
     double c[maxVtxsPerElm];
     double a[maxVtxsPerElm];
     for (int i = 0; i < numVtxs; i++){
@@ -131,8 +140,8 @@ void getBasisByAreaGblForm(Vec3d MP, int numVtxs, Vec3d* vtxCoords, double radiu
     double c[maxVtxsPerElm];
     double a[maxVtxsPerElm];
     for (int i = 0; i < numVtxs; i++){
-        c[i] = sphereTriangleArea()
-        a[i] = sphereTriangleArea()
+        //c[i] = sphericalTriangleArea()
+        //a[i] = sphericalTriangleArea()
     }
     double wSum = 0.0;
 

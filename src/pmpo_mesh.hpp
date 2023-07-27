@@ -89,8 +89,6 @@ auto Mesh::getMeshField(){
     exit(1);
 }
 
-double sphereTriangleArea(Vec3d &a, Vec3d &b, Vec3d &c, double radius);
-
 }
 
 #endif

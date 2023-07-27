@@ -77,11 +77,14 @@ int main(int argc, char** argv) {
     PMT_ALWAYS_ASSERT(v19 - sqrt(14) < 1e-6); 
 
     //test calc sphereTriangleArea
-    auto a = polyMPO::Vec3d(0,0,1);
-    auto b = polyMPO::Vec3d(0,1,0);
-    auto c = polyMPO::Vec3d(1,0,0);
-    double radius = 1.0;
+    double radius = 1.03;
+    auto a = polyMPO::Vec3d(0,0,radius);
+    auto b = polyMPO::Vec3d(0,radius,0);
+    auto c = polyMPO::Vec3d(radius,0,0);
     auto area = polyMPO::sphereTriangleArea(a,b,c,radius);
+    //PMT_ALWAYS_ASSERT();
+    // 2 rotations  z 30 degree
+    //              y 45 degree
     printf("sphereTriangle area: %f\n",area);
     
     //this test is only designed to work with the following option values:

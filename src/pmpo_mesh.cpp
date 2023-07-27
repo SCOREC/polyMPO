@@ -173,42 +173,4 @@ namespace polyMPO{
   }
 #endif
 
-double arcLength(Vec3d &a, Vec3d &b){
-    Vec3d c = b-a;
-    double r = a.magnitude();
-    return r * 2.0 * std::asin(c.magnitude() / (2.0 * r)) ;
-}
-
-
-double sphereTriangleArea(Vec3d &a, Vec3d &b, Vec3d &c, double radius){
-    double ab, bc, ca, semiperim, tanqe;
-    Vec3d ablen, aclen, dlen;
-    //PMT_ALWAYS_ASSERT();
-
-    ab = arcLength(a,b) / radius;
-    bc = arcLength(b,c) / radius;
-    ca = arcLength(c,a) / radius;
-    semiperim = 0.5 * (ab + bc + ca);
-
-    tanqe = std::sqrt(std::max(0.0, std::tan(0.5 * semiperim) * 
-                                    std::tan(0.5 * (semiperim - ab)) *
-                                    std::tan(0.5 * (semiperim - bc)) * 
-                                    std::tan(0.5 * (semiperim - ca))));
-
-    double triangleArea = 4.0 * radius * radius * std::atan(tanqe);
-    printf("debug-area: %f\n",triangleArea);
-
-    ablen = b-a;
-    aclen = c-a;
-
-    dlen[0] =  (ablen[1] * aclen[2]) - (ablen[2] * aclen[1]);
-    dlen[1] = -((ablen[0] * aclen[2]) - (ablen[2] * aclen[0]));
-    dlen[2] =  (ablen[0] * aclen[1]) - (ablen[1] * aclen[0]);
-
-    if ((dlen[0] * a[0] + dlen[1] * a[1] + dlen[2] * a[2]) < 0.0) {
-        triangleArea = -triangleArea;
-    }
-
-    return triangleArea;
-}
 } // namespace polyMPO

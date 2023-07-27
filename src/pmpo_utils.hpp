@@ -164,6 +164,52 @@ void initArray(double* arr, int n, double fill){
     }
 }
 
+
+KOKKOS_INLINE_FUNCTION
+double arcLength(Vec3d &a, Vec3d &b){
+    Vec3d c = b-a;
+    double r = a.magnitude();
+    return r * 2.0 * std::asin(c.magnitude() / (2.0 * r)) ;
+}
+
+//TODO: discuss the sign determination of the area and the center of the origin
+//double check the inline function
+//check for more effcient calculation
+KOKKOS_INLINE_FUNCTION
+double sphereTriangleArea(Vec3d &a, Vec3d &b, Vec3d &c, double radius){
+    double ab, bc, ca, semiperim, tanqe;
+    Vec3d ablen, aclen, dlen;
+    //PMT_ALWAYS_ASSERT();
+
+    ab = arcLength(a,b) / radius;
+    bc = arcLength(b,c) / radius;
+    ca = arcLength(c,a) / radius;
+    semiperim = 0.5 * (ab + bc + ca);
+
+    tanqe = std::sqrt(std::tan(0.5 * semiperim) * 
+                      std::tan(0.5 * (semiperim - ab)) *
+                      std::tan(0.5 * (semiperim - bc)) * 
+                      std::tan(0.5 * (semiperim - ca)));
+    tanqe = tanqe < 0.0 ? tanqe : 0.0;
+
+    double triangleArea = 4.0 * radius * radius * std::atan(tanqe);
+    printf("triangleArea before sign detection: %f\n",triangleArea);
+
+    ablen = b-a;
+    aclen = c-a;
+
+    dlen[0] =  (ablen[1] * aclen[2]) - (ablen[2] * aclen[1]);
+    dlen[1] = -((ablen[0] * aclen[2]) - (ablen[2] * aclen[0]));
+    dlen[2] =  (ablen[0] * aclen[1]) - (ablen[1] * aclen[0]);
+
+    if ((dlen[0] * a[0] + dlen[1] * a[1] + dlen[2] * a[2]) < 0.0) {
+        printf("triangleArea triggered\n");
+        triangleArea = -triangleArea;
+    }
+
+    return triangleArea;
+}
+
 //this is a lazy comparison and shouldn't be relied on beyond simple testing
 bool isEqual(double a, double b, double tol=1e-9);
 

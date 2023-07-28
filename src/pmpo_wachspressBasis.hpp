@@ -21,6 +21,7 @@ namespace polyMPO{
  *
  *  \return basis and gradient of basis
  * */
+//TODO:Change this to support 3d
 KOKKOS_INLINE_FUNCTION
 void getBasisAndGradByAreaGblForm(Vec2d MP,
                                   int numVtxs,
@@ -126,25 +127,21 @@ void getBasisByAreaGblForm(Vec2d MP, int numVtxs, Vec2d* vtxCoords, double* basi
 
 //3d
 KOKKOS_INLINE_FUNCTION
-void getBasisByAreaGblForm(Vec3d MP, int numVtxs, Vec3d* vtxCoords, double radius,
-                           double* basis) {
-    Vec3d e[maxVtxsPerElm + 1];
-    Vec3d p[maxVtxsPerElm];
-    double w[maxVtxsPerElm];
-    for (int i = 0; i < numVtxs; i++){
-        e[i + 1] = vtxCoords[i + 1] - vtxCoords[i];
-        p[i] = vtxCoords[i] - MP;
-    }
-    e[0] = e[numVtxs];
-
+void getBasisByAreaGblFormSpherical(Vec3d MP, int numVtxs, Vec3d* v,
+                                    double radius, double* basis) {
     double c[maxVtxsPerElm];
     double a[maxVtxsPerElm];
-    for (int i = 0; i < numVtxs; i++){
-        //c[i] = sphericalTriangleArea()
-        //a[i] = sphericalTriangleArea()
+    for (int i = 1; i < numVtxs; i++){
+        //c = vi-1 vi vi+1
+        //a = x    vi vi+1
+        c[i] = sphericalTriangleArea(v[i-1],v[i],v[i+1],radius);
+        a[i] = sphericalTriangleArea(MP,v[i],v[i+1],radius);
     }
-    double wSum = 0.0;
+    c[0] = sphericalTriangleArea(v[numVtxs-1],v[0],v[1],radius);
+    a[0] = sphericalTriangleArea(MP,v[0],v[1],radius);
 
+    double w[maxVtxsPerElm];
+    double wSum = 0.0;
     for (int i = 0; i < numVtxs; i++){
         double aProduct = 1.0;
         for (int j = 0; j < numVtxs - 2; j++){

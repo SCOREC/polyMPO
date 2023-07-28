@@ -172,9 +172,8 @@ double arcLength(Vec3d &a, Vec3d &b){
     return r * 2.0 * std::asin(c.magnitude() / (2.0 * r)) ;
 }
 
-//TODO: discuss the sign determination of the area and the center of the origin
-//double check the inline function
-//check for more effcient calculation
+// implement from: https://github.com/MPAS-Seaice-MPM-Project/MPAS-Seaice-MPM/blob/9bb3b4f3a09ac59fbc93b8ab317ca0fa6a6f18bb/components/mpas-framework/src/operators/mpas_geometry_utils.F#L651-L671
+//TODO:check for more effcient calculation
 KOKKOS_INLINE_FUNCTION
 double sphericalTriangleArea(Vec3d &a, Vec3d &b, Vec3d &c, double radius){
     double ab, bc, ca, semiperim, tanqe;
@@ -190,7 +189,16 @@ double sphericalTriangleArea(Vec3d &a, Vec3d &b, Vec3d &c, double radius){
                                            Kokkos::tan(0.5 * (semiperim - bc)) * 
                                            Kokkos::tan(0.5 * (semiperim - ca))));
 
-    return 4.0 * radius * radius * std::atan(tanqe);
+    return Kokkos::fabs(4.0 * radius * radius * std::atan(tanqe));
+}
+
+//implement from: https://www.maa.org/sites/default/files/Eriksson14108673.pdf 
+KOKKOS_INLINE_FUNCTION
+double sphericalTriangleArea2(Vec3d &a, Vec3d &b, Vec3d &c){
+    double tripleProduct = a.dot(b.cross(c));
+    double tangent = tripleProduct / (1 + b.dot(c) + c.dot(a) + a.dot(b)) * 2;
+
+    return Kokkos::fabs(Kokkos::atan(tangent));
 }
 
 //this is a lazy comparison and shouldn't be relied on beyond simple testing

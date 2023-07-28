@@ -189,16 +189,20 @@ double sphericalTriangleArea(Vec3d &a, Vec3d &b, Vec3d &c, double radius){
                                            Kokkos::tan(0.5 * (semiperim - bc)) * 
                                            Kokkos::tan(0.5 * (semiperim - ca))));
 
-    return Kokkos::fabs(4.0 * radius * radius * std::atan(tanqe));
+    return 4.0 * radius * radius * Kokkos::atan(tanqe);
 }
 
 //implement from: https://www.maa.org/sites/default/files/Eriksson14108673.pdf 
 KOKKOS_INLINE_FUNCTION
-double sphericalTriangleArea2(Vec3d &a, Vec3d &b, Vec3d &c){
-    double tripleProduct = a.dot(b.cross(c));
-    double tangent = tripleProduct / (1 + b.dot(c) + c.dot(a) + a.dot(b)) * 2;
+double sphericalTriangleArea2(Vec3d &a, Vec3d &b, Vec3d &c, double radius){
+    double inv_radius = 1.0/radius;
+    Vec3d a_unit = a*inv_radius;
+    Vec3d b_unit = b*inv_radius;
+    Vec3d c_unit = c*inv_radius;
+    double tripleProduct = a_unit.dot(b_unit.cross(c_unit));
+    double tangent = tripleProduct / (1 + b_unit.dot(c_unit) + c_unit.dot(a_unit) + a_unit.dot(b_unit));
 
-    return Kokkos::fabs(Kokkos::atan(tangent));
+    return 2.0 * radius * radius * Kokkos::atan(tangent);
 }
 
 //this is a lazy comparison and shouldn't be relied on beyond simple testing

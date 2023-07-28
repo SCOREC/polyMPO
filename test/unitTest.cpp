@@ -84,10 +84,13 @@ int main(int argc, char** argv) {
     auto a1 = polyMPO::Vec3d(0,0,radius);
     auto b1 = polyMPO::Vec3d(0,radius,0);
     auto c1 = polyMPO::Vec3d(radius,0,0);
-    auto area1 = polyMPO::sphericalTriangleArea(a1,b1,c1,radius);
-    auto area1_2 = polyMPO::sphericalTriangleArea2(a1,b1,c1);
-    PMT_ALWAYS_ASSERT((4*TEST_PI*radius*radius)/8 - area1 < TEST_EPSILON); 
-    PMT_ALWAYS_ASSERT(area1_2 - area1 < TEST_EPSILON); 
+    double areaRef = 4 * TEST_PI * radius * radius / 8;
+    auto area1_1 = polyMPO::sphericalTriangleArea(a1,b1,c1,radius);
+    auto area1_2 = polyMPO::sphericalTriangleArea2(a1,b1,c1,radius);
+    printf("area1_1: %e\n",area1_1);
+    printf("area1_2: %e\n",area1_2);
+    PMT_ALWAYS_ASSERT(Kokkos::fabs(area1_1 - areaRef) < TEST_EPSILON); 
+    PMT_ALWAYS_ASSERT(Kokkos::fabs(area1_2 - areaRef) < TEST_EPSILON); 
     //rotate Z by 30 degrees
     double rotateZ[3][3] = {{std::sqrt(3)/2, -1.0/2,         0.0}, 
                             {1.0/2,          std::sqrt(3)/2, 0.0},
@@ -100,18 +103,18 @@ int main(int argc, char** argv) {
     matrixMultiply(rotateZ, a1, a2);
     matrixMultiply(rotateZ, b1, b2);
     matrixMultiply(rotateZ, c1, c2);
-    auto area2 = polyMPO::sphericalTriangleArea(a2,b2,c2,radius);
-    auto area2_2 = polyMPO::sphericalTriangleArea2(a2,b2,c2);
-    PMT_ALWAYS_ASSERT((4*TEST_PI*radius*radius)/8 - area2 < TEST_EPSILON); 
-    PMT_ALWAYS_ASSERT(area2_2 - area2 < TEST_EPSILON); 
+    auto area2_1 = polyMPO::sphericalTriangleArea(a2,b2,c2,radius);
+    auto area2_2 = polyMPO::sphericalTriangleArea2(a2,b2,c2,radius);
+    PMT_ALWAYS_ASSERT(Kokkos::fabs(area2_1 - areaRef) < TEST_EPSILON); 
+    PMT_ALWAYS_ASSERT(Kokkos::fabs(area2_2 - areaRef) < TEST_EPSILON); 
     Vec3d a3, b3, c3;
     matrixMultiply(rotateY, a2, a3);
     matrixMultiply(rotateY, b2, b3);
     matrixMultiply(rotateY, c2, c3);
-    auto area3 = polyMPO::sphericalTriangleArea(a3,b3,c3,radius);
-    auto area3_2 = polyMPO::sphericalTriangleArea2(a3,b3,c3);
-    PMT_ALWAYS_ASSERT((4*TEST_PI*radius*radius)/8 - area3 < TEST_EPSILON); 
-    PMT_ALWAYS_ASSERT(area3_2 - area3 < TEST_EPSILON); 
+    auto area3_1 = polyMPO::sphericalTriangleArea(a3,b3,c3,radius);
+    auto area3_2 = polyMPO::sphericalTriangleArea2(a3,b3,c3,radius);
+    PMT_ALWAYS_ASSERT(Kokkos::fabs(area3_1 - areaRef) < TEST_EPSILON); 
+    PMT_ALWAYS_ASSERT(Kokkos::fabs(area3_2 - areaRef) < TEST_EPSILON); 
     
     //this test is only designed to work with the following option values:
     const int testMeshOption = 1;

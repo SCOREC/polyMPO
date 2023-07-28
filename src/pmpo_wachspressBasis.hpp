@@ -125,21 +125,8 @@ void getBasisByAreaGblForm(Vec2d MP, int numVtxs, Vec2d* vtxCoords, double* basi
     }
 }// getBasisByAreaBblForm
 
-//3d
 KOKKOS_INLINE_FUNCTION
-void getBasisByAreaGblFormSpherical(Vec3d MP, int numVtxs, Vec3d* v,
-                                    double radius, double* basis) {
-    double c[maxVtxsPerElm];
-    double a[maxVtxsPerElm];
-    for (int i = 1; i < numVtxs; i++){
-        //c = vi-1 vi vi+1
-        //a = x    vi vi+1
-        c[i] = sphericalTriangleArea(v[i-1],v[i],v[i+1],radius);
-        a[i] = sphericalTriangleArea(MP,v[i],v[i+1],radius);
-    }
-    c[0] = sphericalTriangleArea(v[numVtxs-1],v[0],v[1],radius);
-    a[0] = sphericalTriangleArea(MP,v[0],v[1],radius);
-
+void calcBasis(int numVtxs, double* a, double* c, double* basis){
     double w[maxVtxsPerElm];
     double wSum = 0.0;
     for (int i = 0; i < numVtxs; i++){
@@ -156,7 +143,43 @@ void getBasisByAreaGblFormSpherical(Vec3d MP, int numVtxs, Vec3d* v,
     for (int i = 0; i < numVtxs; i++){
         basis[i] = w[i] * wSumInv;
     }
-}// getBasisByAreaBblForm 3d
+}
+
+//3d
+KOKKOS_INLINE_FUNCTION
+void getBasisByAreaGblFormSpherical(Vec3d MP, int numVtxs, Vec3d* v,
+                                    double radius, double* basis) {
+    double c[maxVtxsPerElm];
+    double a[maxVtxsPerElm];
+    for (int i = 1; i < numVtxs; i++){
+        //c = vi-1 vi vi+1
+        //a = x    vi vi+1
+        c[i] = sphericalTriangleArea(v[i-1],v[i],v[i+1],radius);
+        a[i] = sphericalTriangleArea(MP,v[i],v[i+1],radius);
+    }
+    c[0] = sphericalTriangleArea(v[numVtxs-1],v[0],v[1],radius);
+    a[0] = sphericalTriangleArea(MP,v[0],v[1],radius);
+
+    calcBasis(numVtxs, a, c, basis);
+}
+
+KOKKOS_INLINE_FUNCTION
+void getBasisByAreaGblFormSpherical2(Vec3d MP, int numVtxs, Vec3d* v,
+                                    double radius, double* basis) {
+    double c[maxVtxsPerElm];
+    double a[maxVtxsPerElm];
+    for (int i = 1; i < numVtxs; i++){
+        //c = vi-1 vi vi+1
+        //a = x    vi vi+1
+        c[i] = sphericalTriangleArea2(v[i-1],v[i],v[i+1],radius);
+        a[i] = sphericalTriangleArea2(MP,v[i],v[i+1],radius);
+    }
+    c[0] = sphericalTriangleArea2(v[numVtxs-1],v[0],v[1],radius);
+    a[0] = sphericalTriangleArea2(MP,v[0],v[1],radius);
+
+    calcBasis(numVtxs, a, c, basis);
+}
+
 
 /*
 KOKKOS_INLINE_FUNCTION

@@ -7,7 +7,7 @@
 
 namespace polyMPO{
 
-Mesh Mesh::readMPASMesh(std::string filename){
+Mesh readMPASMesh(std::string filename){
   int ncid;
   int retval;
   if ((retval = nc_open(filename.c_str(), NC_NOWRITE, &ncid)))
@@ -18,7 +18,7 @@ Mesh Mesh::readMPASMesh(std::string filename){
   return mesh;
 }
 
-Mesh Mesh::readMPASMesh(int ncid){
+Mesh readMPASMesh(int ncid){
   int retval,
       nCells, nCellsID,
       nVertices, nVerticesID,
@@ -163,10 +163,10 @@ Mesh Mesh::readMPASMesh(int ncid){
 #else
 
 namespace polyMPO{
-  Mesh Mesh::readMPASMesh(std::string) {
+  Mesh readMPASMesh(std::string) {
     return readMPASMesh(0);
   }
-  Mesh Mesh::readMPASMesh(int){
+  Mesh readMPASMesh(int){
     fprintf(stderr, "ERROR: readMPASMesh requires compiling with NetCDF enabled\n");
     exit(EXIT_FAILURE);
     return Mesh();

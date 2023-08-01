@@ -10,6 +10,7 @@ program main
   integer(c_int) :: mpi_comm_handle = MPI_COMM_WORLD
   character (len=2048) :: filename
   integer(c_int) :: maxEdges, vertexDegree, nCells, nVertices
+  real(c_double) :: sphereRadius
   integer(c_int), dimension(:), pointer :: nEdgesOnCell
   real(c_double), dimension(:), pointer :: xVertex, yVertex, zVertex
   integer(c_int), dimension(:,:), pointer :: verticesOnCell, cellsOnCell
@@ -33,12 +34,17 @@ program main
   mpMesh = polympo_createMPMesh(setMeshOption, setMPOption)
 
   call polympo_readMPASMesh(trim(filename), maxEdges, vertexDegree, &
-                            nCells, nVertices, nEdgesOnCell, &
+                            nCells, nVertices, nEdgesOnCell, sphereRadius, &
                             xVertex, yVertex, zVertex, &
                             verticesOnCell, cellsOnCell)
 
   !check on maxEdges and vertexDegree
   call polympo_checkMeshMaxSettings(mpMesh,maxEdges,vertexDegree)
+
+  !set MeshType GeomType sphereRadius
+  call polympo_setMeshType(mpMesh,1); !-1=unrecognized,0=general,1=CVT
+  call polympo_setMeshGeomType(mpMesh,1); !-1=unrecognized,0=planar,1=spherical
+  call polympo_setMeshSphereRadius(mpMesh,sphereRadius);
 
   !set nCells nVertices
   call polympo_setMeshNumVtxs(mpMesh,nVertices)
@@ -69,7 +75,7 @@ program main
 
 contains
 subroutine polympo_readMPASMesh(filename, maxEdges, vertexDegree, &
-                                nCells, nVertices, nEdgesOnCell, &
+                                nCells, nVertices, nEdgesOnCell, sphereRadius, &
                                 xVertex, yVertex, zVertex, &
                                 verticesOnCell, cellsOnCell)
     use :: netcdf
@@ -77,7 +83,9 @@ subroutine polympo_readMPASMesh(filename, maxEdges, vertexDegree, &
     implicit none
     
     character (len=*), intent(in) :: filename
-    integer(c_int), intent(inout) :: maxEdges, vertexDegree, nCells, nVertices
+    integer(c_int), intent(inout) :: maxEdges, vertexDegree, &
+                                     nCells, nVertices
+    real(c_double) :: sphereRadius
     integer(c_int), dimension(:), pointer :: nEdgesOnCell
     real(c_double), dimension(:), pointer :: xVertex, yVertex, zVertex
     integer(c_int), dimension(:,:), pointer :: verticesOnCell, cellsOnCell
@@ -156,6 +164,13 @@ end if
     allocate(verticesOnCell(maxEdges, nCells))
     allocate(cellsOnCell(maxEdges, nCells))
 
+    status = nf90_get_att(ncid, nf90_global, 'sphere_radius', sphereRadius)
+    if (status /= nf90_noerr) then
+        write(0, *) "polympo_readMPASMesh: Error on get attribute 'sphereRadius'"
+        write(0, *) trim(nf90_strerror(status))
+        stop
+    end if
+    
     status = nf90_inq_varid(ncid, 'xVertex', xVertexID)
     if (status /= nf90_noerr) then
         write(0, *) "polympo_readMPASMesh: Error on inquire varid of 'xVertex'"

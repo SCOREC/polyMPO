@@ -54,7 +54,10 @@ Mesh* createMesh(const double (&v_array)[nVertices_size][vec_dimension],
     }
     Kokkos::deep_copy(elm2ElmConn, h_elm2ElmConn);
 
-    return new Mesh(nVertices,
+    return new Mesh(mesh_general_polygonal,
+                    geom_planar_surf,
+                    0.0,
+                    nVertices,
                     nCells,
                     vtxCoords,
                     elm2VtxConn,

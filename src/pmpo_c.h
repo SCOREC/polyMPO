@@ -28,6 +28,9 @@ void polympo_getMPVelArray(MPMesh_ptr p_mpmesh, int size, double* array);
 
 //Mesh info
 void polympo_checkMeshMaxSettings(MPMesh_ptr p_mpmesh, int maxEdges, int vertexDegree);
+void polympo_setMeshType(MPMesh_ptr p_mpmesh, int meshType);
+void polympo_setMeshGeomType(MPMesh_ptr p_mpmesh, int geomType);
+void polympo_setMeshSphereRadius(MPMesh_ptr p_mpmesh, double sphereRadius);
 void polympo_setMeshNumVtxs(MPMesh_ptr p_mpmesh, int numVtxs);
 void polympo_setMeshNumElms(MPMesh_ptr p_mpmesh, int numElms);
 void polympo_setMeshVtxCoords(MPMesh_ptr p_mpmesh, int size, double* xArray, double* yArray, double* zArray);

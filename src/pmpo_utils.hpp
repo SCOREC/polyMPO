@@ -202,7 +202,7 @@ double sphericalTriangleArea2(Vec3d &a, Vec3d &b, Vec3d &c, double radius){
     double tripleProduct = a_unit.dot(b_unit.cross(c_unit));
     double tangent = tripleProduct / (1 + b_unit.dot(c_unit) + c_unit.dot(a_unit) + a_unit.dot(b_unit));
 
-    return Kokkos::fabs(2.0 * radius * radius * Kokkos::atan(tangent));
+    return 2.0 * radius * radius * Kokkos::atan(tangent);
 }
 
 //this is a lazy comparison and shouldn't be relied on beyond simple testing

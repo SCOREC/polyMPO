@@ -167,7 +167,38 @@ void polympo_setMeshNumElms(MPMesh_ptr p_mpmesh, int numElms){
   p_mesh->setElm2ElmConn(elm2Elm);
 }
 
-//XXX: the zArray is not supported yet, TODO: switch to vec3d
+void polympo_setMeshType(MPMesh_ptr p_mpmesh, int meshType){
+  //chech validity
+  checkMPMeshValid(p_mpmesh);
+  auto p_mesh = ((polyMPO::MPMesh*)p_mpmesh)->p_mesh;
+  if(p_mesh->checkMeshType(meshType)){
+    p_mesh->setMeshType((polyMPO::mesh_type)meshType);
+  }else{
+    fprintf(stderr, "Error: %d is not a valid meshType!\n", meshType);
+    PMT_ALWAYS_ASSERT(false);
+  }
+}
+
+void polympo_setMeshGeomType(MPMesh_ptr p_mpmesh, int geomType){
+  //chech validity
+  checkMPMeshValid(p_mpmesh);
+  auto p_mesh = ((polyMPO::MPMesh*)p_mpmesh)->p_mesh;
+  if(p_mesh->checkGeomType(geomType)){
+    p_mesh->setGeomType((polyMPO::geom_type)geomType);
+  }else{
+    fprintf(stderr, "Error: %d is not a valid geomType!\n", geomType);
+    PMT_ALWAYS_ASSERT(false);
+  }
+}
+
+void polympo_setMeshSphereRadius(MPMesh_ptr p_mpmesh, double sphereRadius){
+  //chech validity
+  checkMPMeshValid(p_mpmesh);
+  auto p_mesh = ((polyMPO::MPMesh*)p_mpmesh)->p_mesh;
+  PMT_ALWAYS_ASSERT(sphereRadius >= 0);
+  p_mesh->setSphereRadius(sphereRadius);
+}
+
 void polympo_setMeshVtxCoords(MPMesh_ptr p_mpmesh, int size, double* xArray, double* yArray, double* zArray){
   //chech validity
   checkMPMeshValid(p_mpmesh);

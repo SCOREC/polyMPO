@@ -81,9 +81,9 @@ int main(int argc, char** argv) {
 
     //test calc sphericalTriangleArea sphericalTriangleArea2
     double radius = 1.03;
-    auto a1 = polyMPO::Vec3d(0,0,radius);
+    auto a1 = polyMPO::Vec3d(radius,0,0);
     auto b1 = polyMPO::Vec3d(0,radius,0);
-    auto c1 = polyMPO::Vec3d(radius,0,0);
+    auto c1 = polyMPO::Vec3d(0,0,radius);
     double areaRef = 4 * TEST_PI * radius * radius / 8;
     auto area1_1 = polyMPO::sphericalTriangleArea(a1,b1,c1,radius);
     auto area1_2 = polyMPO::sphericalTriangleArea2(a1,b1,c1,radius);
@@ -122,7 +122,6 @@ int main(int argc, char** argv) {
     const int testMPOption = 1;
     //run assembly and test Wachspress
     {
-        //auto testMesh = Mesh::readMPASMesh("/path/to/mpas/mesh.nc"); //read from MPAS via netcdf
         auto testMesh = initTestMesh(testMeshOption,scaleFactor); 
         auto mpMesh = initTestMPMesh(testMesh, testMPOption); //creates test MPs 
         auto p_MPs = mpMesh.p_MPs;

@@ -86,6 +86,45 @@ module polympo
     integer(c_int), value :: maxEdges, vertexDegree
   end subroutine
   !---------------------------------------------------------------------------
+  !> @brief set the Mesh Type
+  !> @param mpMesh(in/out) mpMesh Object 
+  !> @param numVtxs(in) the Mesh Type: (mesh_unrecognized = -1
+  !>                                    mesh_general_polygoal = 0
+  !>                                    mesh_CVT_polygonal = 1)
+  !---------------------------------------------------------------------------
+  subroutine polympo_setMeshType(mpMesh,meshType) &
+             bind(C, NAME='polympo_setMeshType')
+    use :: iso_c_binding
+    type(c_ptr), value :: mpMesh
+    integer(c_int), value :: meshType
+  end subroutine
+  !---------------------------------------------------------------------------
+  !> @brief set the Mesh geometry Type
+  !> @param mpMesh(in/out) mpMesh Object 
+  !> @param numVtxs(in) the Geom Type: (mesh_unrecognized = -1
+  !>                                    mesh_general_polygoal = 0
+  !>                                    mesh_CVT_polygonal = 1)
+  !---------------------------------------------------------------------------
+  subroutine polympo_setMeshGeomType(mpMesh,geomType) &
+             bind(C, NAME='polympo_setMeshGeomType')
+    use :: iso_c_binding
+    type(c_ptr), value :: mpMesh
+    integer(c_int), value :: geomType
+  end subroutine
+  !---------------------------------------------------------------------------
+  !> @brief set the Mesh sphere radius
+  !> @param mpMesh(in/out) mpMesh Object 
+  !> @param numVtxs(in) the Geom Type: (mesh_unrecognized = -1
+  !>                                    mesh_general_polygoal = 0
+  !>                                    mesh_CVT_polygonal = 1)
+  !---------------------------------------------------------------------------
+  subroutine polympo_setMeshSphereRadius(mpMesh,sphereRadius) &
+             bind(C, NAME='polympo_setMeshSphereRadius')
+    use :: iso_c_binding
+    type(c_ptr), value :: mpMesh
+    real(c_double), value :: sphereRadius
+  end subroutine
+  !---------------------------------------------------------------------------
   !> @brief set the number of vetices of the mesh
   !> @param mpMesh(in/out) mpMesh Object 
   !> @param numVtxs(in) the number of vertices need to set

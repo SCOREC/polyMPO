@@ -9,12 +9,6 @@ program main
   integer :: setMeshOption, setMPOption
   integer(c_int) :: mpi_comm_handle = MPI_COMM_WORLD
   character (len=2048) :: filename
-  character (len=64) :: onSphere, stringYes = "YES"
-  integer(c_int) :: maxEdges, vertexDegree, nCells, nVertices
-  real(c_double) :: sphereRadius
-  integer(c_int), dimension(:), pointer :: nEdgesOnCell
-  real(c_double), dimension(:), pointer :: xVertex, yVertex, zVertex
-  integer(c_int), dimension(:,:), pointer :: verticesOnCell, cellsOnCell
   type(c_ptr) :: mpMesh
 
   call mpi_init(ierr)
@@ -34,43 +28,11 @@ program main
   setMPOption = 1   !create a test set of MPs
   mpMesh = polympo_createMPMesh(setMeshOption, setMPOption)
 
-  call polympo_readMPASMesh(trim(filename), maxEdges, vertexDegree, &
-                            nCells, nVertices, nEdgesOnCell, &
-                            onSphere, sphereRadius, &
-                            xVertex, yVertex, zVertex, &
-                            verticesOnCell, cellsOnCell)
-
-  !check on maxEdges and vertexDegree
-  call polympo_checkMeshMaxSettings(mpMesh,maxEdges,vertexDegree)
-
-  !set MeshType GeomType sphereRadius
-  call polympo_setMeshType(mpMesh,1); !-1=unrecognized,0=general,1=CVT
-  if (onSphere == stringYes) then
-    call polympo_setMeshGeomType(mpMesh,1); !-1=unrecognized,0=planar,1=spherical
-  else
-    call polympo_setMeshGeomType(mpMesh,0); !-1=unrecognized,0=planar,1=spherical
-  end if
-  call polympo_setMeshSphereRadius(mpMesh,sphereRadius);
-
-  !set nCells nVertices
-  call polympo_setMeshNumVtxs(mpMesh,nVertices)
-  call polympo_setMeshNumElms(mpMesh,nCells)
-
-  !set VtxCoords and connectivities
-  call polympo_setMeshVtxCoords(mpMesh,nVertices,c_loc(xVertex),c_loc(yVertex),c_loc(zVertex))
-  call polympo_setMeshElm2VtxConn(mpMesh,nCells,maxEdges,c_loc(verticesOnCell))
-  call polympo_setMeshNumEdgesPerElm(mpMesh,nCells,c_loc(nEdgesOnCell))
-  call polympo_setMeshElm2ElmConn(mpMesh,nCells,maxEdges,c_loc(cellsOnCell))
+  !contain subroutine and take 2 arguments: mpMeshObj and filename
+  call polympo_setWithMPASMesh(mpMesh, filename)
 
   !todo check the value using get functions. 
   
-  !unloadMPASMesh to deallocated
-  deallocate(nEdgesOnCell)
-  deallocate(xVertex)
-  deallocate(yVertex)
-  deallocate(zVertex)
-  deallocate(verticesOnCell)
-  deallocate(cellsOnCell)
 
   call polympo_deleteMPMesh(mpMesh)
   call polympo_finalize()
@@ -80,6 +42,56 @@ program main
   stop
 
 contains
+subroutine polympo_setWithMPASMesh(mpMesh, filename)
+    use :: netcdf
+    use :: iso_c_binding
+    implicit none
+    
+    character (len=*), intent(in) :: filename
+    type(c_ptr), intent(inout) :: mpMesh
+    character (len=64) :: onSphere, stringYes = "YES"
+    integer(c_int) :: maxEdges, vertexDegree, nCells, nVertices
+    real(c_double) :: sphereRadius
+    integer(c_int), dimension(:), pointer :: nEdgesOnCell
+    real(c_double), dimension(:), pointer :: xVertex, yVertex, zVertex
+    integer(c_int), dimension(:,:), pointer :: verticesOnCell, cellsOnCell
+    call polympo_readMPASMesh(trim(filename), maxEdges, vertexDegree, &
+                              nCells, nVertices, nEdgesOnCell, &
+                              onSphere, sphereRadius, &
+                              xVertex, yVertex, zVertex, &
+                              verticesOnCell, cellsOnCell)
+
+    !check on maxEdges and vertexDegree
+    call polympo_checkMeshMaxSettings(mpMesh,maxEdges,vertexDegree)
+
+    !set MeshType GeomType sphereRadius
+    call polympo_setMeshType(mpMesh,1); !-1=unrecognized,0=general,1=CVT
+    if (onSphere == stringYes) then
+        call polympo_setMeshGeomType(mpMesh,1); !-1=unrecognized,0=planar,1=spherical
+    else
+        call polympo_setMeshGeomType(mpMesh,0); !-1=unrecognized,0=planar,1=spherical
+    end if
+        call polympo_setMeshSphereRadius(mpMesh,sphereRadius);
+
+    !set nCells nVertices
+    call polympo_setMeshNumVtxs(mpMesh,nVertices)
+    call polympo_setMeshNumElms(mpMesh,nCells)
+
+    !set VtxCoords and connectivities
+    call polympo_setMeshVtxCoords(mpMesh,nVertices,c_loc(xVertex),c_loc(yVertex),c_loc(zVertex))
+    call polympo_setMeshElm2VtxConn(mpMesh,nCells,maxEdges,c_loc(verticesOnCell))
+    call polympo_setMeshNumEdgesPerElm(mpMesh,nCells,c_loc(nEdgesOnCell))
+    call polympo_setMeshElm2ElmConn(mpMesh,nCells,maxEdges,c_loc(cellsOnCell))
+
+    !unloadMPASMesh to deallocated
+    deallocate(nEdgesOnCell)
+    deallocate(xVertex)
+    deallocate(yVertex)
+    deallocate(zVertex)
+    deallocate(verticesOnCell)
+    deallocate(cellsOnCell)
+end subroutine
+
 subroutine polympo_readMPASMesh(filename, maxEdges, vertexDegree, &
                                 nCells, nVertices, nEdgesOnCell, &
                                 onSphere, sphereRadius, &

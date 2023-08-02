@@ -45,7 +45,7 @@ POLYMPO_LIBS=\
 -L${CUDA_DIR}/targets/x86_64-linux/lib \
 -Wl,-rpath,${CUDA_DIR}/lib64: \
 ${POLYMPO_DIR}/lib/libpolympo_fortran.a \
-${POLYMPO_DIR}/lib/libpolyMpmTest-core.a \
+${POLYMPO_DIR}/lib/libpolyMPO-core.a \
 -lm \
 ${PUMIPIC_DIR}/lib/libpumipic-core.a \
 ${PUMIPIC_DIR}/lib/libparticleStructs.a \

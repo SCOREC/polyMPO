@@ -80,6 +80,9 @@ class Mesh {
     bool checkMeshType(int meshType);
     bool checkGeomType(int geomType);
 
+    mesh_type getMeshType() { return meshType_; }
+    geom_type getGeomType() { return geomType_; }
+    double getSphereRadius() { return sphereRadius_; }
     int getNumVertices() { return numVtxs_; }
     int getNumElements() { return numElms_; }
     DoubleVec3dView getVtxCoords() { return vtxCoords_; }

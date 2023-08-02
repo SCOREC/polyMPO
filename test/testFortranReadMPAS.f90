@@ -8,8 +8,9 @@ program main
   integer :: argc, i, arglen
   integer :: setMeshOption, setMPOption
   integer(c_int) :: mpi_comm_handle = MPI_COMM_WORLD
+  integer(c_int) :: scaleFactor = 2
   character (len=2048) :: filename
-  type(c_ptr) :: mpMesh
+  type(c_ptr) :: mpMesh, mpMeshNew
 
   call mpi_init(ierr)
   call mpi_comm_rank(mpi_comm_handle, self, ierr)
@@ -31,10 +32,12 @@ program main
   !contain subroutine and take 2 arguments: mpMeshObj and filename
   call polympo_setWithMPASMesh(mpMesh, filename)
 
+  mpMeshNew = polympo_replicateMPMesh(mpMesh, scaleFactor)
   !todo check the value using get functions. 
   
 
   call polympo_deleteMPMesh(mpMesh)
+  call polympo_deleteMPMesh(mpMeshNew)
   call polympo_finalize()
 
   call mpi_finalize(ierr)
@@ -48,13 +51,14 @@ subroutine polympo_setWithMPASMesh(mpMesh, filename)
     implicit none
     
     character (len=*), intent(in) :: filename
-    type(c_ptr), intent(inout) :: mpMesh
+    type(c_ptr) :: mpMesh
     character (len=64) :: onSphere, stringYes = "YES"
     integer(c_int) :: maxEdges, vertexDegree, nCells, nVertices
     real(c_double) :: sphereRadius
     integer(c_int), dimension(:), pointer :: nEdgesOnCell
     real(c_double), dimension(:), pointer :: xVertex, yVertex, zVertex
     integer(c_int), dimension(:,:), pointer :: verticesOnCell, cellsOnCell
+    
     call polympo_readMPASMesh(trim(filename), maxEdges, vertexDegree, &
                               nCells, nVertices, nEdgesOnCell, &
                               onSphere, sphereRadius, &
@@ -80,8 +84,8 @@ subroutine polympo_setWithMPASMesh(mpMesh, filename)
     !set VtxCoords and connectivities
     call polympo_setMeshVtxCoords(mpMesh,nVertices,c_loc(xVertex),c_loc(yVertex),c_loc(zVertex))
     call polympo_setMeshElm2VtxConn(mpMesh,nCells,maxEdges,c_loc(verticesOnCell))
-    call polympo_setMeshNumEdgesPerElm(mpMesh,nCells,c_loc(nEdgesOnCell))
     call polympo_setMeshElm2ElmConn(mpMesh,nCells,maxEdges,c_loc(cellsOnCell))
+    call polympo_setMeshNumEdgesPerElm(mpMesh,nCells,c_loc(nEdgesOnCell))
 
     !unloadMPASMesh to deallocated
     deallocate(nEdgesOnCell)

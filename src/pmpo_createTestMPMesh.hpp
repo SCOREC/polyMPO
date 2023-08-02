@@ -9,7 +9,10 @@ namespace polyMPO {
  *  There will be triangualr to Octahedral elements 
  *  element = 10*factor vertices = 19*factor
  *  
- *  \param factor: the function makes factors of duplicates to test as a larger mesh
+ *  \param testMeshOption: 1= use the test hard coded planar mesh
+ *                         else return a new blank mesh                
+ *
+ *  \param scaleFactor: the function makes factors of duplicates to test as a larger mesh
  *
  *  \return return the hard-coded mesh. 
  */
@@ -32,5 +35,18 @@ polyMPO::MPMesh initTestMPMesh(polyMPO::Mesh* meshObj,
                                    int setMPOption);
 polyMPO::MaterialPoints* initTestMPs(polyMPO::Mesh* mesh,
                                          int testMPsOption);
+
+/*
+ * \brief make a copy of the given mesh, with a replicate scale factor
+ *
+ * \details Make a new mesh with the same elements and material points
+ *          with a sacle factor copies: new mesh = meshObj*scaleFactor.
+ *          ONLY CHANGE THE SIZE
+ *
+ * \param meshObj (in) a mesh
+ *
+ * \param scaleFactor (in) make scaleFactor of duplicates  
+ */
+polyMPO::Mesh* replicateMesh(polyMPO::Mesh* meshObj, int scaleFactor);
 
 }

@@ -39,6 +39,18 @@ module polympo
     type(c_ptr), value :: mpMesh
   end subroutine
   !---------------------------------------------------------------------------
+  !> @brief replicate a new MPMesh object
+  !> @param mpmesh(in/out) MPMesh object
+  !> @param scaleFactor(in/out) the scaleFactor of the new MPMesh
+  !>        new MPMesh = MPMeshObj * scaleFactor
+  !---------------------------------------------------------------------------
+  function polympo_replicateMPMesh(mpMesh, scaleFactor) bind(C, NAME='polympo_replicateMPMesh')
+    use :: iso_c_binding
+    type(c_ptr) polympo_replicateMPMesh
+    type(c_ptr), value :: mpMesh
+    integer(c_int), value :: scaleFactor
+  end function
+  !---------------------------------------------------------------------------
   !> @brief set the MPI communicator used by polympo
   !> @param comm(in) MPI communicator
   !---------------------------------------------------------------------------

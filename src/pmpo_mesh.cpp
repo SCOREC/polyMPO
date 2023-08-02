@@ -2,20 +2,12 @@
 
 namespace polyMPO{
     bool Mesh::checkMeshType(int meshType){
-        for(const auto& validType : validMeshType){
-            if(meshType == validType){
-               return true;
-            }
-        }
-        return false; 
+        return (meshType >=mesh_unrecognized_lower &&
+                meshType <=mesh_unrecognized_upper); 
     }
 
     bool Mesh::checkGeomType(int geomType){
-        for(const auto& validType : validGeomType){
-            if(geomType == validType){
-                return true;
-            }
-        }
-        return false;
+        return (geomType >=mesh_unrecognized_lower &&
+                geomType <=mesh_unrecognized_upper);
     }
 } // namespace polyMPO

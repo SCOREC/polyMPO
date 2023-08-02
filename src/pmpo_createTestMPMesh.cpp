@@ -193,7 +193,6 @@ Mesh* replicateMesh(Mesh* mesh, int scaleFactor){
     const double sphereRadius = mesh->getSphereRadius(); 
     const int nCells = nCells_size*scaleFactor;
     const int nVertices = nVertices_size*scaleFactor;
-    fprintf(stderr,"nCells: %d, nVertices: %d\n",nCells,nVertices);
      
     DoubleVec3dView v_array = mesh->getVtxCoords(); 
     DoubleVec3dView vtxCoords("verticesCoordinates", nVertices);

@@ -22,19 +22,15 @@ enum MeshFieldIndex{
     MeshF_Vel,
 };
 
-enum mesh_type {mesh_unrecognized = -1,
+enum mesh_type {mesh_unrecognized_lower = -1,
                 mesh_general_polygonal, //other meshes
-                mesh_CVT_polygonal};    //MPAS meshes
-const mesh_type validMeshType[] = {mesh_unrecognized,
-                                   mesh_general_polygonal,
-                                   mesh_CVT_polygonal};
+                mesh_CVT_polygonal,     //MPAS meshes
+                mesh_unrecognized_upper};
 
-enum geom_type {geom_unrecognized = -1,
+enum geom_type {geom_unrecognized_lower = -1,
                 geom_planar_surf,
-                geom_spherical_surf};
-const geom_type validGeomType[] = {geom_unrecognized,
-                                   geom_planar_surf,    
-                                   geom_spherical_surf};
+                geom_spherical_surf,
+                geom_unrecognized_upper};
 
 class Mesh {
   private:

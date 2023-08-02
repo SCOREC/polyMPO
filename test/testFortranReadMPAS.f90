@@ -8,7 +8,7 @@ program main
   integer :: argc, i, arglen
   integer :: setMeshOption, setMPOption
   integer(c_int) :: mpi_comm_handle = MPI_COMM_WORLD
-  integer(c_int) :: scaleFactor = 2
+  integer(c_int) :: replicateFactor = 2
   character (len=2048) :: filename
   type(c_ptr) :: mpMesh, mpMeshNew
 
@@ -32,7 +32,7 @@ program main
   !contain subroutine and take 2 arguments: mpMeshObj and filename
   call polympo_setWithMPASMesh(mpMesh, filename)
 
-  mpMeshNew = polympo_replicateMPMesh(mpMesh, scaleFactor)
+  mpMeshNew = polympo_replicateMPMesh(mpMesh, replicateFactor)
   !todo check the value using get functions. 
   
 
@@ -69,11 +69,11 @@ subroutine polympo_setWithMPASMesh(mpMesh, filename)
     call polympo_checkMeshMaxSettings(mpMesh,maxEdges,vertexDegree)
 
     !set MeshType GeomType sphereRadius
-    call polympo_setMeshType(mpMesh,1); !-1=unrecognized,0=general,1=CVT
+    call polympo_setMeshTypeCVTPoly(mpMesh);
     if (onSphere == stringYes) then
-        call polympo_setMeshGeomType(mpMesh,1); !-1=unrecognized,0=planar,1=spherical
+        call polympo_setMeshGeomTypeSpherical(mpMesh);
     else
-        call polympo_setMeshGeomType(mpMesh,0); !-1=unrecognized,0=planar,1=spherical
+        call polympo_setMeshGeomTypePlanar(mpMesh);
     end if
         call polympo_setMeshSphereRadius(mpMesh,sphereRadius);
 

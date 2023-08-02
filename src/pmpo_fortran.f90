@@ -41,14 +41,14 @@ module polympo
   !---------------------------------------------------------------------------
   !> @brief replicate a new MPMesh object
   !> @param mpmesh(in/out) MPMesh object
-  !> @param scaleFactor(in/out) the scaleFactor of the new MPMesh
-  !>        new MPMesh = MPMeshObj * scaleFactor
+  !> @param replicateFactor(in/out) the replicateFactor of the new MPMesh
+  !>        new MPMesh = MPMeshObj * replicateFactor
   !---------------------------------------------------------------------------
-  function polympo_replicateMPMesh(mpMesh, scaleFactor) bind(C, NAME='polympo_replicateMPMesh')
+  function polympo_replicateMPMesh(mpMesh, replicateFactor) bind(C, NAME='polympo_replicateMPMesh')
     use :: iso_c_binding
     type(c_ptr) polympo_replicateMPMesh
     type(c_ptr), value :: mpMesh
-    integer(c_int), value :: scaleFactor
+    integer(c_int), value :: replicateFactor
   end function
   !---------------------------------------------------------------------------
   !> @brief set the MPI communicator used by polympo
@@ -98,30 +98,40 @@ module polympo
     integer(c_int), value :: maxEdges, vertexDegree
   end subroutine
   !---------------------------------------------------------------------------
-  !> @brief set the Mesh Type
+  !> @brief set the Mesh Type to general polygonal
   !> @param mpMesh(in/out) mpMesh Object 
-  !> @param numVtxs(in) the Mesh Type: (mesh_unrecognized = -1
-  !>                                    mesh_general_polygoal = 0
-  !>                                    mesh_CVT_polygonal = 1)
   !---------------------------------------------------------------------------
-  subroutine polympo_setMeshType(mpMesh,meshType) &
-             bind(C, NAME='polympo_setMeshType')
+  subroutine polympo_setMeshTypeGeneralPoly(mpMesh) &
+             bind(C, NAME='polympo_setMeshTypeGeneralPoly')
     use :: iso_c_binding
     type(c_ptr), value :: mpMesh
-    integer(c_int), value :: meshType
   end subroutine
   !---------------------------------------------------------------------------
-  !> @brief set the Mesh geometry Type
+  !> @brief set the Mesh Type to CVT polygonal
   !> @param mpMesh(in/out) mpMesh Object 
-  !> @param numVtxs(in) the Geom Type: (mesh_unrecognized = -1
-  !>                                    mesh_general_polygoal = 0
-  !>                                    mesh_CVT_polygonal = 1)
   !---------------------------------------------------------------------------
-  subroutine polympo_setMeshGeomType(mpMesh,geomType) &
-             bind(C, NAME='polympo_setMeshGeomType')
+  subroutine polympo_setMeshTypeCVTPoly(mpMesh) &
+             bind(C, NAME='polympo_setMeshTypeCVTPoly')
     use :: iso_c_binding
     type(c_ptr), value :: mpMesh
-    integer(c_int), value :: geomType
+  end subroutine
+  !---------------------------------------------------------------------------
+  !> @brief set the Mesh geometry Type to Planar
+  !> @param mpMesh(in/out) mpMesh Object 
+  !---------------------------------------------------------------------------
+  subroutine polympo_setMeshGeomTypePlanar(mpMesh) &
+             bind(C, NAME='polympo_setMeshGeomTypePlanar')
+    use :: iso_c_binding
+    type(c_ptr), value :: mpMesh
+  end subroutine
+  !---------------------------------------------------------------------------
+  !> @brief set the Mesh geometry Type to Spherical
+  !> @param mpMesh(in/out) mpMesh Object 
+  !---------------------------------------------------------------------------
+  subroutine polympo_setMeshGeomTypeSpherical(mpMesh) &
+             bind(C, NAME='polympo_setMeshGeomTypeSpherical')
+    use :: iso_c_binding
+    type(c_ptr), value :: mpMesh
   end subroutine
   !---------------------------------------------------------------------------
   !> @brief set the Mesh sphere radius

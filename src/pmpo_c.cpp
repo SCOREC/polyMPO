@@ -25,8 +25,8 @@ void polympo_finalize() {
 MPMesh_ptr polympo_createMPMesh(int testMeshOption, int testMPOption) {
   polyMPO::Mesh* p_mesh;
   if(testMeshOption){
-    int scaleFactor = 1;
-    p_mesh = polyMPO::initTestMesh(testMeshOption, scaleFactor);
+    int replicateFactor = 1;
+    p_mesh = polyMPO::initTestMesh(testMeshOption, replicateFactor);
   }else{
     p_mesh = new polyMPO::Mesh();
   }
@@ -49,11 +49,11 @@ void polympo_deleteMPMesh(MPMesh_ptr p_mpmesh) {
   delete (polyMPO::MPMesh*)p_mpmesh;
 }
 
-MPMesh_ptr polympo_replicateMPMesh(MPMesh_ptr p_mpmesh, int scaleFactor) {
+MPMesh_ptr polympo_replicateMPMesh(MPMesh_ptr p_mpmesh, int replicateFactor) {
   //chech validity
   checkMPMeshValid(p_mpmesh);
   auto p_mesh = ((polyMPO::MPMesh*)p_mpmesh)->p_mesh;
-  p_mesh = polyMPO::replicateMesh(p_mesh,scaleFactor);
+  p_mesh = polyMPO::replicateMesh(p_mesh,replicateFactor);
   polyMPO::MaterialPoints* p_mps = new polyMPO::MaterialPoints();//XXX do we need testMPOption?
   MPMesh_ptr p_mpMeshReturn = (MPMesh_ptr) new polyMPO::MPMesh(p_mesh, p_mps);
   p_mpmeshes.push_back(p_mpMeshReturn);
@@ -178,28 +178,28 @@ void polympo_setMeshNumElms(MPMesh_ptr p_mpmesh, int numElms){
   p_mesh->setElm2ElmConn(elm2Elm);
 }
 
-void polympo_setMeshType(MPMesh_ptr p_mpmesh, int meshType){
+void polympo_setMeshTypeGeneralPoly(MPMesh_ptr p_mpmesh){
   //chech validity
   checkMPMeshValid(p_mpmesh);
-  auto p_mesh = ((polyMPO::MPMesh*)p_mpmesh)->p_mesh;
-  if(p_mesh->checkMeshType(meshType)){
-    p_mesh->setMeshType((polyMPO::mesh_type)meshType);
-  }else{
-    fprintf(stderr, "Error: %d is not a valid meshType!\n", meshType);
-    PMT_ALWAYS_ASSERT(false);
-  }
+  ((polyMPO::MPMesh*)p_mpmesh)->p_mesh->setMeshType(polyMPO::mesh_general_polygonal);
 }
 
-void polympo_setMeshGeomType(MPMesh_ptr p_mpmesh, int geomType){
+void polympo_setMeshTypeCVTPoly(MPMesh_ptr p_mpmesh){
   //chech validity
   checkMPMeshValid(p_mpmesh);
-  auto p_mesh = ((polyMPO::MPMesh*)p_mpmesh)->p_mesh;
-  if(p_mesh->checkGeomType(geomType)){
-    p_mesh->setGeomType((polyMPO::geom_type)geomType);
-  }else{
-    fprintf(stderr, "Error: %d is not a valid geomType!\n", geomType);
-    PMT_ALWAYS_ASSERT(false);
-  }
+  ((polyMPO::MPMesh*)p_mpmesh)->p_mesh->setMeshType(polyMPO::mesh_CVT_polygonal);
+}
+
+void polympo_setMeshGeomTypePlanar(MPMesh_ptr p_mpmesh){
+  //chech validity
+  checkMPMeshValid(p_mpmesh);
+  ((polyMPO::MPMesh*)p_mpmesh)->p_mesh->setGeomType(polyMPO::geom_planar_surf);
+}
+
+void polympo_setMeshGeomTypeSpherical(MPMesh_ptr p_mpmesh){
+  //chech validity
+  checkMPMeshValid(p_mpmesh);
+  ((polyMPO::MPMesh*)p_mpmesh)->p_mesh->setGeomType(polyMPO::geom_spherical_surf);
 }
 
 void polympo_setMeshSphereRadius(MPMesh_ptr p_mpmesh, double sphereRadius){

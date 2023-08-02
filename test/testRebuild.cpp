@@ -10,10 +10,10 @@ int main(int argc, char** argv) {
   Kokkos::initialize(argc, argv);
  
   const int testMeshOption = 1;
-  const int scaleFactor = 1;
+  const int replicateFactor = 1;
   const int testMPOption = 1;
   {
-    polyMPO::Mesh* testMesh = initTestMesh(testMeshOption, scaleFactor); 
+    polyMPO::Mesh* testMesh = initTestMesh(testMeshOption, replicateFactor); 
     auto mpMesh = initTestMPMesh(testMesh, testMPOption); //creates test MPs
     auto p_MPs = mpMesh.p_MPs;
 

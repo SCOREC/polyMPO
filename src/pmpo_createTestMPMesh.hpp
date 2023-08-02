@@ -12,11 +12,11 @@ namespace polyMPO {
  *  \param testMeshOption: 1= use the test hard coded planar mesh
  *                         else return a new blank mesh                
  *
- *  \param scaleFactor: the function makes factors of duplicates to test as a larger mesh
+ *  \param replicateFactor: the function makes factors of duplicates to test as a larger mesh
  *
  *  \return return the hard-coded mesh. 
  */
-polyMPO::Mesh* initTestMesh(int testMeshOption, int scaleFactor);
+polyMPO::Mesh* initTestMesh(int testMeshOption, int replicateFactor);
 
 /*
  * \brief Initialize test particles to a given mesh and return the MPMesh object
@@ -40,13 +40,13 @@ polyMPO::MaterialPoints* initTestMPs(polyMPO::Mesh* mesh,
  * \brief make a copy of the given mesh, with a replicate scale factor
  *
  * \details Make a new mesh with the same elements and material points
- *          with a sacle factor copies: new mesh = meshObj*scaleFactor.
+ *          with a sacle factor copies: new mesh = meshObj*replicateFactor.
  *          ONLY CHANGE THE SIZE
  *
  * \param meshObj (in) a mesh
  *
- * \param scaleFactor (in) make scaleFactor of duplicates  
+ * \param replicateFactor (in) make replicateFactor of duplicates  
  */
-polyMPO::Mesh* replicateMesh(polyMPO::Mesh* meshObj, int scaleFactor);
+polyMPO::Mesh* replicateMesh(polyMPO::Mesh* meshObj, int replicateFactor);
 
 }

@@ -11,7 +11,7 @@ int main(int argc, char** argv) {
     Kokkos::initialize(argc, argv);
 
     const int testMeshOption = 1;
-    const int scaleFactor = 100;
+    const int replicateFactor = 100;
     const int testMPOption = 1;
     //test init Test Mesh and run assembly and Wachspress
     {
@@ -19,7 +19,7 @@ int main(int argc, char** argv) {
         auto mp = polyMPO::MaterialPoints();
         auto v = polyMPO::Vec2d();
         
-        auto mesh = initTestMesh(testMeshOption, scaleFactor);
+        auto mesh = initTestMesh(testMeshOption, replicateFactor);
         auto mpMesh = initTestMPMesh(mesh,testMPOption);
         
         //test assembly in assembly.hpp

@@ -34,8 +34,8 @@ enum geom_type {geom_unrecognized_lower = -1,
 
 class Mesh {
   private:
-    mesh_type meshType_;
-    geom_type geomType_;
+    mesh_type meshType_ = mesh_unrecognized_lower;
+    geom_type geomType_ = geom_unrecognized_lower;
 
     double sphereRadius_;
     int numVtxs_;

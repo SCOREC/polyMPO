@@ -118,11 +118,11 @@ int main(int argc, char** argv) {
     
     //this test is only designed to work with the following option values:
     const int testMeshOption = 1;
-    const int scaleFactor = 1;
+    const int replicateFactor = 1;
     const int testMPOption = 1;
     //run assembly and test Wachspress
     {
-        auto testMesh = initTestMesh(testMeshOption,scaleFactor); 
+        auto testMesh = initTestMesh(testMeshOption,replicateFactor); 
         auto mpMesh = initTestMPMesh(testMesh, testMPOption); //creates test MPs 
         auto p_MPs = mpMesh.p_MPs;
         p_MPs->fillData<MPF_Mass>(1.0); //set MPF_Mass to 1.0

@@ -12,11 +12,11 @@ int main(int argc, char* argv[] ) {
     MPI_Init(&argc, &argv);
     Kokkos::initialize(argc,argv);
     const int testMeshOption = 1;
-    const int scaleFactor = atoi(argv[1]);
+    const int replicateFactor = atoi(argv[1]);
     const int testMPOption = 1;
-    printf("Time assembly and wachspress with factor: %d\n",scaleFactor);
+    printf("Time assembly and wachspress with factor: %d\n",replicateFactor);
     {
-        auto mesh = initTestMesh(testMeshOption,scaleFactor);
+        auto mesh = initTestMesh(testMeshOption,replicateFactor);
         auto mpMesh = initTestMPMesh(mesh,testMPOption);
         
         printf("Total MPs:%d\n",mpMesh.p_MPs->getCount());

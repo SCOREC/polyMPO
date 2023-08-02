@@ -6,31 +6,27 @@ namespace polyMPO {
 
 const int randSeed = 12345;
 
-template <int vec_dimension>
-Mesh* createMesh(const int nCells_size, const int nVertices_size,
-                const std::vector<std::vector<double>> &v_array,
-                const std::vector<std::vector<int>> &elm2VtxConn_array,
-                const std::vector<int> &vtxCoords_array,
-                const std::vector<std::vector<int>> &vtx2ElmConn_array,
-                const std::vector<std::vector<int>> &elm2ElmConn_array,
-                const int scaleFactor,
-                const mesh_type meshType, const geom_type geomType,
-                const double sphereRadius){
-    const int nCells = nCells_size*scaleFactor;
-    const int nVertices = nVertices_size*scaleFactor;
+Mesh* createMesh(const mesh_type meshType, const geom_type geomType,
+                 const double sphereRadius,
+                 const int nVertices_size, const int nCells_size,
+                 const std::vector<std::vector<double>> &v_array,
+                 const std::vector<std::vector<int>> &elm2VtxConn_array,
+                 const std::vector<int> &vtxCoords_array,
+                 const std::vector<std::vector<int>> &vtx2ElmConn_array,
+                 const std::vector<std::vector<int>> &elm2ElmConn_array){
+    const int nCells = nCells_size;
+    const int nVertices = nVertices_size;
     DoubleVec3dView vtxCoords("verticesCoordinates", nVertices);
     IntElm2VtxView vtx2ElmConn("vertexToElementsConnection",nVertices);
     DoubleVec3dView::HostMirror h_vtxCoords = Kokkos::create_mirror_view(vtxCoords);
     IntElm2VtxView::HostMirror h_vtx2ElmConn = Kokkos::create_mirror_view(vtx2ElmConn);
-    for(int f=0; f<scaleFactor; f++){
-        for(int i=0; i<nVertices_size; i++){
-            h_vtxCoords(i+f*nVertices_size,0) = v_array[i][0]; 
-            h_vtxCoords(i+f*nVertices_size,1) = v_array[i][1];
-            h_vtxCoords(i+f*nVertices_size,2) = v_array[i][2]; 
-            h_vtx2ElmConn(i+f*nVertices_size,0) = vtx2ElmConn_array[i][0];
-            for(int j=1; j<=vtx2ElmConn_array[i][0]; j++){
-                h_vtx2ElmConn(i+f*nVertices_size,j) = vtx2ElmConn_array[i][j]+f*nCells_size; 
-            }
+    for(int i=0; i<nVertices_size; i++){
+        h_vtxCoords(i,0) = v_array[i][0]; 
+        h_vtxCoords(i,1) = v_array[i][1];
+        h_vtxCoords(i,2) = v_array[i][2]; 
+        h_vtx2ElmConn(i,0) = vtx2ElmConn_array[i][0];
+        for(int j=1; j<=vtx2ElmConn_array[i][0]; j++){
+            h_vtx2ElmConn(i,j) = vtx2ElmConn_array[i][j]; 
         }
     }
     Kokkos::deep_copy(vtxCoords, h_vtxCoords);
@@ -38,24 +34,20 @@ Mesh* createMesh(const int nCells_size, const int nVertices_size,
 
     IntVtx2ElmView elm2VtxConn("elementToVerticesConnection",nCells);
     IntVtx2ElmView::HostMirror h_elm2VtxConn = Kokkos::create_mirror_view(elm2VtxConn);
-    for(int f=0; f<scaleFactor; f++){
-        for(int i=0; i<nCells_size; i++){
-            h_elm2VtxConn(i+f*nCells_size,0) = vtxCoords_array[i];
-            for(int j=0; j<h_elm2VtxConn(i,0); j++){
-                h_elm2VtxConn(i+f*nCells_size,j+1) = elm2VtxConn_array[i][j] + f*nVertices_size;
-            }
+    for(int i=0; i<nCells_size; i++){
+        h_elm2VtxConn(i,0) = vtxCoords_array[i];
+        for(int j=0; j<h_elm2VtxConn(i,0); j++){
+            h_elm2VtxConn(i,j+1) = elm2VtxConn_array[i][j];
         }
     }
     Kokkos::deep_copy(elm2VtxConn, h_elm2VtxConn);
 
     IntElm2ElmView elm2ElmConn("elementToElementsConnection",nCells);
     IntElm2ElmView::HostMirror h_elm2ElmConn = Kokkos::create_mirror_view(elm2ElmConn);
-    for(int f=0; f<scaleFactor; f++){
-        for(int i=0; i<nCells_size; i++){
-            h_elm2ElmConn(i+f*nCells_size,0) = vtxCoords_array[i];
-            for(int j=0; j<h_elm2ElmConn(i,0); j++){
-                h_elm2ElmConn(i+f*nCells_size,j+1) = elm2ElmConn_array[i][j] + f*nVertices_size;
-            }
+    for(int i=0; i<nCells_size; i++){
+        h_elm2ElmConn(i,0) = vtxCoords_array[i];
+        for(int j=0; j<h_elm2ElmConn(i,0); j++){
+            h_elm2ElmConn(i,j+1) = elm2ElmConn_array[i][j];
         }
     }
     Kokkos::deep_copy(elm2ElmConn, h_elm2ElmConn);
@@ -70,11 +62,15 @@ Mesh* createMesh(const int nCells_size, const int nVertices_size,
                     vtx2ElmConn,
                     elm2ElmConn);
 }
-Mesh* initTestMesh(const int testMeshOption, const int scaleFactor){
+
+Mesh* initTestMesh(const int testMeshOption, const int replicateFactor){
     //add a switch statement testMeshOption
     if(testMeshOption == 1){ //this is a 2d mesh with 10 tri-oct elements
-        const int nCells_size = 10;
+        const mesh_type meshType = mesh_unrecognized_lower;
+        const geom_type geomType = geom_unrecognized_lower;
+        const double sphereRadius = 0.0;
         const int nVertices_size = 19;
+        const int nCells_size = 10;
         const std::vector<std::vector<double>> v_array = //[nVertices_size][vec3d_nEntries]
             {{0.00,0.00,1.1},{0.47,0.00,1.1},{1.00,0.00,1.1},{0.60,0.25,1.1},{0.60,0.40,1.1}, //5
              {0.00,0.50,1.1},{0.31,0.60,1.1},{0.40,0.60,1.1},{0.45,0.55,1.1},{0.70,0.49,1.1}, //10
@@ -101,14 +97,20 @@ Mesh* initTestMesh(const int testMeshOption, const int scaleFactor){
              {-2,9,3,-1,-1,-1,-1,-1},{2,9,6,0,-1,-1,-1,-1},
              {5,9,-2,8,7,0,-1,-1},   {0,6,8,-1,-1,-1,-1,-1},
              {0,7,6,-2,-2,-1,-1,-1}, {5,2,3,4,-2,-2,6,-1}}; 
-        return createMesh<vec3d_nEntries>
-                         (nCells_size, nVertices_size,
-                          v_array, elm2VtxConn_array,
-                          vtxCoords_array, vtx2ElmConn_array,
-                          elm2ElmConn_array,
-                          scaleFactor,
-                          mesh_general_polygonal, geom_planar_surf,
-                          0.0);
+        auto meshReturn = createMesh(meshType, geomType, sphereRadius,
+                                     nVertices_size, nCells_size,
+                                     v_array, elm2VtxConn_array,
+                                     vtxCoords_array, vtx2ElmConn_array,
+                                     elm2ElmConn_array);
+        if(replicateFactor >1){
+            auto meshReplicate = replicateMesh(meshReturn,
+                                               replicateFactor);
+            delete meshReturn;
+            return meshReplicate;
+        }else{
+            return meshReturn; 
+        }
+    
     }else{
         fprintf(stderr,"TestMeshOption not avaiable! return an empty mesh!");
         return new Mesh();
@@ -184,21 +186,21 @@ MPMesh initTestMPMesh(Mesh* mesh, int setMPOption) {
   return MPMesh(mesh,mps);
 }
 
-Mesh* replicateMesh(Mesh* mesh, int scaleFactor){
+Mesh* replicateMesh(Mesh* mesh, int replicateFactor){
     //read the mesh
     const int nVertices_size = mesh->getNumVertices();
     const int nCells_size = mesh->getNumElements();
     const mesh_type meshType = mesh->getMeshType(); 
     const geom_type geomType = mesh->getGeomType(); 
     const double sphereRadius = mesh->getSphereRadius(); 
-    const int nCells = nCells_size*scaleFactor;
-    const int nVertices = nVertices_size*scaleFactor;
+    const int nCells = nCells_size*replicateFactor;
+    const int nVertices = nVertices_size*replicateFactor;
      
     DoubleVec3dView v_array = mesh->getVtxCoords(); 
     DoubleVec3dView vtxCoords("verticesCoordinates", nVertices);
     IntElm2VtxView vtx2ElmConn("TODO remove",1);
     Kokkos::parallel_for("set vtxCoords", nVertices_size, KOKKOS_LAMBDA(const int i){
-        for(int f=0; f<scaleFactor; f++){
+        for(int f=0; f<replicateFactor; f++){
             vtxCoords(i+f*nVertices_size,0) = v_array(i,0); 
             vtxCoords(i+f*nVertices_size,1) = v_array(i,1);
             vtxCoords(i+f*nVertices_size,2) = v_array(i,2); 
@@ -208,7 +210,7 @@ Mesh* replicateMesh(Mesh* mesh, int scaleFactor){
     IntVtx2ElmView elm2VtxConn_array = mesh->getElm2VtxConn();
     IntVtx2ElmView elm2VtxConn("elementToVerticesConnection",nCells);
     Kokkos::parallel_for("set elm2VtxConn", nCells_size, KOKKOS_LAMBDA(const int i){
-        for(int f=0; f<scaleFactor; f++){
+        for(int f=0; f<replicateFactor; f++){
             elm2VtxConn(i+f*nCells_size,0) = elm2VtxConn_array(i,0);
             for(int j=0; j<elm2VtxConn(i,0); j++){
                 elm2VtxConn(i+f*nCells_size,j+1) = elm2VtxConn_array(i,j+1) + f*nVertices_size;
@@ -219,7 +221,7 @@ Mesh* replicateMesh(Mesh* mesh, int scaleFactor){
     IntElm2ElmView elm2ElmConn_array = mesh->getElm2ElmConn();
     IntElm2ElmView elm2ElmConn("elementToElementsConnection",nCells);
     Kokkos::parallel_for("set elm2ElmConn", nCells_size, KOKKOS_LAMBDA(const int i){
-        for(int f=0; f<scaleFactor; f++){
+        for(int f=0; f<replicateFactor; f++){
             elm2ElmConn(i+f*nCells_size,0) = elm2ElmConn_array(i,0);
             for(int j=0; j<elm2ElmConn(i,0); j++){
                 elm2ElmConn(i+f*nCells_size,j+1) = elm2ElmConn_array(i,j+1) + f*nVertices_size;

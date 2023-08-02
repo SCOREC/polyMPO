@@ -10,10 +10,10 @@ int main(int argc, char** argv) {
     MPI_Init(&argc, &argv);
     Kokkos::initialize(argc, argv);
     const int testMeshOption = 1;
-    const int scaleFactor = 1;
+    const int replicateFactor = 1;
     const int testMPOption = 1;
     {
-      auto testMesh = initTestMesh(testMeshOption,scaleFactor); 
+      auto testMesh = initTestMesh(testMeshOption,replicateFactor); 
       auto mpMesh = initTestMPMesh(testMesh, testMPOption); //creates test MPs based on testMesh and mpPerElement
       
       auto p_mesh = mpMesh.p_mesh;

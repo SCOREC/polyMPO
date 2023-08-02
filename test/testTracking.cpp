@@ -12,10 +12,10 @@ int main(int argc, char* argv[]) {
     Kokkos::initialize(argc, argv);
 
     const int testMeshOption = 1;
-    const int scaleFactor = 1;
+    const int replicateFactor = 1;
     const int testMPOption = 1;
     {//runTracking
-        auto testMesh = initTestMesh(testMeshOption, scaleFactor); 
+        auto testMesh = initTestMesh(testMeshOption, replicateFactor); 
         auto mpMesh = initTestMPMesh(testMesh, testMPOption); 
         auto p_MPs = mpMesh.p_MPs;
         

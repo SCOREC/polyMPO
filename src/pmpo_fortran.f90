@@ -51,7 +51,7 @@ module polympo
   !> @brief set the velocity MP array from a host array
   !> @param mpmesh(in/out) MPMesh object
   !> @param n(in) length of array
-  !> @param array(in) input MP velocity array
+  !> @param array(in) input MP velocity 1D array
   !---------------------------------------------------------------------------
   subroutine polympo_setMPVelArray(mpMesh, n, array) &
              bind(C, NAME='polympo_setMPVelArray')
@@ -64,7 +64,7 @@ module polympo
   !> @brief get the velocity MP array from a polympo array
   !> @param mpmesh(in/out) MPMesh object
   !> @param n(in) length of array
-  !> @param array(in/out) output MP velocity array, allocated by user
+  !> @param array(in/out) output MP velocity 1D array, allocated by user
   !---------------------------------------------------------------------------
   subroutine polympo_getMPVelArray(mpMesh, n, array) &
              bind(C, NAME='polympo_getMPVelArray')
@@ -160,7 +160,7 @@ module polympo
   !> @brief set the polympo mesh vertices coordinates
   !> @param mpmesh(in/out) MPMesh object
   !> @param n(in) number of the vertices coordinates 
-  !> @param x/y/zArray(in) the arrays of vertices coordinates
+  !> @param x/y/zArray(in) the 1D arrays of vertices coordinates
   !---------------------------------------------------------------------------
   subroutine polympo_setMeshVtxCoords(mpMesh, n, xArray, yArray, zArray) &
              bind(C, NAME='polympo_setMeshVtxCoords')
@@ -174,7 +174,7 @@ module polympo
   !> @brief set the polympo mesh element to vertices connectivity
   !> @param mpmesh(in/out) MPMesh object
   !> @param n(in) length of array (numElms*maxEdges)
-  !> @param array(in) element to vertices connectivity array (verticesOnCell)
+  !> @param array(in) element to vertices connectivity 2D array (verticesOnCell)
   !---------------------------------------------------------------------------
   subroutine polympo_setMeshElm2VtxConn(mpMesh, m, n, array) &
              bind(C, NAME='polympo_setMeshElm2VtxConn')
@@ -187,7 +187,7 @@ module polympo
   !> @brief set the polympo mesh element to elements connectivity
   !> @param mpmesh(in/out) MPMesh object
   !> @param m,n(in) length of array (numElms*maxEdges)
-  !> @param array(in) element to elements connectivity array (cellsOnCell)
+  !> @param array(in) element to elements connectivity 2D array (cellsOnCell)
   !---------------------------------------------------------------------------
   subroutine polympo_setMeshElm2ElmConn(mpMesh, m, n, array) &
              bind(C, NAME='polympo_setMeshElm2ElmConn')
@@ -208,7 +208,7 @@ module polympo
   !> @brief set the velocity mesh array from a host array
   !> @param mpmesh(in/out) MPMesh object
   !> @param n(in) length of array
-  !> @param array(in) input mesh velocity array
+  !> @param array(in) input mesh velocity 1D array
   !---------------------------------------------------------------------------
   subroutine polympo_setMeshVelArray(mpMesh, n, array) &
              bind(C, NAME='polympo_setMeshVelArray')
@@ -221,7 +221,7 @@ module polympo
   !> @brief get the velocity mesh array from a polympo array
   !> @param mpmesh(in/out) MPMesh object
   !> @param n(in) length of array
-  !> @param array(in/out) output mesh velocity array, allocated by user
+  !> @param array(in/out) output mesh velocity 1D array, allocated by user
   !---------------------------------------------------------------------------
   subroutine polympo_getMeshVelArray(mpMesh, n, array) &
              bind(C, NAME='polympo_getMeshVelArray')

@@ -8,9 +8,8 @@ program main
   integer :: argc, i, arglen
   integer :: setMeshOption, setMPOption
   integer(c_int) :: mpi_comm_handle = MPI_COMM_WORLD
-  integer(c_int) :: replicateFactor = 2
   character (len=2048) :: filename
-  type(c_ptr) :: mpMesh, mpMeshNew
+  type(c_ptr) :: mpMesh
 
   call mpi_init(ierr)
   call mpi_comm_rank(mpi_comm_handle, self, ierr)
@@ -29,15 +28,11 @@ program main
   setMPOption = 1   !create a test set of MPs
   mpMesh = polympo_createMPMesh(setMeshOption, setMPOption)
 
-  !contain subroutine and take 2 arguments: mpMeshObj and filename
   call polympo_setWithMPASMesh(mpMesh, filename)
 
-  mpMeshNew = polympo_replicateMPMesh(mpMesh, replicateFactor)
   !todo check the value using get functions. 
   
-
   call polympo_deleteMPMesh(mpMesh)
-  call polympo_deleteMPMesh(mpMeshNew)
   call polympo_finalize()
 
   call mpi_finalize(ierr)

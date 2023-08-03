@@ -14,7 +14,6 @@ void polympo_finalize();
 //create/delete MpMesh object
 MPMesh_ptr polympo_createMPMesh(int setMeshOption, int setMPOption);
 void polympo_deleteMPMesh(MPMesh_ptr p_mpmesh);
-MPMesh_ptr polympo_replicateMPMesh(MPMesh_ptr p_mpmesh, int replicateFactor);
 
 //set MPI communicator
 void polympo_setMPICommunicator(MPI_Fint fcomm);//TODO:is MPI_Fint best? or something else

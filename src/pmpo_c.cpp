@@ -49,17 +49,6 @@ void polympo_deleteMPMesh(MPMesh_ptr p_mpmesh) {
   delete (polyMPO::MPMesh*)p_mpmesh;
 }
 
-MPMesh_ptr polympo_replicateMPMesh(MPMesh_ptr p_mpmesh, int replicateFactor) {
-  //chech validity
-  checkMPMeshValid(p_mpmesh);
-  auto p_mesh = ((polyMPO::MPMesh*)p_mpmesh)->p_mesh;
-  p_mesh = polyMPO::replicateMesh(p_mesh,replicateFactor);
-  polyMPO::MaterialPoints* p_mps = new polyMPO::MaterialPoints();//XXX do we need testMPOption?
-  MPMesh_ptr p_mpMeshReturn = (MPMesh_ptr) new polyMPO::MPMesh(p_mesh, p_mps);
-  p_mpmeshes.push_back(p_mpMeshReturn);
-  return p_mpMeshReturn;
-}
-
 void polympo_setMPICommunicator(MPI_Fint fcomm){
     MPI_Comm comm = MPI_Comm_f2c(fcomm);
     int commSize;

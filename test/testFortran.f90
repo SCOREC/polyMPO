@@ -19,6 +19,7 @@ program main
   integer :: numMPs 
   integer :: i, j
   integer :: setMeshOption, setMPOption
+  integer(c_int) :: mpi_comm_handle = MPI_COMM_WORLD
   real(c_double) :: value1, value2
   real(c_double), dimension(:), pointer :: MParray
   real(c_double), dimension(:), pointer :: Mesharray
@@ -26,9 +27,9 @@ program main
   type(c_ptr) :: mpMesh
 
   call mpi_init(ierr)
-  call mpi_comm_rank(MPI_COMM_WORLD, self, ierr)
+  call mpi_comm_rank(mpi_comm_handle, self, ierr)
 
-  call polympo_setMPICommunicator(MPI_COMM_WORLD) !this is not supported yet! only for showing
+  call polympo_setMPICommunicator(mpi_comm_handle) !this is not supported yet! only for showing
   call polympo_initialize()
 
   setMeshOption = 1

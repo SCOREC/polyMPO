@@ -66,8 +66,8 @@ Mesh* createMesh(const mesh_type meshType, const geom_type geomType,
 Mesh* initTestMesh(const int testMeshOption, const int replicateFactor){
     //add a switch statement testMeshOption
     if(testMeshOption == 1){ //this is a 2d mesh with 10 tri-oct elements
-        const mesh_type meshType = mesh_unrecognized_lower;
-        const geom_type geomType = geom_unrecognized_lower;
+        const mesh_type meshType = mesh_general_polygonal;
+        const geom_type geomType = geom_planar_surf;
         const double sphereRadius = 0.0;
         const int nVertices_size = 19;
         const int nCells_size = 10;

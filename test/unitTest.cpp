@@ -123,6 +123,8 @@ int main(int argc, char** argv) {
     //run assembly and test Wachspress
     {
         auto testMesh = initTestMesh(testMeshOption,replicateFactor); 
+        PMT_ALWAYS_ASSERT(testMesh->getMeshType() == mesh_general_polygonal);
+        PMT_ALWAYS_ASSERT(testMesh->getGeomType() == geom_planar_surf);
         auto mpMesh = initTestMPMesh(testMesh, testMPOption); //creates test MPs 
         auto p_MPs = mpMesh.p_MPs;
         p_MPs->fillData<MPF_Mass>(1.0); //set MPF_Mass to 1.0

@@ -24,8 +24,8 @@ program main
     write(0, *) "Usage: ./testFortranReadMPAS <path to the nc file>"
   end if
 
-  setMeshOption = 1 !create a test mesh
-  setMPOption = 1   !create a test set of MPs
+  setMeshOption = 0 !create an empty mesh
+  setMPOption = 0   !create an empty set of MPs
   mpMesh = polympo_createMPMesh(setMeshOption, setMPOption)
 
   call polympo_setWithMPASMesh(mpMesh, filename)

@@ -87,8 +87,11 @@ class Mesh {
     IntElm2ElmView getElm2ElmConn() { return elm2ElmConn_; }
     template<MeshFieldIndex index> auto getMeshField();
 
-    void setMeshType(mesh_type meshType) {meshType_ = meshType;}
-    void setGeomType(geom_type geomType) {geomType_ = geomType;}
+    //onec MeshType/GeomType is set to valid types, we can't change them anymore
+    void setMeshType(mesh_type meshType) {PMT_ALWAYS_ASSERT(!checkMeshType(meshType_));
+                                          meshType_ = meshType;}
+    void setGeomType(geom_type geomType) {PMT_ALWAYS_ASSERT(!checkGeomType(geomType_));
+                                          geomType_ = geomType;}
     void setSphereRadius(double sphereRadius) {sphereRadius_ = sphereRadius;}
     void setNumVtxs(int numVtxs) {numVtxs_ = numVtxs;}
     void setNumElms(int numElms) {numElms_ = numElms;}

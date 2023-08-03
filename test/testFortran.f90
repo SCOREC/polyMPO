@@ -20,8 +20,8 @@ program main
   integer :: i, j
   integer :: setMeshOption, setMPOption
   real(c_double) :: value1, value2
-  real(c_double), dimension(:), allocatable :: MParray
-  real(c_double), dimension(:), allocatable :: Mesharray
+  real(c_double), dimension(:), pointer :: MParray
+  real(c_double), dimension(:), pointer :: Mesharray
   integer :: ierr, self
   type(c_ptr) :: mpMesh
 
@@ -44,32 +44,32 @@ program main
 
   value1 = 42
   MParray = value1
-  call polympo_setMPVelArray(mpMesh, numMPs, MParray)
+  call polympo_setMPVelArray(mpMesh, numMPs, c_loc(MParray))
 
   Mesharray = value1
-  call polympo_setMeshVelArray(mpMesh, nverts, Mesharray)
+  call polympo_setMeshVelArray(mpMesh, nverts, c_loc(Mesharray))
 
   MParray = 1
-  call polympo_getMPVelArray(mpMesh, numMPs, MParray)
+  call polympo_getMPVelArray(mpMesh, numMPs, c_loc(MParray))
   call assert(all(MParray .eq. value1), "Assert MParray == value1 Failed!")
 
   Mesharray = 1
-  call polympo_getMeshVelArray(mpMesh, nverts, Mesharray)
+  call polympo_getMeshVelArray(mpMesh, nverts, c_loc(Mesharray))
   call assert(all(Mesharray .eq. value1), "Assert Mesharray == value1 Failed!")
 
   value2 = 24
   MParray = value2
-  call polympo_setMPVelArray(mpMesh, numMPs, MParray)
+  call polympo_setMPVelArray(mpMesh, numMPs, c_loc(MParray))
 
   MParray = 1
-  call polympo_getMPVelArray(mpMesh, numMPs, MParray)
+  call polympo_getMPVelArray(mpMesh, numMPs, c_loc(MParray))
   call assert(all(MParray .eq. value2), "Assert MParray == value2 Failed!")
 
   Mesharray = value2
-  call polympo_setMeshVelArray(mpMesh, nverts, Mesharray)
+  call polympo_setMeshVelArray(mpMesh, nverts, c_loc(Mesharray))
 
   Mesharray = 1
-  call polympo_getMeshVelArray(mpMesh, nverts, Mesharray)
+  call polympo_getMeshVelArray(mpMesh, nverts, c_loc(Mesharray))
   call assert(all(Mesharray .eq. value2), "Assert Mesharray == value2 Failed!")
 
   deallocate(MParray)

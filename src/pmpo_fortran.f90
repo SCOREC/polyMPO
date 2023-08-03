@@ -58,7 +58,7 @@ module polympo
     use :: iso_c_binding
     type(c_ptr), value :: mpMesh
     integer(c_int), value :: n
-    real(c_double), intent(in), dimension(n) :: array
+    type(c_ptr), intent(in), value :: array
   end subroutine
   !---------------------------------------------------------------------------
   !> @brief get the velocity MP array from a polympo array
@@ -71,7 +71,7 @@ module polympo
     use :: iso_c_binding
     type(c_ptr), value :: mpMesh
     integer(c_int), value :: n
-    real(c_double), intent(inout), dimension(n) :: array
+    type(c_ptr), value :: array
   end subroutine
   !---------------------------------------------------------------------------
   !> @brief check the Mesh is valid/runable in polympo
@@ -168,7 +168,6 @@ module polympo
     type(c_ptr), value :: mpMesh
     integer(c_int), value :: n
     type(c_ptr), intent(in), value :: xArray, yArray, zArray
-    !todo: change all the 1d arrays to pointers
   end subroutine
   !---------------------------------------------------------------------------
   !> @brief set the polympo mesh element to vertices connectivity
@@ -215,7 +214,7 @@ module polympo
     use :: iso_c_binding
     type(c_ptr), value :: mpMesh
     integer(c_int), value :: n
-    real(c_double), intent(in), dimension(n) :: array
+    type(c_ptr), intent(in), value :: array
   end subroutine
   !---------------------------------------------------------------------------
   !> @brief get the velocity mesh array from a polympo array
@@ -228,7 +227,7 @@ module polympo
     use :: iso_c_binding
     type(c_ptr), value :: mpMesh
     integer(c_int), value :: n
-    real(c_double), intent(inout), dimension(n) :: array
+    type(c_ptr), value :: array
   end subroutine
   end interface
 end module

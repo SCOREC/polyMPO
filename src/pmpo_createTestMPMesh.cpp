@@ -132,6 +132,7 @@ MaterialPoints* initTestMPs(Mesh* mesh, int testMPOption){
     }
     DoubleVec3dView vtxCoords = mesh->getVtxCoords();   
     IntVtx2ElmView elm2VtxConn = mesh->getElm2VtxConn();
+    auto geomType = mesh->getGeomType();
 
     int numMPs = 0;
     IntView numMPsPerElement("numMaterialPointsPerElement",numElms);
@@ -139,7 +140,7 @@ MaterialPoints* initTestMPs(Mesh* mesh, int testMPOption){
       Kokkos::Random_XorShift64_Pool<> random_pool(randSeed);
       Kokkos::parallel_for("setNumMPPerElement",numElms, KOKKOS_LAMBDA(const int i){
           auto generator = random_pool.get_state();
-          numMPsPerElement(i) = generator.urand(4,7); //rand between 4 and 7 - TODO: make input arg
+          numMPsPerElement(i) = generator.urand(4,7);
           random_pool.free_state(generator);
       });
     } else {
@@ -163,21 +164,49 @@ MaterialPoints* initTestMPs(Mesh* mesh, int testMPOption){
     },numMPs);
 
     DoubleVec3dView positions("MPpositions",numMPs);
-     
-    Kokkos::parallel_for("intializeMPsPosition", numMPs, KOKKOS_LAMBDA(const int iMP){
-        int ielm = MPToElement(iMP);
-        int numVtx = elm2VtxConn(ielm,0);
-        double sum_x = 0.0, sum_y = 0.0, sum_z = 0.0;
-        for(int i=1; i<= numVtx; i++){
-            sum_x += vtxCoords(elm2VtxConn(ielm,i)-1,0);
-            sum_y += vtxCoords(elm2VtxConn(ielm,i)-1,1);
-            sum_z += vtxCoords(elm2VtxConn(ielm,i)-1,2);
-        }
-        positions(iMP,0) = sum_x/numVtx;
-        positions(iMP,1) = sum_y/numVtx;
-        positions(iMP,2) = sum_z/numVtx;
-    });
-    
+    if(geomType == geom_planar_surf){     
+        Kokkos::parallel_for("intializeMPsPositionPlanar", numMPs, KOKKOS_LAMBDA(const int iMP){
+            int ielm = MPToElement(iMP);
+            int numVtx = elm2VtxConn(ielm,0);
+            double sum_x = 0.0, sum_y = 0.0, sum_z = 0.0;
+            for(int i=1; i<= numVtx; i++){
+                sum_x += vtxCoords(elm2VtxConn(ielm,i)-1,0);
+                sum_y += vtxCoords(elm2VtxConn(ielm,i)-1,1);
+                sum_z += vtxCoords(elm2VtxConn(ielm,i)-1,2);
+            }
+            positions(iMP,0) = sum_x/numVtx;
+            positions(iMP,1) = sum_y/numVtx;
+            positions(iMP,2) = sum_z/numVtx;
+        });
+    }else if(geomType == geom_spherical_surf){
+        Kokkos::Random_XorShift64_Pool<> random_pool(randSeed);
+        const double radius = mesh->getSphereRadius();
+        printf("radius: %f\n",radius);
+        Kokkos::parallel_for("intializeMPsPositionSpherical", numMPs, KOKKOS_LAMBDA(const int iMP){
+            int ielm = MPToElement(iMP);
+            int numVtx = elm2VtxConn(ielm,0);
+            auto generator = random_pool.get_state();
+            int r1Index = generator.urand(0,numVtx);
+            int r2Index = (r1Index+numVtx/2)%numVtx;
+            ++r1Index;
+            ++r2Index;
+            random_pool.free_state(generator);
+            Vec3d midPoint(0.0,0.0,0.0);
+            midPoint[0] = (vtxCoords(elm2VtxConn(ielm,r1Index)-1,0)+
+                           vtxCoords(elm2VtxConn(ielm,r2Index)-1,0))/2;
+            midPoint[1] = (vtxCoords(elm2VtxConn(ielm,r1Index)-1,1)+
+                           vtxCoords(elm2VtxConn(ielm,r2Index)-1,1))/2;
+            midPoint[2] = (vtxCoords(elm2VtxConn(ielm,r1Index)-1,2)+
+                           vtxCoords(elm2VtxConn(ielm,r2Index)-1,2))/2;
+            midPoint = midPoint * (1/midPoint.magnitude()) * radius; 
+            positions(iMP,0) = midPoint[0];
+            positions(iMP,1) = midPoint[1];
+            positions(iMP,2) = midPoint[2];
+        });
+    } else{
+        fprintf(stderr,"The geom type is not correct!");
+        exit(1);
+    }
     return new MaterialPoints(numElms,numMPs,positions,numMPsPerElement,MPToElement);
 }
 

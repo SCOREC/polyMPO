@@ -241,7 +241,7 @@ end if
         write(0, *) trim(nf90_strerror(status))
         stop
     end if
-
+    
     status = nf90_get_var(ncid, cellsOnCellID, cellsOnCell)
     if (status /= nf90_noerr) then
         write(0, *) "polympo_readMPASMesh: Error on get var of 'cellsOnCell'"

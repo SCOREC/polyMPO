@@ -17,14 +17,13 @@ int main(int argc, char** argv) {
     {
         auto m = polyMPO::Mesh();
         auto mp = polyMPO::MaterialPoints();
-        auto v = polyMPO::Vec2d();
         
         auto mesh = initTestMesh(testMeshOption, replicateFactor);
         auto mpMesh = initTestMPMesh(mesh,testMPOption);
         
         //test assembly in assembly.hpp
         polyMPO::assembly<MPF_Vel,MeshF_Vel>(mpMesh,false,false);
-        interpolateWachspress(mpMesh);
+        interpolateWachspress2DTest(mpMesh);
     }
     
     Kokkos::finalize();

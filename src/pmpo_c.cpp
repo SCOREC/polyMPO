@@ -246,39 +246,39 @@ void polympo_setMeshNumEdgesPerElm(MPMesh_ptr p_mpmesh, int size, int* array){
 void polympo_setMeshElm2VtxConn(MPMesh_ptr p_mpmesh, int size1, int size2, int* array){
   //chech vailidity
   checkMPMeshValid(p_mpmesh);
-  kkInt2dViewHostU arrayHost(array,size1,size2);
+  kkInt2dViewHostU arrayHost(array,size2,size1); //Fortran is column-major
   auto p_mesh = ((polyMPO::MPMesh*)p_mpmesh)->p_mesh; 
 
   //check the size
   PMT_ALWAYS_ASSERT(size1 == p_mesh->getNumElements());
   PMT_ALWAYS_ASSERT(size2 <= maxVtxsPerElm);
   
-  Kokkos::View<int**> elm2VtxArray("MeshElementsToVertices",size1,size2);
+  Kokkos::View<int**> elm2VtxArray("MeshElementsToVertices",size2,size1);
   Kokkos::deep_copy(elm2VtxArray, arrayHost);
   auto elm2VtxConn = p_mesh->getElm2VtxConn();
   Kokkos::parallel_for("set elm2VtxConn", size1, KOKKOS_LAMBDA(const int elm){
     for(int i=0; i<size2; i++){
-        elm2VtxConn(elm,i+1) = elm2VtxArray(elm,i);
-    }  
+        elm2VtxConn(elm,i+1) = elm2VtxArray(i,elm);
+    }
   });
 }
 
 void polympo_setMeshElm2ElmConn(MPMesh_ptr p_mpmesh, int size1, int size2, int* array){
   //chech vailidity
   checkMPMeshValid(p_mpmesh);
-  kkInt2dViewHostU arrayHost(array,size1,size2);
+  kkInt2dViewHostU arrayHost(array,size2,size1); //Fortran is column-major
   auto p_mesh = ((polyMPO::MPMesh*)p_mpmesh)->p_mesh; 
 
   //check the size
   PMT_ALWAYS_ASSERT(size1 == p_mesh->getNumElements());
   PMT_ALWAYS_ASSERT(size2 <= maxVtxsPerElm);
   
-  Kokkos::View<int**> elm2ElmArray("MeshElementsToVertices",size1,size2);
+  Kokkos::View<int**> elm2ElmArray("MeshElementsToVertices",size2,size1);
   Kokkos::deep_copy(elm2ElmArray, arrayHost);
   auto elm2ElmConn = p_mesh->getElm2ElmConn();
   Kokkos::parallel_for("set elm2ElmConn", size1, KOKKOS_LAMBDA(const int elm){
     for(int i=0; i<size2; i++){
-        elm2ElmConn(elm,i+1) = elm2ElmArray(elm,i);
+        elm2ElmConn(elm,i+1) = elm2ElmArray(i,elm);
     }  
   });
 }

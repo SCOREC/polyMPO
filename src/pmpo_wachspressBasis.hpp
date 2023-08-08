@@ -139,10 +139,12 @@ void getBasisByAreaGblFormSpherical(Vec3d MP, int numVtxs, Vec3d* v,
         //c = vi-1 vi vi+1
         //a = x    vi vi+1
         c[i] = sphericalTriangleArea(v[i-1],v[i],v[i+1],radius);
-        a[i] = sphericalTriangleArea(MP,v[i],v[i+1],radius);
+        a[i] = sphericalTriangleArea(v[i],v[i+1],MP,radius);
+        printf("%d:c= %f, a= %f\n",i,c[i],a[i]);
     }
     c[0] = sphericalTriangleArea(v[numVtxs-1],v[0],v[1],radius);
-    a[0] = sphericalTriangleArea(MP,v[0],v[1],radius);
+    a[0] = sphericalTriangleArea(v[0],v[1],MP,radius);
+
 
     calcBasis(numVtxs, a, c, basis);
 }
@@ -156,10 +158,10 @@ void getBasisByAreaGblFormSpherical2(Vec3d MP, int numVtxs, Vec3d* v,
         //c = vi-1 vi vi+1
         //a = x    vi vi+1
         c[i] = sphericalTriangleArea2(v[i-1],v[i],v[i+1],radius);
-        a[i] = sphericalTriangleArea2(MP,v[i],v[i+1],radius);
+        a[i] = sphericalTriangleArea2(v[i],v[i+1],MP,radius);
     }
     c[0] = sphericalTriangleArea2(v[numVtxs-1],v[0],v[1],radius);
-    a[0] = sphericalTriangleArea2(MP,v[0],v[1],radius);
+    a[0] = sphericalTriangleArea2(v[0],v[1],MP,radius);
 
     calcBasis(numVtxs, a, c, basis);
 }

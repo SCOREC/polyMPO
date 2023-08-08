@@ -5,8 +5,6 @@
 #include "testUtils.hpp"
 #include <mpi.h>
 
-#define TEST_EPSILON 1e-6
-#define TEST_PI 3.14159265359
 using namespace polyMPO;
 
 void matrixMultiply(double matrix[3][3], Vec3d &v, Vec3d &result);
@@ -80,15 +78,15 @@ int main(int argc, char** argv) {
     PMT_ALWAYS_ASSERT(v19 - sqrt(14) < TEST_EPSILON); 
 
     //test calc sphericalTriangleArea sphericalTriangleArea2
-    double radius = 1.03;
+    double radius = 6371229.0;
     auto a1 = polyMPO::Vec3d(radius,0,0);
     auto b1 = polyMPO::Vec3d(0,radius,0);
     auto c1 = polyMPO::Vec3d(0,0,radius);
-    double areaRef = 4 * TEST_PI * radius * radius / 8;
+    double areaRef = 4 * TEST_PI / 8;
     auto area1_1 = polyMPO::sphericalTriangleArea(a1,b1,c1,radius);
     auto area1_2 = polyMPO::sphericalTriangleArea2(a1,b1,c1,radius);
-    printf("area1_1: %e\n",area1_1);
-    printf("area1_2: %e\n",area1_2);
+    printf("area1_1: %.16e\n",area1_1);
+    printf("area1_2: %.16e\n",area1_2);
     PMT_ALWAYS_ASSERT(Kokkos::fabs(area1_1 - areaRef) < TEST_EPSILON); 
     PMT_ALWAYS_ASSERT(Kokkos::fabs(area1_2 - areaRef) < TEST_EPSILON); 
     //rotate Z by 30 degrees
@@ -175,7 +173,7 @@ int main(int argc, char** argv) {
           PMT_ALWAYS_ASSERT(res);
         }
 
-        interpolateWachspress(mpMesh);              
+        interpolateWachspress2DTest(mpMesh);              
     }
     Kokkos::finalize();
 

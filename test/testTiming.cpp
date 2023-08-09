@@ -5,7 +5,6 @@
 
 #include "pmpo_createTestMPMesh.hpp"
 #include "testUtils.hpp"
-#include <netcdf.h>
 
 using namespace polyMPO;
 

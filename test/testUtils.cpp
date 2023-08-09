@@ -35,8 +35,6 @@ void interpolateWachspress2DTest(MPMesh& mpMesh){
                 wp_coord = wp_coord + v[i]*basisByArea[i];
                 wp_grad = wp_grad + gradBasisByArea[i].dot(v[i]);
             }
-            assert(wp_coord[1] - MPsPosition(mp,1) < TEST_EPSILON);
-            assert(wp_coord[1] - MPsPosition(mp,1) < TEST_EPSILON);
         }        
     };
     p_MPs->parallel_for(eval, "interpolateWachspress2DTest");
@@ -52,7 +50,7 @@ void interpolateWachspress3DTest(MPMesh& mpMesh){
     double radius = p_mesh->getSphereRadius();
     PMT_ALWAYS_ASSERT(radius >0);
     auto eval = PS_LAMBDA(const int& elm, const int& mp, const int mask){
-        if (mask && mp <1) {
+        if (mask) {
             Vec3d position3d(MPsPosition(mp,0),MPsPosition(mp,1),MPsPosition(mp,2));
             Vec3d v3d[maxVtxsPerElm+1];
             int numVtx = elm2VtxConn(elm,0);
@@ -60,7 +58,7 @@ void interpolateWachspress3DTest(MPMesh& mpMesh){
                 v3d[i-1][0] = vtxCoords(elm2VtxConn(elm,i)-1,0);
                 v3d[i-1][1] = vtxCoords(elm2VtxConn(elm,i)-1,1);
                 v3d[i-1][2] = vtxCoords(elm2VtxConn(elm,i)-1,2);
-                printf("%d:(%f,%f,%f)\n",i-1,v3d[i-1][0],v3d[i-1][1],v3d[i-1][2]);
+                //printf("%d:(%f,%f,%f)\n",i-1,v3d[i-1][0],v3d[i-1][1],v3d[i-1][2]);
             }
             v3d[numVtx][0] = vtxCoords(elm2VtxConn(elm,1)-1,0);
             v3d[numVtx][1] = vtxCoords(elm2VtxConn(elm,1)-1,1);
@@ -80,12 +78,12 @@ void interpolateWachspress3DTest(MPMesh& mpMesh){
                 wp_coord = wp_coord + v3d[i]*basisByArea3d[i];
                 wp_coord2 = wp_coord + v3d[i]*basisByArea3d2[i];
             }
-            printf("interpolation:(%.16e %.16e %.16e)\noriginal MP:(%.16e %.16e %.16e)\n",wp_coord[0],
+            /*printf("interpolation:(%.16e %.16e %.16e)\noriginal MP:(%.16e %.16e %.16e)\n",wp_coord[0],
                                               wp_coord[1],
                                               wp_coord[2],
                                               MPsPosition(mp,0),
                                               MPsPosition(mp,1),
-                                              MPsPosition(mp,2));
+                                              MPsPosition(mp,2));*/
             //assert(wp_coord[0] - MPsPosition(mp,0) < TEST_EPSILON);
             //assert(wp_coord[1] - MPsPosition(mp,1) < TEST_EPSILON);
             //assert(wp_coord[2] - MPsPosition(mp,2) < TEST_EPSILON);

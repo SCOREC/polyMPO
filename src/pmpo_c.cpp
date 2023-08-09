@@ -199,22 +199,22 @@ void polympo_setMeshSphereRadius(MPMesh_ptr p_mpmesh, double sphereRadius){
   p_mesh->setSphereRadius(sphereRadius);
 }
 
-void polympo_setMeshVtxCoords(MPMesh_ptr p_mpmesh, int size, double* xArray, double* yArray, double* zArray){
+void polympo_setMeshVtxCoords(MPMesh_ptr p_mpmesh, int nVertices, double* xArray, double* yArray, double* zArray){
   //chech validity
   checkMPMeshValid(p_mpmesh);
   auto p_mesh = ((polyMPO::MPMesh*)p_mpmesh)->p_mesh;
 
   //check the size
-  PMT_ALWAYS_ASSERT(p_mesh->getNumVertices()==size); 
+  PMT_ALWAYS_ASSERT(p_mesh->getNumVertices()==nVertices); 
 
-  kkDblViewHostU xArrayHost(xArray,size); 
-  kkDblViewHostU yArrayHost(yArray,size); 
-  kkDblViewHostU zArrayHost(zArray,size); 
+  kkDblViewHostU xArrayHost(xArray,nVertices); 
+  kkDblViewHostU yArrayHost(yArray,nVertices); 
+  kkDblViewHostU zArrayHost(zArray,nVertices); 
   
   //copy the host array to the device
-  auto coordsArray = polyMPO::DoubleVec3dView("MeshVtxCoords",size);
+  auto coordsArray = polyMPO::DoubleVec3dView("MeshVtxCoords",nVertices);
   polyMPO::DoubleVec3dView::HostMirror h_coordsArray = Kokkos::create_mirror_view(coordsArray);
-  for(int i=0; i<size; i++){
+  for(int i=0; i<nVertices; i++){
     //we only have Vec2d now,so zArray is not used
     h_coordsArray(i,0) = xArrayHost(i);
     h_coordsArray(i,1) = yArrayHost(i);
@@ -224,61 +224,61 @@ void polympo_setMeshVtxCoords(MPMesh_ptr p_mpmesh, int size, double* xArray, dou
   p_mesh->setVtxCoords(coordsArray);
 }
 
-void polympo_setMeshNumEdgesPerElm(MPMesh_ptr p_mpmesh, int size, int* array){
+void polympo_setMeshNumEdgesPerElm(MPMesh_ptr p_mpmesh, int nCells, int* array){
   //chech vailidity
   checkMPMeshValid(p_mpmesh);
-  kkIntViewHostU arrayHost(array,size);
+  kkIntViewHostU arrayHost(array,nCells);
   auto p_mesh = ((polyMPO::MPMesh*)p_mpmesh)->p_mesh;
 
   //check the size
-  PMT_ALWAYS_ASSERT(p_mesh->getNumElements()==size);
+  PMT_ALWAYS_ASSERT(p_mesh->getNumElements()==nCells);
   
-  polyMPO::IntView nEdgesPerElm("MeshNumEdgesPerElm",size);
+  polyMPO::IntView nEdgesPerElm("MeshNumEdgesPerElm",nCells);
   Kokkos::deep_copy(nEdgesPerElm, arrayHost);
   auto elm2VtxConn = p_mesh->getElm2VtxConn();
   auto elm2ElmConn = p_mesh->getElm2ElmConn();
-  Kokkos::parallel_for("set nEdgesPerElm", size, KOKKOS_LAMBDA(const int elm){
+  Kokkos::parallel_for("set nEdgesPerElm", nCells, KOKKOS_LAMBDA(const int elm){
     elm2VtxConn(elm,0) = nEdgesPerElm(elm);
     elm2ElmConn(elm,0) = nEdgesPerElm(elm);
   });
 }
 
-void polympo_setMeshElm2VtxConn(MPMesh_ptr p_mpmesh, int size1, int size2, int* array){
+void polympo_setMeshElm2VtxConn(MPMesh_ptr p_mpmesh, int maxEdges, int nCells, int* array){
   //chech vailidity
   checkMPMeshValid(p_mpmesh);
-  kkInt2dViewHostU arrayHost(array,size2,size1); //Fortran is column-major
+  kkInt2dViewHostU arrayHost(array,maxEdges,nCells); 
   auto p_mesh = ((polyMPO::MPMesh*)p_mpmesh)->p_mesh; 
 
   //check the size
-  PMT_ALWAYS_ASSERT(size1 == p_mesh->getNumElements());
-  PMT_ALWAYS_ASSERT(size2 <= maxVtxsPerElm);
+  PMT_ALWAYS_ASSERT(maxEdges <= maxVtxsPerElm);
+  PMT_ALWAYS_ASSERT(nCells == p_mesh->getNumElements());
   
-  Kokkos::View<int**> elm2VtxArray("MeshElementsToVertices",size2,size1);
+  Kokkos::View<int**> elm2VtxArray("MeshElementsToVertices",maxEdges,nCells);
   Kokkos::deep_copy(elm2VtxArray, arrayHost);
   auto elm2VtxConn = p_mesh->getElm2VtxConn();
-  Kokkos::parallel_for("set elm2VtxConn", size1, KOKKOS_LAMBDA(const int elm){
-    for(int i=0; i<size2; i++){
-        elm2VtxConn(elm,i+1) = elm2VtxArray(i,elm);
+  Kokkos::parallel_for("set elm2VtxConn", nCells, KOKKOS_LAMBDA(const int elm){
+    for(int i=0; i<maxEdges; i++){
+        elm2VtxConn(elm,i+1) = elm2VtxArray(elm,i);
     }
   });
 }
 
-void polympo_setMeshElm2ElmConn(MPMesh_ptr p_mpmesh, int size1, int size2, int* array){
+void polympo_setMeshElm2ElmConn(MPMesh_ptr p_mpmesh, int maxEdges, int nCells, int* array){
   //chech vailidity
   checkMPMeshValid(p_mpmesh);
-  kkInt2dViewHostU arrayHost(array,size2,size1); //Fortran is column-major
+  kkInt2dViewHostU arrayHost(array,maxEdges,nCells); //Fortran is column-major
   auto p_mesh = ((polyMPO::MPMesh*)p_mpmesh)->p_mesh; 
 
   //check the size
-  PMT_ALWAYS_ASSERT(size1 == p_mesh->getNumElements());
-  PMT_ALWAYS_ASSERT(size2 <= maxVtxsPerElm);
+  PMT_ALWAYS_ASSERT(maxEdges <= maxVtxsPerElm);
+  PMT_ALWAYS_ASSERT(nCells == p_mesh->getNumElements());
   
-  Kokkos::View<int**> elm2ElmArray("MeshElementsToVertices",size2,size1);
+  Kokkos::View<int**> elm2ElmArray("MeshElementsToVertices",maxEdges,nCells);
   Kokkos::deep_copy(elm2ElmArray, arrayHost);
   auto elm2ElmConn = p_mesh->getElm2ElmConn();
-  Kokkos::parallel_for("set elm2ElmConn", size1, KOKKOS_LAMBDA(const int elm){
-    for(int i=0; i<size2; i++){
-        elm2ElmConn(elm,i+1) = elm2ElmArray(i,elm);
+  Kokkos::parallel_for("set elm2ElmConn", nCells, KOKKOS_LAMBDA(const int elm){
+    for(int i=0; i<maxEdges; i++){
+        elm2ElmConn(elm,i+1) = elm2ElmArray(elm,i);
     }  
   });
 }

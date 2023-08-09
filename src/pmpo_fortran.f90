@@ -159,54 +159,54 @@ module polympo
   !---------------------------------------------------------------------------
   !> @brief set the polympo mesh vertices coordinates
   !> @param mpmesh(in/out) MPMesh object
-  !> @param n(in) length of array in (numVtxs)
+  !> @param nVertices(in) length of array in 
   !> @param x/y/zArray(in) the 1D arrays of vertices coordinates
   !---------------------------------------------------------------------------
-  subroutine polympo_setMeshVtxCoords(mpMesh, n, xArray, yArray, zArray) &
+  subroutine polympo_setMeshVtxCoords(mpMesh, nVertices, xArray, yArray, zArray) &
              bind(C, NAME='polympo_setMeshVtxCoords')
     use :: iso_c_binding
     type(c_ptr), value :: mpMesh
-    integer(c_int), value :: n
+    integer(c_int), value :: nVertices
     type(c_ptr), intent(in), value :: xArray, yArray, zArray
   end subroutine
   !---------------------------------------------------------------------------
   !> @brief set the polympo mesh element to vertices connectivity
   !> @param mpmesh(in/out) MPMesh object
-  !> @param m,n(in) length of array in each direction (numElms,maxEdges)
-  !> @param array(in) element to vertices connectivity 2D array (verticesOnCell)
+  !> @param maxEdges,nCells(in) length of array in each direction
+  !> @param verticesOnCell(in) element to vertices connectivity 2D array 
   !---------------------------------------------------------------------------
-  subroutine polympo_setMeshElm2VtxConn(mpMesh, m, n, array) &
+  subroutine polympo_setMeshElm2VtxConn(mpMesh, maxEdges, nCells, verticesOnCell) &
              bind(C, NAME='polympo_setMeshElm2VtxConn')
     use :: iso_c_binding
     type(c_ptr), value :: mpMesh
-    integer(c_int), value :: m, n
-    type(c_ptr), intent(in), value :: array
+    integer(c_int), value :: maxEdges, nCells
+    type(c_ptr), intent(in), value :: verticesOnCell
   end subroutine
   !---------------------------------------------------------------------------
   !> @brief set the polympo mesh element to elements connectivity
   !> @param mpmesh(in/out) MPMesh object
-  !> @param m,n(in) length of array in each direction (numElms,maxEdges)
-  !> @param array(in) element to elements connectivity 2D array (cellsOnCell)
+  !> @param maxEdges,nCells(in) length of array in each direction 
+  !> @param cellsOnCell(in) element to elements connectivity 2D array 
   !---------------------------------------------------------------------------
-  subroutine polympo_setMeshElm2ElmConn(mpMesh, m, n, array) &
+  subroutine polympo_setMeshElm2ElmConn(mpMesh, maxEdges, nCells, cellsOnCell) &
              bind(C, NAME='polympo_setMeshElm2ElmConn')
     use :: iso_c_binding
     type(c_ptr), value :: mpMesh
-    integer(c_int), value :: m, n
-    type(c_ptr), intent(in), value :: array
+    integer(c_int), value :: maxEdges, nCells
+    type(c_ptr), intent(in), value :: cellsOnCell
   end subroutine
   !---------------------------------------------------------------------------
   !> @brief set the polympo mesh number of edges per element
   !> @param mpmesh(in/out) MPMesh object
-  !> @param n(in) length of array (numElms)
-  !> @param array(in) number of edges per element (nEdgesOnCell) 
+  !> @param nCells(in) length of array (numElms)
+  !> @param nEdgesOnCell(in) number of edges per element
   !---------------------------------------------------------------------------
-  subroutine polympo_setMeshNumEdgesPerElm(mpMesh, m, array) &
+  subroutine polympo_setMeshNumEdgesPerElm(mpMesh, nCells, nEdgesOnCell) &
              bind(C, NAME='polympo_setMeshNumEdgesPerElm')
     use :: iso_c_binding
     type(c_ptr), value :: mpMesh
-    integer(c_int), value :: m
-    type(c_ptr), intent(in), value :: array
+    integer(c_int), value :: nCells
+    type(c_ptr), intent(in), value :: nEdgesOnCell
   end subroutine
   !---------------------------------------------------------------------------
   !> @brief set the velocity mesh array from a host array

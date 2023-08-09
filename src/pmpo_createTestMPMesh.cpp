@@ -181,7 +181,6 @@ MaterialPoints* initTestMPs(Mesh* mesh, int testMPOption){
     }else if(geomType == geom_spherical_surf){
         Kokkos::Random_XorShift64_Pool<> random_pool(randSeed);
         const double radius = mesh->getSphereRadius();
-        printf("radius: %f\n",radius);
         Kokkos::parallel_for("intializeMPsPositionSpherical", numMPs, KOKKOS_LAMBDA(const int iMP){
             int ielm = MPToElement(iMP);
             int numVtx = elm2VtxConn(ielm,0);

@@ -42,8 +42,8 @@ subroutine polympo_setWithMPASMesh(mpMesh, filename)
 
     !set VtxCoords and connectivities
     call polympo_setMeshVtxCoords(mpMesh,nVertices,c_loc(xVertex),c_loc(yVertex),c_loc(zVertex))
-    call polympo_setMeshElm2VtxConn(mpMesh,nCells,maxEdges,c_loc(verticesOnCell))
-    call polympo_setMeshElm2ElmConn(mpMesh,nCells,maxEdges,c_loc(cellsOnCell))
+    call polympo_setMeshElm2VtxConn(mpMesh,maxEdges,nCells,c_loc(verticesOnCell))
+    call polympo_setMeshElm2ElmConn(mpMesh,maxEdges,nCells,c_loc(cellsOnCell))
     call polympo_setMeshNumEdgesPerElm(mpMesh,nCells,c_loc(nEdgesOnCell))
 
     !unloadMPASMesh to deallocated
@@ -104,7 +104,7 @@ subroutine polympo_readMPASMesh(filename, maxEdges, vertexDegree, &
         write(0, *) "polympo_readMPASMesh: Error on inquire dimension of 'nCellsID'"
         write(0, *) trim(nf90_strerror(status))
         stop
-end if
+    end if
 
     status = nf90_inq_dimid(ncid, 'maxEdges', maxEdgesID)
     if (status /= nf90_noerr) then

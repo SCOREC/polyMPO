@@ -140,7 +140,6 @@ void getBasisByAreaGblFormSpherical(Vec3d MP, int numVtxs, Vec3d* v,
         //a = x    vi vi+1
         c[i] = sphericalTriangleArea(v[i-1],v[i],v[i+1],radius);
         a[i] = sphericalTriangleArea(v[i],v[i+1],MP,radius);
-        printf("%d:c= %f, a= %f\n",i,c[i],a[i]);
     }
     c[0] = sphericalTriangleArea(v[numVtxs-1],v[0],v[1],radius);
     a[0] = sphericalTriangleArea(v[0],v[1],MP,radius);

@@ -14,15 +14,16 @@ program main
   implicit none
   include 'mpif.h'
     
+  integer, parameter :: MPAS_RKIND = selected_real_kind(12)
   integer :: nverts 
   integer :: numComps
   integer :: numMPs 
   integer :: i, j
   integer :: setMeshOption, setMPOption
   integer :: mpi_comm_handle = MPI_COMM_WORLD
-  real(kind=RKIND) :: value1, value2
-  real(kind=RKIND), dimension(:), pointer :: MParray
-  real(kind=RKIND), dimension(:), pointer :: Mesharray
+  real(kind=MPAS_RKIND) :: value1, value2
+  real(kind=MPAS_RKIND), dimension(:), pointer :: MParray
+  real(kind=MPAS_RKIND), dimension(:), pointer :: Mesharray
   integer :: ierr, self
   type(c_ptr) :: mpMesh
 
@@ -32,6 +33,7 @@ program main
   call polympo_setMPICommunicator(mpi_comm_handle) !this is not supported yet! only for showing
   call polympo_initialize()
 
+  call polympo_checkPrecisionForRealKind(MPAS_RKIND)
   setMeshOption = 1
   setMPOption = 1    
   mpMesh = polympo_createMPMesh(setMeshOption,setMPOption) !creates test mesh

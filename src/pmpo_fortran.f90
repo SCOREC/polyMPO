@@ -5,7 +5,6 @@
 module polympo
   use :: iso_c_binding
   public
-  integer, parameter :: RKIND = selected_real_kind(15, 307)
   interface
   !---------------------------------------------------------------------------
   !> @brief initialize polympo, call this before any other polympo api
@@ -236,4 +235,13 @@ module polympo
     type(c_ptr), value :: array
   end subroutine
   end interface
+  contains
+  subroutine polympo_checkPrecisionForRealKind(a)
+    use :: iso_c_binding
+    integer :: a
+    if (a .ne. c_double) then
+        write(0, *) "Precision does not match!"
+        call exit(1)
+    end if
+  end subroutine
 end module

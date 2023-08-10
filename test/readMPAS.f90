@@ -2,6 +2,7 @@ module readMPAS
     use :: polympo
     use iso_c_binding
     implicit none
+    integer, parameter :: MPAS_RKIND = selected_real_kind(12)
     
 contains
 subroutine polympo_setWithMPASMesh(mpMesh, filename)
@@ -13,9 +14,9 @@ subroutine polympo_setWithMPASMesh(mpMesh, filename)
     character (len=*), intent(in) :: filename
     character (len=64) :: onSphere, stringYes = "YES"
     integer :: maxEdges, vertexDegree, nCells, nVertices
-    real(kind=RKIND) :: sphereRadius
+    real(kind=MPAS_RKIND) :: sphereRadius
     integer, dimension(:), pointer :: nEdgesOnCell
-    real(kind=RKIND), dimension(:), pointer :: xVertex, yVertex, zVertex
+    real(kind=MPAS_RKIND), dimension(:), pointer :: xVertex, yVertex, zVertex
     integer, dimension(:,:), pointer :: verticesOnCell, cellsOnCell
     
     call polympo_readMPASMesh(trim(filename), maxEdges, vertexDegree, &
@@ -23,7 +24,8 @@ subroutine polympo_setWithMPASMesh(mpMesh, filename)
                               onSphere, sphereRadius, &
                               xVertex, yVertex, zVertex, &
                               verticesOnCell, cellsOnCell)
-
+    
+    call polympo_checkPrecisionForRealKind(MPAS_RKIND)
     !check on maxEdges and vertexDegree
     call polympo_checkMeshMaxSettings(mpMesh,maxEdges,vertexDegree)
 
@@ -69,9 +71,9 @@ subroutine polympo_readMPASMesh(filename, maxEdges, vertexDegree, &
     character (len=64) :: stringYes = "YES"
     integer, intent(inout) :: maxEdges, vertexDegree, &
                                      nCells, nVertices
-    real(kind=RKIND) :: sphereRadius
+    real(kind=MPAS_RKIND) :: sphereRadius
     integer, dimension(:), pointer :: nEdgesOnCell
-    real(kind=RKIND), dimension(:), pointer :: xVertex, yVertex, zVertex
+    real(kind=MPAS_RKIND), dimension(:), pointer :: xVertex, yVertex, zVertex
     integer, dimension(:,:), pointer :: verticesOnCell, cellsOnCell
 
     integer :: ncid, status, nCellsID, nVerticesID, maxEdgesID, vertexDegreeID, &

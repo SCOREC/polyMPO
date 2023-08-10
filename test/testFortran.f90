@@ -13,16 +13,16 @@ program main
   use iso_c_binding
   implicit none
   include 'mpif.h'
-
-  integer(c_int) :: nverts 
+    
+  integer :: nverts 
   integer :: numComps
   integer :: numMPs 
   integer :: i, j
   integer :: setMeshOption, setMPOption
-  integer(c_int) :: mpi_comm_handle = MPI_COMM_WORLD
-  real(c_double) :: value1, value2
-  real(c_double), dimension(:), pointer :: MParray
-  real(c_double), dimension(:), pointer :: Mesharray
+  integer :: mpi_comm_handle = MPI_COMM_WORLD
+  real(kind=RKIND) :: value1, value2
+  real(kind=RKIND), dimension(:), pointer :: MParray
+  real(kind=RKIND), dimension(:), pointer :: Mesharray
   integer :: ierr, self
   type(c_ptr) :: mpMesh
 

@@ -8,7 +8,7 @@ program main
   integer :: ierr, self
   integer :: argc, i, arglen
   integer :: setMeshOption, setMPOption
-  integer(c_int) :: mpi_comm_handle = MPI_COMM_WORLD
+  integer :: mpi_comm_handle = MPI_COMM_WORLD
   character (len=2048) :: filename
   type(c_ptr) :: mpMesh
 

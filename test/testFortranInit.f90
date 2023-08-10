@@ -5,7 +5,7 @@ program main
   include 'mpif.h'
 
   integer :: ierr, self
-  integer(c_int) :: mpi_comm_handle = MPI_COMM_WORLD
+  integer :: mpi_comm_handle = MPI_COMM_WORLD
 
   call mpi_init(ierr)
   call mpi_comm_rank(mpi_comm_handle, self, ierr)

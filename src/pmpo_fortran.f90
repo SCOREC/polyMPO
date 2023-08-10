@@ -5,6 +5,7 @@
 module polympo
   use :: iso_c_binding
   public
+  integer, parameter :: RKIND = selected_real_kind(15, 307)
   interface
   !---------------------------------------------------------------------------
   !> @brief initialize polympo, call this before any other polympo api

@@ -8,15 +8,15 @@ subroutine polympo_setWithMPASMesh(mpMesh, filename)
     use :: netcdf
     use :: iso_c_binding
     implicit none
-    
+   
     type(c_ptr) :: mpMesh
     character (len=*), intent(in) :: filename
     character (len=64) :: onSphere, stringYes = "YES"
-    integer(c_int) :: maxEdges, vertexDegree, nCells, nVertices
-    real(c_double) :: sphereRadius
-    integer(c_int), dimension(:), pointer :: nEdgesOnCell
-    real(c_double), dimension(:), pointer :: xVertex, yVertex, zVertex
-    integer(c_int), dimension(:,:), pointer :: verticesOnCell, cellsOnCell
+    integer :: maxEdges, vertexDegree, nCells, nVertices
+    real(kind=RKIND) :: sphereRadius
+    integer, dimension(:), pointer :: nEdgesOnCell
+    real(kind=RKIND), dimension(:), pointer :: xVertex, yVertex, zVertex
+    integer, dimension(:,:), pointer :: verticesOnCell, cellsOnCell
     
     call polympo_readMPASMesh(trim(filename), maxEdges, vertexDegree, &
                               nCells, nVertices, nEdgesOnCell, &
@@ -67,12 +67,12 @@ subroutine polympo_readMPASMesh(filename, maxEdges, vertexDegree, &
     character (len=*), intent(in) :: filename
     character (len=*), intent(inout) :: onSphere
     character (len=64) :: stringYes = "YES"
-    integer(c_int), intent(inout) :: maxEdges, vertexDegree, &
+    integer, intent(inout) :: maxEdges, vertexDegree, &
                                      nCells, nVertices
-    real(c_double) :: sphereRadius
-    integer(c_int), dimension(:), pointer :: nEdgesOnCell
-    real(c_double), dimension(:), pointer :: xVertex, yVertex, zVertex
-    integer(c_int), dimension(:,:), pointer :: verticesOnCell, cellsOnCell
+    real(kind=RKIND) :: sphereRadius
+    integer, dimension(:), pointer :: nEdgesOnCell
+    real(kind=RKIND), dimension(:), pointer :: xVertex, yVertex, zVertex
+    integer, dimension(:,:), pointer :: verticesOnCell, cellsOnCell
 
     integer :: ncid, status, nCellsID, nVerticesID, maxEdgesID, vertexDegreeID, &
                nEdgesOnCellID, xVertexID, yVertexID, zVertexID, &
@@ -257,7 +257,7 @@ subroutine polympo_setWithMPASMeshByFortran(mpMesh, fileName, n) bind(C, name="p
     implicit none
     type(c_ptr):: mpMesh
     character (kind=c_char), dimension(*), intent(in) :: fileName
-    integer(c_int), value :: n
+    integer, value :: n
     character (len=n), target :: fileNameFortran
  
     fileNameFortran = transfer(fileName(1:n), fileNameFortran) 

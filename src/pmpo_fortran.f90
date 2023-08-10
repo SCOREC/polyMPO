@@ -236,11 +236,16 @@ module polympo
   end subroutine
   end interface
   contains
-  subroutine polympo_checkPrecisionForRealKind(a)
+  !---------------------------------------------------------------------------
+  !> @brief check to make sure the real value is same precision with c_double
+  !> @param APP_RKIND(in) the real value kind use in fortran
+  !---------------------------------------------------------------------------
+  subroutine polympo_checkPrecisionForRealKind(APP_RKIND)
     use :: iso_c_binding
-    integer :: a
-    if (a .ne. c_double) then
-        write(0, *) "Precision does not match!"
+    implicit none
+    integer, intent(in) :: APP_RKIND
+    if (APP_RKIND .ne. c_double) then
+        write(0, *) "polyMPO: Precision does not match!"
         call exit(1)
     end if
   end subroutine

@@ -35,6 +35,8 @@ void interpolateWachspress2DTest(MPMesh& mpMesh){
                 wp_coord = wp_coord + v[i]*basisByArea[i];
                 wp_grad = wp_grad + gradBasisByArea[i].dot(v[i]);
             }
+            //assert(wp_coord[0] - MPsPosition(mp,0) < TEST_EPSILON);
+            //assert(wp_coord[1] - MPsPosition(mp,1) < TEST_EPSILON);
         }        
     };
     p_MPs->parallel_for(eval, "interpolateWachspress2DTest");

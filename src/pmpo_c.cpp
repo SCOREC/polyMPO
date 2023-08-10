@@ -258,7 +258,7 @@ void polympo_setMeshElm2VtxConn(MPMesh_ptr p_mpmesh, int maxEdges, int nCells, i
   auto elm2VtxConn = p_mesh->getElm2VtxConn();
   Kokkos::parallel_for("set elm2VtxConn", nCells, KOKKOS_LAMBDA(const int elm){
     for(int i=0; i<maxEdges; i++){
-        elm2VtxConn(elm,i+1) = elm2VtxArray(elm,i);
+        elm2VtxConn(elm,i+1) = elm2VtxArray(i,elm);
     }
   });
 }
@@ -278,7 +278,7 @@ void polympo_setMeshElm2ElmConn(MPMesh_ptr p_mpmesh, int maxEdges, int nCells, i
   auto elm2ElmConn = p_mesh->getElm2ElmConn();
   Kokkos::parallel_for("set elm2ElmConn", nCells, KOKKOS_LAMBDA(const int elm){
     for(int i=0; i<maxEdges; i++){
-        elm2ElmConn(elm,i+1) = elm2ElmArray(elm,i);
+        elm2ElmConn(elm,i+1) = elm2ElmArray(i,elm);
     }  
   });
 }

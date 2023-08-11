@@ -9,9 +9,9 @@
 using namespace polyMPO;
 
 int main(int argc, char* argv[] ) {
-    PMT_ALWAYS_ASSERT(argc <= 3);
     MPI_Init(&argc, &argv);
     Kokkos::initialize(argc,argv);
+    PMT_ALWAYS_ASSERT(argc <= 3);
     int testMeshOption = 0;
     if(argc == 2) // no mesh read
         testMeshOption = 1;
@@ -46,5 +46,6 @@ int main(int argc, char* argv[] ) {
         //printVTP(mpMesh);
     } 
     Kokkos::finalize();
+    MPI_Finalize();
     return 0;
 }

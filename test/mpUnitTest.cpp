@@ -59,5 +59,6 @@ int main(int argc, char** argv) {
     checkPositions(MPs, "afterConstruction");
   }
   Kokkos::finalize();
+  MPI_Finalize();
   return 0;
 }

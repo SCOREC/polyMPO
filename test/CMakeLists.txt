@@ -36,12 +36,12 @@ pmpo_add_exe(testTracking testTracking.cpp)
 pmpo_add_exe(testRebuild testRebuild.cpp)
 pmpo_add_exe(timeAssmblyWachspress testTiming.cpp)
 
-add_test(NAME unit_test COMMAND ./unitTest)
-add_test(NAME mp_unit_test COMMAND ./mpUnitTest)
-add_test(NAME test_wachspress COMMAND ./testWachspress)
-add_test(NAME test_reconstruction COMMAND ./testReconstruction)
-add_test(NAME test_tracking COMMAND ./testTracking)
-add_test(NAME test_rebuild COMMAND ./testRebuild)
+add_test(NAME unit_test COMMAND mpirun --bind-to core -np 1 ./unitTest)
+add_test(NAME mp_unit_test COMMAND mpirun --bind-to core -np 1 ./mpUnitTest)
+add_test(NAME test_wachspress COMMAND mpirun --bind-to core -np 1 ./testWachspress)
+add_test(NAME test_reconstruction COMMAND mpirun --bind-to core -np 1 ./testReconstruction)
+add_test(NAME test_tracking COMMAND mpirun --bind-to core -np 1 ./testTracking)
+add_test(NAME test_rebuild COMMAND mpirun --bind-to core -np 1 ./testRebuild)
 
 function(pmpo_add_fortran_exe exename srcname)
   pmpo_add_exe(${exename} ${srcname})
@@ -56,10 +56,10 @@ function(pmpo_add_fortran_exe exename srcname)
 endfunction()
 
 pmpo_add_fortran_exe(testFortranInit testFortranInit.f90)
-add_test(NAME testFortranInit COMMAND ./testFortranInit)
+add_test(NAME testFortranInit COMMAND mpirun --bind-to core -np 1 ./testFortranInit)
 
 pmpo_add_fortran_exe(testFortran testFortran.f90)
-add_test(NAME testFortran COMMAND ./testFortran)
+add_test(NAME testFortran COMMAND mpirun --bind-to core -np 1 ./testFortran)
 
 set(TEST_NC_FILE_PLANAR "${CMAKE_SOURCE_DIR}/test/sample_mpas_meshes/planar_nonuniform_cvt_for_square_737elms.nc")
 set(TEST_NC_FILE_SPHERICAL "${CMAKE_SOURCE_DIR}/test/sample_mpas_meshes/ocean.nc")
@@ -70,7 +70,7 @@ else()
 endif()
 pmpo_add_fortran_exe(testFortranReadMPAS testFortranReadMPAS.f90)
 add_test(NAME testFortranReadMPAS 
-         COMMAND ./testFortranReadMPAS ${TEST_NC_FILE})
+         COMMAND mpirun --bind-to core -np 1 ./testFortranReadMPAS ${TEST_NC_FILE})
 
 add_test(NAME test_timing
-         COMMAND ./timeAssmblyWachspress 1 ${TEST_NC_FILE})
+         COMMAND mpirun --bind-to core -np 1 ./timeAssmblyWachspress 1 ${TEST_NC_FILE})

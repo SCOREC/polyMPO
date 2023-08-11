@@ -61,7 +61,7 @@ add_test(NAME testFortranInit COMMAND mpirun --bind-to core -np 1 ./testFortranI
 pmpo_add_fortran_exe(testFortran testFortran.f90)
 add_test(NAME testFortran COMMAND mpirun --bind-to core -np 1 ./testFortran)
 
-set(TEST_NC_FILE_PLANAR "${CMAKE_SOURCE_DIR}/test/sample_mpas_meshes/planar_nonuniform_cvt_for_square_737elms.nc")
+set(TEST_NC_FILE_PLANAR "${CMAKE_SOURCE_DIR}/test/sample_mpas_meshes/planar_nonuniform_cvt_for_square__673elms.nc")
 set(TEST_NC_FILE_SPHERICAL "${CMAKE_SOURCE_DIR}/test/sample_mpas_meshes/ocean.nc")
 if(EXISTS ${TEST_NC_FILE_SPHERICAL})
     set(TEST_NC_FILE ${TEST_NC_FILE_SPHERICAL})

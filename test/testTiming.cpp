@@ -25,7 +25,7 @@ int main(int argc, char* argv[] ) {
         MPMesh* mpmesh = NULL;
         if(testMeshOption == 0){
             void* p;
-            polympo_setWithMPASMeshByFortran(&p, argv[2], (int)strlen(argv[2]));
+            setWithMPASMeshByFortran(&p, argv[2], (int)strlen(argv[2]));
             mpmesh = (MPMesh*)p;
             mesh = mpmesh->p_mesh;
             //mesh = replicateMesh(mesh, replicateFactor); 

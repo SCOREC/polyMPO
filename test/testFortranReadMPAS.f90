@@ -29,7 +29,7 @@ program main
   setMPOption = 0   !create an empty set of MPs
   mpMesh = polympo_createMPMesh(setMeshOption, setMPOption)
 
-  call polympo_setWithMPASMesh(mpMesh, filename)
+  call loadMPASMesh(mpMesh, filename)
 
   !todo check the value using get functions. 
   

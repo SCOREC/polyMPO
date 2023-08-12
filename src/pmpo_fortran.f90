@@ -222,6 +222,34 @@ module polympo
     type(c_ptr), intent(in), value :: array
   end subroutine
   !---------------------------------------------------------------------------
+  !> @brief set the spherical velocity increment mesh array 
+  !>        from a host array
+  !> @param mpmesh(in/out) MPMesh object
+  !> @param n(in) half length of array (n = numVtx)
+  !> @param array(in) input mesh velocity 2D array (2,numVtx)
+  !---------------------------------------------------------------------------
+  subroutine polympo_setMeshSpVeloIncrArray(mpMesh, n, array) &
+             bind(C, NAME='polympo_setMeshSpVeloIncrArray')
+    use :: iso_c_binding
+    type(c_ptr), value :: mpMesh
+    integer(c_int), value :: n
+    type(c_ptr), intent(in), value :: array
+  end subroutine
+  !---------------------------------------------------------------------------
+  !> @brief set the spherical displacement increment mesh array 
+  !>        from a host array
+  !> @param mpmesh(in/out) MPMesh object
+  !> @param n(in) half length of array (n = numVtx)
+  !> @param array(in) input mesh velocity 2D array (2,numVtx)
+  !---------------------------------------------------------------------------
+  subroutine polympo_setMeshSpDispIncrArray(mpMesh, n, array) &
+             bind(C, NAME='polympo_setMeshSpDispIncrArray')
+    use :: iso_c_binding
+    type(c_ptr), value :: mpMesh
+    integer(c_int), value :: n
+    type(c_ptr), intent(in), value :: array
+  end subroutine
+  !---------------------------------------------------------------------------
   !> @brief get the velocity mesh array from a polympo array
   !> @param mpmesh(in/out) MPMesh object
   !> @param n(in) half length of the array
@@ -229,6 +257,36 @@ module polympo
   !---------------------------------------------------------------------------
   subroutine polympo_getMeshVelArray(mpMesh, n, array) &
              bind(C, NAME='polympo_getMeshVelArray')
+    use :: iso_c_binding
+    type(c_ptr), value :: mpMesh
+    integer(c_int), value :: n
+    type(c_ptr), value :: array
+  end subroutine
+  !---------------------------------------------------------------------------
+  !> @brief get the spherical velocity increment mesh array 
+  !>        from a polympo array
+  !> @param mpmesh(in/out) MPMesh object
+  !> @param n(in) half length of the array
+  !> @param array(in/out) output mesh spherical velocity increment
+  !>        2D array (2,numVtx), allocated by user
+  !---------------------------------------------------------------------------
+  subroutine polympo_getMeshSpVeloIncrArray(mpMesh, n, array) &
+             bind(C, NAME='polympo_getMeshSpVeloIncrArray')
+    use :: iso_c_binding
+    type(c_ptr), value :: mpMesh
+    integer(c_int), value :: n
+    type(c_ptr), value :: array
+  end subroutine
+  !---------------------------------------------------------------------------
+  !> @brief get the spherical displacement increment mesh array
+  !>        from a polympo array
+  !> @param mpmesh(in/out) MPMesh object
+  !> @param n(in) half length of the array
+  !> @param array(in/out) output mesh spherical displacement increment 
+  !>        2D array (2,numVtx), allocated by user
+  !---------------------------------------------------------------------------
+  subroutine polympo_getMeshSpDispIncrArray(mpMesh, n, array) &
+             bind(C, NAME='polympo_getMeshSpDispIncrArray')
     use :: iso_c_binding
     type(c_ptr), value :: mpMesh
     integer(c_int), value :: n

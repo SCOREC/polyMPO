@@ -19,7 +19,9 @@ using DoubleSymMat3dView = Kokkos::View<double*[6]>;
 enum MeshFieldIndex{
     MeshF_Invalid = -2,
     MeshF_Unsupported,
-    MeshF_Vel,
+    MeshF_Vel, //Vel or Velo?
+    MeshF_SpVeloIncr,
+    MeshF_SpDispIncr
 };
 
 enum mesh_type {mesh_unrecognized_lower = -1,
@@ -48,6 +50,8 @@ class Mesh {
   
     //start of meshFields
     DoubleVec2dView vtxVel_;
+    DoubleVec2dView vtxSpVeloIncr_;
+    DoubleVec2dView vtxSpDispIncr_;
     //DoubleMat2DView vtxStress_;
 
   public:
@@ -71,6 +75,8 @@ class Mesh {
           vtx2ElmConn_(vtx2ElmConn),
           elm2ElmConn_(elm2ElmConn){
             vtxVel_ = DoubleVec2dView("vtxVelocity",numVtxs);
+            vtxSpVeloIncr_ = DoubleVec2dView("vtxSphericalVelocityIncrement",numVtxs);
+            vtxSpDispIncr_ = DoubleVec2dView("vtxSphericalDisplacementIncrement",numVtxs);
         }
 
     bool checkMeshType(int meshType);
@@ -113,6 +119,12 @@ auto Mesh::getMeshField(){
     }
     else if constexpr (index==MeshF_Vel){
         return vtxVel_;
+    }
+    else if constexpr (index==MeshF_SpVeloIncr){
+        return vtxSpVeloIncr_;
+    }
+    else if constexpr (index==MeshF_SpDispIncr){
+        return vtxSpDispIncr_;
     }
     fprintf(stderr,"Mesh Field Index error!\n");
     exit(1);

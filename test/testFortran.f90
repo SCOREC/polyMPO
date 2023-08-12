@@ -22,8 +22,8 @@ program main
   integer :: setMeshOption, setMPOption
   integer :: mpi_comm_handle = MPI_COMM_WORLD
   real(kind=APP_RKIND) :: value1, value2
-  real(kind=APP_RKIND), dimension(:), pointer :: MParray
-  real(kind=APP_RKIND), dimension(:), pointer :: Mesharray
+  real(kind=APP_RKIND), dimension(:,:), pointer :: MParray
+  real(kind=APP_RKIND), dimension(:,:), pointer :: Mesharray
   integer :: ierr, self
   type(c_ptr) :: mpMesh
 
@@ -42,8 +42,8 @@ program main
   numComps = 2 !todo use getNumComps from velocity fields
   numMPs = 49 !todo use getNumMPs from the MaterialPoints object
 
-  allocate(Mesharray(nverts*numComps))
-  allocate(MParray(numMPs*numComps))
+  allocate(Mesharray(numComps,nverts))
+  allocate(MParray(numComps,numMPs))
 
   value1 = 42
   MParray = value1

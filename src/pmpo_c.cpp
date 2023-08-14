@@ -157,7 +157,7 @@ void polympo_setMeshNumVtxs(MPMesh_ptr p_mpmesh, int numVtxs){
   p_mesh->getMeshField<polyMPO::MeshF_OnSurfVeloIncr>() = 
                 polyMPO::DoubleVec2dView("vtxOnSurfaceVelocityIncrement",numVtxs);
   p_mesh->getMeshField<polyMPO::MeshF_OnSurfDispIncr>() = 
-                polyMPO::DoubleVec2dView("vtxOnSurfacehericalDisplacementIncrement",numVtxs);
+                polyMPO::DoubleVec2dView("vtxOnSurfaceDisplacementIncrement",numVtxs);
 }
 
 void polympo_setMeshNumElms(MPMesh_ptr p_mpmesh, int numElms){

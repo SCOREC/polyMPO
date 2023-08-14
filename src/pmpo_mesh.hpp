@@ -23,6 +23,12 @@ enum MeshFieldIndex{
     MeshF_OnSurfVeloIncr,
     MeshF_OnSurfDispIncr
 };
+const std::map<MeshFieldIndex, std::string> meshFields2String = 
+              {{MeshF_Invalid,          "MeshField_InValid!"},
+               {MeshF_Unsupported,      "MeshField_Unsupported"},
+               {MeshF_Vel,              "MeshField_Velocity"},
+               {MeshF_OnSurfVeloIncr,   "MeshField_OnSurfaceVelocityIncrement"},
+               {MeshF_OnSurfDispIncr,   "MeshField_OnSurfaceDisplacementIncrement"}};
 
 enum mesh_type {mesh_unrecognized_lower = -1,
                 mesh_general_polygonal, //other meshes
@@ -74,9 +80,9 @@ class Mesh {
           elm2VtxConn_(elm2VtxConn),
           vtx2ElmConn_(vtx2ElmConn),
           elm2ElmConn_(elm2ElmConn){
-            vtxVel_ = DoubleVec2dView("vtxVelocity",numVtxs);
-            vtxOnSurfVeloIncr_ = DoubleVec2dView("vtxOnSurfaceVelocityIncrement",numVtxs);
-            vtxOnSurfDispIncr_ = DoubleVec2dView("vtxOnSurfaceDisplacementIncrement",numVtxs);
+            vtxVel_ = DoubleVec2dView(meshFields2String.at(MeshF_Vel),numVtxs);
+            vtxOnSurfVeloIncr_ = DoubleVec2dView(meshFields2String.at(MeshF_OnSurfVeloIncr),numVtxs);
+            vtxOnSurfDispIncr_ = DoubleVec2dView(meshFields2String.at(MeshF_OnSurfDispIncr),numVtxs);
         }
 
     bool checkMeshType(int meshType);
@@ -92,6 +98,7 @@ class Mesh {
     IntElm2VtxView getVtx2ElmConn() { return vtx2ElmConn_; }
     IntElm2ElmView getElm2ElmConn() { return elm2ElmConn_; }
     template<MeshFieldIndex index> auto getMeshField();
+    template<MeshFieldIndex index> void setMeshFieldSize(int numVtxs);
 
     //onec MeshType/GeomType is set to valid types, we can't change them anymore
     void setMeshType(mesh_type meshType) {PMT_ALWAYS_ASSERT(!checkMeshType(meshType_));
@@ -128,6 +135,31 @@ auto Mesh::getMeshField(){
     }
     fprintf(stderr,"Mesh Field Index error!\n");
     exit(1);
+}
+
+template<MeshFieldIndex index>
+void Mesh::setMeshFieldSize(int numVtxs){
+    if constexpr (index==MeshF_Invalid){
+        fprintf(stderr,"Mesh Field Invalid!\n");
+        exit(1);
+    }
+    else if constexpr (index==MeshF_Unsupported){
+        fprintf(stderr,"Mesh Field Unsupported!\n");
+        exit(1);
+    }
+    else if constexpr (index==MeshF_Vel){
+        vtxVel_ = DoubleVec2dView(meshFields2String.at(MeshF_Vel),numVtxs);
+    }
+    else if constexpr (index==MeshF_OnSurfVeloIncr){
+        vtxOnSurfVeloIncr_ = DoubleVec2dView(meshFields2String.at(MeshF_OnSurfVeloIncr),numVtxs);
+    }
+    else if constexpr (index==MeshF_OnSurfDispIncr){
+        vtxOnSurfDispIncr_ = DoubleVec2dView(meshFields2String.at(MeshF_OnSurfDispIncr),numVtxs);
+    }
+    else{
+        fprintf(stderr,"Mesh Field Index error!\n");
+        exit(1);
+    }
 }
 
 }

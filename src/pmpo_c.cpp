@@ -154,10 +154,8 @@ void polympo_setMeshNumVtxs(MPMesh_ptr p_mpmesh, int numVtxs){
   checkMPMeshValid(p_mpmesh);
   auto p_mesh = ((polyMPO::MPMesh*)p_mpmesh)->p_mesh;
   p_mesh->setNumVtxs(numVtxs);
-  p_mesh->getMeshField<polyMPO::MeshF_OnSurfVeloIncr>() = 
-                polyMPO::DoubleVec2dView("vtxOnSurfaceVelocityIncrement",numVtxs);
-  p_mesh->getMeshField<polyMPO::MeshF_OnSurfDispIncr>() = 
-                polyMPO::DoubleVec2dView("vtxOnSurfaceDisplacementIncrement",numVtxs);
+  p_mesh->setMeshFieldSize<polyMPO::MeshF_OnSurfVeloIncr>(numVtxs); 
+  p_mesh->setMeshFieldSize<polyMPO::MeshF_OnSurfDispIncr>(numVtxs); 
 }
 
 void polympo_setMeshNumElms(MPMesh_ptr p_mpmesh, int numElms){

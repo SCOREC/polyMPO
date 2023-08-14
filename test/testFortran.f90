@@ -80,18 +80,18 @@ program main
         Mesharray(i,j) = (i-1)*numComps + j
     end do
   end do
-  call polympo_setMeshSpVeloIncrArray(mpMesh, nverts, c_loc(Mesharray))
-  call polympo_setMeshSpDispIncrArray(mpMesh, nverts, c_loc(Mesharray))
+  call polympo_setMeshOnSurfVeloIncrArray(mpMesh, numComps, nverts, c_loc(Mesharray))
+  call polympo_setMeshOnSurfDispIncrArray(mpMesh, numComps, nverts, c_loc(Mesharray))
 
   Mesharray = 1
-  call polympo_getMeshSpVeloIncrArray(mpMesh, nverts, c_loc(Mesharray))
+  call polympo_getMeshOnSurfVeloIncrArray(mpMesh, numComps, nverts, c_loc(Mesharray))
   do i = 1,numComps
     do j = 1,nverts 
         call assert((Mesharray(i,j) .eq. (i-1)*numComps+j), "Assert 2d array Fail")
     end do
   end do
   Mesharray = 1
-  call polympo_getMeshSpDispIncrArray(mpMesh, nverts, c_loc(Mesharray))
+  call polympo_getMeshOnSurfDispIncrArray(mpMesh, numComps, nverts, c_loc(Mesharray))
   do i = 1,numComps
     do j = 1,nverts 
         call assert((Mesharray(i,j) .eq. (i-1)*numComps+j), "Assert 2d array Fail")

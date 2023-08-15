@@ -230,19 +230,6 @@ module polympo
     type(c_ptr), intent(in), value :: nEdgesOnCell
   end subroutine
   !---------------------------------------------------------------------------
-  !> @brief set the velocity mesh array from a host array
-  !> @param mpmesh(in/out) MPMesh object
-  !> @param n(in) half length of array (n = numVtx)
-  !> @param array(in) input mesh velocity 1D array (numVtx*2)
-  !---------------------------------------------------------------------------
-  subroutine polympo_setMeshVelArray(mpMesh, n, array) &
-             bind(C, NAME='polympo_setMeshVelArray')
-    use :: iso_c_binding
-    type(c_ptr), value :: mpMesh
-    integer(c_int), value :: n
-    type(c_ptr), intent(in), value :: array
-  end subroutine
-  !---------------------------------------------------------------------------
   !> @brief set the spherical velocity increment mesh array 
   !>        from a host array
   !> @param mpmesh(in/out) MPMesh object
@@ -271,19 +258,6 @@ module polympo
     type(c_ptr), value :: mpMesh
     integer(c_int), value :: nComps, nVertices
     type(c_ptr), intent(in), value :: array
-  end subroutine
-  !---------------------------------------------------------------------------
-  !> @brief get the velocity mesh array from a polympo array
-  !> @param mpmesh(in/out) MPMesh object
-  !> @param n(in) half length of the array
-  !> @param array(in/out) output mesh velocity 1D array (numVtx*2), allocated by user
-  !---------------------------------------------------------------------------
-  subroutine polympo_getMeshVelArray(mpMesh, n, array) &
-             bind(C, NAME='polympo_getMeshVelArray')
-    use :: iso_c_binding
-    type(c_ptr), value :: mpMesh
-    integer(c_int), value :: n
-    type(c_ptr), value :: array
   end subroutine
   !---------------------------------------------------------------------------
   !> @brief get the spherical velocity increment mesh array 

@@ -77,6 +77,27 @@ module polympo
     type(c_ptr), value :: array
   end subroutine
   !---------------------------------------------------------------------------
+  !> @brief enable the set mesh. The mesh is decleared uneditable all the time.
+  !>        if changes/settings are needed, call this function first, then call
+  !         set functions
+  !> @param mpMesh(in/out) the MPMesh is valid/created
+  !---------------------------------------------------------------------------
+  subroutine polympo_startMeshFill(mpMesh) &
+             bind(C, NAME='polympo_startMeshFill')
+    use :: iso_c_binding
+    type(c_ptr), value :: mpMesh
+  end subroutine
+  !---------------------------------------------------------------------------
+  !> @brief disable the set mesh. Once the changes/settings are done,
+  !>        call this function to prevent unexpected changes/settings
+  !> @param mpMesh(in/out) the MPMesh is valid/created
+  !---------------------------------------------------------------------------
+  subroutine polympo_endMeshFill(mpMesh) &
+             bind(C, NAME='polympo_endMeshFill')
+    use :: iso_c_binding
+    type(c_ptr), value :: mpMesh
+  end subroutine
+  !---------------------------------------------------------------------------
   !> @brief check the Mesh is valid/runable in polympo
   !> @param mpMesh(in/out) the MPMesh is valid/created
   !> @param maxEdges(in) the maxEdges per cell of your mesh 

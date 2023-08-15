@@ -23,12 +23,19 @@ enum MeshFieldIndex{
     MeshF_OnSurfVeloIncr,
     MeshF_OnSurfDispIncr
 };
-const std::map<MeshFieldIndex, std::string> meshFields2String = 
-              {{MeshF_Invalid,          "MeshField_InValid!"},
-               {MeshF_Unsupported,      "MeshField_Unsupported"},
-               {MeshF_Vel,              "MeshField_Velocity"},
-               {MeshF_OnSurfVeloIncr,   "MeshField_OnSurfaceVelocityIncrement"},
-               {MeshF_OnSurfDispIncr,   "MeshField_OnSurfaceDisplacementIncrement"}};
+enum MeshFieldType{
+    MeshFType_Invalid = -2,
+    MeshFType_Unsupported,
+    MeshFType_VtxBased,
+    MeshFType_ElmBased
+};
+const std::map<MeshFieldIndex, std::pair<MeshFieldType,
+                                         std::string>> meshFields2String = 
+              {{MeshF_Invalid,          {MeshFType_Invalid,"MeshField_InValid!"}},
+               {MeshF_Unsupported,      {MeshFType_Unsupported,"MeshField_Unsupported"}},
+               {MeshF_Vel,              {MeshFType_VtxBased,"MeshField_Velocity"}},
+               {MeshF_OnSurfVeloIncr,   {MeshFType_VtxBased,"MeshField_OnSurfaceVelocityIncrement"}},
+               {MeshF_OnSurfDispIncr,   {MeshFType_VtxBased,"MeshField_OnSurfaceDisplacementIncrement"}}};
 
 enum mesh_type {mesh_unrecognized_lower = -1,
                 mesh_general_polygonal, //other meshes
@@ -42,6 +49,7 @@ enum geom_type {geom_unrecognized_lower = -1,
 
 class Mesh {
   private:
+    bool meshEdit_ = false;
     mesh_type meshType_ = mesh_unrecognized_lower;
     geom_type geomType_ = geom_unrecognized_lower;
 
@@ -80,11 +88,12 @@ class Mesh {
           elm2VtxConn_(elm2VtxConn),
           vtx2ElmConn_(vtx2ElmConn),
           elm2ElmConn_(elm2ElmConn){
-            vtxVel_ = DoubleVec2dView(meshFields2String.at(MeshF_Vel),numVtxs);
-            vtxOnSurfVeloIncr_ = DoubleVec2dView(meshFields2String.at(MeshF_OnSurfVeloIncr),numVtxs);
-            vtxOnSurfDispIncr_ = DoubleVec2dView(meshFields2String.at(MeshF_OnSurfDispIncr),numVtxs);
+            vtxVel_ = DoubleVec2dView(meshFields2String.at(MeshF_Vel).second,numVtxs);
+            vtxOnSurfVeloIncr_ = DoubleVec2dView(meshFields2String.at(MeshF_OnSurfVeloIncr).second,numVtxs);
+            vtxOnSurfDispIncr_ = DoubleVec2dView(meshFields2String.at(MeshF_OnSurfDispIncr).second,numVtxs);
         }
 
+    bool meshEditable(){ return meshEdit_; }
     bool checkMeshType(int meshType);
     bool checkGeomType(int geomType);
 
@@ -100,18 +109,26 @@ class Mesh {
     template<MeshFieldIndex index> auto getMeshField();
     template<MeshFieldIndex index> void setMeshFieldSize(int numVtxs);
 
+    void setMeshEdit(bool meshEdit) { meshEdit_ = meshEdit; }
     //onec MeshType/GeomType is set to valid types, we can't change them anymore
-    void setMeshType(mesh_type meshType) {PMT_ALWAYS_ASSERT(!checkMeshType(meshType_));
+    void setMeshType(mesh_type meshType) {PMT_ALWAYS_ASSERT(!checkMeshType(meshType_) && meshEdit_);
                                           meshType_ = meshType;}
-    void setGeomType(geom_type geomType) {PMT_ALWAYS_ASSERT(!checkGeomType(geomType_));
+    void setGeomType(geom_type geomType) {PMT_ALWAYS_ASSERT(!checkGeomType(geomType_) && meshEdit_);
                                           geomType_ = geomType;}
-    void setSphereRadius(double sphereRadius) {sphereRadius_ = sphereRadius;}
-    void setNumVtxs(int numVtxs) {numVtxs_ = numVtxs;}
-    void setNumElms(int numElms) {numElms_ = numElms;}
-    void setVtxCoords(DoubleVec3dView vtxCoordsIn) {vtxCoords_=vtxCoordsIn;}
-    void setVtx2ElmConn(IntElm2VtxView vtx2ElmConn) { vtx2ElmConn_ = vtx2ElmConn; }
-    void setElm2VtxConn(IntVtx2ElmView elm2VtxConn) { elm2VtxConn_ = elm2VtxConn; }
-    void setElm2ElmConn(IntElm2ElmView elm2ElmConn) { elm2ElmConn_ = elm2ElmConn; }
+    void setSphereRadius(double sphereRadius) {PMT_ALWAYS_ASSERT(meshEdit_);
+                                               sphereRadius_ = sphereRadius;}
+    void setNumVtxs(int numVtxs) {PMT_ALWAYS_ASSERT(meshEdit_);
+                                  numVtxs_ = numVtxs;}
+    void setNumElms(int numElms) {PMT_ALWAYS_ASSERT(meshEdit_);
+                                  numElms_ = numElms;}
+    void setVtxCoords(DoubleVec3dView vtxCoordsIn) {PMT_ALWAYS_ASSERT(meshEdit_);
+                                                    vtxCoords_=vtxCoordsIn;}
+    void setVtx2ElmConn(IntElm2VtxView vtx2ElmConn) {PMT_ALWAYS_ASSERT(meshEdit_);
+                                                     vtx2ElmConn_ = vtx2ElmConn; }
+    void setElm2VtxConn(IntVtx2ElmView elm2VtxConn) {PMT_ALWAYS_ASSERT(meshEdit_);
+                                                     elm2VtxConn_ = elm2VtxConn; }
+    void setElm2ElmConn(IntElm2ElmView elm2ElmConn) {PMT_ALWAYS_ASSERT(meshEdit_);
+                                                     elm2ElmConn_ = elm2ElmConn; }
 };
 
 template<MeshFieldIndex index>
@@ -139,6 +156,7 @@ auto Mesh::getMeshField(){
 
 template<MeshFieldIndex index>
 void Mesh::setMeshFieldSize(int numVtxs){
+    PMT_ALWAYS_ASSERT(meshEdit_);
     if constexpr (index==MeshF_Invalid){
         fprintf(stderr,"Mesh Field Invalid!\n");
         exit(1);
@@ -148,13 +166,13 @@ void Mesh::setMeshFieldSize(int numVtxs){
         exit(1);
     }
     else if constexpr (index==MeshF_Vel){
-        vtxVel_ = DoubleVec2dView(meshFields2String.at(MeshF_Vel),numVtxs);
+        vtxVel_ = DoubleVec2dView(meshFields2String.at(MeshF_Vel).second,numVtxs);
     }
     else if constexpr (index==MeshF_OnSurfVeloIncr){
-        vtxOnSurfVeloIncr_ = DoubleVec2dView(meshFields2String.at(MeshF_OnSurfVeloIncr),numVtxs);
+        vtxOnSurfVeloIncr_ = DoubleVec2dView(meshFields2String.at(MeshF_OnSurfVeloIncr).second,numVtxs);
     }
     else if constexpr (index==MeshF_OnSurfDispIncr){
-        vtxOnSurfDispIncr_ = DoubleVec2dView(meshFields2String.at(MeshF_OnSurfDispIncr),numVtxs);
+        vtxOnSurfDispIncr_ = DoubleVec2dView(meshFields2String.at(MeshF_OnSurfDispIncr).second,numVtxs);
     }
     else{
         fprintf(stderr,"Mesh Field Index error!\n");

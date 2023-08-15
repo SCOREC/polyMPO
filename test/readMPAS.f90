@@ -29,14 +29,15 @@ subroutine loadMPASMesh(mpMesh, filename)
     !check on maxEdges and vertexDegree
     call polympo_checkMeshMaxSettings(mpMesh,maxEdges,vertexDegree)
 
+    call polympo_startMeshFill(mpMesh)
     !set MeshType GeomType sphereRadius
-    call polympo_setMeshTypeCVTPoly(mpMesh);
+    call polympo_setMeshTypeCVTPoly(mpMesh)
     if (onSphere == stringYes) then
-        call polympo_setMeshGeomTypeSpherical(mpMesh);
+        call polympo_setMeshGeomTypeSpherical(mpMesh)
     else
-        call polympo_setMeshGeomTypePlanar(mpMesh);
+        call polympo_setMeshGeomTypePlanar(mpMesh)
     end if
-        call polympo_setMeshSphereRadius(mpMesh,sphereRadius);
+        call polympo_setMeshSphereRadius(mpMesh,sphereRadius)
 
     !set nCells nVertices
     call polympo_setMeshNumVtxs(mpMesh,nVertices)
@@ -48,6 +49,7 @@ subroutine loadMPASMesh(mpMesh, filename)
     call polympo_setMeshElm2ElmConn(mpMesh,maxEdges,nCells,c_loc(cellsOnCell))
     call polympo_setMeshNumEdgesPerElm(mpMesh,nCells,c_loc(nEdgesOnCell))
 
+    call polympo_endMeshFill(mpMesh)
     !unloadMPASMesh to deallocated
     deallocate(nEdgesOnCell)
     deallocate(xVertex)

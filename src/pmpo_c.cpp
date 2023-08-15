@@ -144,6 +144,16 @@ void polympo_getMPVelArray(MPMesh_ptr p_mpmesh, int size, double* array) {
   Kokkos::deep_copy(arrayHost,mpVelCopy); 
 }
 
+void polympo_startMeshFill(MPMesh_ptr p_mpmesh){
+  checkMPMeshValid(p_mpmesh);
+  ((polyMPO::MPMesh*)p_mpmesh)->p_mesh->setMeshEdit(true);  
+}
+
+void polympo_endMeshFill(MPMesh_ptr p_mpmesh){
+  checkMPMeshValid(p_mpmesh);
+  ((polyMPO::MPMesh*)p_mpmesh)->p_mesh->setMeshEdit(false);  
+}
+
 void polympo_checkMeshMaxSettings(MPMesh_ptr p_mpmesh, int maxEdges, int vertexDegree){
   checkMPMeshValid(p_mpmesh);
   PMT_ALWAYS_ASSERT(maxEdges <= maxVtxsPerElm);

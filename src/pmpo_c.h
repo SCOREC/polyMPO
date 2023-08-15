@@ -27,6 +27,8 @@ void polympo_setMPVelArray(MPMesh_ptr p_mpmesh, int size, double* array);
 void polympo_getMPVelArray(MPMesh_ptr p_mpmesh, int size, double* array);
 
 //Mesh info
+void polympo_startMeshFill(MPMesh_ptr p_mpmesh);
+void polympo_endMeshFill(MPMesh_ptr p_mpmesh);
 void polympo_checkMeshMaxSettings(MPMesh_ptr p_mpmesh, int maxEdges, int vertexDegree);
 void polympo_setMeshTypeGeneralPoly(MPMesh_ptr p_mpmesh);
 void polympo_setMeshTypeCVTPoly(MPMesh_ptr p_mpmesh);

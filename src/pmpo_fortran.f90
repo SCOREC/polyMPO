@@ -234,6 +234,41 @@ module polympo
     integer(c_int), value :: n
     type(c_ptr), value :: array
   end subroutine
+  !---------------------------------------------------------------------------
+  !> @brief get the number of vertices from the mesh holding by polyMPO
+  !> @param mpMesh(in) mpMesh object
+  !> @param numVtxs(return)) the number of vertices
+  !---------------------------------------------------------------------------
+  function polympo_getMeshNumVtxs(mpMesh) result(numVtxs) &
+            bind(C, NAME = 'polympo_getMeshNumVtxs')
+    use :: iso_c_binding
+    type(c_ptr), intent(in), value :: mpMesh
+    integer(c_int) :: numVtxs
+  end function
+  !---------------------------------------------------------------------------
+  !> @brief get the number of elements from the mesh holding by polyMPO
+  !> @param mpMesh(in) mpMesh object
+  !> @param numVtxs(return)) the number of elements
+  !---------------------------------------------------------------------------
+  function polympo_getMeshNumElms(mpMesh) result(numElms) &
+            bind(C, NAME = 'polympo_getMeshNumElms')
+    use :: iso_c_binding
+    type(c_ptr), intent(in), value :: mpMesh
+    integer(c_int) :: numElms
+  end function
+  !---------------------------------------------------------------------------
+  !> @brief get the mesh vertex coordinates array
+  !> @param mpmesh(in/out) MPMesh object
+  !> @param n(in) 1/3 length of the array
+  !> @param array(in/out) output mesh vertex coordinates 1D array (numVtx*3), allocated by user
+  !---------------------------------------------------------------------------
+  subroutine polympo_getMeshVtxCoords(mpMesh, nComps, nVertices, array) &
+             bind(C, NAME='polympo_getMeshVtxCoords')
+    use :: iso_c_binding
+    type(c_ptr), value :: mpMesh
+    integer(c_int), value :: nComps, nVertices
+    type(c_ptr), value :: array
+  end subroutine
   end interface
   contains
   !---------------------------------------------------------------------------
@@ -249,4 +284,5 @@ module polympo
         call exit(1)
     end if
   end subroutine
+  
 end module

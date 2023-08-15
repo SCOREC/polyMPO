@@ -74,6 +74,13 @@ typedef Kokkos::View<
           Kokkos::DefaultHostExecutionSpace,
           Kokkos::MemoryTraits<Kokkos::Unmanaged>
         > kkVec2dViewHostU;//TODO:put it to mesh.hpp
+
+typedef Kokkos::View<
+          double*[vec3d_nEntries],
+          Kokkos::LayoutLeft,
+          Kokkos::DefaultHostExecutionSpace,
+          Kokkos::MemoryTraits<Kokkos::Unmanaged>
+        > kkVec3dViewHostU;
                          
 typedef Kokkos::View<
           double**,
@@ -314,3 +321,35 @@ void polympo_getMeshVelArray(MPMesh_ptr p_mpmesh, int size, double* array) {
   Kokkos::deep_copy(arrayHost, vtxField);
 }
 
+int polympo_getMeshNumVtxs(MPMesh_ptr p_mpmesh) {
+  checkMPMeshValid(p_mpmesh); //chech vailidity
+  auto p_mesh = ((polyMPO::MPMesh*)p_mpmesh)->p_mesh;
+  int nVtxs = p_mesh->getNumVertices();
+  return nVtxs;
+}
+
+int polympo_getMeshNumElms(MPMesh_ptr p_mpmesh) {
+  checkMPMeshValid(p_mpmesh); //chech vailidity
+  auto p_mesh = ((polyMPO::MPMesh*)p_mpmesh)->p_mesh;
+  int nElms = p_mesh->getNumElements();
+  return nElms;
+}
+
+void polympo_getMeshVtxCoords(MPMesh_ptr p_mpmesh, int nComps, int nVertices, double* array) {
+  // check if mesh is valid
+  checkMPMeshValid(p_mpmesh);
+  // get pointer to mesh from mpmesh
+  auto p_mesh = ((polyMPO::MPMesh*)p_mpmesh)->p_mesh;
+  
+  kkVec3dViewHostU arrayHost(array, nVertices);
+
+  auto vtxField = p_mesh->getMeshField<polyMPO::MeshF_VtxCoords>();
+
+  //check the size
+  PMT_ALWAYS_ASSERT(nComps == vec3d_nEntries);
+  PMT_ALWAYS_ASSERT(p_mesh->getNumVertices() == nVertices); 
+  PMT_ALWAYS_ASSERT(static_cast<size_t>(nVertices*vec3d_nEntries)==vtxField.size());
+
+  //copy the device array to the host
+  Kokkos::deep_copy(arrayHost, vtxField);
+}

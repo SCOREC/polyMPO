@@ -15,15 +15,17 @@ program main
   include 'mpif.h'
     
   integer, parameter :: MPAS_RKIND = selected_real_kind(12)
-  integer :: nverts 
-  integer :: numComps
+  integer :: nverts, nCells
+  integer :: numComps, coordComps
   integer :: numMPs 
   integer :: i, j
   integer :: setMeshOption, setMPOption
   integer :: mpi_comm_handle = MPI_COMM_WORLD
-  real(kind=MPAS_RKIND) :: value1, value2
+  real(kind=MPAS_RKIND) :: value1, value2, value3
   real(kind=MPAS_RKIND), dimension(:), pointer :: MParray
   real(kind=MPAS_RKIND), dimension(:), pointer :: Mesharray
+  real(kind=MPAS_RKIND), dimension(:), pointer :: xVertex, yVertex, zVertex
+  real(kind=MPAS_RKIND), dimension(:,:), pointer :: xyzVertex
   integer :: ierr, self
   type(c_ptr) :: mpMesh
 
@@ -41,9 +43,15 @@ program main
   nverts = 19 !todo use getNumVtx from the Mesh object
   numComps = 2 !todo use getNumComps from velocity fields
   numMPs = 49 !todo use getNumMPs from the MaterialPoints object
+  coordComps = 3
+  nCells = 10
 
   allocate(Mesharray(nverts*numComps))
   allocate(MParray(numMPs*numComps))
+  allocate(xVertex(nverts))
+  allocate(yVertex(nverts))
+  allocate(zVertex(nverts))
+  allocate(xyzVertex(coordComps, nverts))
 
   value1 = 42
   MParray = value1
@@ -75,6 +83,25 @@ program main
   call polympo_getMeshVelArray(mpMesh, nverts, c_loc(Mesharray))
   call assert(all(Mesharray .eq. value2), "Assert Mesharray == value2 Failed!")
 
+  value3 = 13.5
+  xVertex = value1 !... = 42
+  yVertex = value2 !... = 24
+  zVertex = value3 !... = 13.5
+  call polympo_setMeshNumVtxs(mpMesh, nverts)
+  call polympo_setMeshNumElms(mpMesh, nCells)
+  call polympo_setMeshVtxCoords(mpMesh, nverts, c_loc(xVertex), c_loc(yVertex), c_loc(zVertex))
+  
+  nverts = 0
+  nverts = polympo_getMeshNumVtxs(mpMesh)
+  call assert((nverts .eq. 19), "Assert nverts == 19 Failed!")
+  
+  nCells = 0
+  nCells = polympo_getMeshNumElms(mpMesh)
+  call assert((nCells .eq. 10), "Assert nverts == 10 Failed!")
+
+  call polympo_getMeshVtxCoords(mpMesh, coordComps, nverts, c_loc(xyzVertex))
+  write(*,'(a,3(e15.5,1x))')'xyzVertex(:,1)= ', xyzVertex(1,1), xyzVertex(2,1), xyzVertex(3,1)
+  
   deallocate(MParray)
   deallocate(Mesharray)
 

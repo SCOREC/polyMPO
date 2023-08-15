@@ -20,6 +20,7 @@ enum MeshFieldIndex{
     MeshF_Invalid = -2,
     MeshF_Unsupported,
     MeshF_Vel,
+    MeshF_VtxCoords,
 };
 
 enum mesh_type {mesh_unrecognized_lower = -1,
@@ -113,6 +114,9 @@ auto Mesh::getMeshField(){
     }
     else if constexpr (index==MeshF_Vel){
         return vtxVel_;
+    }
+    else if constexpr (index==MeshF_VtxCoords){
+        return vtxCoords_;
     }
     fprintf(stderr,"Mesh Field Index error!\n");
     exit(1);

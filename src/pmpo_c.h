@@ -40,6 +40,10 @@ void polympo_setMeshNumEdgesPerElm(MPMesh_ptr p_mpmesh, int nCells, int* array);
 void polympo_setMeshElm2VtxConn(MPMesh_ptr p_mpmesh, int maxEdges, int nCells, int* array);
 void polympo_setMeshElm2ElmConn(MPMesh_ptr p_mpmesh, int maxEdges, int nCells, int* array);
 
+int polympo_getMeshNumVtxs(MPMesh_ptr p_mpmesh);
+int polympo_getMeshNumElms(MPMesh_ptr p_mpmesh);
+void polympo_getMeshVtxCoords(MPMesh_ptr p_mpmesh, int nComps, int nVertices, double* array);
+
 //Mesh fields
 void polympo_setMeshVelArray(MPMesh_ptr p_mpmesh, int size, double* array);
 void polympo_getMeshVelArray(MPMesh_ptr p_mpmesh, int size, double* array);

@@ -30,7 +30,7 @@ enum MeshFieldType{
     MeshFType_ElmBased
 };
 const std::map<MeshFieldIndex, std::pair<MeshFieldType,
-                                         std::string>> meshFields2String = 
+                                         std::string>> meshFields2TypeAndString = 
               {{MeshF_Invalid,          {MeshFType_Invalid,"MeshField_InValid!"}},
                {MeshF_Unsupported,      {MeshFType_Unsupported,"MeshField_Unsupported"}},
                {MeshF_Vel,              {MeshFType_VtxBased,"MeshField_Velocity"}},
@@ -89,7 +89,7 @@ class Mesh {
           vtx2ElmConn_(vtx2ElmConn),
           elm2ElmConn_(elm2ElmConn){
             meshEdit_ = true;
-            setMeshFieldSize(numVtxs);
+            setMeshVtxBasedFieldSize(numVtxs);
             meshEdit_ = false;
         }
 
@@ -107,7 +107,7 @@ class Mesh {
     IntElm2VtxView getVtx2ElmConn() { return vtx2ElmConn_; }
     IntElm2ElmView getElm2ElmConn() { return elm2ElmConn_; }
     template<MeshFieldIndex index> auto getMeshField();
-    void setMeshFieldSize(int numVtxs);
+    void setMeshVtxBasedFieldSize(int numVtxs);
 
     void setMeshEdit(bool meshEdit) { meshEdit_ = meshEdit; }
     //onec MeshType/GeomType is set to valid types, we can't change them anymore

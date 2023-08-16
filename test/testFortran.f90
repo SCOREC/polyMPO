@@ -24,6 +24,7 @@ program main
   real(kind=APP_RKIND) :: value1, value2
   real(kind=APP_RKIND), dimension(:,:), pointer :: MParray
   real(kind=APP_RKIND), dimension(:,:), pointer :: Mesharray
+  real(kind=APP_RKIND), dimension(:), pointer :: xArray, yArray, zArray
   integer :: ierr, self
   type(c_ptr) :: mpMesh
 
@@ -44,7 +45,11 @@ program main
 
   allocate(Mesharray(numComps,nverts))
   allocate(MParray(numComps,numMPs))
+  allocate(xArray(nverts))
+  allocate(yArray(nverts))
+  allocate(zArray(nverts))
 
+  call polympo_startMeshFill(mpMesh)
   value1 = 42
   MParray = value1
   call polympo_setMPVelArray(mpMesh, numMPs, c_loc(MParray))
@@ -84,8 +89,27 @@ program main
     end do
   end do
 
+  value1 = 1337
+  value2 = 42
+  xArray = value1
+  yArray = value2
+  zArray = value1 + value2 
+  call polympo_setMeshVtxCoords(mpMesh, nverts, c_loc(xArray), c_loc(yArray), c_loc(zArray))
+  xArray = 1
+  yArray = 1
+  zArray = 1 
+  call polympo_getMeshVtxCoords(mpMesh, nverts, c_loc(xArray), c_loc(yArray), c_loc(zArray))
+  call assert(all(xArray .eq. value1), "Assert xArray == value1 Failed!")
+  call assert(all(yArray .eq. value2), "Assert yArray == value2 Failed!")
+  call assert(all(zArray .eq. value1 + value2), "Assert zArray == value1 + value2 Failed!")
+
+  call polympo_endMeshFill(mpMesh)
+
   deallocate(MParray)
   deallocate(Mesharray)
+  deallocate(xArray)
+  deallocate(yArray)
+  deallocate(zArray)
 
   call polympo_deleteMPMesh(mpMesh)
   call polympo_finalize()

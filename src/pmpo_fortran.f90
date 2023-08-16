@@ -191,6 +191,19 @@ module polympo
     type(c_ptr), intent(in), value :: xArray, yArray, zArray
   end subroutine
   !---------------------------------------------------------------------------
+  !> @brief get the polympo mesh vertices coordinates
+  !> @param mpmesh(in/out) MPMesh object
+  !> @param nVertices(in) length of array in, use for assertion
+  !> @param x/y/zArray(in/out) the 1D arrays of vertices coordinates
+  !---------------------------------------------------------------------------
+  subroutine polympo_getMeshVtxCoords(mpMesh, nVertices, xArray, yArray, zArray) &
+             bind(C, NAME='polympo_getMeshVtxCoords')
+    use :: iso_c_binding
+    type(c_ptr), value :: mpMesh
+    integer(c_int), value :: nVertices
+    type(c_ptr), value :: xArray, yArray, zArray
+  end subroutine
+  !---------------------------------------------------------------------------
   !> @brief set the polympo mesh element to vertices connectivity
   !> @param mpmesh(in/out) MPMesh object
   !> @param maxEdges,nCells(in) length of array in each direction

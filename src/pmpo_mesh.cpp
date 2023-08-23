@@ -12,6 +12,8 @@ namespace polyMPO{
     }
 
     void Mesh::setMeshVtxBasedFieldSize(int numVtxs){
+        PMT_ALWAYS_ASSERT(meshEdit_);
+
         auto vtxCoordsMapEntry = meshFields2TypeAndString.at(MeshF_VtxCoords);
         PMT_ALWAYS_ASSERT(vtxCoordsMapEntry.first == MeshFType_VtxBased);
         vtxCoords_ = DoubleVec3dView(vtxCoordsMapEntry.second,numVtxs);

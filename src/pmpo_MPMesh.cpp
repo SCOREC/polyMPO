@@ -10,7 +10,6 @@ void MPMesh::CVTTrackingEdgeCenterBased(Vec2dView dx){
     auto numMPs = p_MPs->getCount();
 
     auto elm2VtxConn = p_mesh->getElm2VtxConn();
-    auto vtx2ElmConn = p_mesh->getVtx2ElmConn();
     auto elm2ElmConn = p_mesh->getElm2ElmConn();
     auto MPs2Elm = p_MPs->getData<MPF_Tgt_Elm_ID>();
     const auto vtxCoords = p_mesh->getVtxCoords(); 
@@ -79,7 +78,6 @@ void MPMesh::CVTTrackingElmCenterBased(Vec2dView dx){
     
     const auto vtxCoords = p_mesh->getVtxCoords(); 
     auto elm2VtxConn = p_mesh->getElm2VtxConn();
-    auto vtx2ElmConn = p_mesh->getVtx2ElmConn();
     auto elm2ElmConn = p_mesh->getElm2ElmConn();
 
     auto mpPositions = p_MPs->getData<MPF_Cur_Pos_XYZ>();
@@ -138,7 +136,6 @@ void MPMesh::T2LTracking(Vec2dView dx){
     
     const auto vtxCoords = p_mesh->getVtxCoords(); 
     auto elm2VtxConn = p_mesh->getElm2VtxConn();
-    auto vtx2ElmConn = p_mesh->getVtx2ElmConn();
     auto elm2ElmConn = p_mesh->getElm2ElmConn();
 
     auto mpPositions = p_MPs->getData<MPF_Cur_Pos_XYZ>();

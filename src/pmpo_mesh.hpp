@@ -59,7 +59,6 @@ class Mesh {
     DoubleVec3dView vtxCoords_;
     //IntView nEdgesPerElm_;
     IntVtx2ElmView elm2VtxConn_;
-    IntElm2VtxView vtx2ElmConn_;//TODO remove
     IntElm2ElmView elm2ElmConn_;
   
     //start of meshFields
@@ -77,7 +76,6 @@ class Mesh {
           int numElms,
           DoubleVec3dView vtxCoords,
           IntVtx2ElmView elm2VtxConn,
-          IntElm2VtxView vtx2ElmConn,
           IntElm2ElmView elm2ElmConn ):
           meshType_(meshType),
           geomType_(geomType),
@@ -86,7 +84,6 @@ class Mesh {
           numElms_(numElms),
           vtxCoords_(vtxCoords),
           elm2VtxConn_(elm2VtxConn),
-          vtx2ElmConn_(vtx2ElmConn),
           elm2ElmConn_(elm2ElmConn){
             meshEdit_ = true;
             setMeshVtxBasedFieldSize(numVtxs);
@@ -104,7 +101,6 @@ class Mesh {
     int getNumElements() { return numElms_; }
     DoubleVec3dView getVtxCoords() { return vtxCoords_; }
     IntVtx2ElmView getElm2VtxConn() { return elm2VtxConn_; }
-    IntElm2VtxView getVtx2ElmConn() { return vtx2ElmConn_; }
     IntElm2ElmView getElm2ElmConn() { return elm2ElmConn_; }
     template<MeshFieldIndex index> auto getMeshField();
     void setMeshVtxBasedFieldSize(int numVtxs);
@@ -123,8 +119,6 @@ class Mesh {
                                   numElms_ = numElms;}
     void setVtxCoords(DoubleVec3dView vtxCoordsIn) {PMT_ALWAYS_ASSERT(meshEdit_);
                                                     vtxCoords_=vtxCoordsIn;}
-    void setVtx2ElmConn(IntElm2VtxView vtx2ElmConn) {PMT_ALWAYS_ASSERT(meshEdit_);
-                                                     vtx2ElmConn_ = vtx2ElmConn; }
     void setElm2VtxConn(IntVtx2ElmView elm2VtxConn) {PMT_ALWAYS_ASSERT(meshEdit_);
                                                      elm2VtxConn_ = elm2VtxConn; }
     void setElm2ElmConn(IntElm2ElmView elm2ElmConn) {PMT_ALWAYS_ASSERT(meshEdit_);

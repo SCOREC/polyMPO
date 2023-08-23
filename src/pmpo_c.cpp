@@ -2,6 +2,8 @@
 #include "pmpo_c.h"
 #include <stdio.h>
 
+#define MP_DETACHED -1 //TODO: consider other ways later, like enum
+
 namespace{
   std::vector<MPMesh_ptr> p_mpmeshes;////store the p_mpmeshes that is legal
     
@@ -112,7 +114,7 @@ void polympo_setMPCurElmID(MPMesh_ptr p_mpmesh,
     if(mask){
         mpCurElmID(mp) = mpCurElmIDCopy(mp);
     }else{
-        mpCurElmID(mp) = -1;
+        mpCurElmID(mp) = MP_DETACHED;
     }
   };
   p_MPs->parallel_for(setVel, "set mpCurElmID");
@@ -133,7 +135,7 @@ void polympo_getMPCurElmID(MPMesh_ptr p_mpmesh,
     if(mask){
         mpCurElmIDCopy(mp) = mpCurElmID(mp);
     }else{
-        mpCurElmID(mp) = -1;
+        mpCurElmID(mp) = MP_DETACHED;
     }
   };
   p_MPs->parallel_for(setVel, "get mpCurElmID");

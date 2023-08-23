@@ -19,6 +19,7 @@ program main
   integer :: i, j
   integer :: setMeshOption, setMPOption
   integer :: mpi_comm_handle = MPI_COMM_WORLD
+  real(kind=APP_RKIND) :: test_epsilon = 1e-6
   real(kind=APP_RKIND) :: value1, value2
   integer, dimension(:), pointer :: MPElmID
   real(kind=APP_RKIND), dimension(:,:), pointer :: MParray
@@ -55,7 +56,7 @@ program main
 
   call polympo_getMPPositions(mpMesh, coordDegree, numMPs, c_loc(MPPositions))
   do i = 1,numMPs 
-    call assert(abs(MPPositions(3,i) - 1.1) .lt. 0.000001, "Assert zPositions for MP array Fail")
+    call assert(abs(MPPositions(3,i) - 1.1) .lt. test_epsilon, "Assert zPositions for MP array Fail")
   end do
 
   do i = 1,numMPs 

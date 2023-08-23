@@ -278,45 +278,6 @@ void polympo_setMeshSphereRadius(MPMesh_ptr p_mpmesh, double sphereRadius){
   p_mesh->setSphereRadius(sphereRadius);
 }
 
-void polympo_setMeshVtxCoords(MPMesh_ptr p_mpmesh, int nVertices, double* xArray, double* yArray, double* zArray){
-  //chech validity
-  checkMPMeshValid(p_mpmesh);
-  auto p_mesh = ((polyMPO::MPMesh*)p_mpmesh)->p_mesh;
-  PMT_ALWAYS_ASSERT(p_mesh->meshEditable());
-
-  //check the size
-  PMT_ALWAYS_ASSERT(p_mesh->getNumVertices()==nVertices); 
-
-  //copy the host array to the device
-  auto coordsArray = p_mesh->getMeshField<polyMPO::MeshF_VtxCoords>();
-  polyMPO::DoubleVec3dView::HostMirror h_coordsArray = Kokkos::create_mirror_view(coordsArray);
-  for(int i=0; i<nVertices; i++){
-    h_coordsArray(i,0) = xArray[i];
-    h_coordsArray(i,1) = yArray[i];
-    h_coordsArray(i,2) = zArray[i];
-  }
-  Kokkos::deep_copy(coordsArray, h_coordsArray);
-}
-
-void polympo_getMeshVtxCoords(MPMesh_ptr p_mpmesh, int nVertices, double* xArray, double* yArray, double* zArray){
-  //chech validity
-  checkMPMeshValid(p_mpmesh);
-  auto p_mesh = ((polyMPO::MPMesh*)p_mpmesh)->p_mesh;
-
-  //check the size
-  PMT_ALWAYS_ASSERT(p_mesh->getNumVertices()==nVertices); 
-  
-  //copy the device to host 
-  auto coordsArray = p_mesh->getVtxCoords();
-  polyMPO::DoubleVec3dView::HostMirror h_coordsArray = Kokkos::create_mirror_view(coordsArray);
-  Kokkos::deep_copy(h_coordsArray, coordsArray);
-  for(int i=0; i<nVertices; i++){
-    xArray[i] = h_coordsArray(i,0);
-    yArray[i] = h_coordsArray(i,1);
-    zArray[i] = h_coordsArray(i,2);
-  }
-}
-
 void polympo_setMeshNumEdgesPerElm(MPMesh_ptr p_mpmesh, int nCells, int* array){
   //chech vailidity
   checkMPMeshValid(p_mpmesh);
@@ -377,6 +338,45 @@ void polympo_setMeshElm2ElmConn(MPMesh_ptr p_mpmesh, int maxEdges, int nCells, i
         elm2ElmConn(elm,i+1) = elm2ElmArray(i,elm);
     }  
   });
+}
+
+void polympo_setMeshVtxCoords(MPMesh_ptr p_mpmesh, int nVertices, double* xArray, double* yArray, double* zArray){
+  //chech validity
+  checkMPMeshValid(p_mpmesh);
+  auto p_mesh = ((polyMPO::MPMesh*)p_mpmesh)->p_mesh;
+  PMT_ALWAYS_ASSERT(p_mesh->meshEditable());
+
+  //check the size
+  PMT_ALWAYS_ASSERT(p_mesh->getNumVertices()==nVertices); 
+
+  //copy the host array to the device
+  auto coordsArray = p_mesh->getMeshField<polyMPO::MeshF_VtxCoords>();
+  polyMPO::DoubleVec3dView::HostMirror h_coordsArray = Kokkos::create_mirror_view(coordsArray);
+  for(int i=0; i<nVertices; i++){
+    h_coordsArray(i,0) = xArray[i];
+    h_coordsArray(i,1) = yArray[i];
+    h_coordsArray(i,2) = zArray[i];
+  }
+  Kokkos::deep_copy(coordsArray, h_coordsArray);
+}
+
+void polympo_getMeshVtxCoords(MPMesh_ptr p_mpmesh, int nVertices, double* xArray, double* yArray, double* zArray){
+  //chech validity
+  checkMPMeshValid(p_mpmesh);
+  auto p_mesh = ((polyMPO::MPMesh*)p_mpmesh)->p_mesh;
+
+  //check the size
+  PMT_ALWAYS_ASSERT(p_mesh->getNumVertices()==nVertices); 
+  
+  //copy the device to host 
+  auto coordsArray = p_mesh->getVtxCoords();
+  polyMPO::DoubleVec3dView::HostMirror h_coordsArray = Kokkos::create_mirror_view(coordsArray);
+  Kokkos::deep_copy(h_coordsArray, coordsArray);
+  for(int i=0; i<nVertices; i++){
+    xArray[i] = h_coordsArray(i,0);
+    yArray[i] = h_coordsArray(i,1);
+    zArray[i] = h_coordsArray(i,2);
+  }
 }
 
 void polympo_setMeshOnSurfVeloIncrArray(MPMesh_ptr p_mpmesh, int nComps, int nVertices, double* array) {

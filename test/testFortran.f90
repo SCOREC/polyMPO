@@ -83,7 +83,6 @@ program main
   call polympo_getMPVelArray(mpMesh, numMPs, c_loc(MParray))
   call assert(all(MParray .eq. value2), "Assert MParray == value2 Failed!")
 
-  call polympo_startMeshFill(mpMesh)
   do i = 1,numComps
     do j = 1,nverts 
         Mesharray(i,j) = (i-1)*numComps + j
@@ -120,8 +119,6 @@ program main
   call assert(all(xArray .eq. value1), "Assert xArray == value1 Failed!")
   call assert(all(yArray .eq. value2), "Assert yArray == value2 Failed!")
   call assert(all(zArray .eq. value1 + value2), "Assert zArray == value1 + value2 Failed!")
-
-  call polympo_endMeshFill(mpMesh)
 
   deallocate(MParray)
   deallocate(Mesharray)

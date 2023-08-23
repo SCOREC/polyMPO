@@ -43,13 +43,16 @@ subroutine loadMPASMesh(mpMesh, filename)
     call polympo_setMeshNumVtxs(mpMesh,nVertices)
     call polympo_setMeshNumElms(mpMesh,nCells)
 
-    !set VtxCoords and connectivities
-    call polympo_setMeshVtxCoords(mpMesh,nVertices,c_loc(xVertex),c_loc(yVertex),c_loc(zVertex))
+    !set connectivities
     call polympo_setMeshElm2VtxConn(mpMesh,maxEdges,nCells,c_loc(verticesOnCell))
     call polympo_setMeshElm2ElmConn(mpMesh,maxEdges,nCells,c_loc(cellsOnCell))
     call polympo_setMeshNumEdgesPerElm(mpMesh,nCells,c_loc(nEdgesOnCell))
-
+    
+    !end mesh structure fill
     call polympo_endMeshFill(mpMesh)
+
+    !set vtxCoords which is a mesh field 
+    call polympo_setMeshVtxCoords(mpMesh,nVertices,c_loc(xVertex),c_loc(yVertex),c_loc(zVertex))
     !unloadMPASMesh to deallocated
     deallocate(nEdgesOnCell)
     deallocate(xVertex)

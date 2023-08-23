@@ -15,7 +15,7 @@ program main
   include 'mpif.h'
     
   integer, parameter :: APP_RKIND = selected_real_kind(15)
-  integer :: nverts, numComps, coordDegree, numMPs, numElms
+  integer :: nverts, numCompsVel, numCompsVelCoords, numMPs, numElms
   integer :: i, j
   integer :: setMeshOption, setMPOption
   integer :: mpi_comm_handle = MPI_COMM_WORLD
@@ -41,20 +41,20 @@ program main
   mpMesh = polympo_createMPMesh(setMeshOption,setMPOption) !creates test mesh
   
   nverts = 19 !todo use getNumVtx from the Mesh object
-  numComps = 2 !todo use getNumComps from velocity fields
-  coordDegree = 3
+  numCompsVel = 2 !todo use getNumComps from velocity fields
+  numCompsVelCoords = 3
   numMPs = 49 !todo use getNumMPs from the MaterialPoints object
   numElms = 10
 
-  allocate(Mesharray(numComps,nverts))
-  allocate(MParray(numComps,numMPs))
+  allocate(Mesharray(numCompsVel,nverts))
+  allocate(MParray(numCompsVel,numMPs))
   allocate(MPElmID(numMPs))
-  allocate(MPPositions(coordDegree,numMPs))
+  allocate(MPPositions(numCompsVelCoords,numMPs))
   allocate(xArray(nverts))
   allocate(yArray(nverts))
   allocate(zArray(nverts))
 
-  call polympo_getMPPositions(mpMesh, coordDegree, numMPs, c_loc(MPPositions))
+  call polympo_getMPPositions(mpMesh, numCompsVelCoords, numMPs, c_loc(MPPositions))
   do i = 1,numMPs 
     call assert(abs(MPPositions(3,i) - 1.1) .lt. test_epsilon, "Assert zPositions for MP array Fail")
   end do
@@ -84,26 +84,26 @@ program main
   call polympo_getMPVelArray(mpMesh, numMPs, c_loc(MParray))
   call assert(all(MParray .eq. value2), "Assert MParray == value2 Failed!")
 
-  do i = 1,numComps
+  do i = 1,numCompsVel
     do j = 1,nverts 
-        Mesharray(i,j) = (i-1)*numComps + j
+        Mesharray(i,j) = (i-1)*numCompsVel + j
     end do
   end do
-  call polympo_setMeshOnSurfVeloIncrArray(mpMesh, numComps, nverts, c_loc(Mesharray))
-  call polympo_setMeshOnSurfDispIncrArray(mpMesh, numComps, nverts, c_loc(Mesharray))
+  call polympo_setMeshOnSurfVeloIncrArray(mpMesh, numCompsVel, nverts, c_loc(Mesharray))
+  call polympo_setMeshOnSurfDispIncrArray(mpMesh, numCompsVel, nverts, c_loc(Mesharray))
 
   Mesharray = 1
-  call polympo_getMeshOnSurfVeloIncrArray(mpMesh, numComps, nverts, c_loc(Mesharray))
-  do i = 1,numComps
+  call polympo_getMeshOnSurfVeloIncrArray(mpMesh, numCompsVel, nverts, c_loc(Mesharray))
+  do i = 1,numCompsVel
     do j = 1,nverts 
-        call assert((Mesharray(i,j) .eq. (i-1)*numComps+j), "Assert 2d array Fail")
+        call assert((Mesharray(i,j) .eq. (i-1)*numCompsVel+j), "Assert 2d array Fail")
     end do
   end do
   Mesharray = 1
-  call polympo_getMeshOnSurfDispIncrArray(mpMesh, numComps, nverts, c_loc(Mesharray))
-  do i = 1,numComps
+  call polympo_getMeshOnSurfDispIncrArray(mpMesh, numCompsVel, nverts, c_loc(Mesharray))
+  do i = 1,numCompsVel
     do j = 1,nverts 
-        call assert((Mesharray(i,j) .eq. (i-1)*numComps+j), "Assert 2d array Fail")
+        call assert((Mesharray(i,j) .eq. (i-1)*numCompsVel+j), "Assert 2d array Fail")
     end do
   end do
 

@@ -15,14 +15,14 @@ program main
   include 'mpif.h'
     
   integer, parameter :: APP_RKIND = selected_real_kind(15)
-  integer :: nverts 
-  integer :: numComps
-  integer :: numMPs 
+  integer :: nverts, numComps, coordDegree, numMPs, numElms
   integer :: i, j
   integer :: setMeshOption, setMPOption
   integer :: mpi_comm_handle = MPI_COMM_WORLD
   real(kind=APP_RKIND) :: value1, value2
+  integer, dimension(:), pointer :: MPElmID
   real(kind=APP_RKIND), dimension(:,:), pointer :: MParray
+  real(kind=APP_RKIND), dimension(:,:), pointer :: MPPositions
   real(kind=APP_RKIND), dimension(:,:), pointer :: Mesharray
   real(kind=APP_RKIND), dimension(:), pointer :: xArray, yArray, zArray
   integer :: ierr, self
@@ -41,15 +41,32 @@ program main
   
   nverts = 19 !todo use getNumVtx from the Mesh object
   numComps = 2 !todo use getNumComps from velocity fields
+  coordDegree = 3
   numMPs = 49 !todo use getNumMPs from the MaterialPoints object
+  numElms = 10
 
   allocate(Mesharray(numComps,nverts))
   allocate(MParray(numComps,numMPs))
+  allocate(MPElmID(numMPs))
+  allocate(MPPositions(coordDegree,numMPs))
   allocate(xArray(nverts))
   allocate(yArray(nverts))
   allocate(zArray(nverts))
 
-  call polympo_startMeshFill(mpMesh)
+  call polympo_getMPPositions(mpMesh, coordDegree, numMPs, c_loc(MPPositions))
+  do i = 1,numMPs 
+    call assert(abs(MPPositions(3,i) - 1.1) .lt. 0.000001, "Assert zPositions for MP array Fail")
+  end do
+
+  do i = 1,numMPs 
+    MPElmID(i) = mod(i, numElms)
+  end do
+  call polympo_setMPCurElmID(mpMesh, numMPs, c_loc(MPElmID))
+  call polympo_getMPCurElmID(mpMesh, numMPs, c_loc(MPElmID))
+  do i = 1,numMPs 
+    call assert((MPElmID(i) .eq. mod(i, numElms)) , "Assert MPElmID Fail")
+  end do
+
   value1 = 42
   MParray = value1
   call polympo_setMPVelArray(mpMesh, numMPs, c_loc(MParray))
@@ -66,6 +83,7 @@ program main
   call polympo_getMPVelArray(mpMesh, numMPs, c_loc(MParray))
   call assert(all(MParray .eq. value2), "Assert MParray == value2 Failed!")
 
+  call polympo_startMeshFill(mpMesh)
   do i = 1,numComps
     do j = 1,nverts 
         Mesharray(i,j) = (i-1)*numComps + j

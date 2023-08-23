@@ -51,6 +51,47 @@ module polympo
     integer(c_int), value :: comm    
   end subroutine
   !---------------------------------------------------------------------------
+  !> @brief set the MP current element array from a host array
+  !> @param mpmesh(in/out) MPMesh object
+  !> @param numMPs(in) length of array, number of the MPs
+  !> @param array(in) input MP element ID 1D array (numMPs)
+  !---------------------------------------------------------------------------
+  subroutine polympo_setMPCurElmID(mpMesh, numMPs, array) &
+             bind(C, NAME='polympo_setMPCurElmID')
+    use :: iso_c_binding
+    type(c_ptr), value :: mpMesh
+    integer(c_int), value :: numMPs
+    type(c_ptr), intent(in), value :: array
+  end subroutine
+  !---------------------------------------------------------------------------
+  !> @brief get the current element ID MP array from a polympo array
+  !> @param mpmesh(in/out) MPMesh object
+  !> @param numMPs(in) length of array, number of the MPs
+  !> @param array(in/out) output MP element ID 1D array (numMPs), allocated by user
+  !---------------------------------------------------------------------------
+  subroutine polympo_getMPCurElmID(mpMesh, numMPs, array) &
+             bind(C, NAME='polympo_getMPCurElmID')
+    use :: iso_c_binding
+    type(c_ptr), value :: mpMesh
+    integer(c_int), value :: numMPs
+    type(c_ptr), value :: array
+  end subroutine
+  !---------------------------------------------------------------------------
+  !> @brief get the MP positions array from a polympo array
+  !> @param mpmesh(in/out) MPMesh object
+  !> @param nComps(in) degree of Components, should always be 3
+  !> @param numMPs(in) length of the 2nd degree of the array, number of the MPs
+  !> @param array(in/out) output MP current position 2D array (3,numMPs),
+  !>                      allocated by user
+  !---------------------------------------------------------------------------
+  subroutine polympo_getMPPositions(mpMesh, nComps, numMPs, array) &
+             bind(C, NAME='polympo_getMPPositions')
+    use :: iso_c_binding
+    type(c_ptr), value :: mpMesh
+    integer(c_int), value :: nComps, numMPs
+    type(c_ptr), value :: array
+  end subroutine
+  !---------------------------------------------------------------------------
   !> @brief set the velocity MP array from a host array
   !> @param mpmesh(in/out) MPMesh object
   !> @param n(in) half length of array

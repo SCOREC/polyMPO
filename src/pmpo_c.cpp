@@ -96,6 +96,73 @@ typedef Kokkos::View<
           Kokkos::MemoryTraits<Kokkos::Unmanaged>
         > kkIntViewHostU;//TODO:put it somewhere else (maybe)
 
+void polympo_setMPCurElmID(MPMesh_ptr p_mpmesh,
+                           int numMPs,
+                           int* elmIDs){
+  checkMPMeshValid(p_mpmesh);
+  auto p_MPs = ((polyMPO::MPMesh*)p_mpmesh)->p_MPs;
+  PMT_ALWAYS_ASSERT(numMPs == p_MPs->getCount());
+  auto mpCurElmID = p_MPs->getData<polyMPO::MPF_Cur_Elm_ID>();
+  
+  kkIntViewHostU arrayHost(elmIDs,numMPs);
+  polyMPO::IntView mpCurElmIDCopy("mpCurElmIDNewValue",numMPs);
+  Kokkos::deep_copy(mpCurElmIDCopy,arrayHost);
+
+  auto setVel = PS_LAMBDA(const int& elm, const int& mp, const int& mask){
+    if(mask){
+        mpCurElmID(mp) = mpCurElmIDCopy(mp);
+    }else{
+        mpCurElmID(mp) = -1;
+    }
+  };
+  p_MPs->parallel_for(setVel, "set mpCurElmID");
+}
+
+void polympo_getMPCurElmID(MPMesh_ptr p_mpmesh,
+                           int numMPs,
+                           int* elmIDs){
+  checkMPMeshValid(p_mpmesh);
+  auto p_MPs = ((polyMPO::MPMesh*)p_mpmesh)->p_MPs;
+  PMT_ALWAYS_ASSERT(numMPs == p_MPs->getCount());
+  auto mpCurElmID = p_MPs->getData<polyMPO::MPF_Cur_Elm_ID>();
+
+  kkIntViewHostU arrayHost(elmIDs,numMPs);
+  polyMPO::IntView mpCurElmIDCopy("mpCurElmIDNewValue",numMPs);
+
+  auto setVel = PS_LAMBDA(const int& elm, const int& mp, const int& mask){
+    if(mask){
+        mpCurElmIDCopy(mp) = mpCurElmID(mp);
+    }else{
+        mpCurElmID(mp) = -1;
+    }
+  };
+  p_MPs->parallel_for(setVel, "get mpCurElmID");
+  Kokkos::deep_copy( arrayHost, mpCurElmIDCopy);
+}
+
+void polympo_getMPPositions(MPMesh_ptr p_mpmesh,
+                           int numComps,
+                           int numMPs,
+                           double* mpPositionsIn){ 
+  checkMPMeshValid(p_mpmesh);
+  auto p_MPs = ((polyMPO::MPMesh*)p_mpmesh)->p_MPs;
+  PMT_ALWAYS_ASSERT(numComps == vec3d_nEntries);
+  PMT_ALWAYS_ASSERT(numMPs == p_MPs->getCount());
+
+  auto mpPositions = p_MPs->getData<polyMPO::MPF_Cur_Pos_XYZ>();
+  kkDbl2dViewHostU arrayHost(mpPositionsIn,numComps,numMPs);
+  Kokkos::View<double**> mpPositionsCopy("mpPositionsCopy",vec3d_nEntries,numMPs);
+  auto setVel = PS_LAMBDA(const int& elm, const int& mp, const int& mask){
+    if(mask){
+        mpPositionsCopy(0,mp) = mpPositions(mp,0);
+        mpPositionsCopy(1,mp) = mpPositions(mp,1);
+        mpPositionsCopy(2,mp) = mpPositions(mp,2);
+    }
+  };
+  p_MPs->parallel_for(setVel, "get mpCurElmID");
+  Kokkos::deep_copy(arrayHost, mpPositionsCopy);
+}
+
 void polympo_setMPVelArray(MPMesh_ptr p_mpmesh, int size, double* array) {
   checkMPMeshValid(p_mpmesh);
   auto p_MPs = ((polyMPO::MPMesh*)p_mpmesh)->p_MPs;

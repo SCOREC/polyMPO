@@ -20,7 +20,9 @@ void polympo_setMPICommunicator(MPI_Fint fcomm);//TODO:is MPI_Fint best? or some
 //TODO: add a function to get communicator
 
 //MP info
-//TODO 
+void polympo_setMPCurElmID(MPMesh_ptr p_mpmesh, int numMPs, int* elmIDs);
+void polympo_getMPCurElmID(MPMesh_ptr p_mpmesh, int numMPs, int* elmIDs);
+void polympo_getMPPositions(MPMesh_ptr p_mpmesh, int numComps, int numMPs, double* elmIDs);
 
 //MP slices
 void polympo_setMPVelArray(MPMesh_ptr p_mpmesh, int size, double* array);

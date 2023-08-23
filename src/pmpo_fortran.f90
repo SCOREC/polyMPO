@@ -299,21 +299,6 @@ module polympo
     type(c_ptr), intent(in), value :: array
   end subroutine
   !---------------------------------------------------------------------------
-  !> @brief set the spherical displacement increment mesh array 
-  !>        from a host array
-  !> @param mpmesh(in/out) MPMesh object
-  !> @param nComps(in) degree of Components, should always be 2
-  !> @param nVertices(in) numVertices
-  !> @param array(in) input mesh velocity 2D array (2,numVtx)
-  !---------------------------------------------------------------------------
-  subroutine polympo_setMeshOnSurfDispIncrArray(mpMesh, nComps, nVertices, array) &
-             bind(C, NAME='polympo_setMeshOnSurfDispIncrArray')
-    use :: iso_c_binding
-    type(c_ptr), value :: mpMesh
-    integer(c_int), value :: nComps, nVertices
-    type(c_ptr), intent(in), value :: array
-  end subroutine
-  !---------------------------------------------------------------------------
   !> @brief get the spherical velocity increment mesh array 
   !>        from a polympo array
   !> @param mpmesh(in/out) MPMesh object
@@ -328,6 +313,21 @@ module polympo
     type(c_ptr), value :: mpMesh
     integer(c_int), value :: nComps, nVertices
     type(c_ptr), value :: array
+  end subroutine
+  !---------------------------------------------------------------------------
+  !> @brief set the spherical displacement increment mesh array 
+  !>        from a host array
+  !> @param mpmesh(in/out) MPMesh object
+  !> @param nComps(in) degree of Components, should always be 2
+  !> @param nVertices(in) numVertices
+  !> @param array(in) input mesh velocity 2D array (2,numVtx)
+  !---------------------------------------------------------------------------
+  subroutine polympo_setMeshOnSurfDispIncrArray(mpMesh, nComps, nVertices, array) &
+             bind(C, NAME='polympo_setMeshOnSurfDispIncrArray')
+    use :: iso_c_binding
+    type(c_ptr), value :: mpMesh
+    integer(c_int), value :: nComps, nVertices
+    type(c_ptr), intent(in), value :: array
   end subroutine
   !---------------------------------------------------------------------------
   !> @brief get the spherical displacement increment mesh array

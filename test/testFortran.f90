@@ -15,7 +15,7 @@ program main
   include 'mpif.h'
     
   integer, parameter :: APP_RKIND = selected_real_kind(15)
-  integer :: nverts, numCompsVel, numCompsVelCoords, numMPs, numElms
+  integer :: nverts, numCompsVel, numCompsCoords, numMPs, numElms
   integer :: i, j
   integer :: setMeshOption, setMPOption
   integer :: mpi_comm_handle = MPI_COMM_WORLD
@@ -42,19 +42,19 @@ program main
   
   nverts = 19 !todo use getNumVtx from the Mesh object
   numCompsVel = 2 !todo use getNumComps from velocity fields
-  numCompsVelCoords = 3
+  numCompsCoords = 3
   numMPs = 49 !todo use getNumMPs from the MaterialPoints object
   numElms = 10
 
   allocate(Mesharray(numCompsVel,nverts))
   allocate(MParray(numCompsVel,numMPs))
   allocate(MPElmID(numMPs))
-  allocate(MPPositions(numCompsVelCoords,numMPs))
+  allocate(MPPositions(numCompsCoords,numMPs))
   allocate(xArray(nverts))
   allocate(yArray(nverts))
   allocate(zArray(nverts))
 
-  call polympo_getMPPositions(mpMesh, numCompsVelCoords, numMPs, c_loc(MPPositions))
+  call polympo_getMPPositions(mpMesh, numCompsCoords, numMPs, c_loc(MPPositions))
   do i = 1,numMPs 
     call assert(abs(MPPositions(3,i) - 1.1) .lt. test_epsilon, "Assert zPositions for MP array Fail")
   end do

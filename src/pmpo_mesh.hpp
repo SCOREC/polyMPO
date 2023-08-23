@@ -19,6 +19,7 @@ using DoubleSymMat3dView = Kokkos::View<double*[6]>;
 enum MeshFieldIndex{
     MeshF_Invalid = -2,
     MeshF_Unsupported,
+    MeshF_VtxCoords,
     MeshF_Vel,
     MeshF_OnSurfVeloIncr,
     MeshF_OnSurfDispIncr
@@ -33,6 +34,7 @@ const std::map<MeshFieldIndex, std::pair<MeshFieldType,
                                          std::string>> meshFields2TypeAndString = 
               {{MeshF_Invalid,          {MeshFType_Invalid,"MeshField_InValid!"}},
                {MeshF_Unsupported,      {MeshFType_Unsupported,"MeshField_Unsupported"}},
+               {MeshF_VtxCoords,              {MeshFType_VtxBased,"MeshField_VerticesCoords"}},
                {MeshF_Vel,              {MeshFType_VtxBased,"MeshField_Velocity"}},
                {MeshF_OnSurfVeloIncr,   {MeshFType_VtxBased,"MeshField_OnSurfaceVelocityIncrement"}},
                {MeshF_OnSurfDispIncr,   {MeshFType_VtxBased,"MeshField_OnSurfaceDisplacementIncrement"}}};
@@ -56,12 +58,12 @@ class Mesh {
     double sphereRadius_;
     int numVtxs_;
     int numElms_;
-    DoubleVec3dView vtxCoords_;
     //IntView nEdgesPerElm_;
     IntVtx2ElmView elm2VtxConn_;
     IntElm2ElmView elm2ElmConn_;
   
     //start of meshFields
+    DoubleVec3dView vtxCoords_;
     DoubleVec2dView vtxVel_;
     DoubleVec2dView vtxOnSurfVeloIncr_;
     DoubleVec2dView vtxOnSurfDispIncr_;
@@ -82,12 +84,10 @@ class Mesh {
           sphereRadius_(sphereRadius),
           numVtxs_(numVtxs),
           numElms_(numElms),
-          vtxCoords_(vtxCoords),
           elm2VtxConn_(elm2VtxConn),
           elm2ElmConn_(elm2ElmConn){
-            meshEdit_ = true;
             setMeshVtxBasedFieldSize(numVtxs);
-            meshEdit_ = false;
+            vtxCoords_ = vtxCoords;
         }
 
     bool meshEditable(){ return meshEdit_; }
@@ -117,8 +117,6 @@ class Mesh {
                                   numVtxs_ = numVtxs;}
     void setNumElms(int numElms) {PMT_ALWAYS_ASSERT(meshEdit_);
                                   numElms_ = numElms;}
-    void setVtxCoords(DoubleVec3dView vtxCoordsIn) {PMT_ALWAYS_ASSERT(meshEdit_);
-                                                    vtxCoords_=vtxCoordsIn;}
     void setElm2VtxConn(IntVtx2ElmView elm2VtxConn) {PMT_ALWAYS_ASSERT(meshEdit_);
                                                      elm2VtxConn_ = elm2VtxConn; }
     void setElm2ElmConn(IntElm2ElmView elm2ElmConn) {PMT_ALWAYS_ASSERT(meshEdit_);
@@ -134,6 +132,9 @@ auto Mesh::getMeshField(){
     else if constexpr (index==MeshF_Unsupported){
         fprintf(stderr,"Mesh Field Unsupported!\n");
         exit(1);
+    }
+    else if constexpr (index==MeshF_VtxCoords){
+        return vtxCoords_;
     }
     else if constexpr (index==MeshF_Vel){
         return vtxVel_;

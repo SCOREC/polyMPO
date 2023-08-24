@@ -220,7 +220,9 @@ void polympo_startMeshFill(MPMesh_ptr p_mpmesh){
 
 void polympo_endMeshFill(MPMesh_ptr p_mpmesh){
   checkMPMeshValid(p_mpmesh);
-  ((polyMPO::MPMesh*)p_mpmesh)->p_mesh->setMeshEdit(false);  
+  auto p_mesh = ((polyMPO::MPMesh*)p_mpmesh)->p_mesh; 
+  PMT_ALWAYS_ASSERT(p_mesh->meshEditable());
+  p_mesh->setMeshEdit(false);  
 }
 
 void polympo_checkMeshMaxSettings(MPMesh_ptr p_mpmesh, int maxEdges, int vertexDegree){

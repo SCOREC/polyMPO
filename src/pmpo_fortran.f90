@@ -333,7 +333,7 @@ module polympo
   !> @brief get the spherical displacement increment mesh array
   !>        from a polympo array
   !> @param mpmesh(in/out) MPMesh object
-  !> @param nComps(in) degree of Components, should always be 2
+  !> @param nComps(in) number of components, should always be 2
   !> @param nVertices(in) numVertices
   !> @param array(in/out) output mesh spherical displacement increment 
   !>        2D array (2,numVtx), allocated by user

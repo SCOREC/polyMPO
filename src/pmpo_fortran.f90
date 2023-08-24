@@ -118,9 +118,9 @@ module polympo
     type(c_ptr), value :: array
   end subroutine
   !---------------------------------------------------------------------------
-  !> @brief enable the set mesh. The mesh is decleared uneditable all the time.
-  !>        if changes/settings are needed, call this function first, then call
-  !         set functions
+  !> @brief Enable the setting of mesh topology (number of entities and entity adjacencies). 
+  !>        By default, modifying the mesh topology without calling this function first will result
+  !>        in a runtime failure.
   !> @param mpMesh(in/out) the MPMesh is valid/created
   !---------------------------------------------------------------------------
   subroutine polympo_startMeshFill(mpMesh) &

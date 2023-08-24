@@ -53,8 +53,9 @@ pmpo_add_fortran_exe(testFortran testFortran.f90)
 pmpo_add_fortran_exe(testFortranReadMPAS testFortranReadMPAS.f90)
 
 #add test
+find_program(MPIRUN_EXECUTABLE NAMES mpirun) 
+
 function(pmpo_add_test testname command)
-  find_program(MPIRUN_EXECUTABLE NAMES mpirun)
   if(MPIRUN_EXECUTABLE)
     add_test(NAME ${testname} 
              COMMAND mpirun --bind-to core -np 1 ${command} ${ARGN})

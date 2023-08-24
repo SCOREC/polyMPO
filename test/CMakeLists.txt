@@ -15,6 +15,7 @@ target_include_directories(pmpoUtils PRIVATE
     $<INSTALL_INTERFACE:include>
 )
 
+#add exe
 function(pmpo_add_exe exename srcname)
   if(BUILD_TESTING)
     add_executable(${exename} ${srcname})
@@ -28,21 +29,6 @@ function(pmpo_add_exe exename srcname)
   install(TARGETS ${exename} DESTINATION bin)
 endfunction()
 
-pmpo_add_exe(testWachspress testWachspress.cpp)
-pmpo_add_exe(unitTest unitTest.cpp)
-pmpo_add_exe(mpUnitTest mpUnitTest.cpp)
-pmpo_add_exe(testReconstruction testReconstruction.cpp)
-pmpo_add_exe(testTracking testTracking.cpp)
-pmpo_add_exe(testRebuild testRebuild.cpp)
-pmpo_add_exe(timeAssmblyWachspress testTiming.cpp)
-
-add_test(NAME unit_test COMMAND mpirun --bind-to core -np 1 ./unitTest)
-add_test(NAME mp_unit_test COMMAND mpirun --bind-to core -np 1 ./mpUnitTest)
-add_test(NAME test_wachspress COMMAND mpirun --bind-to core -np 1 ./testWachspress)
-add_test(NAME test_reconstruction COMMAND mpirun --bind-to core -np 1 ./testReconstruction)
-add_test(NAME test_tracking COMMAND mpirun --bind-to core -np 1 ./testTracking)
-add_test(NAME test_rebuild COMMAND mpirun --bind-to core -np 1 ./testRebuild)
-
 function(pmpo_add_fortran_exe exename srcname)
   pmpo_add_exe(${exename} ${srcname})
   target_link_libraries(${exename} pmpoUtils polympo_fortran polyMPO MPI::MPI_Fortran)
@@ -55,12 +41,38 @@ function(pmpo_add_fortran_exe exename srcname)
   install(TARGETS ${exename} DESTINATION bin)
 endfunction()
 
+pmpo_add_exe(testWachspress testWachspress.cpp)
+pmpo_add_exe(unitTest unitTest.cpp)
+pmpo_add_exe(mpUnitTest mpUnitTest.cpp)
+pmpo_add_exe(testReconstruction testReconstruction.cpp)
+pmpo_add_exe(testTracking testTracking.cpp)
+pmpo_add_exe(testRebuild testRebuild.cpp)
+pmpo_add_exe(timeAssmblyWachspress testTiming.cpp)
 pmpo_add_fortran_exe(testFortranInit testFortranInit.f90)
-add_test(NAME testFortranInit COMMAND mpirun --bind-to core -np 1 ./testFortranInit)
-
 pmpo_add_fortran_exe(testFortran testFortran.f90)
-add_test(NAME testFortran COMMAND mpirun --bind-to core -np 1 ./testFortran)
+pmpo_add_fortran_exe(testFortranReadMPAS testFortranReadMPAS.f90)
 
+#add test
+function(pmpo_add_test testname command)
+  find_program(MPIRUN_EXECUTABLE NAMES mpirun)
+  if(MPIRUN_EXECUTABLE)
+    add_test(NAME ${testname} 
+             COMMAND mpirun --bind-to core -np 1 ${command} ${ARGN})
+  else()
+    add_test(NAME ${testname} COMMAND ${command} ${ARGN})
+  endif()
+endfunction()
+
+pmpo_add_test(unit_test ./unitTest)
+pmpo_add_test(mp_unit_test ./mpUnitTest)
+pmpo_add_test(test_wachspress ./testWachspress)
+pmpo_add_test(test_reconstruction ./testReconstruction)
+pmpo_add_test(test_tracking ./testTracking)
+pmpo_add_test(test_rebuild ./testRebuild)
+pmpo_add_test(testFortranInit ./testFortranInit)
+pmpo_add_test(testFortran ./testFortran)
+
+#set NC file for test
 set(TEST_NC_FILE_PLANAR "${CMAKE_SOURCE_DIR}/test/sample_mpas_meshes/planar_nonuniform_cvt_for_square_673elms.nc")
 set(TEST_NC_FILE_SPHERICAL "${CMAKE_SOURCE_DIR}/test/sample_mpas_meshes/ocean.nc")
 if(EXISTS ${TEST_NC_FILE_SPHERICAL})
@@ -68,9 +80,6 @@ if(EXISTS ${TEST_NC_FILE_SPHERICAL})
 else()
     set(TEST_NC_FILE ${TEST_NC_FILE_PLANAR})
 endif()
-pmpo_add_fortran_exe(testFortranReadMPAS testFortranReadMPAS.f90)
-add_test(NAME testFortranReadMPAS 
-         COMMAND mpirun --bind-to core -np 1 ./testFortranReadMPAS ${TEST_NC_FILE})
+pmpo_add_test(testFortranReadMPAS ./testFortranReadMPAS ${TEST_NC_FILE})
 
-add_test(NAME test_timing
-         COMMAND mpirun --bind-to core -np 1 ./timeAssmblyWachspress 1 ${TEST_NC_FILE})
+pmpo_add_test(test_timing ./timeAssmblyWachspress 1 ${TEST_NC_FILE})

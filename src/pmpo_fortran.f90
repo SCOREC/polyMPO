@@ -318,7 +318,7 @@ module polympo
   !> @brief set the spherical displacement increment mesh array 
   !>        from a host array
   !> @param mpmesh(in/out) MPMesh object
-  !> @param nComps(in) degree of Components, should always be 2
+  !> @param nComps(in) number of components, should always be 2
   !> @param nVertices(in) numVertices
   !> @param array(in) input mesh velocity 2D array (2,numVtx)
   !---------------------------------------------------------------------------

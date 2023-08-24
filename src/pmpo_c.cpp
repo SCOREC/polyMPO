@@ -354,7 +354,7 @@ void polympo_setMeshVtxCoords(MPMesh_ptr p_mpmesh, int nVertices, double* xArray
 
   //copy the host array to the device
   auto coordsArray = p_mesh->getMeshField<polyMPO::MeshF_VtxCoords>();
-  polyMPO::DoubleVec3dView::HostMirror h_coordsArray = Kokkos::create_mirror_view(coordsArray);
+  auto h_coordsArray = Kokkos::create_mirror_view(coordsArray);
   for(int i=0; i<nVertices; i++){
     h_coordsArray(i,0) = xArray[i];
     h_coordsArray(i,1) = yArray[i];
@@ -373,8 +373,8 @@ void polympo_getMeshVtxCoords(MPMesh_ptr p_mpmesh, int nVertices, double* xArray
   
   //copy the device to host 
   auto coordsArray = p_mesh->getVtxCoords();
-  polyMPO::DoubleVec3dView::HostMirror h_coordsArray = Kokkos::create_mirror_view(coordsArray);
-  Kokkos::deep_copy(h_coordsArray, coordsArray);
+  auto h_coordsArray = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(),
+                                                           coordsArray);
   for(int i=0; i<nVertices; i++){
     xArray[i] = h_coordsArray(i,0);
     yArray[i] = h_coordsArray(i,1);

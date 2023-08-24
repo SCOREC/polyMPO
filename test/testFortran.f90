@@ -63,6 +63,7 @@ program main
     MPElmID(i) = mod(i, numElms)
   end do
   call polympo_setMPCurElmID(mpMesh, numMPs, c_loc(MPElmID))
+  MPElmID = 0
   call polympo_getMPCurElmID(mpMesh, numMPs, c_loc(MPElmID))
   do i = 1,numMPs 
     call assert((MPElmID(i) .eq. mod(i, numElms)) , "Assert MPElmID Fail")

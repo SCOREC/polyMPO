@@ -135,7 +135,7 @@ void polympo_getMPCurElmID(MPMesh_ptr p_mpmesh,
     if(mask){
         mpCurElmIDCopy(mp) = mpCurElmID(mp);
     }else{
-        mpCurElmID(mp) = MP_DETACHED;
+        mpCurElmIDCopy(mp) = MP_DETACHED;
     }
   };
   p_MPs->parallel_for(setVel, "get mpCurElmID");

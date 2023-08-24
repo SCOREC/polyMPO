@@ -372,7 +372,7 @@ void polympo_getMeshVtxCoords(MPMesh_ptr p_mpmesh, int nVertices, double* xArray
   PMT_ALWAYS_ASSERT(p_mesh->getNumVertices()==nVertices); 
   
   //copy the device to host 
-  auto coordsArray = p_mesh->getVtxCoords();
+  auto coordsArray = p_mesh->getMeshField<polyMPO::MeshF_VtxCoords>();
   auto h_coordsArray = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(),
                                                            coordsArray);
   for(int i=0; i<nVertices; i++){

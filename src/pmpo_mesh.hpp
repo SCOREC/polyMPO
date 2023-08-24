@@ -101,7 +101,6 @@ class Mesh {
     double getSphereRadius() { return sphereRadius_; }
     int getNumVertices() { return numVtxs_; }
     int getNumElements() { return numElms_; }
-    DoubleVec3dView getVtxCoords() { return vtxCoords_; }
     IntVtx2ElmView getElm2VtxConn() { return elm2VtxConn_; }
     IntElm2ElmView getElm2ElmConn() { return elm2ElmConn_; }
     template<MeshFieldIndex index> auto getMeshField();

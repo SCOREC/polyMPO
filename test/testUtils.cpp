@@ -5,7 +5,7 @@ using namespace polyMPO;
 
 void interpolateWachspress2DTest(MPMesh& mpMesh){
     auto p_mesh = mpMesh.p_mesh;
-    auto vtxCoords = p_mesh->getVtxCoords();
+    auto vtxCoords = p_mesh->getMeshField<polyMPO::MeshF_VtxCoords>();
     auto elm2VtxConn = p_mesh->getElm2VtxConn();
 
     auto p_MPs = mpMesh.p_MPs;
@@ -44,7 +44,7 @@ void interpolateWachspress2DTest(MPMesh& mpMesh){
 
 void interpolateWachspress3DTest(MPMesh& mpMesh){
     auto p_mesh = mpMesh.p_mesh;
-    auto vtxCoords = p_mesh->getVtxCoords();
+    auto vtxCoords = p_mesh->getMeshField<polyMPO::MeshF_VtxCoords>();
     auto elm2VtxConn = p_mesh->getElm2VtxConn();
 
     auto p_MPs = mpMesh.p_MPs;
@@ -96,7 +96,7 @@ void interpolateWachspress3DTest(MPMesh& mpMesh){
 
 void printVTP(MPMesh& mpMesh){
     auto p_mesh = mpMesh.p_mesh;
-    auto vtxCoords = p_mesh->getVtxCoords();
+    auto vtxCoords = p_mesh->getMeshField<polyMPO::MeshF_VtxCoords>();
     auto elm2VtxConn = p_mesh->getElm2VtxConn();
 
     auto p_MPs = mpMesh.p_MPs;

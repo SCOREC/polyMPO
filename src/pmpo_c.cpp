@@ -235,7 +235,7 @@ void polympo_setMeshNumVtxs(MPMesh_ptr p_mpmesh, int numVtxs){
   checkMPMeshValid(p_mpmesh);
   auto p_mesh = ((polyMPO::MPMesh*)p_mpmesh)->p_mesh;
   p_mesh->setNumVtxs(numVtxs);
-  p_mesh->setMeshVtxBasedFieldSize(numVtxs); 
+  p_mesh->setMeshVtxBasedFieldSize(); 
 }
 
 void polympo_setMeshNumElms(MPMesh_ptr p_mpmesh, int numElms){

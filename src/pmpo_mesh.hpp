@@ -87,7 +87,7 @@ class Mesh {
           elm2VtxConn_(elm2VtxConn),
           elm2ElmConn_(elm2ElmConn){
             meshEdit_ = true;
-            setMeshVtxBasedFieldSize(numVtxs);
+            setMeshVtxBasedFieldSize();
             meshEdit_ = false;
             vtxCoords_ = vtxCoords;
         }
@@ -104,7 +104,7 @@ class Mesh {
     IntVtx2ElmView getElm2VtxConn() { return elm2VtxConn_; }
     IntElm2ElmView getElm2ElmConn() { return elm2ElmConn_; }
     template<MeshFieldIndex index> auto getMeshField();
-    void setMeshVtxBasedFieldSize(int numVtxs);
+    void setMeshVtxBasedFieldSize();
 
     void setMeshEdit(bool meshEdit) { meshEdit_ = meshEdit; }
     //onec MeshType/GeomType is set to valid types, we can't change them anymore

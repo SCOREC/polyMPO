@@ -1,3 +1,7 @@
+!---------------------------------------------------------------------------
+!> This is a test on how to use loadMPASMesh
+!> For specific usage on setting mesh properties, see test/readMPAS.f90
+!---------------------------------------------------------------------------
 program main
   use :: polympo
   use :: readMPAS

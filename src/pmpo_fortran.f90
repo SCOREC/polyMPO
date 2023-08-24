@@ -79,8 +79,8 @@ module polympo
   !---------------------------------------------------------------------------
   !> @brief get the MP positions array from a polympo array
   !> @param mpmesh(in/out) MPMesh object
-  !> @param nComps(in) degree of Components, should always be 3
-  !> @param numMPs(in) length of the 2nd degree of the array, number of the MPs
+  !> @param nComps(in) number of components, should always be 3
+  !> @param numMPs(in) number of the MPs
   !> @param array(in/out) output MP current position 2D array (3,numMPs),
   !>                      allocated by user
   !---------------------------------------------------------------------------
@@ -152,6 +152,7 @@ module polympo
   end subroutine
   !---------------------------------------------------------------------------
   !> @brief set the Mesh type to general polygonal
+  !>        modifies mesh topology polympo_startMeshFill required
   !> @param mpMesh(in/out) mpMesh object 
   !---------------------------------------------------------------------------
   subroutine polympo_setMeshTypeGeneralPoly(mpMesh) &
@@ -161,6 +162,7 @@ module polympo
   end subroutine
   !---------------------------------------------------------------------------
   !> @brief set the Mesh type to CVT polygonal
+  !>        modifies mesh topology polympo_startMeshFill required
   !> @param mpMesh(in/out) mpMesh object 
   !---------------------------------------------------------------------------
   subroutine polympo_setMeshTypeCVTPoly(mpMesh) &
@@ -170,6 +172,7 @@ module polympo
   end subroutine
   !---------------------------------------------------------------------------
   !> @brief set the Mesh geometry type to planar
+  !>        modifies mesh topology polympo_startMeshFill required
   !> @param mpMesh(in/out) mpMesh object 
   !---------------------------------------------------------------------------
   subroutine polympo_setMeshGeomTypePlanar(mpMesh) &
@@ -179,6 +182,7 @@ module polympo
   end subroutine
   !---------------------------------------------------------------------------
   !> @brief set the Mesh geometry type to spherical
+  !>        modifies mesh topology polympo_startMeshFill required
   !> @param mpMesh(in/out) mpMesh object 
   !---------------------------------------------------------------------------
   subroutine polympo_setMeshGeomTypeSpherical(mpMesh) &
@@ -188,6 +192,7 @@ module polympo
   end subroutine
   !---------------------------------------------------------------------------
   !> @brief set the Mesh sphere radius
+  !>        modifies mesh topology polympo_startMeshFill required
   !> @param mpMesh(in/out) mpMesh object 
   !---------------------------------------------------------------------------
   subroutine polympo_setMeshSphereRadius(mpMesh,sphereRadius) &
@@ -198,6 +203,7 @@ module polympo
   end subroutine
   !---------------------------------------------------------------------------
   !> @brief set the number of vetices of the mesh
+  !>        modifies mesh topology polympo_startMeshFill required
   !> @param mpMesh(in/out) mpMesh object 
   !> @param numVtxs(in) the number of vertices need to set
   !---------------------------------------------------------------------------
@@ -209,6 +215,7 @@ module polympo
   end subroutine
   !---------------------------------------------------------------------------
   !> @brief set the number of elements of the mesh
+  !>        modifies mesh topology polympo_startMeshFill required
   !> @param mpMesh(in/out) mpMesh object 
   !> @param numElms(in) the number of elements
   !---------------------------------------------------------------------------
@@ -220,6 +227,7 @@ module polympo
   end subroutine
   !---------------------------------------------------------------------------
   !> @brief set the polympo mesh element to vertices connectivity
+  !>        modifies mesh topology polympo_startMeshFill required
   !> @param mpmesh(in/out) MPMesh object
   !> @param maxEdges,nCells(in) length of array in each direction
   !> @param verticesOnCell(in) element to vertices connectivity 2D array 
@@ -233,6 +241,7 @@ module polympo
   end subroutine
   !---------------------------------------------------------------------------
   !> @brief set the polympo mesh element to elements connectivity
+  !>        modifies mesh topology polympo_startMeshFill required
   !> @param mpmesh(in/out) MPMesh object
   !> @param maxEdges,nCells(in) length of array in each direction 
   !> @param cellsOnCell(in) element to elements connectivity 2D array 
@@ -246,6 +255,7 @@ module polympo
   end subroutine
   !---------------------------------------------------------------------------
   !> @brief set the polympo mesh number of edges per element
+  !>        modifies mesh topology polympo_startMeshFill required
   !> @param mpmesh(in/out) MPMesh object
   !> @param nCells(in) length of array (numElms)
   !> @param nEdgesOnCell(in) number of edges per element

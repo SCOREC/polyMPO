@@ -8,6 +8,11 @@ subroutine assert(condition,message)
   endif
 end subroutine
 
+!---------------------------------------------------------------------------
+!> This is a test on the set/get APIs provided in polyMPO
+!> These fields can be set and get at anytime
+!> For specific usage, see src/pmpo_fortran 
+!---------------------------------------------------------------------------
 program main
   use polympo
   use iso_c_binding
@@ -36,10 +41,11 @@ program main
   call polympo_initialize()
 
   call polympo_checkPrecisionForRealKind(APP_RKIND)
-  setMeshOption = 1
-  setMPOption = 1    
+  setMeshOption = 1 !create a hard coded planar test mesh
+  setMPOption = 1 !create some random test MPs that based on the mesh option you give
   mpMesh = polympo_createMPMesh(setMeshOption,setMPOption) !creates test mesh
-  
+ 
+  !These are hard coded test mesh values 
   nverts = 19 !todo use getNumVtx from the Mesh object
   numCompsVel = 2 !todo use getNumComps from velocity fields
   numCompsCoords = 3

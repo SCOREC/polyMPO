@@ -10,14 +10,14 @@ module polympo
   !> @brief initialize polympo, call this before any other polympo api
   !> @remark the user must initialize MPI prior to this call
   !---------------------------------------------------------------------------
-  subroutine polympo_initialize() bind(C, NAME='polympo_initialize')
+  subroutine polympo_initialize() bind(C, NAME='polympo_initialize_f')
     use :: iso_c_binding
   end subroutine
   !---------------------------------------------------------------------------
   !> @brief finalize polympo, no polympo apis may be called after this
   !> @remark the user must not finalize MPI until after this call
   !---------------------------------------------------------------------------
-  subroutine polympo_finalize() bind(C, NAME='polympo_finalize')
+  subroutine polympo_finalize() bind(C, NAME='polympo_finalize_f')
     use :: iso_c_binding
   end subroutine
   !---------------------------------------------------------------------------

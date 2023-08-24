@@ -11,14 +11,14 @@ namespace{
   }
 }
 
-void polympo_initialize() {
+void polympo_initialize_f() {
   int isMPIInit;
   MPI_Initialized(&isMPIInit);
   PMT_ALWAYS_ASSERT(isMPIInit);
   Kokkos::initialize();
 }
 
-void polympo_finalize() {
+void polympo_finalize_f() {
   Kokkos::finalize();
 }
 

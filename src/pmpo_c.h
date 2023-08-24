@@ -8,8 +8,8 @@ extern "C" {
 typedef void* MPMesh_ptr;
 
 //initialize and finalize
-void polympo_initialize();
-void polympo_finalize();
+void polympo_initialize_f();
+void polympo_finalize_f();
 
 //create/delete MpMesh object
 MPMesh_ptr polympo_createMPMesh(int setMeshOption, int setMPOption);

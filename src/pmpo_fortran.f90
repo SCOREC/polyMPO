@@ -291,8 +291,8 @@ module polympo
   !> @param nVertices(in) numVertices
   !> @param array(in) input mesh velocity 2D array (2,numVtx)
   !---------------------------------------------------------------------------
-  subroutine polympo_setMeshOnSurfVeloIncrArray(mpMesh, nComps, nVertices, array) &
-             bind(C, NAME='polympo_setMeshOnSurfVeloIncrArray')
+  subroutine polympo_setMeshOnSurfVeloIncr(mpMesh, nComps, nVertices, array) &
+             bind(C, NAME='polympo_setMeshOnSurfVeloIncr')
     use :: iso_c_binding
     type(c_ptr), value :: mpMesh
     integer(c_int), value :: nComps, nVertices
@@ -307,8 +307,8 @@ module polympo
   !> @param array(in/out) output mesh spherical velocity increment
   !>        2D array (2,numVtx), allocated by user
   !---------------------------------------------------------------------------
-  subroutine polympo_getMeshOnSurfVeloIncrArray(mpMesh, nComps, nVertices, array) &
-             bind(C, NAME='polympo_getMeshOnSurfVeloIncrArray')
+  subroutine polympo_getMeshOnSurfVeloIncr(mpMesh, nComps, nVertices, array) &
+             bind(C, NAME='polympo_getMeshOnSurfVeloIncr')
     use :: iso_c_binding
     type(c_ptr), value :: mpMesh
     integer(c_int), value :: nComps, nVertices
@@ -322,8 +322,8 @@ module polympo
   !> @param nVertices(in) numVertices
   !> @param array(in) input mesh velocity 2D array (2,numVtx)
   !---------------------------------------------------------------------------
-  subroutine polympo_setMeshOnSurfDispIncrArray(mpMesh, nComps, nVertices, array) &
-             bind(C, NAME='polympo_setMeshOnSurfDispIncrArray')
+  subroutine polympo_setMeshOnSurfDispIncr(mpMesh, nComps, nVertices, array) &
+             bind(C, NAME='polympo_setMeshOnSurfDispIncr')
     use :: iso_c_binding
     type(c_ptr), value :: mpMesh
     integer(c_int), value :: nComps, nVertices
@@ -338,8 +338,8 @@ module polympo
   !> @param array(in/out) output mesh spherical displacement increment 
   !>        2D array (2,numVtx), allocated by user
   !---------------------------------------------------------------------------
-  subroutine polympo_getMeshOnSurfDispIncrArray(mpMesh, nComps, nVertices, array) &
-             bind(C, NAME='polympo_getMeshOnSurfDispIncrArray')
+  subroutine polympo_getMeshOnSurfDispIncr(mpMesh, nComps, nVertices, array) &
+             bind(C, NAME='polympo_getMeshOnSurfDispIncr')
     use :: iso_c_binding
     type(c_ptr), value :: mpMesh
     integer(c_int), value :: nComps, nVertices

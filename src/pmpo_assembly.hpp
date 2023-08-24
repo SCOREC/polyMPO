@@ -77,7 +77,7 @@ void assembly(MPMesh& mpMesh, bool basisWeightFlag, bool massWeightFlag){
 template <MaterialPointSlice index>
 DoubleView wtScaAssembly(MPMesh& mpMesh){
     auto p_mesh = mpMesh.p_mesh;
-    auto vtxCoords = p_mesh->getVtxCoords();
+    auto vtxCoords = p_mesh->getMeshField<polyMPO::MeshF_VtxCoords>();
     int numVtxs = p_mesh->getNumVertices(); // total number of vertices of the mesh
     auto elm2VtxConn = p_mesh->getElm2VtxConn();
     auto p_MPs = mpMesh.p_MPs;
@@ -125,7 +125,7 @@ DoubleView wtScaAssembly(MPMesh& mpMesh){
 template <MaterialPointSlice index>
 Vec2dView wtVec2Assembly(MPMesh& mpMesh){
     auto p_mesh = mpMesh.p_mesh;
-    auto vtxCoords = p_mesh->getVtxCoords();
+    auto vtxCoords = p_mesh->getMeshField<polyMPO::MeshF_VtxCoords>();
     int numVtxs = p_mesh->getNumVertices(); // total number of vertices of the mesh
     auto elm2VtxConn = p_mesh->getElm2VtxConn();
     auto p_MPs = mpMesh.p_MPs;

@@ -1,3 +1,7 @@
+!---------------------------------------------------------------------------
+!> This is a test on how to use loadMPASMesh
+!> For specific usage on setting mesh properties, see test/readMPAS.f90
+!---------------------------------------------------------------------------
 program main
   use :: polympo
   use :: readMPAS
@@ -29,7 +33,7 @@ program main
   setMPOption = 0   !create an empty set of MPs
   mpMesh = polympo_createMPMesh(setMeshOption, setMPOption)
 
-  call polympo_setWithMPASMesh(mpMesh, filename)
+  call loadMPASMesh(mpMesh, filename)
 
   !todo check the value using get functions. 
   

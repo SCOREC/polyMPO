@@ -46,6 +46,7 @@ int main(int argc, char* argv[]) {
         
     }
     Kokkos::finalize();
+    MPI_Finalize();
     return 0;
 }
 

@@ -129,7 +129,7 @@ module polympo
     type(c_ptr), value :: mpMesh
   end subroutine
   !---------------------------------------------------------------------------
-  !> @brief Disabled the modification of mesh topology (number of entities and entity adjacencies). 
+  !> @brief Disable the modification of mesh topology (number of entities and entity adjacencies). 
   !>        Once the topology is set, call this function to prevent unexpected/accidental modifications.
   !> @param mpMesh(in/out) the MPMesh is valid/created
   !---------------------------------------------------------------------------

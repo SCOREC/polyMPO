@@ -75,22 +75,6 @@ program main
     call assert((MPElmID(i) .eq. mod(i, numElms)) , "Assert MPElmID Fail")
   end do
 
-  value1 = 42
-  MParray = value1
-  call polympo_setMPVelArray(mpMesh, numMPs, c_loc(MParray))
-  
-  MParray = 1
-  call polympo_getMPVelArray(mpMesh, numMPs, c_loc(MParray))
-  call assert(all(MParray .eq. value1), "Assert MParray == value1 Failed!")
-
-  value2 = 24
-  MParray = value2
-  call polympo_setMPVelArray(mpMesh, numMPs, c_loc(MParray))
-
-  MParray = 1
-  call polympo_getMPVelArray(mpMesh, numMPs, c_loc(MParray))
-  call assert(all(MParray .eq. value2), "Assert MParray == value2 Failed!")
-
   do i = 1,numCompsVel
     do j = 1,nverts 
         Mesharray(i,j) = (i-1)*numCompsVel + j

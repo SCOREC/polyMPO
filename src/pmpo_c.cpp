@@ -165,52 +165,20 @@ void polympo_getMPPositions(MPMesh_ptr p_mpmesh,
   Kokkos::deep_copy(arrayHost, mpPositionsCopy);
 }
 
-void polympo_setMPVelArray(MPMesh_ptr p_mpmesh, int size, double* array) {
-  checkMPMeshValid(p_mpmesh);
-  auto p_MPs = ((polyMPO::MPMesh*)p_mpmesh)->p_MPs;
-  kkVec2dViewHostU arrayHost(array,size);
-  auto mpVel = p_MPs->getData<polyMPO::MPF_Vel>();
- 
-  auto mpVelCopy = polyMPO::DoubleVec2dView("mpVelNewValue",size);
-  //copy the host array to the device
-  Kokkos::deep_copy(mpVelCopy,arrayHost);
-  
-  //modify the MP array with the mpVelCopy copied from the host array
-  auto setVel = PS_LAMBDA(const int& elm, const int& mp, const int& mask){
-    if(mask) { 
-      for(int i=0; i<vec2d_nEntries; i++){
-        mpVel(mp,i) = mpVelCopy(mp,i);
-      }
-    }
-  };
-  p_MPs->parallel_for(setVel, "setVel to array");
+void polympo_setMPVel(MPMesh_ptr p_mpmesh, int size, double* array) {
+  fprintf(stderr,"This is not deprecated");
+  PMT_ALWAYS_ASSERT(false);
+  (void)p_mpmesh;// to silence the unused param warning
+  (void)size;
+  (void)array;
 }
 
-void polympo_getMPVelArray(MPMesh_ptr p_mpmesh, int size, double* array) {
-  checkMPMeshValid(p_mpmesh);
-  kkVec2dViewHostU arrayHost(array,size);
-
-  auto p_MPs = ((polyMPO::MPMesh*)p_mpmesh)->p_MPs;
-  auto mpVel = p_MPs->getData<polyMPO::MPF_Vel>();
-  auto mpVelCopy = polyMPO::DoubleVec2dView("copyOfMPVel",size);
-   
-  PMT_ALWAYS_ASSERT(p_MPs->getCount()==size); 
-  PMT_ALWAYS_ASSERT(static_cast<size_t>(p_MPs->getCount()*vec2d_nEntries)==mpVelCopy.size());
-
-  //the pumipic 'slices' are not guaranteed to be contiguous, so we run a
-  //pumipic parallel_for loop to fill a contigious array which will be copied to
-  //a contiguous host array
-  auto copyVel = PS_LAMBDA(const int& elm, const int& mp, const int& mask){
-    if(mask) { 
-      for(int i=0; i<vec2d_nEntries; i++){
-        mpVelCopy(mp,i) = mpVel(mp,i);
-      }
-    }
-  };
-  p_MPs->parallel_for(copyVel, "copy mpVel to mpVelCopy");
-
-  //copy the device array to the host
-  Kokkos::deep_copy(arrayHost,mpVelCopy); 
+void polympo_getMPVel(MPMesh_ptr p_mpmesh, int size, double* array) {
+  fprintf(stderr,"This is not deprecated");
+  PMT_ALWAYS_ASSERT(false);
+  (void)p_mpmesh;// to silence the unused param warning
+  (void)size;
+  (void)array;
 }
 
 void polympo_startMeshFill(MPMesh_ptr p_mpmesh){

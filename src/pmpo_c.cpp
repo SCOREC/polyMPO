@@ -166,7 +166,7 @@ void polympo_getMPPositions(MPMesh_ptr p_mpmesh,
 }
 
 void polympo_setMPVel(MPMesh_ptr p_mpmesh, int size, double* array) {
-  fprintf(stderr,"This is not deprecated");
+  fprintf(stderr,"%s is no longer supported\n", __func__);
   PMT_ALWAYS_ASSERT(false);
   (void)p_mpmesh;// to silence the unused param warning
   (void)size;
@@ -174,7 +174,7 @@ void polympo_setMPVel(MPMesh_ptr p_mpmesh, int size, double* array) {
 }
 
 void polympo_getMPVel(MPMesh_ptr p_mpmesh, int size, double* array) {
-  fprintf(stderr,"This is not deprecated");
+  fprintf(stderr,"%s is no longer supported\n", __func__);
   PMT_ALWAYS_ASSERT(false);
   (void)p_mpmesh;// to silence the unused param warning
   (void)size;

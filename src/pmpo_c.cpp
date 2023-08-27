@@ -206,6 +206,13 @@ void polympo_setMeshNumVtxs(MPMesh_ptr p_mpmesh, int numVtxs){
   p_mesh->setMeshVtxBasedFieldSize(); 
 }
 
+int polympo_getMeshNumVtxs(MPMesh_ptr p_mpmesh) {
+  checkMPMeshValid(p_mpmesh); //chech vailidity
+  auto p_mesh = ((polyMPO::MPMesh*)p_mpmesh)->p_mesh;
+  int nVtxs = p_mesh->getNumVertices();
+  return nVtxs;
+}
+
 void polympo_setMeshNumElms(MPMesh_ptr p_mpmesh, int numElms){
   checkMPMeshValid(p_mpmesh);
   auto p_mesh = ((polyMPO::MPMesh*)p_mpmesh)->p_mesh;
@@ -216,6 +223,13 @@ void polympo_setMeshNumElms(MPMesh_ptr p_mpmesh, int numElms){
   p_mesh->setNumElms(numElms);
   p_mesh->setElm2VtxConn(elm2Vtx);
   p_mesh->setElm2ElmConn(elm2Elm);
+}
+
+int polympo_getMeshNumElms(MPMesh_ptr p_mpmesh) {
+  checkMPMeshValid(p_mpmesh); //chech vailidity
+  auto p_mesh = ((polyMPO::MPMesh*)p_mpmesh)->p_mesh;
+  int nElms = p_mesh->getNumElements();
+  return nElms;
 }
 
 void polympo_setMeshTypeGeneralPoly(MPMesh_ptr p_mpmesh){

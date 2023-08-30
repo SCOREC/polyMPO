@@ -51,6 +51,24 @@ module polympo
     integer(c_int), value :: comm    
   end subroutine
   !---------------------------------------------------------------------------
+  !> @brief create the material points
+  !> @brief the fields associated with the MPs are NOT initialized
+  !> @param mpmesh(in/out) MPMesh object
+  !> @param numElms(in) total number of mesh elements
+  !> @param numMPs(in) total number of MPs
+  !> @param mpsPerElm(in) number of MPs per mesh element
+  !> @param mp2Elm(in) element ID for each MP
+  !---------------------------------------------------------------------------
+  subroutine polympo_createMPs(mpMesh, numElms, numMPs, mpsPerElm, mp2Elm) &
+             bind(C, NAME='polympo_createMPs')
+    use :: iso_c_binding
+    type(c_ptr), value :: mpMesh
+    integer(c_int), value :: numElms
+    integer(c_int), value :: numMPs
+    type(c_ptr), intent(in), value :: mpsPerElm
+    type(c_ptr), intent(in), value :: mp2Elm
+  end subroutine
+  !---------------------------------------------------------------------------
   !> @brief set the MP current element array from a host array
   !> @param mpmesh(in/out) MPMesh object
   !> @param numMPs(in) length of array, number of the MPs

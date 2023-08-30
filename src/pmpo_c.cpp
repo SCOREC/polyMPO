@@ -98,6 +98,28 @@ typedef Kokkos::View<
           Kokkos::MemoryTraits<Kokkos::Unmanaged>
         > kkIntViewHostU;//TODO:put it somewhere else (maybe)
 
+void polympo_createMPs(MPMesh_ptr p_mpmesh,
+                       int numElms,
+                       int numMPs,
+                       int* mpsPerElm,
+                       int* mp2Elm) {
+  checkMPMeshValid(p_mpmesh);
+
+  //the mesh must be fixed/set before adding MPs
+  auto p_mesh = ((polyMPO::MPMesh*)p_mpmesh)->p_mesh;
+  PMT_ALWAYS_ASSERT(!p_mesh->meshEditable());
+  PMT_ALWAYS_ASSERT(p_mesh->getNumElements() == numElms);
+
+  kkIntViewHostU mpsPerElm_h(mpsPerElm,numElms);
+  auto mpsPerElm_d = Kokkos::create_mirror_view_and_copy(Kokkos::DeviceSpace()
+                                                         mpsPerElm_h);
+  kkIntViewHostU mp2Elm_h(mp2Elm,numMPs);
+  auto mp2Elm_d = Kokkos::create_mirror_view_and_copy(Kokkos::DeviceSpace()
+                                                      mp2Elm_h);
+  auto p_MPs = ((polyMPO::MPMesh*)p_mpmesh)->p_MPs;
+  pMPs = new MaterialPoints(numElms, numMPs, mpsPerElm_d, mp2Elm_d);
+}
+
 void polympo_setMPCurElmID(MPMesh_ptr p_mpmesh,
                            int numMPs,
                            int* elmIDs){

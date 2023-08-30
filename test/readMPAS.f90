@@ -71,18 +71,25 @@ subroutine loadMPASMesh(mpMesh, filename)
 
     !create MPs
     call assert(nCells .ge. 2, "This test requires a mesh with at least two cells")
-    numMPs = nCells+1;
+    numMPs = nCells;
     allocate(mpsPerElm(nCells))
     allocate(mp2Elm(numMPs))
     mpsPerElm = 1
-    mpsPerElm(2) = 2
-    mp2Elm(1) = 0 !pumpic wants zero based cell indices/numbering/IDs
-    mp2Elm(2) = 1
-    mp2Elm(3) = 1
-    do i = 4,numMPs
-      mp2Elm(i) = i-2
+    !mp2Elm(1) = 0 !pumpic wants zero based cell indices/numbering/IDs
+    !mp2Elm(2) = 1
+    !mp2Elm(3) = 1
+    do i = 1,numMPs
+      mp2Elm(i) = i
     end do
     call polympo_createMPs(mpMesh,nCells,numMPs,c_loc(mpsPerElm),c_loc(mp2Elm));
+    mp2Elm = -1
+    call polympo_getMPCurElmID(mpMesh,numMPs,c_loc(mp2Elm))
+    !call assert(mp2Elm(1) .eq. 0, "wrong element ID for MP 1")
+    !call assert(mp2Elm(2) .eq. 1, "wrong element ID for MP 2")
+    !call assert(mp2Elm(3) .eq. 1, "wrong element ID for MP 3")
+    do i = 1,numMPs
+      call assert(mp2Elm(i) .eq. i, "wrong element ID for i'th MP")
+    end do
 
     !set vtxCoords which is a mesh field 
     call polympo_setMeshVtxCoords(mpMesh,nVertices,c_loc(xVertex),c_loc(yVertex),c_loc(zVertex))

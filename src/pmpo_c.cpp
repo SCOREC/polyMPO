@@ -154,14 +154,14 @@ void polympo_getMPCurElmID(MPMesh_ptr p_mpmesh,
   kkIntViewHostU arrayHost(elmIDs,numMPs);
   polyMPO::IntView mpCurElmIDCopy("mpCurElmIDNewValue",numMPs);
 
-  auto setVel = PS_LAMBDA(const int& elm, const int& mp, const int& mask){
+  auto getElmId = PS_LAMBDA(const int& elm, const int& mp, const int& mask){
     if(mask){
         mpCurElmIDCopy(mp) = mpCurElmID(mp);
     }else{
         mpCurElmIDCopy(mp) = MP_DETACHED;
     }
   };
-  p_MPs->parallel_for(setVel, "get mpCurElmID");
+  p_MPs->parallel_for(getElmId, "get mpCurElmID");
   Kokkos::deep_copy( arrayHost, mpCurElmIDCopy);
 }
 

@@ -111,13 +111,14 @@ void polympo_createMPs(MPMesh_ptr p_mpmesh,
   PMT_ALWAYS_ASSERT(p_mesh->getNumElements() == numElms);
 
   kkIntViewHostU mpsPerElm_h(mpsPerElm,numElms);
-  auto mpsPerElm_d = Kokkos::create_mirror_view_and_copy(Kokkos::DeviceSpace()
+  using space_t = Kokkos::DefaultExecutionSpace::memory_space;
+  auto mpsPerElm_d = Kokkos::create_mirror_view_and_copy(space_t(),
                                                          mpsPerElm_h);
   kkIntViewHostU mp2Elm_h(mp2Elm,numMPs);
-  auto mp2Elm_d = Kokkos::create_mirror_view_and_copy(Kokkos::DeviceSpace()
+  auto mp2Elm_d = Kokkos::create_mirror_view_and_copy(space_t(),
                                                       mp2Elm_h);
-  auto p_MPs = ((polyMPO::MPMesh*)p_mpmesh)->p_MPs;
-  pMPs = new MaterialPoints(numElms, numMPs, mpsPerElm_d, mp2Elm_d);
+  ((polyMPO::MPMesh*)p_mpmesh)->p_MPs =
+     new polyMPO::MaterialPoints(numElms, numMPs, mpsPerElm_d, mp2Elm_d);
 }
 
 void polympo_setMPCurElmID(MPMesh_ptr p_mpmesh,

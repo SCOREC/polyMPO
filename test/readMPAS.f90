@@ -1,3 +1,13 @@
+subroutine assert(condition,message)
+  implicit none
+  logical :: condition
+  character(*) :: message
+  if (condition .neqv. .true.) then
+    write (*,*) message
+    call exit(1)
+  endif
+end subroutine
+
 module readMPAS
     use :: polympo
     use iso_c_binding
@@ -18,11 +28,14 @@ subroutine loadMPASMesh(mpMesh, filename)
     type(c_ptr) :: mpMesh
     character (len=*), intent(in) :: filename
     character (len=64) :: onSphere, stringYes = "YES"
+    integer :: i
     integer :: maxEdges, vertexDegree, nCells, nVertices
+    integer :: numMPs
     real(kind=MPAS_RKIND) :: sphereRadius
     integer, dimension(:), pointer :: nEdgesOnCell
     real(kind=MPAS_RKIND), dimension(:), pointer :: xVertex, yVertex, zVertex
     integer, dimension(:,:), pointer :: verticesOnCell, cellsOnCell
+    integer, dimension(:), pointer :: mpsPerElm, mp2Elm
     
     call readMPASMesh(trim(filename), maxEdges, vertexDegree, &
                               nCells, nVertices, nEdgesOnCell, &
@@ -55,6 +68,21 @@ subroutine loadMPASMesh(mpMesh, filename)
     
     !end mesh structure fill
     call polympo_endMeshFill(mpMesh)
+
+    !create MPs
+    call assert(nCells .ge. 2, "This test requires a mesh with at least two cells")
+    numMPs = nCells+1;
+    allocate(mpsPerElm(nCells))
+    allocate(mp2Elm(numMPs))
+    mpsPerElm = 1
+    mpsPerElm(2) = 2
+    mp2Elm(1) = 0 !pumpic wants zero based cell indices/numbering/IDs
+    mp2Elm(2) = 1
+    mp2Elm(3) = 1
+    do i = 4,numMPs
+      mp2Elm(i) = i-2
+    end do
+    call polympo_createMPs(mpMesh,nCells,numMPs,c_loc(mpsPerElm),c_loc(mp2Elm));
 
     !set vtxCoords which is a mesh field 
     call polympo_setMeshVtxCoords(mpMesh,nVertices,c_loc(xVertex),c_loc(yVertex),c_loc(zVertex))

@@ -150,15 +150,16 @@ void polympo_getMPCurElmID(MPMesh_ptr p_mpmesh,
   auto p_MPs = ((polyMPO::MPMesh*)p_mpmesh)->p_MPs;
   PMT_ALWAYS_ASSERT(numMPs == p_MPs->getCount());
   auto mpCurElmID = p_MPs->getData<polyMPO::MPF_Cur_Elm_ID>();
+  auto mpID = p_MPs->getData<polyMPO::MPF_MP_ID>();
 
   kkIntViewHostU arrayHost(elmIDs,numMPs);
   polyMPO::IntView mpCurElmIDCopy("mpCurElmIDNewValue",numMPs);
 
   auto getElmId = PS_LAMBDA(const int& elm, const int& mp, const int& mask){
     if(mask){
-        mpCurElmIDCopy(mp) = mpCurElmID(mp);
+        mpCurElmIDCopy(mpID(mp)) = mpCurElmID(mp);
     }else{
-        mpCurElmIDCopy(mp) = MP_DETACHED;
+        mpCurElmIDCopy(mpID(mp)) = MP_DETACHED;
     }
   };
   p_MPs->parallel_for(getElmId, "get mpCurElmID");

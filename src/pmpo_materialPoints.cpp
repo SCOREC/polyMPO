@@ -25,10 +25,12 @@ PS* createDPS(int numElms, int numMPs, IntView mpsPerElm, IntView mp2elm) {
   PS::kkGidView elmGids("elementGlobalIds", numElms); //TODO - initialize this to [0..numElms)
   auto mpInfo = ps::createMemberViews<MaterialPointTypes>(numMPs);
   auto mpCurElmPos = ps::getMemberView<MaterialPointTypes, MPF_Cur_Elm_ID>(mpInfo);
+  auto mpID = ps::getMemberView<MaterialPointTypes, MPF_MP_ID>(mpInfo);
   auto mpStatus = ps::getMemberView<MaterialPointTypes, MPF_Status>(mpInfo);
   Kokkos::parallel_for("setMPinfo", numMPs, KOKKOS_LAMBDA(int i) {
     mpCurElmPos(i) = mp2elm(i);
     mpStatus(i) = 1;
+    mpID(i) = i;
   });
   Kokkos::TeamPolicy<Kokkos::DefaultExecutionSpace> policy(numElms,Kokkos::AUTO);
   auto dps = new DPS<MaterialPointTypes>(policy, numElms, numMPs, mpsPerElm, elmGids, mp2elm, mpInfo);

@@ -16,6 +16,7 @@ using particle_structs::MemberTypes;
 
 //typedef bool mp_flag_t;
 typedef int mp_flag_t;
+typedef int mp_id_t;
 typedef int  mp_elm_id_t;
 typedef double mp_sclr_t[1];//TODO
 typedef vec2d_t mp_vec2d_t;
@@ -42,7 +43,8 @@ enum MaterialPointSlice {
   MPF_Stress,
   MPF_Stress_Div,
   MPF_Shear_Traction,    //15
-  MPF_Constv_Mdl_Param
+  MPF_Constv_Mdl_Param,
+  MPF_MP_ID
 };
 
 const static std::map<MaterialPointSlice, std::pair<int,MeshFieldIndex>> 
@@ -62,7 +64,8 @@ const static std::map<MaterialPointSlice, std::pair<int,MeshFieldIndex>>
                            {MPF_Stress,          {6,MeshF_Unsupported}},
                            {MPF_Stress_Div,      {3,MeshF_Unsupported}},
                            {MPF_Shear_Traction,  {3,MeshF_Unsupported}},
-                           {MPF_Constv_Mdl_Param,{12,MeshF_Unsupported}}};
+                           {MPF_Constv_Mdl_Param,{12,MeshF_Unsupported}},
+                           {MPF_MP_ID,           {1,MeshF_Invalid}}};
 
 const static std::vector<std::pair<MaterialPointSlice, MaterialPointSlice>>
         mpSliceSwap = {{MPF_Cur_Elm_ID, MPF_Tgt_Elm_ID},
@@ -85,7 +88,8 @@ typedef MemberTypes<mp_flag_t,              //MP_Status
                     mp_sym_mat3d_t,         //MP_Stress
                     mp_vec3d_t,             //MP_Stress_Div
                     mp_vec3d_t,             //MP_Shear_Traction
-                    mp_constv_mdl_param_t   //MP_Constv_Mdl_Param
+                    mp_constv_mdl_param_t,  //MP_Constv_Mdl_Param
+                    mp_id_t                 //MP_ID
                     >MaterialPointTypes;
 typedef ps::ParticleStructure<MaterialPointTypes> PS;
 

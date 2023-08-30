@@ -158,8 +158,6 @@ void polympo_getMPCurElmID(MPMesh_ptr p_mpmesh,
   auto getElmId = PS_LAMBDA(const int& elm, const int& mp, const int& mask){
     if(mask){
         mpCurElmIDCopy(mpID(mp)) = mpCurElmID(mp);
-    }else{
-        mpCurElmIDCopy(mpID(mp)) = MP_DETACHED;
     }
   };
   p_MPs->parallel_for(getElmId, "get mpCurElmID");

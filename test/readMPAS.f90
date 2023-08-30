@@ -85,12 +85,10 @@ subroutine loadMPASMesh(mpMesh, filename)
     call polympo_createMPs(mpMesh,nCells,numMPs,c_loc(mpsPerElm),c_loc(mp2Elm));
     mp2Elm = -99
     call polympo_getMPCurElmID(mpMesh,numMPs,c_loc(mp2Elm))
-    write(*,*) "i mp2Elm(i)", 1, mp2Elm(1)
     call assert(mp2Elm(1) .eq. 0, "wrong element ID for MP 1")
     call assert(mp2Elm(2) .eq. 1, "wrong element ID for MP 2")
     call assert(mp2Elm(3) .eq. 1, "wrong element ID for MP 3")
     do i = 4,numMPs
-      write(*,*) "i mp2Elm(i)", i, mp2Elm(i)
       call assert(mp2Elm(i) .eq. i-2, "wrong element ID for i'th MP")
     end do
 

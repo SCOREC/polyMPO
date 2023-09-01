@@ -1,6 +1,7 @@
 #include "pmpo_createTestMPMesh.hpp"
 #include "pmpo_c.h"
 #include <stdio.h>
+#include <algorithm> //std::min_element
 
 #define MP_DETACHED -1 //TODO: consider other ways later, like enum
 
@@ -100,9 +101,10 @@ typedef Kokkos::View<
 
 void polympo_createMPs(MPMesh_ptr p_mpmesh,
                        int numElms,
-                       int numMPs,
+                       int numMPs, // >= number of active MPs
                        int* mpsPerElm,
-                       int* mp2Elm) {
+                       int* mp2Elm,
+                       int* isMpActive) {
   checkMPMeshValid(p_mpmesh);
 
   //the mesh must be fixed/set before adding MPs
@@ -110,15 +112,36 @@ void polympo_createMPs(MPMesh_ptr p_mpmesh,
   PMT_ALWAYS_ASSERT(!p_mesh->meshEditable());
   PMT_ALWAYS_ASSERT(p_mesh->getNumElements() == numElms);
 
-  kkIntViewHostU mpsPerElm_h(mpsPerElm,numElms);
+  const auto minElmID = *(std::min_element(mp2Elm, mp2Elm+numMPs));
+  //only allow zero or 1 based indexing of local (on process) element ids
+  PMT_ALWAYS_ASSERT(minElmID == 0 || minElmID == 1);
+
+  std::vector<int> active_mpIDs(numMPs);
+  std::vector<int> active_mp2Elm(numMPs);
+  int numActiveMPs = 0;
+  for(int i=0; i<numMPs; i++) {
+    if(isMpActive[i]==1) {
+      active_mpIDs[numActiveMPs] = i;
+      active_mp2Elm[numActiveMPs] = mp2Elm[i]-minElmID; //adjust for 1 based indexing if needed
+      numActiveMPs++;
+    }
+  }
+
+  //TODO do we care about empty ranks? check just in case...
+  PMT_ALWAYS_ASSERT(numActiveMPs>0);
+
   using space_t = Kokkos::DefaultExecutionSpace::memory_space;
-  auto mpsPerElm_d = Kokkos::create_mirror_view_and_copy(space_t(),
-                                                         mpsPerElm_h);
-  kkIntViewHostU mp2Elm_h(mp2Elm,numMPs);
-  auto mp2Elm_d = Kokkos::create_mirror_view_and_copy(space_t(),
-                                                      mp2Elm_h);
+  kkIntViewHostU mpsPerElm_h(mpsPerElm,numElms);
+  auto mpsPerElm_d = Kokkos::create_mirror_view_and_copy(space_t(), mpsPerElm_h);
+
+  kkIntViewHostU active_mp2Elm_h(active_mp2Elm.data(),numActiveMPs);
+  auto active_mp2Elm_d = Kokkos::create_mirror_view_and_copy(space_t(), active_mp2Elm_h);
+
+  kkIntViewHostU active_mpIDs_h(active_mpIDs.data(),numActiveMPs);
+  auto active_mpIDs_d = Kokkos::create_mirror_view_and_copy(space_t(), active_mpIDs_h);
+
   ((polyMPO::MPMesh*)p_mpmesh)->p_MPs =
-     new polyMPO::MaterialPoints(numElms, numMPs, mpsPerElm_d, mp2Elm_d);
+     new polyMPO::MaterialPoints(numElms, numActiveMPs, mpsPerElm_d, active_mp2Elm_d, active_mpIDs_d);
 }
 
 void polympo_setMPCurElmID(MPMesh_ptr p_mpmesh,

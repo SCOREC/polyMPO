@@ -95,7 +95,7 @@ typedef ps::ParticleStructure<MaterialPointTypes> PS;
 
 
 PS* createDPS(int numElms, int numMPs, DoubleVec3dView positions, IntView mpsPerElm, IntView mp2elm);
-PS* createDPS(int numElms, int numMPs, IntView mpsPerElm, IntView mp2elm);
+PS* createDPS(int numElms, int numMPs, IntView mpsPerElm, IntView mp2elm, IntView isMPActive);
 
 class MaterialPoints {
   private:
@@ -106,8 +106,8 @@ class MaterialPoints {
     MaterialPoints(int numElms, int numMPs, DoubleVec3dView positions, IntView mpsPerElm, IntView mp2elm) {
       MPs = createDPS(numElms, numMPs, positions, mpsPerElm, mp2elm);
     };
-    MaterialPoints(int numElms, int numMPs, IntView mpsPerElm, IntView mp2elm) {
-      MPs = createDPS(numElms, numMPs, mpsPerElm, mp2elm);
+    MaterialPoints(int numElms, int numMPs, IntView mpsPerElm, IntView mp2elm, IntView isMPActive) {
+      MPs = createDPS(numElms, numMPs, mpsPerElm, mp2elm, isMPActive);
     };
     ~MaterialPoints() {
       if(MPs != nullptr)

@@ -12,7 +12,7 @@ void polympo_initialize_f();
 void polympo_finalize_f();
 
 //create/delete MpMesh object
-MPMesh_ptr polympo_createMPMesh(int setMeshOption, int setMPOption);
+MPMesh_ptr polympo_createMPMesh_f(int setMeshOption, int setMPOption);
 void polympo_deleteMPMesh(MPMesh_ptr p_mpmesh);
 
 //set MPI communicator

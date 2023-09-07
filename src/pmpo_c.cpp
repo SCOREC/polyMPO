@@ -4,6 +4,7 @@
 #include <algorithm> //std::min_element
 
 #define MP_DETACHED -1 //TODO: consider other ways later, like enum
+#define MP_ACTIVE 1
 
 namespace{
   std::vector<MPMesh_ptr> p_mpmeshes;////store the p_mpmeshes that is legal
@@ -120,7 +121,7 @@ void polympo_createMPs(MPMesh_ptr p_mpmesh,
   std::vector<int> active_mp2Elm(numMPs);
   int numActiveMPs = 0;
   for(int i=0; i<numMPs; i++) {
-    if(isMpActive[i]==1) {
+    if(isMpActive[i] == MP_ACTIVE) {
       active_mpIDs[numActiveMPs] = i;
       active_mp2Elm[numActiveMPs] = mp2Elm[i]-minElmID; //adjust for 1 based indexing if needed
       numActiveMPs++;

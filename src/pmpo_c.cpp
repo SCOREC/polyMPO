@@ -113,9 +113,23 @@ void polympo_createMPs(MPMesh_ptr p_mpmesh,
   PMT_ALWAYS_ASSERT(!p_mesh->meshEditable());
   PMT_ALWAYS_ASSERT(p_mesh->getNumElements() == numElms);
 
+  int firstElmWithMPs=-1;
+  for (int i=0; i<numElms; i++) {
+    if(mpsPerElm[i]) {
+      firstElmWithMPs = i;
+      break;
+    }
+  }
   const auto minElmID = *(std::min_element(mp2Elm, mp2Elm+numMPs));
-  //only allow zero or 1 based indexing of local (on process) element ids
-  PMT_ALWAYS_ASSERT(minElmID == 0 || minElmID == 1);
+  int offset = -1;
+  if(minElmID-firstElmWithMPs==1) {
+    offset = 1;
+  }else if (minElmID-firstElmWithMPs==0){
+    offset = 0;
+  }else {
+    fprintf(stderr,"The minElmID is incorrect! Offset is wrong!\n");
+    exit(1);
+  }
 
   std::vector<int> active_mpIDs(numMPs);
   std::vector<int> active_mp2Elm(numMPs);
@@ -123,7 +137,7 @@ void polympo_createMPs(MPMesh_ptr p_mpmesh,
   for(int i=0; i<numMPs; i++) {
     if(isMpActive[i] == MP_ACTIVE) {
       active_mpIDs[numActiveMPs] = i;
-      active_mp2Elm[numActiveMPs] = mp2Elm[i]-minElmID; //adjust for 1 based indexing if needed
+      active_mp2Elm[numActiveMPs] = mp2Elm[i]-offset; //adjust for 1 based indexing if needed
       numActiveMPs++;
     }
   }

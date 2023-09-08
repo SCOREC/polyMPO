@@ -65,16 +65,6 @@ program main
     call assert(abs(MPPositions(3,i) - 1.1) .lt. test_epsilon, "Assert zPositions for MP array Fail")
   end do
 
-  !do i = 1,numMPs 
-  !  MPElmID(i) = mod(i, numElms)
-  !end do
-  !call polympo_setMPCurElmID(mpMesh, numMPs, c_loc(MPElmID))
-  !MPElmID = 0
-  !call polympo_getMPCurElmID(mpMesh, numMPs, c_loc(MPElmID))
-  !do i = 1,numMPs 
-  !  call assert((MPElmID(i) .eq. mod(i, numElms)) , "Assert MPElmID Fail")
-  !end do
-
   do i = 1,numCompsVel
     do j = 1,nverts 
         Mesharray(i,j) = (i-1)*numCompsVel + j

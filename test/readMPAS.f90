@@ -35,7 +35,7 @@ subroutine loadMPASMesh(mpMesh, filename)
     integer, dimension(:), pointer :: nEdgesOnCell
     real(kind=MPAS_RKIND), dimension(:), pointer :: xVertex, yVertex, zVertex
     integer, dimension(:,:), pointer :: verticesOnCell, cellsOnCell
-    integer, dimension(:), pointer :: mpsPerElm, mp2Elm, isMPActive
+    integer, dimension(:), pointer :: mpsPerElm, mp2Elm, mpAppID
     
     call readMPASMesh(trim(filename), maxEdges, vertexDegree, &
                               nCells, nVertices, nEdgesOnCell, &
@@ -74,8 +74,8 @@ subroutine loadMPASMesh(mpMesh, filename)
     numMPs = nCells+1;
     allocate(mpsPerElm(nCells))
     allocate(mp2Elm(numMPs))
-    allocate(isMPActive(numMPs))
-    isMPActive = 1 !no inactive MPs
+    allocate(mpAppID(numMPs))
+    mpAppID = 1 !no inactive MPs
     mpsPerElm = 1
     mpsPerElm(2) = 2
     mp2Elm(1) = 0 !pumpic wants zero based cell indices/numbering/IDs
@@ -84,7 +84,7 @@ subroutine loadMPASMesh(mpMesh, filename)
     do i = 4,numMPs
       mp2Elm(i) = i-2
     end do
-    call polympo_createMPs(mpMesh,nCells,numMPs,c_loc(mpsPerElm),c_loc(mp2Elm),c_loc(isMPActive));
+    call polympo_createMPs(mpMesh,nCells,numMPs,c_loc(mpsPerElm),c_loc(mp2Elm),c_loc(mpAppID));
     mp2Elm = -99
     call polympo_getMPCurElmID(mpMesh,numMPs,c_loc(mp2Elm))
     call assert(mp2Elm(1) .eq. 0, "wrong element ID for MP 1")

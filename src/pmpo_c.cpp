@@ -188,7 +188,7 @@ void polympo_getMPCurElmID(MPMesh_ptr p_mpmesh,
   auto p_MPs = ((polyMPO::MPMesh*)p_mpmesh)->p_MPs;
   PMT_ALWAYS_ASSERT(numMPs == p_MPs->getCount());
   auto mpCurElmID = p_MPs->getData<polyMPO::MPF_Cur_Elm_ID>();
-  auto mpID = p_MPs->getData<polyMPO::MPF_MP_ID>();
+  auto mpID = p_MPs->getData<polyMPO::MPF_MP_APP_ID>();
 
   kkIntViewHostU arrayHost(elmIDs,numMPs);
   polyMPO::IntView mpCurElmIDCopy("mpCurElmIDNewValue",numMPs);

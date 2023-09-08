@@ -44,7 +44,7 @@ enum MaterialPointSlice {
   MPF_Stress_Div,
   MPF_Shear_Traction,    //15
   MPF_Constv_Mdl_Param,
-  MPF_MP_ID
+  MPF_MP_APP_ID
 };
 
 const static std::map<MaterialPointSlice, std::pair<int,MeshFieldIndex>> 
@@ -65,7 +65,7 @@ const static std::map<MaterialPointSlice, std::pair<int,MeshFieldIndex>>
                            {MPF_Stress_Div,      {3,MeshF_Unsupported}},
                            {MPF_Shear_Traction,  {3,MeshF_Unsupported}},
                            {MPF_Constv_Mdl_Param,{12,MeshF_Unsupported}},
-                           {MPF_MP_ID,           {1,MeshF_Invalid}}};
+                           {MPF_MP_APP_ID,       {1,MeshF_Invalid}}};
 
 const static std::vector<std::pair<MaterialPointSlice, MaterialPointSlice>>
         mpSliceSwap = {{MPF_Cur_Elm_ID, MPF_Tgt_Elm_ID},
@@ -89,13 +89,13 @@ typedef MemberTypes<mp_flag_t,              //MP_Status
                     mp_vec3d_t,             //MP_Stress_Div
                     mp_vec3d_t,             //MP_Shear_Traction
                     mp_constv_mdl_param_t,  //MP_Constv_Mdl_Param
-                    mp_id_t                 //MP_ID
+                    mp_id_t                 //MP_APP_ID
                     >MaterialPointTypes;
 typedef ps::ParticleStructure<MaterialPointTypes> PS;
 
 
 PS* createDPS(int numElms, int numMPs, DoubleVec3dView positions, IntView mpsPerElm, IntView mp2elm);
-PS* createDPS(int numElms, int numMPs, IntView mpsPerElm, IntView mp2elm, IntView isMPActive);
+PS* createDPS(int numElms, int numMPs, IntView mpsPerElm, IntView mp2elm, IntView mpAppID);
 
 class MaterialPoints {
   private:
@@ -106,8 +106,8 @@ class MaterialPoints {
     MaterialPoints(int numElms, int numMPs, DoubleVec3dView positions, IntView mpsPerElm, IntView mp2elm) {
       MPs = createDPS(numElms, numMPs, positions, mpsPerElm, mp2elm);
     };
-    MaterialPoints(int numElms, int numMPs, IntView mpsPerElm, IntView mp2elm, IntView isMPActive) {
-      MPs = createDPS(numElms, numMPs, mpsPerElm, mp2elm, isMPActive);
+    MaterialPoints(int numElms, int numMPs, IntView mpsPerElm, IntView mp2elm, IntView mpAppID) {
+      MPs = createDPS(numElms, numMPs, mpsPerElm, mp2elm, mpAppID);
     };
     ~MaterialPoints() {
       if(MPs != nullptr)

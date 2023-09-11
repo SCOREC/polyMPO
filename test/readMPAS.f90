@@ -69,30 +69,44 @@ subroutine loadMPASMesh(mpMesh, filename)
     !end mesh structure fill
     call polympo_endMeshFill(mpMesh)
 
-    !create MPs
-    call assert(nCells .ge. 2, "This test requires a mesh with at least two cells")
-    numMPs = nCells+1;
+    !test on new createMPs
+    call assert(nCells .ge. 3, "This test requires a mesh with at least three cells")
+    numMPs = nCells+2;
     allocate(mpsPerElm(nCells))
     allocate(mp2Elm(numMPs))
     allocate(mpAppID(numMPs))
-    mpAppID = 1 !no inactive MPs
-    mpsPerElm = 1
-    mpsPerElm(2) = 2
-    mp2Elm(1) = 0 !pumpic wants zero based cell indices/numbering/IDs
-    mp2Elm(2) = 1
-    mp2Elm(3) = 1
-    do i = 4,numMPs
-      mp2Elm(i) = i-2
+    
+    mpAppID = 1 !no inactive MPs and some changed below
+    mpAppID(4) = 0 !first/1-st MP is indexed 1 and 4-th MP is inactive
+   
+    mpsPerElm = 1 !all elements have 1 MP and some changed below
+    !first element in indexed 1 and 
+    mpsPerElm(1) = 0 !1st element has 0 MPs
+    mpsPerElm(2) = 2 !2nd element has 2 MPs
+    mpsPerElm(3) = 2 !3rd element has 2 MPs 
+
+    ! mp2Elm = [2,3,2,0,3,4,5,6,...]
+    mp2Elm(1) = 2
+    mp2Elm(2) = 3
+    mp2Elm(3) = 2
+    !mp2Elm(4) is not needed/used since 4-th MP is inactive
+    do i = 5,numMPs
+      mp2Elm(i) = i-2 !i=5 leads to mp2Elm(5)=3 (5-th MP in 3-rd element)
+                      !i=numMPs leads to mp2Elm(numMPs=nCells+2)=numMPs-2=nCells
     end do
-    call polympo_createMPs(mpMesh,nCells,numMPs,c_loc(mpsPerElm),c_loc(mp2Elm),c_loc(mpAppID));
-    mp2Elm = -99
+    call polympo_createMPs(mpMesh,nCells,numMPs,c_loc(mpsPerElm),c_loc(mp2Elm),c_loc(mpAppID))
+    
+    mp2Elm = -99 !override values and then use get function below
     call polympo_getMPCurElmID(mpMesh,numMPs,c_loc(mp2Elm))
-    call assert(mp2Elm(1) .eq. 0, "wrong element ID for MP 1")
-    call assert(mp2Elm(2) .eq. 1, "wrong element ID for MP 2")
-    call assert(mp2Elm(3) .eq. 1, "wrong element ID for MP 3")
-    do i = 4,numMPs
+    write(0,*) mp2Elm
+    call assert(mp2Elm(1) .eq. 2, "wrong element ID for MP 1")
+    call assert(mp2Elm(2) .eq. 3, "wrong element ID for MP 2")
+    call assert(mp2Elm(3) .eq. 2, "wrong element ID for MP 3")
+    !mp2Elm(4) is not needed/used since 4-th MP is inactive
+    do i = 5,numMPs
       call assert(mp2Elm(i) .eq. i-2, "wrong element ID for i'th MP")
     end do
+    !test end
 
     !set vtxCoords which is a mesh field 
     call polympo_setMeshVtxCoords(mpMesh,nVertices,c_loc(xVertex),c_loc(yVertex),c_loc(zVertex))

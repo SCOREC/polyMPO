@@ -186,7 +186,7 @@ void polympo_getMPCurElmID(MPMesh_ptr p_mpmesh,
                            int* elmIDs){
   checkMPMeshValid(p_mpmesh);
   auto p_MPs = ((polyMPO::MPMesh*)p_mpmesh)->p_MPs;
-  PMT_ALWAYS_ASSERT(numMPs == p_MPs->getCount());
+  PMT_ALWAYS_ASSERT(numMPs >= p_MPs->getCount());
   auto mpCurElmID = p_MPs->getData<polyMPO::MPF_Cur_Elm_ID>();
   auto mpID = p_MPs->getData<polyMPO::MPF_MP_APP_ID>();
 
@@ -195,7 +195,7 @@ void polympo_getMPCurElmID(MPMesh_ptr p_mpmesh,
 
   auto getElmId = PS_LAMBDA(const int& elm, const int& mp, const int& mask){
     if(mask){
-        mpCurElmIDCopy(mpID(mp)) = mpCurElmID(mp);
+        mpCurElmIDCopy(mpID(mp)) = mpCurElmID(mp);//TODO: we need add a flag if we need +1 or not
     }
   };
   p_MPs->parallel_for(getElmId, "get mpCurElmID");

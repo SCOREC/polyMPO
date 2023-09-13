@@ -56,7 +56,7 @@ module polympo
   !> @param mpmesh(in/out) MPMesh object
   !> @param numElms(in) total number of mesh elements
   !> @param numMPs(in) total number of MPs, total = number of active + number of inactive
-  !> @param mpsPerElm(in) number of MPs per mesh element
+  !> @param mpsPerElm(in) number of MPs for each mesh element
   !> @param mp2Elm(in) element ID for each MP
   !> @param isMpActive(in) set to 1 if the MP is active, 0 otherwise
   !---------------------------------------------------------------------------

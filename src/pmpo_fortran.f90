@@ -58,9 +58,9 @@ module polympo
   !> @param numMPs(in) total number of MPs, total = number of active + number of inactive
   !> @param mpsPerElm(in) number of MPs for each mesh element
   !> @param mp2Elm(in) element ID for each MP
-  !> @param isMpActive(in) set to 1 if the MP is active, 0 otherwise
+  !> @param isMPActive(in) set to 1 if the MP is active, 0 otherwise
   !---------------------------------------------------------------------------
-  subroutine polympo_createMPs(mpMesh, numElms, numMPs, mpsPerElm, mp2Elm, isMpActive) &
+  subroutine polympo_createMPs(mpMesh, numElms, numMPs, mpsPerElm, mp2Elm, isMPActive) &
              bind(C, NAME='polympo_createMPs')
     use :: iso_c_binding
     type(c_ptr), value :: mpMesh
@@ -68,7 +68,7 @@ module polympo
     integer(c_int), value :: numMPs
     type(c_ptr), intent(in), value :: mpsPerElm
     type(c_ptr), intent(in), value :: mp2Elm
-    type(c_ptr), intent(in), value :: isMpActive
+    type(c_ptr), intent(in), value :: isMPActive
   end subroutine
   !---------------------------------------------------------------------------
   !> @brief set the MP current element array from a host array

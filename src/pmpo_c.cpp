@@ -104,7 +104,7 @@ void polympo_createMPs(MPMesh_ptr p_mpmesh,
                        int numMPs, // >= number of active MPs
                        int* mpsPerElm,
                        int* mp2Elm,
-                       int* isMpActive) {
+                       int* isMPActive) {
   checkMPMeshValid(p_mpmesh);
 
   //the mesh must be fixed/set before adding MPs
@@ -122,7 +122,7 @@ void polympo_createMPs(MPMesh_ptr p_mpmesh,
 
   int minElmID = numElms+1;
   for(int i = 0; i < numMPs; i++) {
-    if(isMpActive[i] == MP_ACTIVE) {
+    if(isMPActive[i] == MP_ACTIVE) {
       if(mp2Elm[i] < minElmID) {
         minElmID = mp2Elm[i];
       }
@@ -142,7 +142,7 @@ void polympo_createMPs(MPMesh_ptr p_mpmesh,
   std::vector<int> active_mp2Elm(numMPs);
   int numActiveMPs = 0;
   for(int i=0; i<numMPs; i++) {
-    if(isMpActive[i] == MP_ACTIVE) {
+    if(isMPActive[i] == MP_ACTIVE) {
       active_mpIDs[numActiveMPs] = i;
       active_mp2Elm[numActiveMPs] = mp2Elm[i]-offset; //adjust for 1 based indexing if needed
       numActiveMPs++;

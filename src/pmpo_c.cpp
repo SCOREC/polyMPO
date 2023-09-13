@@ -120,7 +120,15 @@ void polympo_createMPs(MPMesh_ptr p_mpmesh,
       break;
     }
   }
-  const auto minElmID = *(std::min_element(mp2Elm, mp2Elm+numMPs));
+
+  int minElmID = numElms+1;
+  for(int i = 0; i < numMPs; i++) {
+    if(isMpActive[i] == MP_ACTIVE) {
+      if(mp2Elm[i] < minElmID) {
+        minElmID = mp2Elm[i];
+      }
+    }
+  }
   int offset = -1;
   if(minElmID-firstElmWithMPs==1) {
     offset = 1;

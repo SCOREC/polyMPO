@@ -157,6 +157,8 @@ void polympo_createMPs(MPMesh_ptr p_mpmesh,
 
   ((polyMPO::MPMesh*)p_mpmesh)->p_MPs =
      new polyMPO::MaterialPoints(numElms, numActiveMPs, mpsPerElm_d, active_mp2Elm_d, active_mpIDs_d);
+  auto p_MPs = ((polyMPO::MPMesh*)p_mpmesh)->p_MPs;
+  p_MPs->setElmIDoffset(offset);
 }
 
 void polympo_setMPCurElmID(MPMesh_ptr p_mpmesh,
@@ -188,14 +190,15 @@ void polympo_getMPCurElmID(MPMesh_ptr p_mpmesh,
   auto p_MPs = ((polyMPO::MPMesh*)p_mpmesh)->p_MPs;
   PMT_ALWAYS_ASSERT(numMPs >= p_MPs->getCount());
   auto mpCurElmID = p_MPs->getData<polyMPO::MPF_Cur_Elm_ID>();
-  auto mpID = p_MPs->getData<polyMPO::MPF_MP_APP_ID>();
+  auto mpAppID = p_MPs->getData<polyMPO::MPF_MP_APP_ID>();
+  auto elmIDoffset = p_MPs->getElmIDoffset();
 
   kkIntViewHostU arrayHost(elmIDs,numMPs);
   polyMPO::IntView mpCurElmIDCopy("mpCurElmIDNewValue",numMPs);
 
   auto getElmId = PS_LAMBDA(const int& elm, const int& mp, const int& mask){
     if(mask){
-        mpCurElmIDCopy(mpID(mp)) = mpCurElmID(mp);//TODO: we need add a flag if we need +1 or not
+        mpCurElmIDCopy(mpAppID(mp)) = mpCurElmID(mp)+elmIDoffset;
     }
   };
   p_MPs->parallel_for(getElmId, "get mpCurElmID");

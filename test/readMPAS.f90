@@ -35,7 +35,7 @@ subroutine loadMPASMesh(mpMesh, filename)
     integer, dimension(:), pointer :: nEdgesOnCell
     real(kind=MPAS_RKIND), dimension(:), pointer :: xVertex, yVertex, zVertex
     integer, dimension(:,:), pointer :: verticesOnCell, cellsOnCell
-    integer, dimension(:), pointer :: mpsPerElm, mp2Elm, mpAppID
+    integer, dimension(:), pointer :: mpsPerElm, mp2Elm, isMPActive
     
     call readMPASMesh(trim(filename), maxEdges, vertexDegree, &
                               nCells, nVertices, nEdgesOnCell, &
@@ -74,13 +74,12 @@ subroutine loadMPASMesh(mpMesh, filename)
     numMPs = nCells+2;
     allocate(mpsPerElm(nCells))
     allocate(mp2Elm(numMPs))
-    allocate(mpAppID(numMPs))
+    allocate(isMPActive(numMPs))
     
-    mpAppID = 1 !no inactive MPs and some changed below
-    mpAppID(4) = 0 !first/1-st MP is indexed 1 and 4-th MP is inactive
+    isMPActive = 1 !no inactive MPs and some changed below
+    isMPActive(4) = 0 !first/1-st MP is indexed 1 and 4-th MP is inactive
    
     mpsPerElm = 1 !all elements have 1 MP and some changed below
-    !first element in indexed 1 and 
     mpsPerElm(1) = 0 !1st element has 0 MPs
     mpsPerElm(2) = 2 !2nd element has 2 MPs
     mpsPerElm(3) = 2 !3rd element has 2 MPs 
@@ -94,11 +93,10 @@ subroutine loadMPASMesh(mpMesh, filename)
       mp2Elm(i) = i-2 !i=5 leads to mp2Elm(5)=3 (5-th MP in 3-rd element)
                       !i=numMPs leads to mp2Elm(numMPs=nCells+2)=numMPs-2=nCells
     end do
-    call polympo_createMPs(mpMesh,nCells,numMPs,c_loc(mpsPerElm),c_loc(mp2Elm),c_loc(mpAppID))
+    call polympo_createMPs(mpMesh,nCells,numMPs,c_loc(mpsPerElm),c_loc(mp2Elm),c_loc(isMPActive))
     
     mp2Elm = -99 !override values and then use get function below
     call polympo_getMPCurElmID(mpMesh,numMPs,c_loc(mp2Elm))
-    write(0,*) mp2Elm
     call assert(mp2Elm(1) .eq. 2, "wrong element ID for MP 1")
     call assert(mp2Elm(2) .eq. 3, "wrong element ID for MP 2")
     call assert(mp2Elm(3) .eq. 2, "wrong element ID for MP 3")
@@ -107,6 +105,10 @@ subroutine loadMPASMesh(mpMesh, filename)
       call assert(mp2Elm(i) .eq. i-2, "wrong element ID for i'th MP")
     end do
     !test end
+
+    deallocate(mpsPerElm)
+    deallocate(mp2Elm)
+    deallocate(isMPActive)
 
     !set vtxCoords which is a mesh field 
     call polympo_setMeshVtxCoords(mpMesh,nVertices,c_loc(xVertex),c_loc(yVertex),c_loc(zVertex))

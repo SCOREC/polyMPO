@@ -100,6 +100,7 @@ PS* createDPS(int numElms, int numMPs, IntView mpsPerElm, IntView mp2elm, IntVie
 class MaterialPoints {
   private:
     PS* MPs;
+    int elmIDoffset = -1; //CHECK THIS
 
   public:
     MaterialPoints() : MPs(nullptr) {};
@@ -169,6 +170,15 @@ class MaterialPoints {
     }
     int getCount() { return MPs->nPtcls(); }
     auto getPositions() { return getData<MPF_Cur_Pos_XYZ>(); }
+
+    void setElmIDoffset(int offset) {
+      PMT_ALWAYS_ASSERT(offset == 0 || offset == 1);
+      elmIDoffset = offset;
+    }
+    int getElmIDoffset() {
+      PMT_ALWAYS_ASSERT(elmIDoffset == 0 || elmIDoffset == 1);
+      return elmIDoffset;
+    }
 
 //MUTATOR  
     template <MaterialPointSlice index> void fillData(double value);//use PS_LAMBDA fill up to 1

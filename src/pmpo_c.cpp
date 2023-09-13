@@ -1,7 +1,6 @@
 #include "pmpo_createTestMPMesh.hpp"
 #include "pmpo_c.h"
 #include <stdio.h>
-#include <algorithm> //std::min_element
 
 #define MP_DETACHED -1 //TODO: consider other ways later, like enum
 #define MP_ACTIVE 1

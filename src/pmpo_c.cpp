@@ -155,6 +155,7 @@ void polympo_createMPs(MPMesh_ptr p_mpmesh,
   kkIntViewHostU active_mpIDs_h(active_mpIDs.data(),numActiveMPs);
   auto active_mpIDs_d = Kokkos::create_mirror_view_and_copy(space_t(), active_mpIDs_h);
 
+  delete ((polyMPO::MPMesh*)p_mpmesh)->p_MPs;
   ((polyMPO::MPMesh*)p_mpmesh)->p_MPs =
      new polyMPO::MaterialPoints(numElms, numActiveMPs, mpsPerElm_d, active_mp2Elm_d, active_mpIDs_d);
   auto p_MPs = ((polyMPO::MPMesh*)p_mpmesh)->p_MPs;

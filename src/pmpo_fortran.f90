@@ -58,6 +58,7 @@ module polympo
   !> @param numMPs(in) total number of MPs
   !> @param mpsPerElm(in) number of MPs per mesh element
   !> @param mp2Elm(in) element ID for each MP
+  !> @param isMpActive(in) set to 1 if the MP is active, 0 otherwise
   !---------------------------------------------------------------------------
   subroutine polympo_createMPs(mpMesh, numElms, numMPs, mpsPerElm, mp2Elm, isMpActive) &
              bind(C, NAME='polympo_createMPs')

@@ -3,6 +3,7 @@
 #include <stdio.h>
 
 #define MP_DETACHED -1 //TODO: consider other ways later, like enum
+#define MP_ACTIVE 1
 
 namespace{
   std::vector<MPMesh_ptr> p_mpmeshes;////store the p_mpmeshes that is legal
@@ -98,26 +99,74 @@ typedef Kokkos::View<
           Kokkos::MemoryTraits<Kokkos::Unmanaged>
         > kkIntViewHostU;//TODO:put it somewhere else (maybe)
 
-void polympo_setMPCurElmID(MPMesh_ptr p_mpmesh,
-                           int numMPs,
-                           int* elmIDs){
+void polympo_createMPs(MPMesh_ptr p_mpmesh,
+                       int numElms,
+                       int numMPs, // >= number of active MPs
+                       int* mpsPerElm,
+                       int* mp2Elm,
+                       int* isMPActive) {
   checkMPMeshValid(p_mpmesh);
-  auto p_MPs = ((polyMPO::MPMesh*)p_mpmesh)->p_MPs;
-  PMT_ALWAYS_ASSERT(numMPs == p_MPs->getCount());
-  auto mpCurElmID = p_MPs->getData<polyMPO::MPF_Cur_Elm_ID>();
-  
-  kkIntViewHostU arrayHost(elmIDs,numMPs);
-  polyMPO::IntView mpCurElmIDCopy("mpCurElmIDNewValue",numMPs);
-  Kokkos::deep_copy(mpCurElmIDCopy,arrayHost);
 
-  auto setVel = PS_LAMBDA(const int& elm, const int& mp, const int& mask){
-    if(mask){
-        mpCurElmID(mp) = mpCurElmIDCopy(mp);
-    }else{
-        mpCurElmID(mp) = MP_DETACHED;
+  //the mesh must be fixed/set before adding MPs
+  auto p_mesh = ((polyMPO::MPMesh*)p_mpmesh)->p_mesh;
+  PMT_ALWAYS_ASSERT(!p_mesh->meshEditable());
+  PMT_ALWAYS_ASSERT(p_mesh->getNumElements() == numElms);
+
+  int firstElmWithMPs=-1;
+  for (int i=0; i<numElms; i++) {
+    if(mpsPerElm[i]) {
+      firstElmWithMPs = i;
+      break;
     }
-  };
-  p_MPs->parallel_for(setVel, "set mpCurElmID");
+  }
+
+  int minElmID = numElms+1;
+  for(int i = 0; i < numMPs; i++) {
+    if(isMPActive[i] == MP_ACTIVE) {
+      if(mp2Elm[i] < minElmID) {
+        minElmID = mp2Elm[i];
+      }
+    }
+  }
+  int offset = -1;
+  if(minElmID-firstElmWithMPs==1) {
+    offset = 1;
+  }else if (minElmID-firstElmWithMPs==0){
+    offset = 0;
+  }else {
+    fprintf(stderr,"The minElmID is incorrect! Offset is wrong!\n");
+    exit(1);
+  }
+
+  std::vector<int> active_mpIDs(numMPs);
+  std::vector<int> active_mp2Elm(numMPs);
+  int numActiveMPs = 0;
+  for(int i=0; i<numMPs; i++) {
+    if(isMPActive[i] == MP_ACTIVE) {
+      active_mpIDs[numActiveMPs] = i;
+      active_mp2Elm[numActiveMPs] = mp2Elm[i]-offset; //adjust for 1 based indexing if needed
+      numActiveMPs++;
+    }
+  }
+
+  //TODO do we care about empty ranks? check just in case...
+  PMT_ALWAYS_ASSERT(numActiveMPs>0);
+
+  using space_t = Kokkos::DefaultExecutionSpace::memory_space;
+  kkIntViewHostU mpsPerElm_h(mpsPerElm,numElms);
+  auto mpsPerElm_d = Kokkos::create_mirror_view_and_copy(space_t(), mpsPerElm_h);
+
+  kkIntViewHostU active_mp2Elm_h(active_mp2Elm.data(),numActiveMPs);
+  auto active_mp2Elm_d = Kokkos::create_mirror_view_and_copy(space_t(), active_mp2Elm_h);
+
+  kkIntViewHostU active_mpIDs_h(active_mpIDs.data(),numActiveMPs);
+  auto active_mpIDs_d = Kokkos::create_mirror_view_and_copy(space_t(), active_mpIDs_h);
+
+  delete ((polyMPO::MPMesh*)p_mpmesh)->p_MPs;
+  ((polyMPO::MPMesh*)p_mpmesh)->p_MPs =
+     new polyMPO::MaterialPoints(numElms, numActiveMPs, mpsPerElm_d, active_mp2Elm_d, active_mpIDs_d);
+  auto p_MPs = ((polyMPO::MPMesh*)p_mpmesh)->p_MPs;
+  p_MPs->setElmIDoffset(offset);
 }
 
 void polympo_getMPCurElmID(MPMesh_ptr p_mpmesh,
@@ -125,20 +174,20 @@ void polympo_getMPCurElmID(MPMesh_ptr p_mpmesh,
                            int* elmIDs){
   checkMPMeshValid(p_mpmesh);
   auto p_MPs = ((polyMPO::MPMesh*)p_mpmesh)->p_MPs;
-  PMT_ALWAYS_ASSERT(numMPs == p_MPs->getCount());
+  PMT_ALWAYS_ASSERT(numMPs >= p_MPs->getCount());
   auto mpCurElmID = p_MPs->getData<polyMPO::MPF_Cur_Elm_ID>();
+  auto mpAppID = p_MPs->getData<polyMPO::MPF_MP_APP_ID>();
+  auto elmIDoffset = p_MPs->getElmIDoffset();
 
   kkIntViewHostU arrayHost(elmIDs,numMPs);
   polyMPO::IntView mpCurElmIDCopy("mpCurElmIDNewValue",numMPs);
 
-  auto setVel = PS_LAMBDA(const int& elm, const int& mp, const int& mask){
+  auto getElmId = PS_LAMBDA(const int& elm, const int& mp, const int& mask){
     if(mask){
-        mpCurElmIDCopy(mp) = mpCurElmID(mp);
-    }else{
-        mpCurElmIDCopy(mp) = MP_DETACHED;
+        mpCurElmIDCopy(mpAppID(mp)) = mpCurElmID(mp)+elmIDoffset;
     }
   };
-  p_MPs->parallel_for(setVel, "get mpCurElmID");
+  p_MPs->parallel_for(getElmId, "get mpCurElmID");
   Kokkos::deep_copy( arrayHost, mpCurElmIDCopy);
 }
 

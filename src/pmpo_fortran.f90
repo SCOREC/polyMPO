@@ -51,17 +51,24 @@ module polympo
     integer(c_int), value :: comm    
   end subroutine
   !---------------------------------------------------------------------------
-  !> @brief set the MP current element array from a host array
+  !> @brief create the material points
+  !> @brief the fields associated with the MPs are NOT initialized
   !> @param mpmesh(in/out) MPMesh object
-  !> @param numMPs(in) length of array, number of the MPs
-  !> @param array(in) input MP element ID 1D array (numMPs)
+  !> @param numElms(in) total number of mesh elements
+  !> @param numMPs(in) total number of MPs, total = number of active + number of inactive
+  !> @param mpsPerElm(in) number of MPs for each mesh element
+  !> @param mp2Elm(in) element ID for each MP
+  !> @param isMPActive(in) set to 1 if the MP is active, 0 otherwise
   !---------------------------------------------------------------------------
-  subroutine polympo_setMPCurElmID(mpMesh, numMPs, array) &
-             bind(C, NAME='polympo_setMPCurElmID')
+  subroutine polympo_createMPs(mpMesh, numElms, numMPs, mpsPerElm, mp2Elm, isMPActive) &
+             bind(C, NAME='polympo_createMPs')
     use :: iso_c_binding
     type(c_ptr), value :: mpMesh
+    integer(c_int), value :: numElms
     integer(c_int), value :: numMPs
-    type(c_ptr), intent(in), value :: array
+    type(c_ptr), intent(in), value :: mpsPerElm
+    type(c_ptr), intent(in), value :: mp2Elm
+    type(c_ptr), intent(in), value :: isMPActive
   end subroutine
   !---------------------------------------------------------------------------
   !> @brief get the current element ID MP array from a polympo array

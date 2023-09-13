@@ -100,7 +100,7 @@ PS* createDPS(int numElms, int numMPs, IntView mpsPerElm, IntView mp2elm, IntVie
 class MaterialPoints {
   private:
     PS* MPs;
-    int elmIDoffset = -1; //CHECK THIS
+    int elmIDoffset = -1;
 
   public:
     MaterialPoints() : MPs(nullptr) {};

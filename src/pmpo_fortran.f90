@@ -71,19 +71,6 @@ module polympo
     type(c_ptr), intent(in), value :: isMPActive
   end subroutine
   !---------------------------------------------------------------------------
-  !> @brief set the MP current element array from a host array
-  !> @param mpmesh(in/out) MPMesh object
-  !> @param numMPs(in) length of array, number of the MPs
-  !> @param array(in) input MP element ID 1D array (numMPs)
-  !---------------------------------------------------------------------------
-  subroutine polympo_setMPCurElmID(mpMesh, numMPs, array) &
-             bind(C, NAME='polympo_setMPCurElmID')
-    use :: iso_c_binding
-    type(c_ptr), value :: mpMesh
-    integer(c_int), value :: numMPs
-    type(c_ptr), intent(in), value :: array
-  end subroutine
-  !---------------------------------------------------------------------------
   !> @brief get the current element ID MP array from a polympo array
   !> @param mpmesh(in/out) MPMesh object
   !> @param numMPs(in) length of array, number of the MPs

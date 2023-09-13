@@ -169,28 +169,6 @@ void polympo_createMPs(MPMesh_ptr p_mpmesh,
   p_MPs->setElmIDoffset(offset);
 }
 
-void polympo_setMPCurElmID(MPMesh_ptr p_mpmesh,
-                           int numMPs,
-                           int* elmIDs){
-  checkMPMeshValid(p_mpmesh);
-  auto p_MPs = ((polyMPO::MPMesh*)p_mpmesh)->p_MPs;
-  PMT_ALWAYS_ASSERT(numMPs == p_MPs->getCount());
-  auto mpCurElmID = p_MPs->getData<polyMPO::MPF_Cur_Elm_ID>();
-  
-  kkIntViewHostU arrayHost(elmIDs,numMPs);
-  polyMPO::IntView mpCurElmIDCopy("mpCurElmIDNewValue",numMPs);
-  Kokkos::deep_copy(mpCurElmIDCopy,arrayHost);
-
-  auto setVel = PS_LAMBDA(const int& elm, const int& mp, const int& mask){
-    if(mask){
-        mpCurElmID(mp) = mpCurElmIDCopy(mp);
-    }else{
-        mpCurElmID(mp) = MP_DETACHED;
-    }
-  };
-  p_MPs->parallel_for(setVel, "set mpCurElmID");
-}
-
 void polympo_getMPCurElmID(MPMesh_ptr p_mpmesh,
                            int numMPs,
                            int* elmIDs){

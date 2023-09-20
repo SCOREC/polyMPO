@@ -8,6 +8,18 @@ subroutine assert(condition,message)
   endif
 end subroutine
 
+module mpMesh_ptr
+use iso_c_binding
+implicit none
+
+  type(c_ptr):: mpMesh
+contains
+  subroutine createMPMesh(setMeshOption, setMPOption)
+    integer:: setMeshOption, setMPOption
+    mpMesh = polympo_createMPMesh(setMeshOption,setMPOption) !creates test mesh
+  end subroutine
+end module
+
 !---------------------------------------------------------------------------
 !> This is a test on the set/get APIs provided in polyMPO
 !> These fields can be set and get at anytime
@@ -16,6 +28,7 @@ end subroutine
 program main
   use polympo
   use iso_c_binding
+  use mpMesh_ptr
   implicit none
   include 'mpif.h'
     
@@ -32,7 +45,7 @@ program main
   real(kind=APP_RKIND), dimension(:,:), pointer :: Mesharray
   real(kind=APP_RKIND), dimension(:), pointer :: xArray, yArray, zArray
   integer :: ierr, self
-  type(c_ptr) :: mpMesh
+!  type(c_ptr) :: mpMesh
 
   call mpi_init(ierr)
   call mpi_comm_rank(mpi_comm_handle, self, ierr)
@@ -43,7 +56,8 @@ program main
   call polympo_checkPrecisionForRealKind(APP_RKIND)
   setMeshOption = 1 !create a hard coded planar test mesh
   setMPOption = 1 !create some random test MPs that based on the mesh option you give
-  mpMesh = polympo_createMPMesh(setMeshOption,setMPOption) !creates test mesh
+  call createMPMesh(setMeshOption, setMPOption)
+
  
   !These are hard coded test mesh values 
   nverts = 19 !todo use getNumVtx from the Mesh object

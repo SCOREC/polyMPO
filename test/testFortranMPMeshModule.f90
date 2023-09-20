@@ -45,7 +45,6 @@ program main
   real(kind=APP_RKIND), dimension(:,:), pointer :: Mesharray
   real(kind=APP_RKIND), dimension(:), pointer :: xArray, yArray, zArray
   integer :: ierr, self
-!  type(c_ptr) :: mpMesh
 
   call mpi_init(ierr)
   call mpi_comm_rank(mpi_comm_handle, self, ierr)

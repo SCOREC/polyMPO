@@ -9,6 +9,7 @@ subroutine assert(condition,message)
 end subroutine
 
 module mpMesh_ptr
+use polympo
 use iso_c_binding
 implicit none
 

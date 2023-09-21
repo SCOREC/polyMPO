@@ -22,9 +22,9 @@ contains
 end module
 
 !---------------------------------------------------------------------------
-!> This is a test on the set/get APIs provided in polyMPO
-!> These fields can be set and get at anytime
-!> For specific usage, see src/pmpo_fortran 
+!> This is a test of use a module to create mpMesh pointer for polyMPO
+!> The test are exatly the same as test/testFortran.f90
+!> For specific usage of binding functions, see src/pmpo_fortran 
 !---------------------------------------------------------------------------
 program main
   use polympo

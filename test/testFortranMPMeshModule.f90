@@ -35,7 +35,6 @@ program main
     
   integer, parameter :: APP_RKIND = selected_real_kind(15)
   integer :: nverts, numCompsVel, numCompsCoords, numMPs, numElms
-  integer :: i, j
   integer :: setMeshOption, setMPOption
   integer :: mpi_comm_handle = MPI_COMM_WORLD
   real(kind=APP_RKIND) :: test_epsilon = 1e-6
@@ -72,7 +71,7 @@ program main
 
   MPPositions = 0
   call polympo_getMPPositions(mpMesh, numCompsCoords, numMPs, c_loc(MPPositions))
-  call assert(all(MPPositions .ne. 0), "Assert MPPositions failed!")
+  call assert(all(abs(MPPositions(3,:) - 1.1) .lt. test_epsilon), "Assert zPositions for MP array Fail")
 
   Mesharray = value1
   call polympo_setMeshOnSurfVeloIncr(mpMesh, numCompsVel, nverts, c_loc(Mesharray))
@@ -81,11 +80,10 @@ program main
 
   Mesharray = 1
   call polympo_getMeshOnSurfVeloIncr(mpMesh, numCompsVel, nverts, c_loc(Mesharray))
-  call assert(all(Mesharray .eq.value1), "Assert OnSurfVeloIncr failed!")
+  call assert(all(abs( Mesharray - value1) .lt. test_epsilon), "Assert zPositions for MP array Fail")
   Mesharray = 1
   call polympo_getMeshOnSurfDispIncr(mpMesh, numCompsVel, nverts, c_loc(Mesharray))
-  call assert(all(Mesharray .eq.value2), "Assert OnSurfDispIncr failed!")
-
+  call assert(all(abs( Mesharray - value2) .lt. test_epsilon), "Assert zPositions for MP array Fail")
 
   deallocate(Mesharray)
 

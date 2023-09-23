@@ -51,6 +51,7 @@ pmpo_add_exe(timeAssmblyWachspress testTiming.cpp)
 pmpo_add_fortran_exe(testFortranInit testFortranInit.f90)
 pmpo_add_fortran_exe(testFortran testFortran.f90)
 pmpo_add_fortran_exe(testFortranReadMPAS testFortranReadMPAS.f90)
+pmpo_add_fortran_exe(testFortranMPMeshModule testFortranMPMeshModule.f90)
 
 #add test
 find_program(MPIRUN_EXECUTABLE NAMES mpirun) 
@@ -72,6 +73,7 @@ pmpo_add_test(test_tracking ./testTracking)
 pmpo_add_test(test_rebuild ./testRebuild)
 pmpo_add_test(testFortranInit ./testFortranInit)
 pmpo_add_test(testFortran ./testFortran)
+pmpo_add_test(testFortranMPMeshModule ./testFortranMPMeshModule)
 
 #set NC file for test
 set(TEST_NC_FILE_PLANAR "${CMAKE_SOURCE_DIR}/test/sample_mpas_meshes/planar_nonuniform_cvt_for_square_673elms.nc")

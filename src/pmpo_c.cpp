@@ -192,9 +192,9 @@ void polympo_getMPCurElmID(MPMesh_ptr p_mpmesh,
 }
 
 void polympo_setMPPositions(MPMesh_ptr p_mpmesh,
-                           int numComps,
-                           int numMPs,
-                           double* mpPositionsIn){
+                            int numComps,
+                            int numMPs,
+                            double* mpPositionsIn){
   checkMPMeshValid(p_mpmesh);
   auto p_MPs = ((polyMPO::MPMesh*)p_mpmesh)->p_MPs;
   PMT_ALWAYS_ASSERT(numComps == vec3d_nEntries);
@@ -208,12 +208,13 @@ void polympo_setMPPositions(MPMesh_ptr p_mpmesh,
   Kokkos::deep_copy(mpPositionsIn_d, mpPositionsIn_h);
   auto setPos = PS_LAMBDA(const int& elm, const int& mp, const int& mask){
     if(mask){
-      mpPositions(0,mp) = mpPositionsIn_d(mpAppID(mp),0);
-      mpPositions(1,mp) = mpPositionsIn_d(mpAppID(mp),1);
-      mpPositions(2,mp) = mpPositionsIn_d(mpAppID(mp),2);
+      mpPositions(mp,0) = mpPositionsIn_d(0, mpAppID(mp));
+      mpPositions(mp,1) = mpPositionsIn_d(1, mpAppID(mp));
+      mpPositions(mp,2) = mpPositionsIn_d(2, mpAppID(mp));
     }
   };
   p_MPs->parallel_for(setPos, "setMPPositions");
+  assert(cudaSuccess == cudaDeviceSynchronize());
 }
 
 void polympo_getMPPositions(MPMesh_ptr p_mpmesh,

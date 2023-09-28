@@ -198,7 +198,8 @@ void polympo_setMPPositions(MPMesh_ptr p_mpmesh,
   checkMPMeshValid(p_mpmesh);
   auto p_MPs = ((polyMPO::MPMesh*)p_mpmesh)->p_MPs;
   PMT_ALWAYS_ASSERT(numComps == vec3d_nEntries);
-  PMT_ALWAYS_ASSERT(numMPs == p_MPs->getCount());
+  PMT_ALWAYS_ASSERT(numMPs >= p_MPs->getCount());
+  //PMT_ALWAYS_ASSERT(numMPs >= maxMpAppID); //add max reduction to creation
 
   auto mpPositions = p_MPs->getData<polyMPO::MPF_Cur_Pos_XYZ>();
   auto mpAppID = p_MPs->getData<polyMPO::MPF_MP_APP_ID>();
@@ -207,9 +208,9 @@ void polympo_setMPPositions(MPMesh_ptr p_mpmesh,
   Kokkos::deep_copy(mpPositionsIn_d, mpPositionsIn_h);
   auto setPos = PS_LAMBDA(const int& elm, const int& mp, const int& mask){
     if(mask){
-        mpPositions(0,mpAppID(mp)) = mpPositionsIn_d(mp,0);
-        mpPositions(1,mpAppID(mp)) = mpPositionsIn_d(mp,1);
-        mpPositions(2,mpAppID(mp)) = mpPositionsIn_d(mp,2);
+      mpPositions(0,mp) = mpPositionsIn_d(mpAppID(mp),0);
+      mpPositions(1,mp) = mpPositionsIn_d(mpAppID(mp),1);
+      mpPositions(2,mp) = mpPositionsIn_d(mpAppID(mp),2);
     }
   };
   p_MPs->parallel_for(setPos, "setMPPositions");

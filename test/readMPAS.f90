@@ -108,6 +108,12 @@ subroutine loadMPASMesh(mpMesh, filename)
     end do
 
     call polympo_setMPPositions(mpMesh,nDims,numMPs,c_loc(mpPosition))
+    call polympo_getMPPositions(mpMesh,nDims,numMPs,c_loc(mpPosition))
+    do i = 1,numMPs
+      call assert(mpPosition(1,i) .eq. i+0.1, "x position of MP does not match")
+      call assert(mpPosition(2,i) .eq. numMPs+i+0.1, "y position of MP does not match")
+      call assert(mpPosition(3,i) .eq. (2*numMPs)+i+0.1, "z position of MP does not match")
+    end do
     
     mp2Elm = -99 !override values and then use get function below
     call polympo_getMPCurElmID(mpMesh,numMPs,c_loc(mp2Elm))

@@ -224,7 +224,7 @@ void polympo_getMPPositions(MPMesh_ptr p_mpmesh,
   checkMPMeshValid(p_mpmesh);
   auto p_MPs = ((polyMPO::MPMesh*)p_mpmesh)->p_MPs;
   PMT_ALWAYS_ASSERT(numComps == vec3d_nEntries);
-  PMT_ALWAYS_ASSERT(numMPs == p_MPs->getCount());
+  PMT_ALWAYS_ASSERT(numMPs >= p_MPs->getCount());
 
   auto mpPositions = p_MPs->getData<polyMPO::MPF_Cur_Pos_XYZ>();
   auto mpAppID = p_MPs->getData<polyMPO::MPF_MP_APP_ID>();

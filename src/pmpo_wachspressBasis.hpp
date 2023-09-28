@@ -196,5 +196,53 @@ void getBasisByAreaGblForm_1(Vec2d MP, int numVtxs, Vec2d* vtxCoords, double* ba
 } // getBasisByAreaBblForm_1
 */
 
+//TODO: add comments
+template <MeshFieldIndex mfIndex, MaterialPointSlice mpfIndex>
+void interpolation(MPMesh& mpMesh){
+    auto p_mesh = mpMesh.p_mesh;
+    auto vtxCoords = p_mesh->getMeshField<polyMPO::MeshF_VtxCoords>();
+    int numVtxs = p_mesh->getNumVertices();
+    auto elm2VtxConn = p_mesh->getElm2VtxConn();
+   
+    auto p_MPs = mpMesh.p_MPs;
+    auto MPsPosition = p_MPs->getPositions();
+    double radius = p_mesh->getSphereRadius();
+    PMT_ALWAYS_ASSERT(radius >0);
+    auto mpField = p_MPs->getData<mpfIndex>();
+    
+    const int numEntries = mpSlice2MeshFieldIndex.at(mpfIndex).first;
+    const MeshFieldIndex meshFieldIndex = mpSlice2MeshFieldIndex.at(mpfIndex).second;
+    PMT_ALWAYS_ASSERT(meshFieldIndex == mfIndex);
+    auto meshField = p_mesh->getMeshField<mfIndex>(); 
+
+    auto interpolation = PS_LAMBDA(const int& elm, const int& mp, const int& mask) {
+        if(mask) { //if material point is 'active'/'enabled'
+            Vec3d position3d(MPsPosition(mp,0),MPsPosition(mp,1),MPsPosition(mp,2));
+            Vec3d v3d[maxVtxsPerElm+1];
+            int numVtx = elm2VtxConn(elm,0);
+            for(int i = 1; i<=numVtx; i++){
+                v3d[i-1][0] = vtxCoords(elm2VtxConn(elm,i)-1,0);
+                v3d[i-1][1] = vtxCoords(elm2VtxConn(elm,i)-1,1);
+                v3d[i-1][2] = vtxCoords(elm2VtxConn(elm,i)-1,2);
+                //printf("%d:(%f,%f,%f)\n",i-1,v3d[i-1][0],v3d[i-1][1],v3d[i-1][2]);
+            }
+            v3d[numVtx][0] = vtxCoords(elm2VtxConn(elm,1)-1,0);
+            v3d[numVtx][1] = vtxCoords(elm2VtxConn(elm,1)-1,1);
+            v3d[numVtx][2] = vtxCoords(elm2VtxConn(elm,1)-1,2);
+            
+            double basisByArea3d[maxVtxsPerElm] = {0.0};
+            initArray(basisByArea3d,maxVtxsPerElm,0.0);
+            getBasisByAreaGblFormSpherical2(position3d, numVtx, v3d, radius, basisByArea3d);
+            
+            Vec3d wp_coord(0.0,0.0,0.0);//TODO: how to deal with different type of fields?
+            for(int i=0; i<= numVtx; i++){
+                wp_coord = wp_coord + v3d[i]*basisByArea3d[i];
+            }
+            mpField(mp) = wp_coord;
+        }
+    };
+    p_MPs->parallel_for(interpolation, "interpolation");
+}
+
 } //namespace polyMPO end
 #endif

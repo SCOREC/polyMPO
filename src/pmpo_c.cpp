@@ -230,14 +230,14 @@ void polympo_getMPPositions(MPMesh_ptr p_mpmesh,
   auto mpAppID = p_MPs->getData<polyMPO::MPF_MP_APP_ID>();
   kkDbl2dViewHostU arrayHost(mpPositionsIn,numComps,numMPs);
   Kokkos::View<double**> mpPositionsCopy("mpPositionsCopy",vec3d_nEntries,numMPs);
-  auto setVel = PS_LAMBDA(const int& elm, const int& mp, const int& mask){
+  auto getPos = PS_LAMBDA(const int& elm, const int& mp, const int& mask){
     if(mask){
-        mpPositionsCopy(0,mpAppID(mp)) = mpPositions(mp,0);
-        mpPositionsCopy(1,mpAppID(mp)) = mpPositions(mp,1);
-        mpPositionsCopy(2,mpAppID(mp)) = mpPositions(mp,2);
+      mpPositionsCopy(0,mpAppID(mp)) = mpPositions(mp,0);
+      mpPositionsCopy(1,mpAppID(mp)) = mpPositions(mp,1);
+      mpPositionsCopy(2,mpAppID(mp)) = mpPositions(mp,2);
     }
   };
-  p_MPs->parallel_for(setVel, "getMPPositions");
+  p_MPs->parallel_for(getPos, "getMPPositions");
   Kokkos::deep_copy(arrayHost, mpPositionsCopy);
 }
 

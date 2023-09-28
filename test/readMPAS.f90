@@ -30,12 +30,16 @@ subroutine loadMPASMesh(mpMesh, filename)
     character (len=64) :: onSphere, stringYes = "YES"
     integer :: i
     integer :: maxEdges, vertexDegree, nCells, nVertices
+    integer :: nDims !FIXME - parameter???
     integer :: numMPs
     real(kind=MPAS_RKIND) :: sphereRadius
     integer, dimension(:), pointer :: nEdgesOnCell
     real(kind=MPAS_RKIND), dimension(:), pointer :: xVertex, yVertex, zVertex
     integer, dimension(:,:), pointer :: verticesOnCell, cellsOnCell
     integer, dimension(:), pointer :: mpsPerElm, mp2Elm, isMPActive
+    real(kind=MPAS_RKIND), dimension(:,:), pointer :: mpPosition
+
+    nDims = 3
     
     call readMPASMesh(trim(filename), maxEdges, vertexDegree, &
                               nCells, nVertices, nEdgesOnCell, &
@@ -94,6 +98,16 @@ subroutine loadMPASMesh(mpMesh, filename)
                       !i=numMPs leads to mp2Elm(numMPs=nCells+2)=numMPs-2=nCells
     end do
     call polympo_createMPs(mpMesh,nCells,numMPs,c_loc(mpsPerElm),c_loc(mp2Elm),c_loc(isMPActive))
+
+    !set mp positions
+    allocate(mpPosition(nDims,numMPs))
+    do i = 1,numMPs
+      mpPosition(0,i) = i+0.1
+      mpPosition(1,i) = numMPs+i+0.1
+      mpPosition(2,i) = (2*numMPs)+i+0.1
+    end do
+
+    call polympo_setMPPositions(mpMesh,nDims,numMPs,c_loc(mpPosition))
     
     mp2Elm = -99 !override values and then use get function below
     call polympo_getMPCurElmID(mpMesh,numMPs,c_loc(mp2Elm))

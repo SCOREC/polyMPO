@@ -22,9 +22,10 @@ void polympo_setMPICommunicator(MPI_Fint fcomm);//TODO:is MPI_Fint best? or some
 //MP info
 void polympo_createMPs(MPMesh_ptr p_mpmesh, int numElms, int numMPs, int* mpsPerElm, int* mp2Elm, int* isMPActive);
 void polympo_getMPCurElmID(MPMesh_ptr p_mpmesh, int numMPs, int* elmIDs);
-void polympo_getMPPositions(MPMesh_ptr p_mpmesh, int numComps, int numMPs, double* mpPositionsIn);
 
 //MP slices
+void polympo_getMPPositions(MPMesh_ptr p_mpmesh, int numComps, int numMPs, double* mpPositionsIn);
+void polympo_setMPPositions(MPMesh_ptr p_mpmesh, int numComps, int numMPs, double* mpPositionsIn);
 void polympo_setMPVel(MPMesh_ptr p_mpmesh, int size, double* array);
 void polympo_getMPVel(MPMesh_ptr p_mpmesh, int size, double* array);
 

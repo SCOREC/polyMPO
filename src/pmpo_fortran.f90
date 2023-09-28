@@ -99,6 +99,21 @@ module polympo
     type(c_ptr), value :: array
   end subroutine
   !---------------------------------------------------------------------------
+  !> @brief set the MP positions array from a host array
+  !> @param mpmesh(in/out) MPMesh object
+  !> @param nComps(in) number of components, should always be 3
+  !> @param numMPs(in) number of the MPs
+  !> @param array(in) MP current position 2D array (3,numMPs), allocated by user on host
+  !---------------------------------------------------------------------------
+  subroutine polympo_setMPPositions(mpMesh, nComps, numMPs, array) &
+             bind(C, NAME='polympo_getMPPositions')
+    use :: iso_c_binding
+    type(c_ptr), value :: mpMesh
+    integer(c_int), value :: nComps, numMPs
+    type(c_ptr), value :: array
+  end subroutine
+
+  !---------------------------------------------------------------------------
   !> @brief set the velocity MP array from a host array
   !> @warning THIS IS NOT SUPPORTED YET 
   !> @param mpmesh(in/out) MPMesh object

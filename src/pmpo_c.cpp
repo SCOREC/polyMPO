@@ -191,6 +191,30 @@ void polympo_getMPCurElmID(MPMesh_ptr p_mpmesh,
   Kokkos::deep_copy( arrayHost, mpCurElmIDCopy);
 }
 
+void polympo_setMPPositions(MPMesh_ptr p_mpmesh,
+                           int numComps,
+                           int numMPs,
+                           double* mpPositionsIn){
+  checkMPMeshValid(p_mpmesh);
+  auto p_MPs = ((polyMPO::MPMesh*)p_mpmesh)->p_MPs;
+  PMT_ALWAYS_ASSERT(numComps == vec3d_nEntries);
+  PMT_ALWAYS_ASSERT(numMPs == p_MPs->getCount());
+
+  auto mpPositions = p_MPs->getData<polyMPO::MPF_Cur_Pos_XYZ>();
+  auto mpAppID = p_MPs->getData<polyMPO::MPF_MP_APP_ID>();
+  kkDbl2dViewHostU mpPositionsIn_h(mpPositionsIn,numComps,numMPs);
+  Kokkos::View<double**> mpPositionsIn_d("mpPositionsDevice",vec3d_nEntries,numMPs);
+  Kokkos::deep_copy(mpPositionsIn_d, mpPositionsIn_h);
+  auto setPos = PS_LAMBDA(const int& elm, const int& mp, const int& mask){
+    if(mask){
+        mpPositions(0,mpAppID(mp)) = mpPositionsIn_d(mp,0);
+        mpPositions(1,mpAppID(mp)) = mpPositionsIn_d(mp,1);
+        mpPositions(2,mpAppID(mp)) = mpPositionsIn_d(mp,2);
+    }
+  };
+  p_MPs->parallel_for(setPos, "setMPPositions");
+}
+
 void polympo_getMPPositions(MPMesh_ptr p_mpmesh,
                            int numComps,
                            int numMPs,
@@ -201,16 +225,17 @@ void polympo_getMPPositions(MPMesh_ptr p_mpmesh,
   PMT_ALWAYS_ASSERT(numMPs == p_MPs->getCount());
 
   auto mpPositions = p_MPs->getData<polyMPO::MPF_Cur_Pos_XYZ>();
+  auto mpAppID = p_MPs->getData<polyMPO::MPF_MP_APP_ID>();
   kkDbl2dViewHostU arrayHost(mpPositionsIn,numComps,numMPs);
   Kokkos::View<double**> mpPositionsCopy("mpPositionsCopy",vec3d_nEntries,numMPs);
   auto setVel = PS_LAMBDA(const int& elm, const int& mp, const int& mask){
     if(mask){
-        mpPositionsCopy(0,mp) = mpPositions(mp,0);
-        mpPositionsCopy(1,mp) = mpPositions(mp,1);
-        mpPositionsCopy(2,mp) = mpPositions(mp,2);
+        mpPositionsCopy(0,mpAppID(mp)) = mpPositions(mp,0);
+        mpPositionsCopy(1,mpAppID(mp)) = mpPositions(mp,1);
+        mpPositionsCopy(2,mpAppID(mp)) = mpPositions(mp,2);
     }
   };
-  p_MPs->parallel_for(setVel, "get mpCurElmID");
+  p_MPs->parallel_for(setVel, "getMPPositions");
   Kokkos::deep_copy(arrayHost, mpPositionsCopy);
 }
 

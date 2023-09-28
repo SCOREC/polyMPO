@@ -102,9 +102,9 @@ subroutine loadMPASMesh(mpMesh, filename)
     !set mp positions
     allocate(mpPosition(nDims,numMPs))
     do i = 1,numMPs
-      mpPosition(0,i) = i+0.1
-      mpPosition(1,i) = numMPs+i+0.1
-      mpPosition(2,i) = (2*numMPs)+i+0.1
+      mpPosition(1,i) = i+0.1
+      mpPosition(2,i) = numMPs+i+0.1
+      mpPosition(3,i) = (2*numMPs)+i+0.1
     end do
 
     call polympo_setMPPositions(mpMesh,nDims,numMPs,c_loc(mpPosition))
@@ -120,6 +120,7 @@ subroutine loadMPASMesh(mpMesh, filename)
     end do
     !test end
 
+    deallocate(mpPosition)
     deallocate(mpsPerElm)
     deallocate(mp2Elm)
     deallocate(isMPActive)

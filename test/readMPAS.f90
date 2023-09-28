@@ -108,6 +108,7 @@ subroutine loadMPASMesh(mpMesh, filename)
     end do
 
     call polympo_setMPPositions(mpMesh,nDims,numMPs,c_loc(mpPosition))
+    mpPosition = 0
     call polympo_getMPPositions(mpMesh,nDims,numMPs,c_loc(mpPosition))
     do i = 1,numMPs
       if(isMPActive(i) .eq. 1) then

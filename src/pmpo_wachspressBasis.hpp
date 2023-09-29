@@ -234,11 +234,14 @@ void interpolation(MPMesh& mpMesh){
             initArray(basisByArea3d,maxVtxsPerElm,0.0);
             getBasisByAreaGblFormSpherical2(position3d, numVtx, v3d, radius, basisByArea3d);
             
-            Vec3d wp_coord(0.0,0.0,0.0);//TODO: how to deal with different type of fields?
-            for(int i=0; i<= numVtx; i++){
-                wp_coord = wp_coord + v3d[i]*basisByArea3d[i];
+            for(int entry=0; entry<numEntries; entry++){//TODO: how to deal with different type of fields?
+                double mpValue = 0.0;
+                for(int i=0; i<= numVtx; i++){
+                    //wp_coord = wp_coord + v3d[i]*basisByArea3d[i];
+                    mpValue += meshField(elm2VtxConn(elm,i))*basisByArea3d[i];
+                }
+                mpField(mp,entry) = mpValue;
             }
-            mpField(mp) = wp_coord;
         }
     };
     p_MPs->parallel_for(interpolation, "interpolation");

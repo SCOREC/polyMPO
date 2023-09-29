@@ -53,7 +53,7 @@ const static std::map<MaterialPointSlice, std::pair<int,MeshFieldIndex>>
                            {MPF_Tgt_Elm_ID,      {0,MeshF_Invalid}},
                            {MPF_Cur_Pos_Lat_Lon, {2,MeshF_Invalid}},
                            {MPF_Tgt_Pos_Lat_Lon, {2,MeshF_Invalid}},
-                           {MPF_Cur_Pos_XYZ,     {3,MeshF_Invalid}},
+                           {MPF_Cur_Pos_XYZ,     {3,MeshF_VtxCoords}},
                            {MPF_Tgt_Pos_XYZ,     {3,MeshF_Invalid}},
                            {MPF_Flag_Basis_Vals, {1,MeshF_Invalid}},
                            {MPF_Basis_Vals,      {maxVtxsPerElm,MeshF_Invalid}},

@@ -67,7 +67,6 @@ endfunction()
 
 pmpo_add_test(unit_test ./unitTest)
 pmpo_add_test(mp_unit_test ./mpUnitTest)
-pmpo_add_test(test_wachspress ./testWachspress)
 pmpo_add_test(test_reconstruction ./testReconstruction)
 pmpo_add_test(test_tracking ./testTracking)
 pmpo_add_test(test_rebuild ./testRebuild)
@@ -86,3 +85,4 @@ endif()
 pmpo_add_test(testFortranReadMPAS ./testFortranReadMPAS ${TEST_NC_FILE})
 
 pmpo_add_test(test_timing ./timeAssmblyWachspress 1 ${TEST_NC_FILE})
+pmpo_add_test(test_wachspress ./testWachspress ${TEST_NC_FILE})

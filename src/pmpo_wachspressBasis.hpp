@@ -224,7 +224,6 @@ void interpolation(MPMesh& mpMesh){
                 v3d[i-1][0] = vtxCoords(elm2VtxConn(elm,i)-1,0);
                 v3d[i-1][1] = vtxCoords(elm2VtxConn(elm,i)-1,1);
                 v3d[i-1][2] = vtxCoords(elm2VtxConn(elm,i)-1,2);
-                //printf("%d:(%f,%f,%f)\n",i-1,v3d[i-1][0],v3d[i-1][1],v3d[i-1][2]);
             }
             v3d[numVtx][0] = vtxCoords(elm2VtxConn(elm,1)-1,0);
             v3d[numVtx][1] = vtxCoords(elm2VtxConn(elm,1)-1,1);
@@ -234,11 +233,11 @@ void interpolation(MPMesh& mpMesh){
             initArray(basisByArea3d,maxVtxsPerElm,0.0);
             getBasisByAreaGblFormSpherical2(position3d, numVtx, v3d, radius, basisByArea3d);
             
-            for(int entry=0; entry<numEntries; entry++){//TODO: how to deal with different type of fields?
+            for(int entry=0; entry<numEntries; entry++){
                 double mpValue = 0.0;
                 for(int i=0; i<= numVtx; i++){
                     //wp_coord = wp_coord + v3d[i]*basisByArea3d[i];
-                    mpValue += meshField(elm2VtxConn(elm,i))*basisByArea3d[i];
+                    mpValue += meshField(elm2VtxConn(elm,i),entry)*basisByArea3d[i];
                 }
                 mpField(mp,entry) = mpValue;
             }

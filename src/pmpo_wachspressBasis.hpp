@@ -129,6 +129,26 @@ void getBasisByAreaGblForm(Vec2d MP, int numVtxs, Vec2d* vtxCoords, double* basi
     calcBasis(numVtxs, a, c, basis);
 }// getBasisByAreaBblForm
 
+KOKKOS_INLINE_FUNCTION
+void getBasisByAreaBblForm3d(Vec3d MP, int numVtxs, Vec3d* vtxCoords, double* basis) {
+    Vec3d e[maxVtxsPerElm + 1];
+    Vec3d p[maxVtxsPerElm];
+    for (int i = 0; i < numVtxs; i++){
+        e[i + 1] = vtxCoords[i + 1] - vtxCoords[i];
+        p[i] = vtxCoords[i] - MP;
+    }
+    e[0] = e[numVtxs];
+
+    double c[maxVtxsPerElm];
+    double a[maxVtxsPerElm];
+    for (int i = 0; i < numVtxs; i++){
+        c[i] = e[i].cross(e[i + 1]).magnitude()/(double) 2.0;
+        a[i] = p[i].cross(e[i + 1]).magnitude()/(double) 2.0;
+    }
+
+    calcBasis(numVtxs, a, c, basis);
+}// getBasisByAreaBblForm
+
 //3d
 KOKKOS_INLINE_FUNCTION
 void getBasisByAreaGblFormSpherical(Vec3d MP, int numVtxs, Vec3d* v,

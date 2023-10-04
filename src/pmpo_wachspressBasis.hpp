@@ -198,7 +198,7 @@ void getBasisByAreaGblForm_1(Vec2d MP, int numVtxs, Vec2d* vtxCoords, double* ba
 
 //TODO: add comments
 template <MeshFieldIndex mfIndex, MaterialPointSlice mpfIndex>
-void interpolation(MPMesh& mpMesh){
+void sphericalInterpolation(MPMesh& mpMesh){
     auto p_mesh = mpMesh.p_mesh;
     auto vtxCoords = p_mesh->getMeshField<polyMPO::MeshF_VtxCoords>();
     int numVtxs = p_mesh->getNumVertices();

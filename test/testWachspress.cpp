@@ -25,11 +25,10 @@ int main(int argc, char** argv) {
         polyMPO::assembly<MPF_Vel,MeshF_Vel>(mpMesh,false,false);
         interpolateWachspress2DTest(mpMesh);
 
-        //test new interpolation function
+        //test new sphericalInterpolation function
         if(argc == 2){
             void* p;
-            setWithMPASMeshByFortran(&p, argv[1], (int)strlen(argv[1]));\
-            testMPOption = 1; 
+            setWithMPASMeshByFortran(&p, argv[1], (int)strlen(argv[1]));
             auto mpmesh = initTestMPMesh(((MPMesh*)p)->p_mesh,testMPOption);
             auto p_mesh = mpmesh.p_mesh;
             auto p_MPs = mpmesh.p_MPs;
@@ -45,7 +44,7 @@ int main(int argc, char** argv) {
                 };
                 p_MPs->parallel_for(setVel, "setVel=CurPosXY");
                
-                interpolation<MeshF_Vel, MPF_Vel>(mpmesh);
+                sphericalInterpolation<MeshF_Vel, MPF_Vel>(mpmesh);
                 
                 auto mpVel = p_MPs->getData<MPF_Vel>();
                 auto mpCurPosXYZ = p_MPs->getData<MPF_Cur_Pos_XYZ>();

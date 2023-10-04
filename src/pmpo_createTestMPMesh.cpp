@@ -119,18 +119,9 @@ MaterialPoints* initTestMPs(Mesh* mesh, int testMPOption){
 
     int numMPs = 0;
     IntView numMPsPerElement("numMaterialPointsPerElement",numElms);
-    if(mpPerElement.empty()) {
-      Kokkos::Random_XorShift64_Pool<> random_pool(randSeed);
-      Kokkos::parallel_for("setNumMPPerElement",numElms, KOKKOS_LAMBDA(const int i){
-          auto generator = random_pool.get_state();
-          numMPsPerElement(i) = generator.urand(4,7);
-          random_pool.free_state(generator);
-      });
-    } else {
-      PMT_ALWAYS_ASSERT(static_cast<size_t>(mesh->getNumElements()) == mpPerElement.size());
-      Kokkos::View<int*, Kokkos::HostSpace> mpPerElement_hv(mpPerElement.data(),mpPerElement.size());
-      Kokkos::deep_copy(numMPsPerElement,mpPerElement_hv);
-    }
+    PMT_ALWAYS_ASSERT(static_cast<size_t>(mesh->getNumElements()) == mpPerElement.size());
+    Kokkos::View<int*, Kokkos::HostSpace> mpPerElement_hv(mpPerElement.data(),mpPerElement.size());
+    Kokkos::deep_copy(numMPsPerElement,mpPerElement_hv);
 
     Kokkos::parallel_reduce("calcTotalMP",numElms,KOKKOS_LAMBDA(const int&i, int& sum){
         sum += numMPsPerElement(i);

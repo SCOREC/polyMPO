@@ -202,6 +202,8 @@ void polympo_setMPPositions(MPMesh_ptr p_mpmesh,
                             int numComps,
                             int numMPs,
                             double* mpPositionsIn){
+  static int callCount = 0;
+  PMT_ALWAYS_ASSERT(callCount == 0);
   checkMPMeshValid(p_mpmesh);
   auto p_MPs = ((polyMPO::MPMesh*)p_mpmesh)->p_MPs;
   PMT_ALWAYS_ASSERT(numComps == vec3d_nEntries);
@@ -221,6 +223,7 @@ void polympo_setMPPositions(MPMesh_ptr p_mpmesh,
     }
   };
   p_MPs->parallel_for(setPos, "setMPPositions");
+  callCount++;
 }
 
 void polympo_getMPPositions(MPMesh_ptr p_mpmesh,

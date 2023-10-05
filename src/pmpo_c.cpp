@@ -224,9 +224,9 @@ void polympo_setMPPositions(MPMesh_ptr p_mpmesh,
 }
 
 void polympo_getMPPositions(MPMesh_ptr p_mpmesh,
-                           int numComps,
-                           int numMPs,
-                           double* mpPositionsHost){
+                            int numComps,
+                            int numMPs,
+                            double* mpPositionsHost){
   checkMPMeshValid(p_mpmesh);
   auto p_MPs = ((polyMPO::MPMesh*)p_mpmesh)->p_MPs;
   PMT_ALWAYS_ASSERT(numComps == vec3d_nEntries);

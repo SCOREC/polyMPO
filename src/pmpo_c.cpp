@@ -77,6 +77,13 @@ typedef Kokkos::View<
           Kokkos::DefaultHostExecutionSpace,
           Kokkos::MemoryTraits<Kokkos::Unmanaged>
         > kkVec2dViewHostU;//TODO:put it to mesh.hpp
+
+typedef Kokkos::View<
+          double*[vec3d_nEntries],
+          Kokkos::LayoutLeft,
+          Kokkos::DefaultHostExecutionSpace,
+          Kokkos::MemoryTraits<Kokkos::Unmanaged>
+        > kkVec3dViewHostU;//TODO:put it to mesh.hpp
                          
 typedef Kokkos::View<
           double**,
@@ -203,7 +210,7 @@ void polympo_setMPPositions(MPMesh_ptr p_mpmesh,
 
   auto mpPositions = p_MPs->getData<polyMPO::MPF_Cur_Pos_XYZ>();
   auto mpAppID = p_MPs->getData<polyMPO::MPF_MP_APP_ID>();
-  kkDbl2dViewHostU mpPositionsIn_h(mpPositionsIn,numComps,numMPs);
+  kkVec3dViewHostU mpPositionsIn_h(mpPositionsIn,numMPs);
   Kokkos::View<double**> mpPositionsIn_d("mpPositionsDevice",vec3d_nEntries,numMPs);
   Kokkos::deep_copy(mpPositionsIn_d, mpPositionsIn_h);
   auto setPos = PS_LAMBDA(const int& elm, const int& mp, const int& mask){
@@ -214,7 +221,6 @@ void polympo_setMPPositions(MPMesh_ptr p_mpmesh,
     }
   };
   p_MPs->parallel_for(setPos, "setMPPositions");
-  assert(cudaSuccess == cudaDeviceSynchronize());
 }
 
 void polympo_getMPPositions(MPMesh_ptr p_mpmesh,
@@ -228,7 +234,7 @@ void polympo_getMPPositions(MPMesh_ptr p_mpmesh,
 
   auto mpPositions = p_MPs->getData<polyMPO::MPF_Cur_Pos_XYZ>();
   auto mpAppID = p_MPs->getData<polyMPO::MPF_MP_APP_ID>();
-  kkDbl2dViewHostU arrayHost(mpPositionsIn,numComps,numMPs);
+  kkVec3dViewHostU arrayHost(mpPositionsIn,numMPs);
   Kokkos::View<double**> mpPositionsCopy("mpPositionsCopy",vec3d_nEntries,numMPs);
   auto getPos = PS_LAMBDA(const int& elm, const int& mp, const int& mask){
     if(mask){

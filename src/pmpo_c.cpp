@@ -226,7 +226,7 @@ void polympo_setMPPositions(MPMesh_ptr p_mpmesh,
 void polympo_getMPPositions(MPMesh_ptr p_mpmesh,
                            int numComps,
                            int numMPs,
-                           double* mpPositionsIn){ 
+                           double* mpPositionsHost){
   checkMPMeshValid(p_mpmesh);
   auto p_MPs = ((polyMPO::MPMesh*)p_mpmesh)->p_MPs;
   PMT_ALWAYS_ASSERT(numComps == vec3d_nEntries);
@@ -234,7 +234,7 @@ void polympo_getMPPositions(MPMesh_ptr p_mpmesh,
 
   auto mpPositions = p_MPs->getData<polyMPO::MPF_Cur_Pos_XYZ>();
   auto mpAppID = p_MPs->getData<polyMPO::MPF_MP_APP_ID>();
-  kkVec3dViewHostU arrayHost(mpPositionsIn,numMPs);
+  kkVec3dViewHostU arrayHost(mpPositionsHost,numMPs);
   Kokkos::View<double**> mpPositionsCopy("mpPositionsCopy",vec3d_nEntries,numMPs);
   auto getPos = PS_LAMBDA(const int& elm, const int& mp, const int& mask){
     if(mask){

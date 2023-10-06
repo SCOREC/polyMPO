@@ -24,6 +24,7 @@ int main(int argc, char** argv) {
         //test assembly in assembly.hpp
         polyMPO::assembly<MPF_Vel,MeshF_Vel>(mpMesh,false,false);
         interpolateWachspress2DTest(mpMesh);
+        interpolateWachspress3DTest2(mpMesh);
     }
     
     Kokkos::finalize();

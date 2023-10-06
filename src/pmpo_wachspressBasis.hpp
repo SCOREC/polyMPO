@@ -130,7 +130,7 @@ void getBasisByAreaGblForm(Vec2d MP, int numVtxs, Vec2d* vtxCoords, double* basi
 }// getBasisByAreaBblForm
 
 KOKKOS_INLINE_FUNCTION
-void getBasisByAreaBblForm3d(Vec3d MP, int numVtxs, Vec3d* vtxCoords, double* basis) {
+void getBasisByAreaGblForm3d(Vec3d MP, int numVtxs, Vec3d* vtxCoords, double* basis) {
     Vec3d e[maxVtxsPerElm + 1];
     Vec3d p[maxVtxsPerElm];
     for (int i = 0; i < numVtxs; i++){

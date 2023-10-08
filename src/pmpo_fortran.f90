@@ -223,17 +223,6 @@ module polympo
     integer(c_int), value :: numVtxs
   end subroutine
   !---------------------------------------------------------------------------
-  !> @brief get the number of vertices from the mesh holding by polyMPO
-  !> @param mpMesh(in) mpMesh object
-  !> @param numVtxs(return)) the number of vertices
-  !---------------------------------------------------------------------------
-  function polympo_getMeshNumVtxs(mpMesh) result(numVtxs) &
-            bind(C, NAME = 'polympo_getMeshNumVtxs')
-    use :: iso_c_binding
-    type(c_ptr), intent(in), value :: mpMesh
-    integer(c_int) :: numVtxs
-  end function
-  !---------------------------------------------------------------------------
   !> @brief set the number of elements of the mesh
   !>        modifies mesh topology polympo_startMeshFill required
   !> @param mpMesh(in/out) mpMesh object 
@@ -245,17 +234,6 @@ module polympo
     type(c_ptr), value :: mpMesh
     integer(c_int), value :: numElms
   end subroutine
-  !---------------------------------------------------------------------------
-  !> @brief get the number of elements from the mesh holding by polyMPO
-  !> @param mpMesh(in) mpMesh object
-  !> @param numVtxs(return)) the number of elements
-  !---------------------------------------------------------------------------
-  function polympo_getMeshNumElms(mpMesh) result(numElms) &
-            bind(C, NAME = 'polympo_getMeshNumElms')
-    use :: iso_c_binding
-    type(c_ptr), intent(in), value :: mpMesh
-    integer(c_int) :: numElms
-  end function
   !---------------------------------------------------------------------------
   !> @brief set the polympo mesh element to vertices connectivity
   !>        modifies mesh topology polympo_startMeshFill required
@@ -284,6 +262,28 @@ module polympo
     integer(c_int), value :: maxEdges, nCells
     type(c_ptr), intent(in), value :: cellsOnCell
   end subroutine
+  !---------------------------------------------------------------------------
+  !> @brief get the number of elements from the mesh holding by polyMPO
+  !> @param mpMesh(in) mpMesh object
+  !> @param numVtxs(return)) the number of elements
+  !---------------------------------------------------------------------------
+  function polympo_getMeshNumElms(mpMesh) result(numElms) &
+            bind(C, NAME = 'polympo_getMeshNumElms')
+    use :: iso_c_binding
+    type(c_ptr), intent(in), value :: mpMesh
+    integer(c_int) :: numElms
+  end function
+  !---------------------------------------------------------------------------
+  !> @brief get the number of vertices from the mesh holding by polyMPO
+  !> @param mpMesh(in) mpMesh object
+  !> @param numVtxs(return)) the number of vertices
+  !---------------------------------------------------------------------------
+  function polympo_getMeshNumVtxs(mpMesh) result(numVtxs) &
+            bind(C, NAME = 'polympo_getMeshNumVtxs')
+    use :: iso_c_binding
+    type(c_ptr), intent(in), value :: mpMesh
+    integer(c_int) :: numVtxs
+  end function
   !---------------------------------------------------------------------------
   !> @brief set the polympo mesh number of edges per element
   !>        modifies mesh topology polympo_startMeshFill required

@@ -174,7 +174,6 @@ int main(int argc, char** argv) {
         }
 
         interpolateWachspress2DTest(mpMesh);
-	// interpolateWachspress3DTest2(mpMesh);	
     }
     Kokkos::finalize();
     MPI_Finalize();

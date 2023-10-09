@@ -127,7 +127,7 @@ void getBasisByAreaGblForm(Vec2d MP, int numVtxs, Vec2d* vtxCoords, double* basi
     }
 
     calcBasis(numVtxs, a, c, basis);
-}// getBasisByAreaBblForm
+}// getBasisByAreaGblForm
 
 KOKKOS_INLINE_FUNCTION
 void getBasisByAreaGblForm3d(Vec3d MP, int numVtxs, Vec3d* vtxCoords, double* basis) {
@@ -147,7 +147,7 @@ void getBasisByAreaGblForm3d(Vec3d MP, int numVtxs, Vec3d* vtxCoords, double* ba
     }
 
     calcBasis(numVtxs, a, c, basis);
-}// getBasisByAreaBblForm
+}// getBasisByAreaGblForm3d
 
 //3d
 KOKKOS_INLINE_FUNCTION
@@ -213,7 +213,7 @@ void getBasisByAreaGblForm_1(Vec2d MP, int numVtxs, Vec2d* vtxCoords, double* ba
     for (int i = 0; i < numVtxs; i++) {
         basis[i] /= denominator;
     }
-} // getBasisByAreaBblForm_1
+} // getBasisByAreaGblForm_1
 */
 
 } //namespace polyMPO end

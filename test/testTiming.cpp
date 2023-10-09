@@ -39,7 +39,7 @@ int main(int argc, char* argv[] ) {
         for(int i=0; i<1; i++){
             //polyMPO::assemblyV0(mpMesh);
             if(mesh->getGeomType() == geom_spherical_surf)
-                interpolateWachspress3DTest(mpMesh);
+                interpolateWachspressSphericalTest(mpMesh);
             else
                 interpolateWachspress2DTest(mpMesh);
         }

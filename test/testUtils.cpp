@@ -35,14 +35,14 @@ void interpolateWachspress2DTest(MPMesh& mpMesh){
                 wp_coord = wp_coord + v[i]*basisByArea[i];
                 wp_grad = wp_grad + gradBasisByArea[i].dot(v[i]);
             }
-            // assert(wp_coord[0] - MPsPosition(mp,0) < TEST_EPSILON);
-            // assert(wp_coord[1] - MPsPosition(mp,1) < TEST_EPSILON);
+            assert(wp_coord[0] - MPsPosition(mp,0) < TEST_EPSILON);
+            assert(wp_coord[1] - MPsPosition(mp,1) < TEST_EPSILON);
         }        
     };
     p_MPs->parallel_for(eval, "interpolateWachspress2DTest");
 }
 
-void interpolateWachspress3DTest(MPMesh& mpMesh){
+void interpolateWachspressSphericalTest(MPMesh& mpMesh){
     auto p_mesh = mpMesh.p_mesh;
     auto vtxCoords = p_mesh->getMeshField<polyMPO::MeshF_VtxCoords>();
     auto elm2VtxConn = p_mesh->getElm2VtxConn();
@@ -91,10 +91,10 @@ void interpolateWachspress3DTest(MPMesh& mpMesh){
             //assert(wp_coord[2] - MPsPosition(mp,2) < TEST_EPSILON);
         }        
     };
-    p_MPs->parallel_for(eval, "interpolateWachspress3DTest");
+    p_MPs->parallel_for(eval, "interpolateWachspressSphericalTest");
 }
 
-void interpolateWachspress3DTest2(MPMesh& mpMesh){
+void interpolateWachspress3DTest(MPMesh& mpMesh){
     auto p_mesh = mpMesh.p_mesh;
     auto vtxCoords = p_mesh->getMeshField<polyMPO::MeshF_VtxCoords>();
     auto elm2VtxConn = p_mesh->getElm2VtxConn();
@@ -115,21 +115,17 @@ void interpolateWachspress3DTest2(MPMesh& mpMesh){
             v[numVtx][1] = vtxCoords(elm2VtxConn(elm,1)-1,1);
             double basisByArea[maxVtxsPerElm] = {0.0};
             initArray(basisByArea,maxVtxsPerElm,0.0);
-            Vec3d gradBasisByArea[maxVtxsPerElm];
             Vec3d position(MPsPosition(mp,0),MPsPosition(mp,1),MPsPosition(mp,2));
-            // getBasisAndGradByAreaGblForm(position, numVtx, v, basisByArea, gradBasisByArea);
             getBasisByAreaGblForm3d(position, numVtx, v, basisByArea);
 
             Vec3d wp_coord(0.0,0.0,0.0);
-            double wp_grad = 0.0;
             for(int i=0; i<= numVtx; i++){
                 wp_coord = wp_coord + v[i]*basisByArea[i];
-                wp_grad = wp_grad + gradBasisByArea[i].dot(v[i]);
             }
-	    // printf("%f, %f, %f \n", wp_coord[0], MPsPosition(mp,0), TEST_EPSILON);
-            // assert(wp_coord[0] - MPsPosition(mp,0) < TEST_EPSILON);
-            // assert(wp_coord[1] - MPsPosition(mp,1) < TEST_EPSILON);
-	    // assert(wp_coord[2] - MPsPosition(mp,2) < TEST_EPSILON);
+
+            assert(wp_coord[0] - MPsPosition(mp,0) < TEST_EPSILON);
+            assert(wp_coord[1] - MPsPosition(mp,1) < TEST_EPSILON);
+	    assert(wp_coord[2] - MPsPosition(mp,2) < TEST_EPSILON);
         }        
     };
     p_MPs->parallel_for(eval, "interpolateWachspress3DTest");

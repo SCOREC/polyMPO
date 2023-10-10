@@ -111,7 +111,7 @@ class MaterialPoints {
     };
     MaterialPoints(int numElms, int numMPs, IntView mpsPerElm, IntView mp2elm, IntView mpAppID) {
       MPs = createDPS(numElms, numMPs, mpsPerElm, mp2elm, mpAppID);
-      maxAppID = getMaxAppID(mpAppID);
+      maxAppID = polyMPO::getMaxAppID(mpAppID);
     };
     ~MaterialPoints() {
       if(MPs != nullptr)
@@ -181,6 +181,10 @@ class MaterialPoints {
     int getElmIDoffset() {
       PMT_ALWAYS_ASSERT(elmIDoffset == 0 || elmIDoffset == 1);
       return elmIDoffset;
+    }
+    int getMaxAppID() {
+      PMT_ALWAYS_ASSERT(maxAppID != -1);
+      return maxAppID;
     }
 
 //MUTATOR  

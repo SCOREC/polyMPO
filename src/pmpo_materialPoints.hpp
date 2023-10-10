@@ -96,11 +96,13 @@ typedef ps::ParticleStructure<MaterialPointTypes> PS;
 
 PS* createDPS(int numElms, int numMPs, DoubleVec3dView positions, IntView mpsPerElm, IntView mp2elm);
 PS* createDPS(int numElms, int numMPs, IntView mpsPerElm, IntView mp2elm, IntView mpAppID);
+int getMaxAppID(IntView mpAppID);
 
 class MaterialPoints {
   private:
     PS* MPs;
     int elmIDoffset = -1;
+    int maxAppID = -1;
 
   public:
     MaterialPoints() : MPs(nullptr) {};
@@ -109,6 +111,7 @@ class MaterialPoints {
     };
     MaterialPoints(int numElms, int numMPs, IntView mpsPerElm, IntView mp2elm, IntView mpAppID) {
       MPs = createDPS(numElms, numMPs, mpsPerElm, mp2elm, mpAppID);
+      maxAppID = getMaxAppID(mpAppID);
     };
     ~MaterialPoints() {
       if(MPs != nullptr)

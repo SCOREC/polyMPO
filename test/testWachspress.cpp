@@ -49,12 +49,12 @@ int main(int argc, char** argv) {
                 auto mpVel = p_MPs->getData<MPF_Vel>();
                 auto mpCurPosXYZ = p_MPs->getData<MPF_Cur_Pos_XYZ>();
                 auto check = PS_LAMBDA(const int& elm, const int& mp, const int& mask){
-                    if(mask && elm<3) { 
+                    if(mask) { 
                         for(int i=0; i<2; i++){
                             //TODO: test outcome is incorrect
                             //if(std::abs(mpVel(mp,i)-mpCurPosXYZ(mp,i))>TEST_EPSILON)
                             //    printf("Not equal! ");
-                            printf("(%d,%d):%e, %e\n",elm,i,mpVel(mp,i),mpCurPosXYZ(mp,i));
+                            //printf("(%d,%d):%e, %e\n",elm,i,mpVel(mp,i),mpCurPosXYZ(mp,i));
                         }   
                     }   
                 };

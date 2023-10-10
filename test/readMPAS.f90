@@ -8,6 +8,8 @@ subroutine assert(condition,message)
   endif
 end subroutine
 
+
+
 module readMPAS
     use :: polympo
     use iso_c_binding
@@ -15,6 +17,20 @@ module readMPAS
     integer, parameter :: MPAS_RKIND = selected_real_kind(12)
     
 contains
+
+function epsilonDiff(a,b) result(isSame)
+  implicit none
+  real(kind=MPAS_RKIND) :: a,b,delta
+  parameter (delta=1.0e-8)
+  logical :: isSame
+  !delta=1.0e-8
+  if (abs(a-b) < delta) then
+    isSame = .true.
+  else
+    isSame = .false.
+  endif
+end function
+
 !---------------------------------------------------------------------------
 !> @brief get the MP positions array from a polympo array
 !> @param mpmesh(in/out) MPMesh object to fill, allocated by users
@@ -32,6 +48,7 @@ subroutine loadMPASMesh(mpMesh, filename)
     integer :: maxEdges, vertexDegree, nCells, nVertices
     integer :: nDims !FIXME - parameter???
     integer :: numMPs
+    real(kind=MPAS_RKIND) :: ptOne = 0.1
     real(kind=MPAS_RKIND) :: sphereRadius
     integer, dimension(:), pointer :: nEdgesOnCell
     real(kind=MPAS_RKIND), dimension(:), pointer :: xVertex, yVertex, zVertex
@@ -112,9 +129,9 @@ subroutine loadMPASMesh(mpMesh, filename)
     call polympo_getMPPositions(mpMesh,nDims,numMPs,c_loc(mpPosition))
     do i = 1,numMPs
       if(isMPActive(i) .eq. 1) then
-        call assert(mpPosition(1,i) .eq. i+0.1, "x position of MP does not match")
-        call assert(mpPosition(2,i) .eq. numMPs+i+0.1, "y position of MP does not match")
-        call assert(mpPosition(3,i) .eq. (2*numMPs)+i+0.1, "z position of MP does not match")
+        call assert(epsilonDiff(mpPosition(1,i),i+ptOne), "x position of MP does not match")
+        call assert(epsilonDiff(mpPosition(2,i),numMPs+i+ptOne), "y position of MP does not match")
+        call assert(epsilonDiff(mpPosition(3,i),(2*numMPs)+i+ptOne), "z position of MP does not match")
       endif
     end do
     

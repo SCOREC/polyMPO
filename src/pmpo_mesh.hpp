@@ -20,6 +20,7 @@ enum MeshFieldIndex{
     MeshF_Invalid = -2,
     MeshF_Unsupported,
     MeshF_VtxCoords,
+    MeshF_VtxLatLon,
     MeshF_Vel,
     MeshF_OnSurfVeloIncr,
     MeshF_OnSurfDispIncr
@@ -34,7 +35,8 @@ const std::map<MeshFieldIndex, std::pair<MeshFieldType,
                                          std::string>> meshFields2TypeAndString = 
               {{MeshF_Invalid,          {MeshFType_Invalid,"MeshField_InValid!"}},
                {MeshF_Unsupported,      {MeshFType_Unsupported,"MeshField_Unsupported"}},
-               {MeshF_VtxCoords,              {MeshFType_VtxBased,"MeshField_VerticesCoords"}},
+               {MeshF_VtxCoords,        {MeshFType_VtxBased,"MeshField_VerticesCoords"}},
+               {MeshF_VtxLatLon,        {MeshFType_VtxBased,"MeshField_VerticesLatitudeLongitude"}},
                {MeshF_Vel,              {MeshFType_VtxBased,"MeshField_Velocity"}},
                {MeshF_OnSurfVeloIncr,   {MeshFType_VtxBased,"MeshField_OnSurfaceVelocityIncrement"}},
                {MeshF_OnSurfDispIncr,   {MeshFType_VtxBased,"MeshField_OnSurfaceDisplacementIncrement"}}};
@@ -64,6 +66,7 @@ class Mesh {
   
     //start of meshFields
     DoubleVec3dView vtxCoords_;
+    DoubleVec2dView vtxLatLon_;
     DoubleVec2dView vtxVel_;
     DoubleVec2dView vtxOnSurfVeloIncr_;
     DoubleVec2dView vtxOnSurfDispIncr_;
@@ -136,6 +139,9 @@ auto Mesh::getMeshField(){
     }
     else if constexpr (index==MeshF_VtxCoords){
         return vtxCoords_;
+    }
+    else if constexpr (index==MeshF_VtxLatLon){
+        return vtxLatLon_;
     }
     else if constexpr (index==MeshF_Vel){
         return vtxVel_;

@@ -18,6 +18,10 @@ namespace polyMPO{
         PMT_ALWAYS_ASSERT(vtxCoordsMapEntry.first == MeshFType_VtxBased);
         vtxCoords_ = DoubleVec3dView(vtxCoordsMapEntry.second,numVtxs_);
 
+        auto vtxLatLonMapEntry = meshFields2TypeAndString.at(MeshF_VtxLatLon);
+        PMT_ALWAYS_ASSERT(vtxLatLonMapEntry.first == MeshFType_VtxBased);
+        vtxVel_ = DoubleVec2dView(vtxLatLonMapEntry.second,numVtxs_);
+
         auto vtxVelMapEntry = meshFields2TypeAndString.at(MeshF_Vel);
         PMT_ALWAYS_ASSERT(vtxVelMapEntry.first == MeshFType_VtxBased);
         vtxVel_ = DoubleVec2dView(vtxVelMapEntry.second,numVtxs_);

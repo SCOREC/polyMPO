@@ -20,7 +20,7 @@ namespace polyMPO{
 
         auto vtxLatLonMapEntry = meshFields2TypeAndString.at(MeshF_VtxLatLon);
         PMT_ALWAYS_ASSERT(vtxLatLonMapEntry.first == MeshFType_VtxBased);
-        vtxVel_ = DoubleVec2dView(vtxLatLonMapEntry.second,numVtxs_);
+        vtxLatLon_ = DoubleVec2dView(vtxLatLonMapEntry.second,numVtxs_);
 
         auto vtxVelMapEntry = meshFields2TypeAndString.at(MeshF_Vel);
         PMT_ALWAYS_ASSERT(vtxVelMapEntry.first == MeshFType_VtxBased);

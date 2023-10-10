@@ -138,6 +138,7 @@ MaterialPoints* initTestMPs(Mesh* mesh, int testMPOption){
     },numMPs);
 
     DoubleVec3dView positions("MPpositions",numMPs);
+    DoubleVec2dView latLonPositions("MPLatLonPositions",numMPs); 
     if(geomType == geom_planar_surf){     
         Kokkos::parallel_for("intializeMPsPositionPlanar", numMPs, KOKKOS_LAMBDA(const int iMP){
             int ielm = MPToElement(iMP);
@@ -155,32 +156,39 @@ MaterialPoints* initTestMPs(Mesh* mesh, int testMPOption){
     }else if(geomType == geom_spherical_surf){
         Kokkos::Random_XorShift64_Pool<> random_pool(randSeed);
         const double radius = mesh->getSphereRadius();
+        DoubleVec2dView vtxLatLon = mesh->getMeshField<MeshF_VtxLatLon>();
         Kokkos::parallel_for("intializeMPsPositionSpherical", numMPs, KOKKOS_LAMBDA(const int iMP){
             int ielm = MPToElement(iMP);
             int numVtx = elm2VtxConn(ielm,0);
-            auto generator = random_pool.get_state();
-            int r1Index = generator.urand(0,numVtx);
-            int r2Index = (r1Index+numVtx/2)%numVtx;
-            ++r1Index;
-            ++r2Index;
-            random_pool.free_state(generator);
-            Vec3d midPoint(0.0,0.0,0.0);
-            midPoint[0] = (vtxCoords(elm2VtxConn(ielm,r1Index)-1,0)+
-                           vtxCoords(elm2VtxConn(ielm,r2Index)-1,0))/2;
-            midPoint[1] = (vtxCoords(elm2VtxConn(ielm,r1Index)-1,1)+
-                           vtxCoords(elm2VtxConn(ielm,r2Index)-1,1))/2;
-            midPoint[2] = (vtxCoords(elm2VtxConn(ielm,r1Index)-1,2)+
-                           vtxCoords(elm2VtxConn(ielm,r2Index)-1,2))/2;
-            midPoint = midPoint * (1/midPoint.magnitude()) * radius; 
-            positions(iMP,0) = midPoint[0];
-            positions(iMP,1) = midPoint[1];
-            positions(iMP,2) = midPoint[2];
+            double lat = 0.0, lon = 0.0; 
+            for(int i=1; i<= numVtx; i++){
+                lat += vtxLatLon(elm2VtxConn(ielm,i)-1,0);
+                lon += vtxLatLon(elm2VtxConn(ielm,i)-1,1);
+            }
+            lat /= numVtx;
+            lon /= numVtx;
+            latLonPositions(iMP,0) = lat;
+            latLonPositions(iMP,1) = lat;
+            positions(iMP,0) = radius * std::cos(lat) * std::cos(lon);
+            positions(iMP,1) = radius * std::cos(lat) * std::sin(lon);
+            positions(iMP,2) = radius * std::sin(lat);
         });
     } else{
         fprintf(stderr,"The geom type is not correct!");
         exit(1);
     }
-    return new MaterialPoints(numElms,numMPs,positions,numMPsPerElement,MPToElement);
+    if(geomType == geom_spherical_surf){
+        auto p_MPs = new MaterialPoints(numElms,numMPs,positions,numMPsPerElement,MPToElement);
+        auto mpLatLonField = p_MPs->getData<MPF_Cur_Pos_Lat_Lon>();
+        auto setLatLon = PS_LAMBDA(const int& elm, const int& mp, const int& mask){
+            mpLatLonField(mp,0) = latLonPositions(mp,0);
+            mpLatLonField(mp,1) = latLonPositions(mp,1);
+        };
+        p_MPs->parallel_for(setLatLon, "set MP latitude longtitude");
+        return p_MPs;
+    }else{
+        return new MaterialPoints(numElms,numMPs,positions,numMPsPerElement,MPToElement);
+    }
 }
 
 MPMesh initTestMPMesh(Mesh* mesh, int setMPOption) {

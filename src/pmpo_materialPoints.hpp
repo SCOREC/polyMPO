@@ -108,6 +108,7 @@ class MaterialPoints {
     MaterialPoints() : MPs(nullptr) {};
     MaterialPoints(int numElms, int numMPs, DoubleVec3dView positions, IntView mpsPerElm, IntView mp2elm) {
       MPs = createDPS(numElms, numMPs, positions, mpsPerElm, mp2elm);
+      maxAppID = numMPs; //this ctor does not support inactive MPs
     };
     MaterialPoints(int numElms, int numMPs, IntView mpsPerElm, IntView mp2elm, IntView mpAppID) {
       MPs = createDPS(numElms, numMPs, mpsPerElm, mp2elm, mpAppID);
@@ -183,7 +184,7 @@ class MaterialPoints {
       return elmIDoffset;
     }
     int getMaxAppID() {
-      PMT_ALWAYS_ASSERT(maxAppID != -1);
+      PMT_ALWAYS_ASSERT(maxAppID != -1); //fixme - not all tests set this
       return maxAppID;
     }
 

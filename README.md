@@ -55,7 +55,7 @@ Create a file named `buildAll.sh` with the following contents. **It contains com
 cd $root
 
 #kokkos
-git clone -b 3.7.01 https://github.com/kokkos/kokkos.git
+git clone -b 4.1.00 https://github.com/kokkos/kokkos.git
 mkdir -p $kk
 cmake -S kokkos -B ${kk%%install} \
   -DCMAKE_INSTALL_PREFIX=$kk \
@@ -421,6 +421,9 @@ cmake --build ${kk%%install} -j 24 --target install
 unset MPICH_CXX #don't want nvcc_wrapper for engpar
 mkdir -p $engpar
 git clone https://github.com/SCOREC/EnGPar.git
+cd EnGPar
+git checkout ab5e521
+cd ..
 cmake -S EnGPar -B ${engpar%%install} \
   -DCMAKE_INSTALL_PREFIX=$engpar \
   -DCMAKE_BUILD_TYPE="Release" \
@@ -436,6 +439,9 @@ export MPICH_CXX=$root/kokkos/bin/nvcc_wrapper #restore use of nvcc_wrapper
 #omegah
 mkdir -p $oh
 git clone https://github.com/SCOREC/omega_h.git
+cd omega_h
+git checkout e1be29b0
+cd ..
 cmake -S omega_h -B ${oh%%install} \
   -DCMAKE_INSTALL_PREFIX=$oh \
   -DCMAKE_BUILD_TYPE="Release" \
@@ -453,6 +459,9 @@ cmake --build ${oh%%install} -j 24 --target install
 #cabana
 mkdir -p $cab
 git clone -b 0.5.0 https://github.com/ECP-copa/Cabana.git cabana
+cd cabana
+git checkout d3503a6f
+cd ..
 cmake -S cabana -B ${cab%%install} \
   -DCMAKE_INSTALL_PREFIX=$cab \
   -DCMAKE_BUILD_TYPE="Release" \
@@ -464,6 +473,9 @@ cmake --build ${cab%%install} -j 24 --target install
 #pumipic
 mkdir -p $pumipic
 git clone --recursive https://github.com/SCOREC/pumi-pic.git
+cd pumi-pic
+git checkout bd930e1
+cd ..
 cmake -S pumi-pic -B ${pumipic%%install} \
   -DCMAKE_INSTALL_PREFIX=$pumipic \
   -DCMAKE_BUILD_TYPE="Debug" \

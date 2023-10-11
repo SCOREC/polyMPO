@@ -51,13 +51,64 @@ module polympo
     integer(c_int), value :: comm    
   end subroutine
   !---------------------------------------------------------------------------
+  !> @brief create the material points
+  !> @brief the fields associated with the MPs are NOT initialized
+  !> @param mpmesh(in/out) MPMesh object
+  !> @param numElms(in) total number of mesh elements
+  !> @param numMPs(in) total number of MPs, total = number of active + number of inactive
+  !> @param mpsPerElm(in) number of MPs for each mesh element
+  !> @param mp2Elm(in) element ID for each MP
+  !> @param isMPActive(in) set to 1 if the MP is active, 0 otherwise
+  !---------------------------------------------------------------------------
+  subroutine polympo_createMPs(mpMesh, numElms, numMPs, mpsPerElm, mp2Elm, isMPActive) &
+             bind(C, NAME='polympo_createMPs')
+    use :: iso_c_binding
+    type(c_ptr), value :: mpMesh
+    integer(c_int), value :: numElms
+    integer(c_int), value :: numMPs
+    type(c_ptr), intent(in), value :: mpsPerElm
+    type(c_ptr), intent(in), value :: mp2Elm
+    type(c_ptr), intent(in), value :: isMPActive
+  end subroutine
+  !---------------------------------------------------------------------------
+  !> @brief get the current element ID MP array from a polympo array
+  !> @param mpmesh(in/out) MPMesh object
+  !> @param numMPs(in) length of array, number of the MPs
+  !> @param array(in/out) output MP element ID 1D array (numMPs), allocated by user
+  !---------------------------------------------------------------------------
+  subroutine polympo_getMPCurElmID(mpMesh, numMPs, array) &
+             bind(C, NAME='polympo_getMPCurElmID')
+    use :: iso_c_binding
+    type(c_ptr), value :: mpMesh
+    integer(c_int), value :: numMPs
+    type(c_ptr), value :: array
+  end subroutine
+  !---------------------------------------------------------------------------
+  !> @brief get the MP positions array from a polympo array
+  !> @param mpmesh(in/out) MPMesh object
+  !> @param nComps(in) number of components, should always be 3
+  !> @param numMPs(in) number of the MPs
+  !> @param array(in/out) output MP current position 2D array (3,numMPs),
+  !>                      allocated by user
+  !---------------------------------------------------------------------------
+  subroutine polympo_getMPPositions(mpMesh, nComps, numMPs, array) &
+             bind(C, NAME='polympo_getMPPositions')
+    use :: iso_c_binding
+    type(c_ptr), value :: mpMesh
+    integer(c_int), value :: nComps, numMPs
+    type(c_ptr), value :: array
+  end subroutine
+  !---------------------------------------------------------------------------
   !> @brief set the velocity MP array from a host array
+  !> @warning THIS IS NOT SUPPORTED YET 
   !> @param mpmesh(in/out) MPMesh object
   !> @param n(in) half length of array
   !> @param array(in) input MP velocity 1D array (numMPs*2)
   !---------------------------------------------------------------------------
-  subroutine polympo_setMPVelArray(mpMesh, n, array) &
-             bind(C, NAME='polympo_setMPVelArray_f')
+
+  subroutine polympo_setMPVel_f(mpMesh, n, array) &
+             bind(C, NAME='polympo_setMPVel')
+
     use :: iso_c_binding
     type(c_ptr), value :: mpMesh
     integer(c_int), value :: n
@@ -65,16 +116,40 @@ module polympo
   end subroutine
   !---------------------------------------------------------------------------
   !> @brief get the velocity MP array from a polympo array
+  !> @warning THIS IS NOT SUPPORTED YET 
   !> @param mpmesh(in/out) MPMesh object
   !> @param n(in) half length of array
   !> @param array(in/out) output MP velocity 1D array (numMPs*2), allocated by user
   !---------------------------------------------------------------------------
-  subroutine polympo_getMPVelArray(mpMesh, n, array) &
-             bind(C, NAME='polympo_getMPVelArray_f')
+
+  subroutine polympo_getMPVel_f(mpMesh, n, array) &
+             bind(C, NAME='polympo_getMPVel')
+
     use :: iso_c_binding
     type(c_ptr), value :: mpMesh
     integer(c_int), value :: n
     type(c_ptr), value :: array
+  end subroutine
+  !---------------------------------------------------------------------------
+  !> @brief Enable the setting of mesh topology (number of entities and entity adjacencies). 
+  !>        By default, modifying the mesh topology without calling this function first will result
+  !>        in a runtime failure.
+  !> @param mpMesh(in/out) the MPMesh is valid/created
+  !---------------------------------------------------------------------------
+  subroutine polympo_startMeshFill(mpMesh) &
+             bind(C, NAME='polympo_startMeshFill')
+    use :: iso_c_binding
+    type(c_ptr), value :: mpMesh
+  end subroutine
+  !---------------------------------------------------------------------------
+  !> @brief Disable the modification of mesh topology (number of entities and entity adjacencies). 
+  !>        Once the topology is set, call this function to prevent unexpected/accidental modifications.
+  !> @param mpMesh(in/out) the MPMesh is valid/created
+  !---------------------------------------------------------------------------
+  subroutine polympo_endMeshFill(mpMesh) &
+             bind(C, NAME='polympo_endMeshFill')
+    use :: iso_c_binding
+    type(c_ptr), value :: mpMesh
   end subroutine
   !---------------------------------------------------------------------------
   !> @brief check the Mesh is valid/runable in polympo
@@ -90,6 +165,7 @@ module polympo
   end subroutine
   !---------------------------------------------------------------------------
   !> @brief set the Mesh type to general polygonal
+  !>        modifies mesh topology polympo_startMeshFill required
   !> @param mpMesh(in/out) mpMesh object 
   !---------------------------------------------------------------------------
   subroutine polympo_setMeshTypeGeneralPoly(mpMesh) &
@@ -99,6 +175,7 @@ module polympo
   end subroutine
   !---------------------------------------------------------------------------
   !> @brief set the Mesh type to CVT polygonal
+  !>        modifies mesh topology polympo_startMeshFill required
   !> @param mpMesh(in/out) mpMesh object 
   !---------------------------------------------------------------------------
   subroutine polympo_setMeshTypeCVTPoly(mpMesh) &
@@ -108,6 +185,7 @@ module polympo
   end subroutine
   !---------------------------------------------------------------------------
   !> @brief set the Mesh geometry type to planar
+  !>        modifies mesh topology polympo_startMeshFill required
   !> @param mpMesh(in/out) mpMesh object 
   !---------------------------------------------------------------------------
   subroutine polympo_setMeshGeomTypePlanar(mpMesh) &
@@ -117,6 +195,7 @@ module polympo
   end subroutine
   !---------------------------------------------------------------------------
   !> @brief set the Mesh geometry type to spherical
+  !>        modifies mesh topology polympo_startMeshFill required
   !> @param mpMesh(in/out) mpMesh object 
   !---------------------------------------------------------------------------
   subroutine polympo_setMeshGeomTypeSpherical(mpMesh) &
@@ -126,6 +205,7 @@ module polympo
   end subroutine
   !---------------------------------------------------------------------------
   !> @brief set the Mesh sphere radius
+  !>        modifies mesh topology polympo_startMeshFill required
   !> @param mpMesh(in/out) mpMesh object 
   !---------------------------------------------------------------------------
   subroutine polympo_setMeshSphereRadius(mpMesh,sphereRadius) &
@@ -136,6 +216,7 @@ module polympo
   end subroutine
   !---------------------------------------------------------------------------
   !> @brief set the number of vetices of the mesh
+  !>        modifies mesh topology polympo_startMeshFill required
   !> @param mpMesh(in/out) mpMesh object 
   !> @param numVtxs(in) the number of vertices need to set
   !---------------------------------------------------------------------------
@@ -146,7 +227,19 @@ module polympo
     integer(c_int), value :: numVtxs
   end subroutine
   !---------------------------------------------------------------------------
+  !> @brief get the number of vertices from the mesh holding by polyMPO
+  !> @param mpMesh(in) mpMesh object
+  !> @param numVtxs(return)) the number of vertices
+  !---------------------------------------------------------------------------
+  function polympo_getMeshNumVtxs(mpMesh) result(numVtxs) &
+            bind(C, NAME = 'polympo_getMeshNumVtxs')
+    use :: iso_c_binding
+    type(c_ptr), intent(in), value :: mpMesh
+    integer(c_int) :: numVtxs
+  end function
+  !---------------------------------------------------------------------------
   !> @brief set the number of elements of the mesh
+  !>        modifies mesh topology polympo_startMeshFill required
   !> @param mpMesh(in/out) mpMesh object 
   !> @param numElms(in) the number of elements
   !---------------------------------------------------------------------------
@@ -157,20 +250,21 @@ module polympo
     integer(c_int), value :: numElms
   end subroutine
   !---------------------------------------------------------------------------
-  !> @brief set the polympo mesh vertices coordinates
-  !> @param mpmesh(in/out) MPMesh object
-  !> @param nVertices(in) length of array in 
-  !> @param x/y/zArray(in) the 1D arrays of vertices coordinates
+  !> @brief get the number of elements from the mesh holding by polyMPO
+  !> @param mpMesh(in) mpMesh object
+  !> @param numVtxs(return)) the number of elements
   !---------------------------------------------------------------------------
-  subroutine polympo_setMeshVtxCoords(mpMesh, nVertices, xArray, yArray, zArray) &
-             bind(C, NAME='polympo_setMeshVtxCoords_f')
+
+  function polympo_getMeshNumElms_f(mpMesh) result(numElms) &
+            bind(C, NAME = 'polympo_getMeshNumElms')
+
     use :: iso_c_binding
-    type(c_ptr), value :: mpMesh
-    integer(c_int), value :: nVertices
-    type(c_ptr), intent(in), value :: xArray, yArray, zArray
-  end subroutine
+    type(c_ptr), intent(in), value :: mpMesh
+    integer(c_int) :: numElms
+  end function
   !---------------------------------------------------------------------------
   !> @brief set the polympo mesh element to vertices connectivity
+  !>        modifies mesh topology polympo_startMeshFill required
   !> @param mpmesh(in/out) MPMesh object
   !> @param maxEdges,nCells(in) length of array in each direction
   !> @param verticesOnCell(in) element to vertices connectivity 2D array 
@@ -184,6 +278,7 @@ module polympo
   end subroutine
   !---------------------------------------------------------------------------
   !> @brief set the polympo mesh element to elements connectivity
+  !>        modifies mesh topology polympo_startMeshFill required
   !> @param mpmesh(in/out) MPMesh object
   !> @param maxEdges,nCells(in) length of array in each direction 
   !> @param cellsOnCell(in) element to elements connectivity 2D array 
@@ -197,6 +292,7 @@ module polympo
   end subroutine
   !---------------------------------------------------------------------------
   !> @brief set the polympo mesh number of edges per element
+  !>        modifies mesh topology polympo_startMeshFill required
   !> @param mpmesh(in/out) MPMesh object
   !> @param nCells(in) length of array (numElms)
   !> @param nEdgesOnCell(in) number of edges per element
@@ -209,29 +305,95 @@ module polympo
     type(c_ptr), intent(in), value :: nEdgesOnCell
   end subroutine
   !---------------------------------------------------------------------------
-  !> @brief set the velocity mesh array from a host array
+  !> @brief set the polympo mesh vertices coordinates
   !> @param mpmesh(in/out) MPMesh object
-  !> @param n(in) half length of array (n = numVtx)
-  !> @param array(in) input mesh velocity 1D array (numVtx*2)
+  !> @param nVertices(in) length of array in 
+  !> @param x/y/zArray(in) the 1D arrays of vertices coordinates
   !---------------------------------------------------------------------------
-  subroutine polympo_setMeshVelArray(mpMesh, n, array) &
-             bind(C, NAME='polympo_setMeshVelArray_f')
+
+  subroutine polympo_setMeshVtxCoords_f(mpMesh, nVertices, xArray, yArray, zArray) &
+             bind(C, NAME='polympo_setMeshVtxCoords')
+
     use :: iso_c_binding
     type(c_ptr), value :: mpMesh
-    integer(c_int), value :: n
+    integer(c_int), value :: nVertices
+    type(c_ptr), intent(in), value :: xArray, yArray, zArray
+  end subroutine
+  !---------------------------------------------------------------------------
+  !> @brief get the polympo mesh vertices coordinates
+  !> @param mpmesh(in/out) MPMesh object
+  !> @param nVertices(in) length of array in, use for assertion
+  !> @param x/y/zArray(in/out) the 1D arrays of vertices coordinates
+  !---------------------------------------------------------------------------
+  subroutine polympo_getMeshVtxCoords(mpMesh, nVertices, xArray, yArray, zArray) &
+             bind(C, NAME='polympo_getMeshVtxCoords')
+    use :: iso_c_binding
+    type(c_ptr), value :: mpMesh
+    integer(c_int), value :: nVertices
+    type(c_ptr), value :: xArray, yArray, zArray
+  end subroutine
+  !---------------------------------------------------------------------------
+  !> @brief set the spherical velocity increment mesh array 
+  !>        from a host array
+  !> @param mpmesh(in/out) MPMesh object
+  !> @param nComps(in) number of components, should always be 2
+  !> @param nVertices(in) numVertices
+  !> @param array(in) input mesh velocity 2D array (2,numVtx)
+  !---------------------------------------------------------------------------
+  subroutine polympo_setMeshOnSurfVeloIncr(mpMesh, nComps, nVertices, array) &
+             bind(C, NAME='polympo_setMeshOnSurfVeloIncr')
+    use :: iso_c_binding
+    type(c_ptr), value :: mpMesh
+    integer(c_int), value :: nComps, nVertices
     type(c_ptr), intent(in), value :: array
   end subroutine
   !---------------------------------------------------------------------------
-  !> @brief get the velocity mesh array from a polympo array
+  !> @brief get the spherical velocity increment mesh array 
+  !>        from a polympo array
   !> @param mpmesh(in/out) MPMesh object
-  !> @param n(in) half length of the array
-  !> @param array(in/out) output mesh velocity 1D array (numVtx*2), allocated by user
+  !> @param nComps(in) number of components, should always be 2
+  !> @param nVertices(in) numVertices
+  !> @param array(in/out) output mesh spherical velocity increment
+  !>        2D array (2,numVtx), allocated by user
   !---------------------------------------------------------------------------
-  subroutine polympo_getMeshVelArray(mpMesh, n, array) &
-             bind(C, NAME='polympo_getMeshVelArray_f')
+
+  subroutine polympo_getMeshOnSurfVeloIncr_f(mpMesh, nComps, nVertices, array) &
+             bind(C, NAME='polympo_getMeshOnSurfVeloIncr')
+
     use :: iso_c_binding
     type(c_ptr), value :: mpMesh
-    integer(c_int), value :: n
+    integer(c_int), value :: nComps, nVertices
+    type(c_ptr), value :: array
+  end subroutine
+  !---------------------------------------------------------------------------
+  !> @brief set the spherical displacement increment mesh array 
+  !>        from a host array
+  !> @param mpmesh(in/out) MPMesh object
+  !> @param nComps(in) number of components, should always be 2
+  !> @param nVertices(in) numVertices
+  !> @param array(in) input mesh velocity 2D array (2,numVtx)
+  !---------------------------------------------------------------------------
+  subroutine polympo_setMeshOnSurfDispIncr(mpMesh, nComps, nVertices, array) &
+             bind(C, NAME='polympo_setMeshOnSurfDispIncr')
+    use :: iso_c_binding
+    type(c_ptr), value :: mpMesh
+    integer(c_int), value :: nComps, nVertices
+    type(c_ptr), intent(in), value :: array
+  end subroutine
+  !---------------------------------------------------------------------------
+  !> @brief get the spherical displacement increment mesh array
+  !>        from a polympo array
+  !> @param mpmesh(in/out) MPMesh object
+  !> @param nComps(in) number of components, should always be 2
+  !> @param nVertices(in) numVertices
+  !> @param array(in/out) output mesh spherical displacement increment 
+  !>        2D array (2,numVtx), allocated by user
+  !---------------------------------------------------------------------------
+  subroutine polympo_getMeshOnSurfDispIncr(mpMesh, nComps, nVertices, array) &
+             bind(C, NAME='polympo_getMeshOnSurfDispIncr')
+    use :: iso_c_binding
+    type(c_ptr), value :: mpMesh
+    integer(c_int), value :: nComps, nVertices
     type(c_ptr), value :: array
   end subroutine
   end interface

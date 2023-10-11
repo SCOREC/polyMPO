@@ -20,13 +20,17 @@ void polympo_setMPICommunicator_f(MPI_Fint fcomm);//TODO:is MPI_Fint best? or so
 //TODO: add a function to get communicator
 
 //MP info
-//TODO 
+void polympo_createMPs(MPMesh_ptr p_mpmesh, int numElms, int numMPs, int* mpsPerElm, int* mp2Elm, int* isMPActive);
+void polympo_getMPCurElmID(MPMesh_ptr p_mpmesh, int numMPs, int* elmIDs);
+void polympo_getMPPositions(MPMesh_ptr p_mpmesh, int numComps, int numMPs, double* mpPositionsIn);
 
 //MP slices
-void polympo_setMPVelArray_f(MPMesh_ptr p_mpmesh, int size, double* array);
-void polympo_getMPVelArray_f(MPMesh_ptr p_mpmesh, int size, double* array);
+void polympo_setMPVel_f(MPMesh_ptr p_mpmesh, int size, double* array);
+void polympo_getMPVel_f(MPMesh_ptr p_mpmesh, int size, double* array);
 
 //Mesh info
+void polympo_startMeshFill_f(MPMesh_ptr p_mpmesh);
+void polympo_endMeshFill_f(MPMesh_ptr p_mpmesh);
 void polympo_checkMeshMaxSettings_f(MPMesh_ptr p_mpmesh, int maxEdges, int vertexDegree);
 void polympo_setMeshTypeGeneralPoly_f(MPMesh_ptr p_mpmesh);
 void polympo_setMeshTypeCVTPoly_f(MPMesh_ptr p_mpmesh);
@@ -34,14 +38,20 @@ void polympo_setMeshGeomTypePlanar_f(MPMesh_ptr p_mpmesh);
 void polympo_setMeshGeomTypeSpherical_f(MPMesh_ptr p_mpmesh);
 void polympo_setMeshSphereRadius_f(MPMesh_ptr p_mpmesh, double sphereRadius);
 void polympo_setMeshNumVtxs_f(MPMesh_ptr p_mpmesh, int numVtxs);
+int polympo_getMeshNumVtxs_f(MPMesh_ptr p_mpmesh);
 void polympo_setMeshNumElms_f(MPMesh_ptr p_mpmesh, int numElms);
-void polympo_setMeshVtxCoords_f(MPMesh_ptr p_mpmesh, int nVertices, double* xArray, double* yArray, double* zArray);
+int polympo_getMeshNumElms_f(MPMesh_ptr p_mpmesh);
 void polympo_setMeshNumEdgesPerElm_f(MPMesh_ptr p_mpmesh, int nCells, int* array);
 void polympo_setMeshElm2VtxConn_f(MPMesh_ptr p_mpmesh, int maxEdges, int nCells, int* array);
 void polympo_setMeshElm2ElmConn_f(MPMesh_ptr p_mpmesh, int maxEdges, int nCells, int* array);
 
 //Mesh fields
-void polympo_setMeshVelArray_f(MPMesh_ptr p_mpmesh, int size, double* array);
-void polympo_getMeshVelArray_f(MPMesh_ptr p_mpmesh, int size, double* array);
+void polympo_setMeshVtxCoords_f(MPMesh_ptr p_mpmesh, int nVertices, double* xArray, double* yArray, double* zArray);
+void polympo_getMeshVtxCoords_f(MPMesh_ptr p_mpmesh, int nVertices, double* xArray, double* yArray, double* zArray);
+void polympo_setMeshOnSurfVeloIncr_f(MPMesh_ptr p_mpmesh, int nComps, int nVertices, double* array);//vec2d
+void polympo_getMeshOnSurfVeloIncr_f(MPMesh_ptr p_mpmesh, int nComps, int nVertices, double* array);//vec2d
+void polympo_setMeshOnSurfDispIncr_f(MPMesh_ptr p_mpmesh, int nComps, int nVertices, double* array);//vec2d
+void polympo_getMeshOnSurfDispIncr_f(MPMesh_ptr p_mpmesh, int nComps, int nVertices, double* array);//vec2d
+
 }
 #endif

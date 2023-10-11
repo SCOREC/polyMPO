@@ -8,31 +8,41 @@ subroutine assert(condition,message)
   endif
 end subroutine
 
+module mpMesh_ptr
+use polympo
+use iso_c_binding
+implicit none
+
+  type(c_ptr):: mpMesh
+contains
+  subroutine createMPMesh(setMeshOption, setMPOption)
+    integer:: setMeshOption, setMPOption
+    mpMesh = polympo_createMPMesh(setMeshOption,setMPOption) !creates test mesh
+  end subroutine
+end module
+
 !---------------------------------------------------------------------------
-!> This is a test on the set/get APIs provided in polyMPO
-!> These fields can be set and get at anytime
-!> For specific usage, see src/pmpo_fortran 
+!> This is a test of use a module to create mpMesh pointer for polyMPO
+!> The test is a demonstration of how to use a module to create mpMesh object
+!> For specific usage of binding functions, see src/pmpo_fortran 
 !---------------------------------------------------------------------------
 program main
   use polympo
   use iso_c_binding
+  use mpMesh_ptr
   implicit none
   include 'mpif.h'
     
   integer, parameter :: APP_RKIND = selected_real_kind(15)
   integer :: nverts, numCompsVel, numCompsCoords, numMPs, numElms
-  integer :: i, j
   integer :: setMeshOption, setMPOption
   integer :: mpi_comm_handle = MPI_COMM_WORLD
   real(kind=APP_RKIND) :: test_epsilon = 1e-6
   real(kind=APP_RKIND) :: value1, value2
   integer, dimension(:), pointer :: MPElmID
-  real(kind=APP_RKIND), dimension(:,:), pointer :: MParray
   real(kind=APP_RKIND), dimension(:,:), pointer :: MPPositions
   real(kind=APP_RKIND), dimension(:,:), pointer :: Mesharray
-  real(kind=APP_RKIND), dimension(:), pointer :: xArray, yArray, zArray
   integer :: ierr, self
-  type(c_ptr) :: mpMesh
 
   call mpi_init(ierr)
   call mpi_comm_rank(mpi_comm_handle, self, ierr)
@@ -43,70 +53,39 @@ program main
   call polympo_checkPrecisionForRealKind(APP_RKIND)
   setMeshOption = 1 !create a hard coded planar test mesh
   setMPOption = 1 !create some random test MPs that based on the mesh option you give
-  mpMesh = polympo_createMPMesh(setMeshOption,setMPOption) !creates test mesh
- 
+  !initialize the mpMesh object using a module
+  call createMPMesh(setMeshOption, setMPOption) 
+
   !These are hard coded test mesh values 
   nverts = 19 !todo use getNumVtx from the Mesh object
   numCompsVel = 2 !todo use getNumComps from velocity fields
   numCompsCoords = 3
   numMPs = 49 !todo use getNumMPs from the MaterialPoints object
   numElms = 10
+  value1 = 1337
+  value2 = 42
 
   allocate(Mesharray(numCompsVel,nverts))
-  allocate(MParray(numCompsVel,numMPs))
   allocate(MPElmID(numMPs))
   allocate(MPPositions(numCompsCoords,numMPs))
-  allocate(xArray(nverts))
-  allocate(yArray(nverts))
-  allocate(zArray(nverts))
 
+  MPPositions = 0
   call polympo_getMPPositions(mpMesh, numCompsCoords, numMPs, c_loc(MPPositions))
-  do i = 1,numMPs 
-    call assert(abs(MPPositions(3,i) - 1.1) .lt. test_epsilon, "Assert zPositions for MP array Fail")
-  end do
+  call assert(all(abs(MPPositions(3,:) - 1.1) .lt. test_epsilon), "Assert zPositions for MP array Fail")
 
-  do i = 1,numCompsVel
-    do j = 1,nverts 
-        Mesharray(i,j) = (i-1)*numCompsVel + j
-    end do
-  end do
+  Mesharray = value1
   call polympo_setMeshOnSurfVeloIncr(mpMesh, numCompsVel, nverts, c_loc(Mesharray))
+  Mesharray = value2
   call polympo_setMeshOnSurfDispIncr(mpMesh, numCompsVel, nverts, c_loc(Mesharray))
 
   Mesharray = 1
   call polympo_getMeshOnSurfVeloIncr(mpMesh, numCompsVel, nverts, c_loc(Mesharray))
-  do i = 1,numCompsVel
-    do j = 1,nverts 
-        call assert((Mesharray(i,j) .eq. (i-1)*numCompsVel+j), "Assert 2d array Fail")
-    end do
-  end do
+  call assert(all(abs( Mesharray - value1) .lt. test_epsilon), "Assert zPositions for MP array Fail")
   Mesharray = 1
   call polympo_getMeshOnSurfDispIncr(mpMesh, numCompsVel, nverts, c_loc(Mesharray))
-  do i = 1,numCompsVel
-    do j = 1,nverts 
-        call assert((Mesharray(i,j) .eq. (i-1)*numCompsVel+j), "Assert 2d array Fail")
-    end do
-  end do
+  call assert(all(abs( Mesharray - value2) .lt. test_epsilon), "Assert zPositions for MP array Fail")
 
-  value1 = 1337
-  value2 = 42
-  xArray = value1
-  yArray = value2
-  zArray = value1 + value2 
-  call polympo_setMeshVtxCoords(mpMesh, nverts, c_loc(xArray), c_loc(yArray), c_loc(zArray))
-  xArray = 1
-  yArray = 1
-  zArray = 1 
-  call polympo_getMeshVtxCoords(mpMesh, nverts, c_loc(xArray), c_loc(yArray), c_loc(zArray))
-  call assert(all(xArray .eq. value1), "Assert xArray == value1 Failed!")
-  call assert(all(yArray .eq. value2), "Assert yArray == value2 Failed!")
-  call assert(all(zArray .eq. value1 + value2), "Assert zArray == value1 + value2 Failed!")
-
-  deallocate(MParray)
   deallocate(Mesharray)
-  deallocate(xArray)
-  deallocate(yArray)
-  deallocate(zArray)
 
   call polympo_deleteMPMesh(mpMesh)
   call polympo_finalize()

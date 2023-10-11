@@ -12,25 +12,17 @@ Mesh* createMesh(const mesh_type meshType, const geom_type geomType,
                  const std::vector<std::vector<double>> &v_array,
                  const std::vector<std::vector<int>> &elm2VtxConn_array,
                  const std::vector<int> &vtxCoords_array,
-                 const std::vector<std::vector<int>> &vtx2ElmConn_array,
                  const std::vector<std::vector<int>> &elm2ElmConn_array){
     const int nCells = nCells_size;
     const int nVertices = nVertices_size;
     DoubleVec3dView vtxCoords("verticesCoordinates", nVertices);
-    IntElm2VtxView vtx2ElmConn("vertexToElementsConnection",nVertices);
     DoubleVec3dView::HostMirror h_vtxCoords = Kokkos::create_mirror_view(vtxCoords);
-    IntElm2VtxView::HostMirror h_vtx2ElmConn = Kokkos::create_mirror_view(vtx2ElmConn);
     for(int i=0; i<nVertices_size; i++){
         h_vtxCoords(i,0) = v_array[i][0]; 
         h_vtxCoords(i,1) = v_array[i][1];
         h_vtxCoords(i,2) = v_array[i][2]; 
-        h_vtx2ElmConn(i,0) = vtx2ElmConn_array[i][0];
-        for(int j=1; j<=vtx2ElmConn_array[i][0]; j++){
-            h_vtx2ElmConn(i,j) = vtx2ElmConn_array[i][j]; 
-        }
     }
     Kokkos::deep_copy(vtxCoords, h_vtxCoords);
-    Kokkos::deep_copy(vtx2ElmConn,h_vtx2ElmConn);
 
     IntVtx2ElmView elm2VtxConn("elementToVerticesConnection",nCells);
     IntVtx2ElmView::HostMirror h_elm2VtxConn = Kokkos::create_mirror_view(elm2VtxConn);
@@ -59,7 +51,6 @@ Mesh* createMesh(const mesh_type meshType, const geom_type geomType,
                     nCells,
                     vtxCoords,
                     elm2VtxConn,
-                    vtx2ElmConn,
                     elm2ElmConn);
 }
 
@@ -83,14 +74,6 @@ Mesh* initTestMesh(const int testMeshOption, const int replicateFactor){
              {9,14,18,17,15,8,-1,-1}, {7,8,15,-1,-1,-1,-1,-1},
              {6,7,15,17,16,-1,-1,-1}, {14,10,11,12,13,19,18,-1}};
         const std::vector<int> vtxCoords_array = {8,3,5,3,3,4,6,3,5,7}; //[nCells_size]
-        const std::vector<std::vector<int>> vtx2ElmConn_array = //[nVertices_size][maxElmsPerVtx+1] 
-            {{1,0,-1,-1,-1,-1},{2,0,1,-1,-1,-1},{4,1,2,3,4,-1},   //3
-             {3,0,1,2,-1,-1},  {3,0,2,5,-1,-1}, {2,0,8,-1,-1,-1}, //6
-             {3,0,7,8,-1,-1},  {3,0,6,7,-1,-1}, {3,0,5,6,-1,-1},  //9
-             {3,2,5,9,-1,-1},  {3,2,3,9,-1,-1}, {3,3,4,9,-1,-1},  //12
-             {2,4,9,-1,-1,-1}, {3,5,6,9,-1,-1}, {3,6,7,8,-1,-1},  //15
-             {1,8,-1,-1,-1,-1},{2,6,8,-1,-1,-1},{2,6,9,-1,-1,-1}, //18
-             {1,9,-1,-1,-1,-1}};                     
         const std::vector<std::vector<int>> elm2ElmConn_array = //[nCells_size][maxVtxsPerElm]
             {{-2,1,2,5,6,7,8,-2},    {-2,2,0,-1,-1,-1,-1,-1},
              {1,3,9,5,0,-1,-1,-1},   {4,9,2,-1,-1,-1,-1,-1},
@@ -100,7 +83,7 @@ Mesh* initTestMesh(const int testMeshOption, const int replicateFactor){
         auto meshReturn = createMesh(meshType, geomType, sphereRadius,
                                      nVertices_size, nCells_size,
                                      v_array, elm2VtxConn_array,
-                                     vtxCoords_array, vtx2ElmConn_array,
+                                     vtxCoords_array,
                                      elm2ElmConn_array);
         if(replicateFactor >1){
             auto meshReplicate = replicateMesh(meshReturn,
@@ -130,7 +113,7 @@ MaterialPoints* initTestMPs(Mesh* mesh, int testMPOption){
         default:
             fprintf(stderr,"TestMPOption not avaiable! return an empty one!");
     }
-    DoubleVec3dView vtxCoords = mesh->getVtxCoords();   
+    DoubleVec3dView vtxCoords = mesh->getMeshField<polyMPO::MeshF_VtxCoords>();   
     IntVtx2ElmView elm2VtxConn = mesh->getElm2VtxConn();
     auto geomType = mesh->getGeomType();
 
@@ -224,9 +207,8 @@ Mesh* replicateMesh(Mesh* mesh, int replicateFactor){
     const int nCells = nCells_size*replicateFactor;
     const int nVertices = nVertices_size*replicateFactor;
      
-    DoubleVec3dView v_array = mesh->getVtxCoords(); 
+    DoubleVec3dView v_array = mesh->getMeshField<polyMPO::MeshF_VtxCoords>(); 
     DoubleVec3dView vtxCoords("verticesCoordinates", nVertices);
-    IntElm2VtxView vtx2ElmConn("TODO remove",1);
     Kokkos::parallel_for("set vtxCoords", nVertices_size, KOKKOS_LAMBDA(const int i){
         for(int f=0; f<replicateFactor; f++){
             vtxCoords(i+f*nVertices_size,0) = v_array(i,0); 
@@ -265,7 +247,6 @@ Mesh* replicateMesh(Mesh* mesh, int replicateFactor){
                     nCells,
                     vtxCoords,
                     elm2VtxConn,
-                    vtx2ElmConn,
                     elm2ElmConn);
 
 }

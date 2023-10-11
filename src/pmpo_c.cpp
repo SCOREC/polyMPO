@@ -2,6 +2,9 @@
 #include "pmpo_c.h"
 #include <stdio.h>
 
+#define MP_DETACHED -1 //TODO: consider other ways later, like enum
+#define MP_ACTIVE 1
+
 namespace{
   std::vector<MPMesh_ptr> p_mpmeshes;////store the p_mpmeshes that is legal
     
@@ -96,52 +99,151 @@ typedef Kokkos::View<
           Kokkos::MemoryTraits<Kokkos::Unmanaged>
         > kkIntViewHostU;//TODO:put it somewhere else (maybe)
 
-void polympo_setMPVelArray_f(MPMesh_ptr p_mpmesh, int size, double* array) {
+
+void polympo_createMPs_f(MPMesh_ptr p_mpmesh,
+                       int numElms,
+                       int numMPs, // >= number of active MPs
+                       int* mpsPerElm,
+                       int* mp2Elm,
+                       int* isMPActive) {
+
   checkMPMeshValid(p_mpmesh);
-  auto p_MPs = ((polyMPO::MPMesh*)p_mpmesh)->p_MPs;
-  kkVec2dViewHostU arrayHost(array,size);
-  auto mpVel = p_MPs->getData<polyMPO::MPF_Vel>();
- 
-  auto mpVelCopy = polyMPO::DoubleVec2dView("mpVelNewValue",size);
-  //copy the host array to the device
-  Kokkos::deep_copy(mpVelCopy,arrayHost);
-  
-  //modify the MP array with the mpVelCopy copied from the host array
-  auto setVel = PS_LAMBDA(const int& elm, const int& mp, const int& mask){
-    if(mask) { 
-      for(int i=0; i<vec2d_nEntries; i++){
-        mpVel(mp,i) = mpVelCopy(mp,i);
+
+  //the mesh must be fixed/set before adding MPs
+  auto p_mesh = ((polyMPO::MPMesh*)p_mpmesh)->p_mesh;
+  PMT_ALWAYS_ASSERT(!p_mesh->meshEditable());
+  PMT_ALWAYS_ASSERT(p_mesh->getNumElements() == numElms);
+
+  int firstElmWithMPs=-1;
+  for (int i=0; i<numElms; i++) {
+    if(mpsPerElm[i]) {
+      firstElmWithMPs = i;
+      break;
+    }
+  }
+
+  int minElmID = numElms+1;
+  for(int i = 0; i < numMPs; i++) {
+    if(isMPActive[i] == MP_ACTIVE) {
+      if(mp2Elm[i] < minElmID) {
+        minElmID = mp2Elm[i];
       }
     }
-  };
-  p_MPs->parallel_for(setVel, "setVel to array");
+  }
+  int offset = -1;
+  if(minElmID-firstElmWithMPs==1) {
+    offset = 1;
+  }else if (minElmID-firstElmWithMPs==0){
+    offset = 0;
+  }else {
+    fprintf(stderr,"The minElmID is incorrect! Offset is wrong!\n");
+    exit(1);
+  }
+
+  std::vector<int> active_mpIDs(numMPs);
+  std::vector<int> active_mp2Elm(numMPs);
+  int numActiveMPs = 0;
+  for(int i=0; i<numMPs; i++) {
+    if(isMPActive[i] == MP_ACTIVE) {
+      active_mpIDs[numActiveMPs] = i;
+      active_mp2Elm[numActiveMPs] = mp2Elm[i]-offset; //adjust for 1 based indexing if needed
+      numActiveMPs++;
+    }
+  }
+
+  //TODO do we care about empty ranks? check just in case...
+  PMT_ALWAYS_ASSERT(numActiveMPs>0);
+
+  using space_t = Kokkos::DefaultExecutionSpace::memory_space;
+  kkIntViewHostU mpsPerElm_h(mpsPerElm,numElms);
+  auto mpsPerElm_d = Kokkos::create_mirror_view_and_copy(space_t(), mpsPerElm_h);
+
+  kkIntViewHostU active_mp2Elm_h(active_mp2Elm.data(),numActiveMPs);
+  auto active_mp2Elm_d = Kokkos::create_mirror_view_and_copy(space_t(), active_mp2Elm_h);
+
+  kkIntViewHostU active_mpIDs_h(active_mpIDs.data(),numActiveMPs);
+  auto active_mpIDs_d = Kokkos::create_mirror_view_and_copy(space_t(), active_mpIDs_h);
+
+  delete ((polyMPO::MPMesh*)p_mpmesh)->p_MPs;
+  ((polyMPO::MPMesh*)p_mpmesh)->p_MPs =
+     new polyMPO::MaterialPoints(numElms, numActiveMPs, mpsPerElm_d, active_mp2Elm_d, active_mpIDs_d);
+  auto p_MPs = ((polyMPO::MPMesh*)p_mpmesh)->p_MPs;
+  p_MPs->setElmIDoffset(offset);
 }
 
-void polympo_getMPVelArray_f(MPMesh_ptr p_mpmesh, int size, double* array) {
+
+void polympo_getMPCurElmID_f(MPMesh_ptr p_mpmesh,
+                           int numMPs,
+                           int* elmIDs){
+
   checkMPMeshValid(p_mpmesh);
-  kkVec2dViewHostU arrayHost(array,size);
-
   auto p_MPs = ((polyMPO::MPMesh*)p_mpmesh)->p_MPs;
-  auto mpVel = p_MPs->getData<polyMPO::MPF_Vel>();
-  auto mpVelCopy = polyMPO::DoubleVec2dView("copyOfMPVel",size);
-   
-  PMT_ALWAYS_ASSERT(p_MPs->getCount()==size); 
-  PMT_ALWAYS_ASSERT(static_cast<size_t>(p_MPs->getCount()*vec2d_nEntries)==mpVelCopy.size());
+  PMT_ALWAYS_ASSERT(numMPs >= p_MPs->getCount());
+  auto mpCurElmID = p_MPs->getData<polyMPO::MPF_Cur_Elm_ID>();
+  auto mpAppID = p_MPs->getData<polyMPO::MPF_MP_APP_ID>();
+  auto elmIDoffset = p_MPs->getElmIDoffset();
 
-  //the pumipic 'slices' are not guaranteed to be contiguous, so we run a
-  //pumipic parallel_for loop to fill a contigious array which will be copied to
-  //a contiguous host array
-  auto copyVel = PS_LAMBDA(const int& elm, const int& mp, const int& mask){
-    if(mask) { 
-      for(int i=0; i<vec2d_nEntries; i++){
-        mpVelCopy(mp,i) = mpVel(mp,i);
-      }
+  kkIntViewHostU arrayHost(elmIDs,numMPs);
+  polyMPO::IntView mpCurElmIDCopy("mpCurElmIDNewValue",numMPs);
+
+  auto getElmId = PS_LAMBDA(const int& elm, const int& mp, const int& mask){
+    if(mask){
+        mpCurElmIDCopy(mpAppID(mp)) = mpCurElmID(mp)+elmIDoffset;
     }
   };
-  p_MPs->parallel_for(copyVel, "copy mpVel to mpVelCopy");
+  p_MPs->parallel_for(getElmId, "get mpCurElmID");
+  Kokkos::deep_copy( arrayHost, mpCurElmIDCopy);
+}
 
-  //copy the device array to the host
-  Kokkos::deep_copy(arrayHost,mpVelCopy); 
+void polympo_getMPPositions_f(MPMesh_ptr p_mpmesh,
+                           int numComps,
+                           int numMPs,
+                           double* mpPositionsIn){ 
+  checkMPMeshValid(p_mpmesh);
+  auto p_MPs = ((polyMPO::MPMesh*)p_mpmesh)->p_MPs;
+  PMT_ALWAYS_ASSERT(numComps == vec3d_nEntries);
+  PMT_ALWAYS_ASSERT(numMPs == p_MPs->getCount());
+
+  auto mpPositions = p_MPs->getData<polyMPO::MPF_Cur_Pos_XYZ>();
+  kkDbl2dViewHostU arrayHost(mpPositionsIn,numComps,numMPs);
+  Kokkos::View<double**> mpPositionsCopy("mpPositionsCopy",vec3d_nEntries,numMPs);
+  auto setVel = PS_LAMBDA(const int& elm, const int& mp, const int& mask){
+    if(mask){
+        mpPositionsCopy(0,mp) = mpPositions(mp,0);
+        mpPositionsCopy(1,mp) = mpPositions(mp,1);
+        mpPositionsCopy(2,mp) = mpPositions(mp,2);
+    }
+  };
+  p_MPs->parallel_for(setVel, "get mpCurElmID");
+  Kokkos::deep_copy(arrayHost, mpPositionsCopy);
+}
+
+void polympo_setMPVel_f(MPMesh_ptr p_mpmesh, int size, double* array) {
+  fprintf(stderr,"%s is no longer supported\n", __func__);
+  PMT_ALWAYS_ASSERT(false);
+  (void)p_mpmesh;// to silence the unused param warning
+  (void)size;
+  (void)array;
+}
+
+void polympo_getMPVel_f(MPMesh_ptr p_mpmesh, int size, double* array) {
+  fprintf(stderr,"%s is no longer supported\n", __func__);
+  PMT_ALWAYS_ASSERT(false);
+  (void)p_mpmesh;// to silence the unused param warning
+  (void)size;
+  (void)array;
+}
+
+void polympo_startMeshFill_f(MPMesh_ptr p_mpmesh){
+  checkMPMeshValid(p_mpmesh);
+  ((polyMPO::MPMesh*)p_mpmesh)->p_mesh->setMeshEdit(true);  
+}
+
+void polympo_endMeshFill_f(MPMesh_ptr p_mpmesh){
+  checkMPMeshValid(p_mpmesh);
+  auto p_mesh = ((polyMPO::MPMesh*)p_mpmesh)->p_mesh; 
+  PMT_ALWAYS_ASSERT(p_mesh->meshEditable());
+  p_mesh->setMeshEdit(false);  
 }
 
 void polympo_checkMeshMaxSettings_f(MPMesh_ptr p_mpmesh, int maxEdges, int vertexDegree){
@@ -152,7 +254,16 @@ void polympo_checkMeshMaxSettings_f(MPMesh_ptr p_mpmesh, int maxEdges, int verte
 
 void polympo_setMeshNumVtxs_f(MPMesh_ptr p_mpmesh, int numVtxs){
   checkMPMeshValid(p_mpmesh);
-  ((polyMPO::MPMesh*)p_mpmesh)->p_mesh->setNumVtxs(numVtxs);
+  auto p_mesh = ((polyMPO::MPMesh*)p_mpmesh)->p_mesh;
+  p_mesh->setNumVtxs(numVtxs);
+  p_mesh->setMeshVtxBasedFieldSize(); 
+}
+
+int polympo_getMeshNumVtxs(MPMesh_ptr p_mpmesh) {
+  checkMPMeshValid(p_mpmesh); //chech vailidity
+  auto p_mesh = ((polyMPO::MPMesh*)p_mpmesh)->p_mesh;
+  int nVtxs = p_mesh->getNumVertices();
+  return nVtxs;
 }
 
 void polympo_setMeshNumElms_f(MPMesh_ptr p_mpmesh, int numElms){
@@ -165,6 +276,16 @@ void polympo_setMeshNumElms_f(MPMesh_ptr p_mpmesh, int numElms){
   p_mesh->setNumElms(numElms);
   p_mesh->setElm2VtxConn(elm2Vtx);
   p_mesh->setElm2ElmConn(elm2Elm);
+}
+
+
+void polympo_setMeshTypeGeneralPoly_f(MPMesh_ptr p_mpmesh){
+
+int polympo_getMeshNumElms_f(MPMesh_ptr p_mpmesh) {
+  checkMPMeshValid(p_mpmesh); //chech vailidity
+  auto p_mesh = ((polyMPO::MPMesh*)p_mpmesh)->p_mesh;
+  int nElms = p_mesh->getNumElements();
+  return nElms;
 }
 
 void polympo_setMeshTypeGeneralPoly_f(MPMesh_ptr p_mpmesh){
@@ -199,6 +320,7 @@ void polympo_setMeshSphereRadius_f(MPMesh_ptr p_mpmesh, double sphereRadius){
   p_mesh->setSphereRadius(sphereRadius);
 }
 
+
 void polympo_setMeshVtxCoords_f(MPMesh_ptr p_mpmesh, int nVertices, double* xArray, double* yArray, double* zArray){
   //chech validity
   checkMPMeshValid(p_mpmesh);
@@ -225,10 +347,12 @@ void polympo_setMeshVtxCoords_f(MPMesh_ptr p_mpmesh, int nVertices, double* xArr
 }
 
 void polympo_setMeshNumEdgesPerElm_f(MPMesh_ptr p_mpmesh, int nCells, int* array){
+
   //chech vailidity
   checkMPMeshValid(p_mpmesh);
   kkIntViewHostU arrayHost(array,nCells);
   auto p_mesh = ((polyMPO::MPMesh*)p_mpmesh)->p_mesh;
+  PMT_ALWAYS_ASSERT(p_mesh->meshEditable());
 
   //check the size
   PMT_ALWAYS_ASSERT(p_mesh->getNumElements()==nCells);
@@ -248,6 +372,7 @@ void polympo_setMeshElm2VtxConn_f(MPMesh_ptr p_mpmesh, int maxEdges, int nCells,
   checkMPMeshValid(p_mpmesh);
   kkInt2dViewHostU arrayHost(array,maxEdges,nCells); 
   auto p_mesh = ((polyMPO::MPMesh*)p_mpmesh)->p_mesh; 
+  PMT_ALWAYS_ASSERT(p_mesh->meshEditable());
 
   //check the size
   PMT_ALWAYS_ASSERT(maxEdges <= maxVtxsPerElm);
@@ -268,6 +393,7 @@ void polympo_setMeshElm2ElmConn_f(MPMesh_ptr p_mpmesh, int maxEdges, int nCells,
   checkMPMeshValid(p_mpmesh);
   kkInt2dViewHostU arrayHost(array,maxEdges,nCells); //Fortran is column-major
   auto p_mesh = ((polyMPO::MPMesh*)p_mpmesh)->p_mesh; 
+  PMT_ALWAYS_ASSERT(p_mesh->meshEditable());
 
   //check the size
   PMT_ALWAYS_ASSERT(maxEdges <= maxVtxsPerElm);
@@ -283,32 +409,108 @@ void polympo_setMeshElm2ElmConn_f(MPMesh_ptr p_mpmesh, int maxEdges, int nCells,
   });
 }
 
-void polympo_setMeshVelArray_f(MPMesh_ptr p_mpmesh, int size, double* array) {
+void polympo_setMeshVtxCoords_f(MPMesh_ptr p_mpmesh, int nVertices, double* xArray, double* yArray, double* zArray){
+  //chech validity
+  checkMPMeshValid(p_mpmesh);
+  auto p_mesh = ((polyMPO::MPMesh*)p_mpmesh)->p_mesh;
+
+  //check the size
+  PMT_ALWAYS_ASSERT(p_mesh->getNumVertices()==nVertices); 
+
+  //copy the host array to the device
+  auto coordsArray = p_mesh->getMeshField<polyMPO::MeshF_VtxCoords>();
+  auto h_coordsArray = Kokkos::create_mirror_view(coordsArray);
+  for(int i=0; i<nVertices; i++){
+    h_coordsArray(i,0) = xArray[i];
+    h_coordsArray(i,1) = yArray[i];
+    h_coordsArray(i,2) = zArray[i];
+  }
+  Kokkos::deep_copy(coordsArray, h_coordsArray);
+}
+
+void polympo_getMeshVtxCoords_f(MPMesh_ptr p_mpmesh, int nVertices, double* xArray, double* yArray, double* zArray){
+  //chech validity
+  checkMPMeshValid(p_mpmesh);
+  auto p_mesh = ((polyMPO::MPMesh*)p_mpmesh)->p_mesh;
+
+  //check the size
+  PMT_ALWAYS_ASSERT(p_mesh->getNumVertices()==nVertices); 
+  
+  //copy the device to host 
+  auto coordsArray = p_mesh->getMeshField<polyMPO::MeshF_VtxCoords>();
+  auto h_coordsArray = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(),
+                                                           coordsArray);
+  for(int i=0; i<nVertices; i++){
+    xArray[i] = h_coordsArray(i,0);
+    yArray[i] = h_coordsArray(i,1);
+    zArray[i] = h_coordsArray(i,2);
+  }
+}
+
+void polympo_setMeshOnSurfVeloIncr_f(MPMesh_ptr p_mpmesh, int nComps, int nVertices, double* array) {
   //check mpMesh is valid
   checkMPMeshValid(p_mpmesh);
   auto p_mesh = ((polyMPO::MPMesh*)p_mpmesh)->p_mesh;
-  kkVec2dViewHostU arrayHost(array,size);
+  kkVec2dViewHostU arrayHost(array,nVertices);
 
-  auto vtxField = p_mesh->getMeshField<polyMPO::MeshF_Vel>();
+  auto vtxField = p_mesh->getMeshField<polyMPO::MeshF_OnSurfVeloIncr>();
 
   //check the size
-  PMT_ALWAYS_ASSERT(static_cast<size_t>(size*vec2d_nEntries)==vtxField.size());
+  PMT_ALWAYS_ASSERT(nComps == vec2d_nEntries);
+  PMT_ALWAYS_ASSERT(static_cast<size_t>(nVertices*vec2d_nEntries)==vtxField.size());
 
   //copy the host array to the device
   Kokkos::deep_copy(vtxField,arrayHost);
 }
 
-void polympo_getMeshVelArray_f(MPMesh_ptr p_mpmesh, int size, double* array) {
+void polympo_getMeshOnSurfVeloIncr_f(MPMesh_ptr p_mpmesh, int nComps, int nVertices, double* array) {
   //check mpMesh is valid
   checkMPMeshValid(p_mpmesh);
   auto p_mesh = ((polyMPO::MPMesh*)p_mpmesh)->p_mesh;
-  kkVec2dViewHostU arrayHost(array,size);
+  kkVec2dViewHostU arrayHost(array,nVertices);
 
-  auto vtxField = p_mesh->getMeshField<polyMPO::MeshF_Vel>();
+  auto vtxField = p_mesh->getMeshField<polyMPO::MeshF_OnSurfVeloIncr>();
 
   //check the size
-  PMT_ALWAYS_ASSERT(p_mesh->getNumVertices()==size); 
-  PMT_ALWAYS_ASSERT(static_cast<size_t>(size*vec2d_nEntries)==vtxField.size());
+  PMT_ALWAYS_ASSERT(nComps == vec2d_nEntries);
+  PMT_ALWAYS_ASSERT(p_mesh->getNumVertices() == nVertices); 
+  PMT_ALWAYS_ASSERT(static_cast<size_t>(nVertices*vec2d_nEntries)==vtxField.size());
+
+  //copy the device array to the host
+  Kokkos::deep_copy(arrayHost, vtxField);
+}
+
+void polympo_setMeshOnSurfDispIncr_f(MPMesh_ptr p_mpmesh, int nComps, int nVertices, double* array) {
+
+  //check mpMesh is valid
+  checkMPMeshValid(p_mpmesh);
+  auto p_mesh = ((polyMPO::MPMesh*)p_mpmesh)->p_mesh;
+  kkVec2dViewHostU arrayHost(array,nVertices);
+
+  auto vtxField = p_mesh->getMeshField<polyMPO::MeshF_OnSurfDispIncr>();
+
+  //check the size
+  PMT_ALWAYS_ASSERT(nComps == vec2d_nEntries);
+  PMT_ALWAYS_ASSERT(static_cast<size_t>(nVertices*vec2d_nEntries)==vtxField.size());
+
+  //copy the host array to the device
+  Kokkos::deep_copy(vtxField,arrayHost);
+}
+
+
+void polympo_getMeshOnSurfDispIncr_f(MPMesh_ptr p_mpmesh, int nComps, int nVertices, double* array) {
+
+  //check mpMesh is valid
+  checkMPMeshValid(p_mpmesh);
+  auto p_mesh = ((polyMPO::MPMesh*)p_mpmesh)->p_mesh;
+  kkVec2dViewHostU arrayHost(array,nVertices);
+
+  auto vtxField = p_mesh->getMeshField<polyMPO::MeshF_OnSurfDispIncr>();
+
+  //check the size
+  PMT_ALWAYS_ASSERT(nComps == vec2d_nEntries);
+  PMT_ALWAYS_ASSERT(p_mesh->getNumVertices() == nVertices); 
+  PMT_ALWAYS_ASSERT(static_cast<size_t>(nVertices*vec2d_nEntries)==vtxField.size());
 
   //copy the device array to the host
   Kokkos::deep_copy(arrayHost, vtxField);

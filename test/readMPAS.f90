@@ -129,13 +129,9 @@ subroutine loadMPASMesh(mpMesh, filename)
     call polympo_getMPPositions(mpMesh,nDims,numMPs,c_loc(mpPosition))
     do i = 1,numMPs
       if(isMPActive(i) .eq. 1) then
-        write(*,*) 'i', i, 'mpPos', mpPosition(1,i), 'expected', i+ptOne
-        if(.not. epsilonDiff(mpPosition(1,i),i+ptOne)) then
-          write(*,*) 'i', i, 'does not match'
-        endif
         call assert(epsilonDiff(mpPosition(1,i),i+ptOne), "x position of MP does not match")
-        !call assert(epsilonDiff(mpPosition(2,i),numMPs+i+ptOne), "y position of MP does not match")
-        !call assert(epsilonDiff(mpPosition(3,i),(2*numMPs)+i+ptOne), "z position of MP does not match")
+        call assert(epsilonDiff(mpPosition(2,i),numMPs+i+ptOne), "y position of MP does not match")
+        call assert(epsilonDiff(mpPosition(3,i),(2*numMPs)+i+ptOne), "z position of MP does not match")
       endif
     end do
     

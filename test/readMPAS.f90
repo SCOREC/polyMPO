@@ -34,6 +34,7 @@ subroutine loadMPASMesh(mpMesh, filename)
     real(kind=MPAS_RKIND) :: sphereRadius
     integer, dimension(:), pointer :: nEdgesOnCell
     real(kind=MPAS_RKIND), dimension(:), pointer :: xVertex, yVertex, zVertex
+    real(kind=MPAS_RKIND), dimension(:), pointer :: latVertex, lonVertex
     integer, dimension(:,:), pointer :: verticesOnCell, cellsOnCell
     integer, dimension(:), pointer :: mpsPerElm, mp2Elm, isMPActive
     
@@ -41,6 +42,7 @@ subroutine loadMPASMesh(mpMesh, filename)
                               nCells, nVertices, nEdgesOnCell, &
                               onSphere, sphereRadius, &
                               xVertex, yVertex, zVertex, &
+                              latVertex, lonVertex, &
                               verticesOnCell, cellsOnCell)
     
     call polympo_checkPrecisionForRealKind(MPAS_RKIND)
@@ -112,6 +114,7 @@ subroutine loadMPASMesh(mpMesh, filename)
 
     !set vtxCoords which is a mesh field 
     call polympo_setMeshVtxCoords(mpMesh,nVertices,c_loc(xVertex),c_loc(yVertex),c_loc(zVertex))
+    call polympo_setMeshVtxLatLon(mpMesh,nVertices,c_loc(latVertex),c_loc(lonVertex))
     !unloadMPASMesh to deallocated
     deallocate(nEdgesOnCell)
     deallocate(xVertex)
@@ -125,6 +128,7 @@ subroutine readMPASMesh(filename, maxEdges, vertexDegree, &
                         nCells, nVertices, nEdgesOnCell, &
                         onSphere, sphereRadius, &
                         xVertex, yVertex, zVertex, &
+                        latVertex, lonVertex, &
                         verticesOnCell, cellsOnCell)
     use :: netcdf
     use :: iso_c_binding
@@ -138,10 +142,12 @@ subroutine readMPASMesh(filename, maxEdges, vertexDegree, &
     real(kind=MPAS_RKIND) :: sphereRadius
     integer, dimension(:), pointer :: nEdgesOnCell
     real(kind=MPAS_RKIND), dimension(:), pointer :: xVertex, yVertex, zVertex
+    real(kind=MPAS_RKIND), dimension(:), pointer :: latVertex, lonVertex
     integer, dimension(:,:), pointer :: verticesOnCell, cellsOnCell
 
     integer :: ncid, status, nCellsID, nVerticesID, maxEdgesID, vertexDegreeID, &
                nEdgesOnCellID, xVertexID, yVertexID, zVertexID, &
+               latVertexID, lonVertexID, &
                verticesOnCellID, cellsOnCellID
     
     status = nf90_open(path=trim(filename), mode=nf90_nowrite, ncid=ncid)
@@ -210,6 +216,8 @@ subroutine readMPASMesh(filename, maxEdges, vertexDegree, &
     allocate(xVertex(nVertices))
     allocate(yVertex(nVertices))
     allocate(zVertex(nVertices))
+    allocate(latVertex(nVertices))
+    allocate(lonVertex(nVertices))
     allocate(nEdgesOnCell(nCells))
     allocate(verticesOnCell(maxEdges, nCells))
     allocate(cellsOnCell(maxEdges, nCells))
@@ -252,6 +260,20 @@ subroutine readMPASMesh(filename, maxEdges, vertexDegree, &
         stop
     end if
 
+    status = nf90_inq_varid(ncid, 'latVertex', latVertexID)
+    if (status /= nf90_noerr) then
+        write(0, *) "readMPASMesh: Error on inquire varid of 'latVertex'"
+        write(0, *) trim(nf90_strerror(status))
+        stop
+    end if
+
+    status = nf90_inq_varid(ncid, 'lonVertex', lonVertexID)
+    if (status /= nf90_noerr) then
+        write(0, *) "readMPASMesh: Error on inquire varid of 'lonVertex'"
+        write(0, *) trim(nf90_strerror(status))
+        stop
+    end if
+
     status = nf90_inq_varid(ncid, 'nEdgesOnCell', nEdgesOnCellID)
     if (status /= nf90_noerr) then
         write(0, *) "readMPASMesh: Error on inquire varid of 'nEdgesOnCell'"
@@ -279,8 +301,8 @@ subroutine readMPASMesh(filename, maxEdges, vertexDegree, &
         write(0, *) trim(nf90_strerror(status))
         stop
     end if
-    status = nf90_get_var(ncid, yVertexID, yVertex)
 
+    status = nf90_get_var(ncid, yVertexID, yVertex)
     if (status /= nf90_noerr) then
         write(0, *) "readMPASMesh: Error on get var of 'yVertex'"
         write(0, *) trim(nf90_strerror(status))
@@ -290,6 +312,20 @@ subroutine readMPASMesh(filename, maxEdges, vertexDegree, &
     status = nf90_get_var(ncid, zVertexID, zVertex)
     if (status /= nf90_noerr) then
         write(0, *) "readMPASMesh: Error on get var of 'zVertex'"
+        write(0, *) trim(nf90_strerror(status))
+        stop
+    end if
+
+    status = nf90_get_var(ncid, latVertexID, latVertex)
+    if (status /= nf90_noerr) then
+        write(0, *) "readMPASMesh: Error on get var of 'latVertex'"
+        write(0, *) trim(nf90_strerror(status))
+        stop
+    end if
+
+    status = nf90_get_var(ncid, lonVertexID, lonVertex)
+    if (status /= nf90_noerr) then
+        write(0, *) "readMPASMesh: Error on get var of 'lonVertex'"
         write(0, *) trim(nf90_strerror(status))
         stop
     end if

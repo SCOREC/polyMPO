@@ -48,6 +48,8 @@ void polympo_setMeshElm2ElmConn(MPMesh_ptr p_mpmesh, int maxEdges, int nCells, i
 //Mesh fields
 void polympo_setMeshVtxCoords(MPMesh_ptr p_mpmesh, int nVertices, double* xArray, double* yArray, double* zArray);
 void polympo_getMeshVtxCoords(MPMesh_ptr p_mpmesh, int nVertices, double* xArray, double* yArray, double* zArray);
+void polympo_setMeshVtxLatLon(MPMesh_ptr p_mpmesh, int nVertices, double* latitude, double* longitude);
+void polympo_getMeshVtxLatLon(MPMesh_ptr p_mpmesh, int nVertices, double* latitude, double* longitude);
 void polympo_setMeshOnSurfVeloIncr(MPMesh_ptr p_mpmesh, int nComps, int nVertices, double* array);//vec2d
 void polympo_getMeshOnSurfVeloIncr(MPMesh_ptr p_mpmesh, int nComps, int nVertices, double* array);//vec2d
 void polympo_setMeshOnSurfDispIncr(MPMesh_ptr p_mpmesh, int nComps, int nVertices, double* array);//vec2d

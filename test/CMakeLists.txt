@@ -43,6 +43,7 @@ endfunction()
 
 pmpo_add_exe(testWachspress testWachspress.cpp)
 pmpo_add_exe(unitTest unitTest.cpp)
+pmpo_add_exe(cpu2gpu testCpuToGpuToCpuXfer.cpp)
 pmpo_add_exe(mpUnitTest mpUnitTest.cpp)
 pmpo_add_exe(testReconstruction testReconstruction.cpp)
 pmpo_add_exe(testTracking testTracking.cpp)

@@ -255,12 +255,6 @@ void polympo_setMeshNumVtxs(MPMesh_ptr p_mpmesh, int numVtxs){
   p_mesh->setMeshVtxBasedFieldSize(); 
 }
 
-int polympo_getMeshNumVtxs(MPMesh_ptr p_mpmesh) {
-  checkMPMeshValid(p_mpmesh); //chech vailidity
-  auto p_mesh = ((polyMPO::MPMesh*)p_mpmesh)->p_mesh;
-  int nVtxs = p_mesh->getNumVertices();
-  return nVtxs;
-}
 
 void polympo_setMeshNumElms(MPMesh_ptr p_mpmesh, int numElms){
   checkMPMeshValid(p_mpmesh);
@@ -274,12 +268,7 @@ void polympo_setMeshNumElms(MPMesh_ptr p_mpmesh, int numElms){
   p_mesh->setElm2ElmConn(elm2Elm);
 }
 
-int polympo_getMeshNumElms(MPMesh_ptr p_mpmesh) {
-  checkMPMeshValid(p_mpmesh); //chech vailidity
-  auto p_mesh = ((polyMPO::MPMesh*)p_mpmesh)->p_mesh;
-  int nElms = p_mesh->getNumElements();
-  return nElms;
-}
+
 
 void polympo_setMeshTypeGeneralPoly(MPMesh_ptr p_mpmesh){
   //chech validity
@@ -375,6 +364,20 @@ void polympo_setMeshElm2ElmConn(MPMesh_ptr p_mpmesh, int maxEdges, int nCells, i
   });
 }
 
+int polympo_getMeshNumVtxs(MPMesh_ptr p_mpmesh) {
+  checkMPMeshValid(p_mpmesh); //chech vailidity
+  auto p_mesh = ((polyMPO::MPMesh*)p_mpmesh)->p_mesh;
+  int nVtxs = p_mesh->getNumVertices();
+  return nVtxs;
+}
+
+int polympo_getMeshNumElms(MPMesh_ptr p_mpmesh) {
+  checkMPMeshValid(p_mpmesh); //chech vailidity
+  auto p_mesh = ((polyMPO::MPMesh*)p_mpmesh)->p_mesh;
+  int nElms = p_mesh->getNumElements();
+  return nElms;
+}
+
 void polympo_setMeshVtxCoords(MPMesh_ptr p_mpmesh, int nVertices, double* xArray, double* yArray, double* zArray){
   //chech validity
   checkMPMeshValid(p_mpmesh);
@@ -410,6 +413,36 @@ void polympo_getMeshVtxCoords(MPMesh_ptr p_mpmesh, int nVertices, double* xArray
     xArray[i] = h_coordsArray(i,0);
     yArray[i] = h_coordsArray(i,1);
     zArray[i] = h_coordsArray(i,2);
+  }
+}
+
+void polympo_setMeshCellCenters(MPMesh_ptr p_mpmesh, int nCenters, double* xArray, double* yArray, double* zArray){
+
+  checkMPMeshValid(p_mpmesh);
+  auto p_mesh = ((polyMPO::MPMesh*)p_mpmesh)->p_mesh;
+
+  auto centersArray = p_mesh->getMeshField<polyMPO::MeshF_CellCenters>();
+  auto h_centersArray = Kokkos::create_mirror_view(centersArray);
+  for (int i =0; i<nCenters;i++){
+    xArray[i] = h_centersArray(i,0);
+    yArray[i] = h_centersArray(i,1);
+    zArray[i] = h_centersArray(i,2);
+  }
+  Kokkos::deep_copy(centersArray, h_centersArray);
+}
+
+void polympo_getMeshCellCenters(MPMesh_ptr p_mpmesh, int nCenters, double* xArray, double* yArray, double* zArray){
+  
+  checkMPMeshValid(p_mpmesh);
+  auto p_mesh = ((polyMPO::MPMesh*)p_mpmesh)->p_mesh;
+
+  auto centersArray = p_mesh->getMeshField<polyMPO::MeshF_CellCenters>();
+  auto h_centersArray = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(),centersArray);
+
+  for (int i=0;i<nCenters;i++){
+    xArray[i] = h_centersArray(i,0);
+    yArray[i] = h_centersArray(i,1);
+    zArray[i] = h_centersArray(i,2);
   }
 }
 

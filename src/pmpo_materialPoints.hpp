@@ -95,20 +95,24 @@ typedef ps::ParticleStructure<MaterialPointTypes> PS;
 
 
 PS* createDPS(int numElms, int numMPs, DoubleVec3dView positions, IntView mpsPerElm, IntView mp2elm);
-PS* createDPS(int numElms, int numMPs, IntView mpsPerElm, IntView mp2elm, IntView isMPActive);
+PS* createDPS(int numElms, int numMPs, IntView mpsPerElm, IntView mp2elm, IntView mpAppID);
+int getMaxAppID(IntView mpAppID);
 
 class MaterialPoints {
   private:
     PS* MPs;
     int elmIDoffset = -1;
+    int maxAppID = -1;
 
   public:
     MaterialPoints() : MPs(nullptr) {};
     MaterialPoints(int numElms, int numMPs, DoubleVec3dView positions, IntView mpsPerElm, IntView mp2elm) {
       MPs = createDPS(numElms, numMPs, positions, mpsPerElm, mp2elm);
+      maxAppID = numMPs; //this ctor does not support inactive MPs
     };
-    MaterialPoints(int numElms, int numMPs, IntView mpsPerElm, IntView mp2elm, IntView isMPActive) {
-      MPs = createDPS(numElms, numMPs, mpsPerElm, mp2elm, isMPActive);
+    MaterialPoints(int numElms, int numMPs, IntView mpsPerElm, IntView mp2elm, IntView mpAppID) {
+      MPs = createDPS(numElms, numMPs, mpsPerElm, mp2elm, mpAppID);
+      maxAppID = polyMPO::getMaxAppID(mpAppID);
     };
     ~MaterialPoints() {
       if(MPs != nullptr)
@@ -178,6 +182,10 @@ class MaterialPoints {
     int getElmIDoffset() {
       PMT_ALWAYS_ASSERT(elmIDoffset == 0 || elmIDoffset == 1);
       return elmIDoffset;
+    }
+    int getMaxAppID() {
+      PMT_ALWAYS_ASSERT(maxAppID != -1); //fixme - not all tests set this
+      return maxAppID;
     }
 
 //MUTATOR  

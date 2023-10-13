@@ -98,6 +98,7 @@ PS* createDPS(int numElms, int numMPs, DoubleVec3dView positions, IntView mpsPer
 PS* createDPS(int numElms, int numMPs, IntView mpsPerElm, IntView mp2elm, IntView isMPActive);
 
 pumipic::MemberTypeViews createMemberViews(int numMPs, DoubleVec3dView positions, IntView mp2elm);
+pumipic::MemberTypeViews createMemberViews(int numMPs, IntView mp2elm, IntView mpAppID);
 
 class MaterialPoints {
   private:
@@ -131,8 +132,13 @@ class MaterialPoints {
       IntView tgtElm = getTgtElm();
       MPs->rebuild(tgtElm);
     }
-    void rebuild(int numMPs, DoubleVec3dView positions, IntView mp2elm){
+    void rebuild(int numMPs, DoubleVec3dView positions, IntView mp2elm) {
       auto mpInfo = createMemberViews(numMPs, positions, mp2elm);
+      IntView tgtElm = getTgtElm();
+      MPs->rebuild(tgtElm, mp2elm, mpInfo);
+    }
+    void rebuild(int numMPs, IntView mp2elm, IntView mpAppID) {
+      auto mpInfo = createMemberViews(numMPs, mp2elm, mpAppID);
       IntView tgtElm = getTgtElm();
       MPs->rebuild(tgtElm, mp2elm, mpInfo);
     }

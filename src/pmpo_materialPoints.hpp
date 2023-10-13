@@ -97,8 +97,8 @@ typedef ps::ParticleStructure<MaterialPointTypes> PS;
 PS* createDPS(int numElms, int numMPs, DoubleVec3dView positions, IntView mpsPerElm, IntView mp2elm);
 PS* createDPS(int numElms, int numMPs, IntView mpsPerElm, IntView mp2elm, IntView isMPActive);
 
-pumipic::MemberTypeViews createMemberViews(int numMPs, DoubleVec3dView positions, IntView mp2elm);
-pumipic::MemberTypeViews createMemberViews(int numMPs, IntView mp2elm, IntView mpAppID);
+pumipic::MemberTypeViews createMemberViews(int newNumMPs, DoubleVec3dView newPositions, IntView newMp2elm);
+pumipic::MemberTypeViews createMemberViews(int newNumMPs, IntView newMp2elm, IntView newMpAppID);
 
 class MaterialPoints {
   private:
@@ -132,15 +132,15 @@ class MaterialPoints {
       IntView tgtElm = getTgtElm();
       MPs->rebuild(tgtElm);
     }
-    void rebuild(int numMPs, DoubleVec3dView positions, IntView mp2elm) {
-      auto mpInfo = createMemberViews(numMPs, positions, mp2elm);
+    void rebuild(int newNumMPs, DoubleVec3dView newPositions, IntView newMp2elm) {
+      auto newMpInfo = createMemberViews(newNumMPs, newPositions, newMp2elm);
       IntView tgtElm = getTgtElm();
-      MPs->rebuild(tgtElm, mp2elm, mpInfo);
+      MPs->rebuild(tgtElm, newMp2elm, newMpInfo);
     }
-    void rebuild(int numMPs, IntView mp2elm, IntView mpAppID) {
-      auto mpInfo = createMemberViews(numMPs, mp2elm, mpAppID);
+    void rebuild(int newNumMPs, IntView newMp2elm, IntView newMpAppID) {
+      auto newMpInfo = createMemberViews(newNumMPs, newMp2elm, newMpAppID);
       IntView tgtElm = getTgtElm();
-      MPs->rebuild(tgtElm, mp2elm, mpInfo);
+      MPs->rebuild(tgtElm, newMp2elm, newMpInfo);
     }
     void updateMPElmID(){
       auto curElmID = MPs->get<MPF_Cur_Elm_ID>();

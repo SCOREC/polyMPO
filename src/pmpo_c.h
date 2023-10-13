@@ -25,6 +25,8 @@ void polympo_getMPCurElmID(MPMesh_ptr p_mpmesh, int numMPs, int* elmIDs);
 void polympo_getMPPositions(MPMesh_ptr p_mpmesh, int numComps, int numMPs, double* mpPositionsIn);
 
 //MP slices
+void polympo_setMPLatLon(MPMesh_ptr p_mpmesh, int numComps, int numMPs, double* mpLatLonIn);
+void polympo_getMPLatLon(MPMesh_ptr p_mpmesh, int numComps, int numMPs, double* mpLatLonHost);
 void polympo_setMPVel(MPMesh_ptr p_mpmesh, int size, double* array);
 void polympo_getMPVel(MPMesh_ptr p_mpmesh, int size, double* array);
 

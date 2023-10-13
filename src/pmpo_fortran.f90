@@ -99,6 +99,36 @@ module polympo
     type(c_ptr), value :: array
   end subroutine
   !---------------------------------------------------------------------------
+  !> @brief set the MP latitude and longtitude array from a host array
+  !> @param mpmesh(in/out) MPMesh object
+  !> @param nComps(in) number of components, should always be 2
+  !> @param numMPs(in) number of the MPs
+  !> @param array(in)  input MP current lat and lon 2D array (2,numMPs),
+  !>                   allocated by user
+  !---------------------------------------------------------------------------
+  subroutine polympo_setMPLatLon(mpMesh, nComps, numMPs, array) &
+             bind(C, NAME='polympo_setMPLatLon')
+    use :: iso_c_binding
+    type(c_ptr), value :: mpMesh
+    integer(c_int), value :: nComps, numMPs
+    type(c_ptr), intent(in), value :: array
+  end subroutine
+  !---------------------------------------------------------------------------
+  !> @brief get the MP latitude and longtitude array from a polympo array
+  !> @param mpmesh(in/out) MPMesh object
+  !> @param nComps(in) number of components, should always be 2
+  !> @param numMPs(in) number of the MPs
+  !> @param array(in/out) output MP current lat and lon 2D array (2,numMPs),
+  !>                      allocated by user
+  !---------------------------------------------------------------------------
+  subroutine polympo_getMPLatLon(mpMesh, nComps, numMPs, array) &
+             bind(C, NAME='polympo_getMPLatLon')
+    use :: iso_c_binding
+    type(c_ptr), value :: mpMesh
+    integer(c_int), value :: nComps, numMPs
+    type(c_ptr), value :: array
+  end subroutine
+  !---------------------------------------------------------------------------
   !> @brief set the velocity MP array from a host array
   !> @warning THIS IS NOT SUPPORTED YET 
   !> @param mpmesh(in/out) MPMesh object

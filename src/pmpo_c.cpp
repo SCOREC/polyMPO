@@ -214,6 +214,58 @@ void polympo_getMPPositions(MPMesh_ptr p_mpmesh,
   Kokkos::deep_copy(arrayHost, mpPositionsCopy);
 }
 
+void polympo_setMPLatLon(MPMesh_ptr p_mpmesh,
+                         int numComps,
+                         int numMPs,
+                         double* mpLatLonIn){
+  static int callCount = 0;
+  PMT_ALWAYS_ASSERT(callCount == 0);
+  checkMPMeshValid(p_mpmesh);
+  auto p_MPs = ((polyMPO::MPMesh*)p_mpmesh)->p_MPs;
+  PMT_ALWAYS_ASSERT(numComps == vec2d_nEntries);
+  PMT_ALWAYS_ASSERT(numMPs >= p_MPs->getCount());
+  PMT_ALWAYS_ASSERT(numMPs >= p_MPs->getMaxAppID());
+
+  auto mpLatLon = p_MPs->getData<polyMPO::MPF_Cur_Pos_Lat_Lon>();
+  auto mpAppID = p_MPs->getData<polyMPO::MPF_MP_APP_ID>();
+  kkDbl2dViewHostU mpLatLonIn_h(mpLatLonIn,numComps,numMPs);
+  Kokkos::View<double**> mpLatLonIn_d("mpLatLonDevice",vec2d_nEntries,numMPs);
+  Kokkos::deep_copy(mpLatLonIn_d, mpLatLonIn_h);
+  auto setPos = PS_LAMBDA(const int& elm, const int& mp, const int& mask){
+    if(mask){
+      mpLatLon(mp,0) = mpLatLonIn_d(0, mpAppID(mp));
+      mpLatLon(mp,1) = mpLatLonIn_d(1, mpAppID(mp));
+    }
+  };
+  p_MPs->parallel_for(setPos, "setMPLatLon");
+  callCount++;
+}
+
+void polympo_getMPLatLon(MPMesh_ptr p_mpmesh,
+                         int numComps,
+                         int numMPs,
+                         double* mpLatLonHost){
+  checkMPMeshValid(p_mpmesh);
+  auto p_MPs = ((polyMPO::MPMesh*)p_mpmesh)->p_MPs;
+  PMT_ALWAYS_ASSERT(numComps == vec2d_nEntries);
+  PMT_ALWAYS_ASSERT(numMPs >= p_MPs->getCount());
+  PMT_ALWAYS_ASSERT(numMPs >= p_MPs->getMaxAppID());
+
+  auto mpLatLon = p_MPs->getData<polyMPO::MPF_Cur_Pos_Lat_Lon>();
+  auto mpAppID = p_MPs->getData<polyMPO::MPF_MP_APP_ID>();
+  Kokkos::View<double**> mpLatLonCopy("mpLatLonCopy",vec3d_nEntries,numMPs);
+  auto getPos = PS_LAMBDA(const int& elm, const int& mp, const int& mask){
+    if(mask){
+      mpLatLonCopy(0,mpAppID(mp)) = mpLatLon(mp,0);
+      mpLatLonCopy(1,mpAppID(mp)) = mpLatLon(mp,1);
+      mpLatLonCopy(2,mpAppID(mp)) = mpLatLon(mp,2);
+    }
+  };
+  p_MPs->parallel_for(getPos, "getMPLatLon");
+  kkDbl2dViewHostU arrayHost(mpLatLonHost,numComps,numMPs);
+  Kokkos::deep_copy(arrayHost, mpLatLonCopy);
+}
+
 void polympo_setMPVel(MPMesh_ptr p_mpmesh, int size, double* array) {
   fprintf(stderr,"%s is no longer supported\n", __func__);
   PMT_ALWAYS_ASSERT(false);

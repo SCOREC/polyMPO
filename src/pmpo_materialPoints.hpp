@@ -97,6 +97,8 @@ typedef ps::ParticleStructure<MaterialPointTypes> PS;
 PS* createDPS(int numElms, int numMPs, DoubleVec3dView positions, IntView mpsPerElm, IntView mp2elm);
 PS* createDPS(int numElms, int numMPs, IntView mpsPerElm, IntView mp2elm, IntView isMPActive);
 
+pumipic::MemberTypeViews createMemberViews(int numMPs, DoubleVec3dView positions, IntView mp2elm);
+
 class MaterialPoints {
   private:
     PS* MPs;
@@ -124,6 +126,17 @@ class MaterialPoints {
       };
       ps::parallel_for(MPs, setTgtElm, "setTargetElement");
       MPs->rebuild(tgtElm);
+    }
+    void rebuild(int numMPs, DoubleVec3dView positions, IntView mp2elm){
+      auto mpInfo = createMemberViews(numMPs, positions, mp2elm);
+      IntView tgtElm("tgtElm", MPs->capacity());
+      auto tgtMpElm = MPs->get<MPF_Tgt_Elm_ID>();
+      auto setTgtElm = PS_LAMBDA(const int& elm, const int& mp, const int& mask) {
+        if(mask)
+          tgtElm(mp) = tgtMpElm(mp);
+      };
+      ps::parallel_for(MPs, setTgtElm, "setTargetElement");
+      MPs->rebuild(tgtElm, mp2elm, mpInfo);
     }
     void updateMPElmID(){
       auto curElmID = MPs->get<MPF_Cur_Elm_ID>();

@@ -31,7 +31,7 @@ void interpolateWachspress2DTest(MPMesh& mpMesh){
 
             Vec2d wp_coord(0.0,0.0);
             double wp_grad = 0.0;
-            for(int i=0; i<= numVtx; i++){
+            for(int i=0; i< numVtx; i++){
                 wp_coord = wp_coord + v[i]*basisByArea[i];
                 wp_grad = wp_grad + gradBasisByArea[i].dot(v[i]);
             }
@@ -86,9 +86,9 @@ void interpolateWachspressSphericalTest(MPMesh& mpMesh){
                                               MPsPosition(mp,0),
                                               MPsPosition(mp,1),
                                               MPsPosition(mp,2));*/
-            //assert(wp_coord[0] - MPsPosition(mp,0) < TEST_EPSILON);
-            //assert(wp_coord[1] - MPsPosition(mp,1) < TEST_EPSILON);
-            //assert(wp_coord[2] - MPsPosition(mp,2) < TEST_EPSILON);
+            //  assert(wp_coord[0] - MPsPosition(mp,0) < TEST_EPSILON);
+            // assert(wp_coord[1] - MPsPosition(mp,1) < TEST_EPSILON);
+            // assert(wp_coord[2] - MPsPosition(mp,2) < TEST_EPSILON);
         }        
     };
     p_MPs->parallel_for(eval, "interpolateWachspressSphericalTest");
@@ -110,19 +110,20 @@ void interpolateWachspress3DTest(MPMesh& mpMesh){
             for(int i = 1; i<=numVtx; i++){
                 v[i-1][0] = vtxCoords(elm2VtxConn(elm,i)-1,0);
                 v[i-1][1] = vtxCoords(elm2VtxConn(elm,i)-1,1);
+                v[i-1][2] = vtxCoords(elm2VtxConn(elm,i)-1,2);
             }
             v[numVtx][0] = vtxCoords(elm2VtxConn(elm,1)-1,0);
             v[numVtx][1] = vtxCoords(elm2VtxConn(elm,1)-1,1);
+            v[numVtx][2] = vtxCoords(elm2VtxConn(elm,1)-1,2);
             double basisByArea[maxVtxsPerElm] = {0.0};
             initArray(basisByArea,maxVtxsPerElm,0.0);
             Vec3d position(MPsPosition(mp,0),MPsPosition(mp,1),MPsPosition(mp,2));
             getBasisByAreaGblForm3d(position, numVtx, v, basisByArea);
 
             Vec3d wp_coord(0.0,0.0,0.0);
-            for(int i=0; i<= numVtx; i++){
+            for(int i=0; i< numVtx; i++){
                 wp_coord = wp_coord + v[i]*basisByArea[i];
             }
-
             assert(wp_coord[0] - MPsPosition(mp,0) < TEST_EPSILON);
             assert(wp_coord[1] - MPsPosition(mp,1) < TEST_EPSILON);
 	    assert(wp_coord[2] - MPsPosition(mp,2) < TEST_EPSILON);

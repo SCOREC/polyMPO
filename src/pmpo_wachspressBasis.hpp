@@ -142,8 +142,8 @@ void getBasisByAreaGblForm3d(Vec3d MP, int numVtxs, Vec3d* vtxCoords, double* ba
     double c[maxVtxsPerElm];
     double a[maxVtxsPerElm];
     for (int i = 0; i < numVtxs; i++){
-        c[i] = e[i].cross(e[i + 1]).magnitude();
-        a[i] = p[i].cross(e[i + 1]).magnitude();
+        c[i] = (e[i].cross(e[i + 1])).magnitude();
+        a[i] = (p[i].cross(e[i + 1])).magnitude();
     }
 
     calcBasis(numVtxs, a, c, basis);

@@ -8,7 +8,7 @@
 namespace{
   std::vector<MPMesh_ptr> p_mpmeshes;////store the p_mpmeshes that is legal
     
-  void checkMPMeshValid_f(MPMesh_ptr p_mpmesh){
+  void checkMPMeshValid(MPMesh_ptr p_mpmesh){
     auto p_mpmeshIter = std::find(p_mpmeshes.begin(),p_mpmeshes.end(),p_mpmesh);
     PMT_ALWAYS_ASSERT(p_mpmeshIter != p_mpmeshes.end());
   }
@@ -25,7 +25,7 @@ void polympo_finalize_f() {
   Kokkos::finalize();
 }
 
-MPMesh_ptr polympo_createMPMesh(int testMeshOption, int testMPOption) {
+MPMesh_ptr polympo_createMPMesh_f(int testMeshOption, int testMPOption) {
   polyMPO::Mesh* p_mesh;
   if(testMeshOption){
     int replicateFactor = 1;
@@ -99,7 +99,7 @@ typedef Kokkos::View<
           Kokkos::MemoryTraits<Kokkos::Unmanaged>
         > kkIntViewHostU;//TODO:put it somewhere else (maybe)
 
-void polympo_createMPs(MPMesh_ptr p_mpmesh,
+void polympo_createMPs_f(MPMesh_ptr p_mpmesh,
                        int numElms,
                        int numMPs, // >= number of active MPs
                        int* mpsPerElm,
@@ -255,7 +255,7 @@ void polympo_setMeshNumVtxs_f(MPMesh_ptr p_mpmesh, int numVtxs){
   p_mesh->setMeshVtxBasedFieldSize(); 
 }
 
-int polympo_getMeshNumVtxs(MPMesh_ptr p_mpmesh) {
+int polympo_getMeshNumVtxs_f(MPMesh_ptr p_mpmesh) {
   checkMPMeshValid(p_mpmesh); //chech vailidity
   auto p_mesh = ((polyMPO::MPMesh*)p_mpmesh)->p_mesh;
   int nVtxs = p_mesh->getNumVertices();
@@ -274,7 +274,7 @@ void polympo_setMeshNumElms_f(MPMesh_ptr p_mpmesh, int numElms){
   p_mesh->setElm2ElmConn(elm2Elm);
 }
 
-int polympo_getMeshNumElms(MPMesh_ptr p_mpmesh) {
+int polympo_getMeshNumElms_f(MPMesh_ptr p_mpmesh) {
   checkMPMeshValid(p_mpmesh); //chech vailidity
   auto p_mesh = ((polyMPO::MPMesh*)p_mpmesh)->p_mesh;
   int nElms = p_mesh->getNumElements();

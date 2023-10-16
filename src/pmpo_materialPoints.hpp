@@ -117,7 +117,16 @@ class MaterialPoints {
       if(MPs != nullptr)
         delete MPs;
     }
-    IntView getTgtElm() {
+    void setTgtElm(IntView tgtElm) {
+      auto mpTgtElm = MPs->get<MPF_Tgt_Elm_ID>();
+      auto setTargetElm = PS_LAMBDA(const int& elm, const int& mp, const int& mask){
+        if(mask) { 
+          mpTgtElm(mp) = tgtElm(mp);
+        }
+      };
+      ps::parallel_for(MPs, setTargetElm, "setTargetElm");
+    }
+    void rebuild() {
       IntView tgtElm("tgtElm", MPs->capacity());
       auto tgtMpElm = MPs->get<MPF_Tgt_Elm_ID>();
       auto setTgtElm = PS_LAMBDA(const int& elm, const int& mp, const int& mask) {
@@ -126,20 +135,16 @@ class MaterialPoints {
         }
       };
       ps::parallel_for(MPs, setTgtElm, "setTargetElement");
-      return tgtElm;
-    }
-    void rebuild() {
-      IntView tgtElm = getTgtElm();
       MPs->rebuild(tgtElm);
     }
-    void rebuild(int newNumMPs, DoubleVec3dView newPositions, IntView newMp2elm) {
+    void rebuild(IntView tgtElm, int newNumMPs, DoubleVec3dView newPositions, IntView newMp2elm) {
       auto newMpInfo = createMemberViews(newNumMPs, newPositions, newMp2elm);
-      IntView tgtElm = getTgtElm();
+      setTgtElm(tgtElm);
       MPs->rebuild(tgtElm, newMp2elm, newMpInfo);
     }
-    void rebuild(int newNumMPs, IntView newMp2elm, IntView newMpAppID) {
+    void rebuild(IntView tgtElm, int newNumMPs, IntView newMp2elm, IntView newMpAppID) {
       auto newMpInfo = createMemberViews(newNumMPs, newMp2elm, newMpAppID);
-      IntView tgtElm = getTgtElm();
+      setTgtElm(tgtElm);
       MPs->rebuild(tgtElm, newMp2elm, newMpInfo);
     }
     void updateMPElmID(){

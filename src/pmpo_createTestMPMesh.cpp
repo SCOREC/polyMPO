@@ -56,17 +56,57 @@ Mesh* createMesh(const mesh_type meshType, const geom_type geomType,
 
 Mesh* initTestMesh(const int testMeshOption, const int replicateFactor){
     //add a switch statement testMeshOption
-    if(testMeshOption == 1){ //this is a 2d mesh with 10 tri-oct elements
+   if(testMeshOption==1 || testMeshOption==2){//this is a 2d mesh with 10 tri-oct elements
         const mesh_type meshType = mesh_general_polygonal;
         const geom_type geomType = geom_planar_surf;
         const double sphereRadius = 0.0;
         const int nVertices_size = 19;
         const int nCells_size = 10;
-        const std::vector<std::vector<double>> v_array = //[nVertices_size][vec3d_nEntries]
-            {{0.00,0.00,1.1},{0.47,0.00,1.1},{1.00,0.00,1.1},{0.60,0.25,1.1},{0.60,0.40,1.1}, //5
-             {0.00,0.50,1.1},{0.31,0.60,1.1},{0.40,0.60,1.1},{0.45,0.55,1.1},{0.70,0.49,1.1}, //10
-             {0.80,0.45,1.1},{0.90,0.47,1.1},{1.00,0.55,1.1},{0.60,0.60,1.1},{0.37,0.80,1.1}, //15
-             {0.00,1.00,1.1},{0.37,1.00,1.1},{0.48,1.00,1.1},{1.00,1.00,1.1}};                //19
+        std::vector<std::vector<double>> v_array_coords = //[nVertices_size][vec3d_nEntries]
+                    {{0.00,0.00,1.1},{0.47,0.00,1.1},{1.00,0.00,1.1},{0.60,0.25,1.1},{0.60,0.40,1.1}, //5
+                    {0.00,0.50,1.1},{0.31,0.60,1.1},{0.40,0.60,1.1},{0.45,0.55,1.1},{0.70,0.49,1.1}, //10
+                    {0.80,0.45,1.1},{0.90,0.47,1.1},{1.00,0.55,1.1},{0.60,0.60,1.1},{0.37,0.80,1.1}, //15
+                    {0.00,1.00,1.1},{0.37,1.00,1.1},{0.48,1.00,1.1},{1.00,1.00,1.1}};                //19
+        
+        if(testMeshOption==2){
+            double degree = M_PI / 6.00;
+            
+            // rotation around x axis by 30 degrees
+            std::vector<std::vector<double>> R1 = {{1.00, 0.00, 0.00}, 
+                                    {0.00, cos(degree), -sin(degree)},
+                                    {0.00, sin(degree), cos(degree) }};
+
+            degree = M_PI / 4.00;
+            // rotation around z axis by 45 degrees
+            std::vector<std::vector<double>> R2 = {{cos(degree), -sin(degree), 0.00}, 
+                                    {sin(degree), cos(degree), 0.00},
+                                    {0.00, 0.00, 1.00}};
+           
+            for (int i = 0; i < (int)  v_array_coords.size(); i++) {
+                std::vector<double> tmp_vec(3);
+                tmp_vec[0] = v_array_coords[i][0] * R1[0][0]
+                           + v_array_coords[i][1] * R1[0][1]
+                           + v_array_coords[i][2] * R1[0][2];
+                tmp_vec[1] = v_array_coords[i][0] * R1[1][0]
+                           + v_array_coords[i][1] * R1[1][1]
+                           + v_array_coords[i][2] * R1[1][2];
+                tmp_vec[2] = v_array_coords[i][0] * R1[2][0]
+                           + v_array_coords[i][1] * R1[2][1]
+                           + v_array_coords[i][2] * R1[2][2];
+
+                v_array_coords[i][0] = tmp_vec[0] * R2[0][0]
+                                     + tmp_vec[1] * R2[0][1]
+                                     + tmp_vec[2] * R2[0][2];
+                v_array_coords[i][1] = tmp_vec[0] * R2[1][0]
+                                     + tmp_vec[1] * R2[1][1]
+                                     + tmp_vec[2] * R2[1][2];
+                v_array_coords[i][2] = tmp_vec[0] * R2[2][0]
+                                     + tmp_vec[1] * R2[2][1]
+                                     + tmp_vec[2] * R2[2][2];
+            }
+        }
+
+        const std::vector<std::vector<double>> v_array = v_array_coords;
         const std::vector<std::vector<int>> elm2VtxConn_array = //[nCells_size][maxVtxsPerElm]
             {{1,2,4,5,9,8,7,6},       {2,3,4,-1,-1,-1,-1,-1},
              {4,3,11,10,5,-1,-1,-1},  {3,12,11,-1,-1,-1,-1,-1},
@@ -94,58 +134,6 @@ Mesh* initTestMesh(const int testMeshOption, const int replicateFactor){
             return meshReturn; 
         }
      
-    }else if(testMeshOption == 2){ //this is a 2d mesh with 10 tri-oct elements
-        const mesh_type meshType = mesh_general_polygonal;
-        const geom_type geomType = geom_planar_surf;
-        const double sphereRadius = 0.0;
-        const int nVertices_size = 19;
-        const int nCells_size = 10;
-        const std::vector<std::vector<double>> v_array = //[nVertices_size][vec3d_nEntries]
-            {{0.3889087296526012, -0.3889087296526012, 0.9526279441628825},
-            {0.7212489168102785, -0.05656854249492388, 0.9526279441628825},
-            {1.0960155108391487, 0.31819805153394637, 0.9526279441628825},
-            {0.660079689440581, 0.18844844798327595, 1.0776279441628827},
-            {0.5682238240862119, 0.28030431333764516, 1.1526279441628826}, //5
-            {0.08272251180470393, -0.08272251180470393, 1.2026279441628827},
-            {0.24068837040295424, 0.19771783393270523, 1.2526279441628825},
-            {0.30432798070974354, 0.2613574442394946, 1.2526279441628825},
-            {0.3703019415538606, 0.26609416151403226, 1.2276279441628826},
-            {0.5838209829922452, 0.4061285106689214, 1.1976279441628825},  //10
-            {0.6790265585387317, 0.45234429135974447, 1.1776279441628825},
-            {0.7374897879434706, 0.535302418192315, 1.1876279441628825},
-            {0.7592106712064618, 0.6550028911666333, 1.2276279441628826},
-            {0.445749336947053, 0.40277880047680403, 1.2526279441628825},
-            {0.16064029013498815, 0.36261872794305705, 1.3526279441628826},//15
-            {-0.22346370604319332, 0.22346370604319332, 1.4526279441628827},
-            {0.03816580299582928, 0.4850932150822159, 1.4526279441628827},
-            {0.11594754892634951, 0.5628749610127362, 1.4526279441628827},
-            {0.48364307514335425, 0.9305704872297409, 1.4526279441628827}};//19
-        const std::vector<std::vector<int>> elm2VtxConn_array = //[nCells_size][maxVtxsPerElm]
-            {{1,2,4,5,9,8,7,6},       {2,3,4,-1,-1,-1,-1,-1},
-             {4,3,11,10,5,-1,-1,-1},  {3,12,11,-1,-1,-1,-1,-1},
-             {3,13,12,-1,-1,-1,-1,-1},{5,10,14,9,-1,-1,-1,-1},
-             {9,14,18,17,15,8,-1,-1}, {7,8,15,-1,-1,-1,-1,-1},
-             {6,7,15,17,16,-1,-1,-1}, {14,10,11,12,13,19,18,-1}};
-        const std::vector<int> vtxCoords_array = {8,3,5,3,3,4,6,3,5,7}; //[nCells_size]
-        const std::vector<std::vector<int>> elm2ElmConn_array = //[nCells_size][maxVtxsPerElm]
-            {{-2,1,2,5,6,7,8,-2},    {-2,2,0,-1,-1,-1,-1,-1},
-             {1,3,9,5,0,-1,-1,-1},   {4,9,2,-1,-1,-1,-1,-1},
-             {-2,9,3,-1,-1,-1,-1,-1},{2,9,6,0,-1,-1,-1,-1},
-             {5,9,-2,8,7,0,-1,-1},   {0,6,8,-1,-1,-1,-1,-1},
-             {0,7,6,-2,-2,-1,-1,-1}, {5,2,3,4,-2,-2,6,-1}}; 
-        auto meshReturn = createMesh(meshType, geomType, sphereRadius,
-                                     nVertices_size, nCells_size,
-                                     v_array, elm2VtxConn_array,
-                                     vtxCoords_array,
-                                     elm2ElmConn_array);
-        if(replicateFactor >1){
-            auto meshReplicate = replicateMesh(meshReturn,
-                                               replicateFactor);
-            delete meshReturn;
-            return meshReplicate;
-        }else{
-            return meshReturn; 
-        }
     }else{
         fprintf(stderr,"TestMeshOption not avaiable! return an empty mesh!");
         return new Mesh();

@@ -171,7 +171,7 @@ void polympo_createMPs(MPMesh_ptr p_mpmesh,
 
 void polympo_rebuildMPs(MPMesh_ptr p_mpmesh,
                        int numMPs,
-                       int* tgtMpElm,
+                       int* tgtMpElmIn,
                        int newNumMPs, // >= number of active MPs to add
                        int* newMp2Elm,
                        int* newIsMPActive) {
@@ -179,17 +179,20 @@ void polympo_rebuildMPs(MPMesh_ptr p_mpmesh,
 
   //the mesh must be fixed/set before adding MPs
   auto p_mesh = ((polyMPO::MPMesh*)p_mpmesh)->p_mesh;
-  PMT_ALWAYS_ASSERT(!p_mesh->meshEditable());
-
   auto p_MPs = ((polyMPO::MPMesh*)p_mpmesh)->p_MPs;
+  
+  PMT_ALWAYS_ASSERT(!p_mesh->meshEditable());
+  PMT_ALWAYS_ASSERT(numMPs >= p_MPs->getCount());
+
   int offset = p_MPs->getElmIDoffset();
+  int count = p_MPs->getCount();
 
   std::vector<int> active_mpIDs(newNumMPs);
   std::vector<int> active_mp2Elm(newNumMPs);
   int addNumActiveMPs = 0;
   for(int i=0; i<newNumMPs; i++) {
     if(newIsMPActive[i] == MP_ACTIVE) {
-      active_mpIDs[addNumActiveMPs] = i;
+      active_mpIDs[addNumActiveMPs] = count + i;
       active_mp2Elm[addNumActiveMPs] = newMp2Elm[i]-offset; //adjust for 1 based indexing if needed
       addNumActiveMPs++;
     }
@@ -203,10 +206,17 @@ void polympo_rebuildMPs(MPMesh_ptr p_mpmesh,
   kkIntViewHostU active_mpIDs_h(active_mpIDs.data(), addNumActiveMPs);
   auto active_mpIDs_d = Kokkos::create_mirror_view_and_copy(space_t(), active_mpIDs_h);
 
-  kkIntViewHostU active_mpTgtElms_h(tgtMpElm, numMPs);
-  auto active_mpTgtElms_d = Kokkos::create_mirror_view_and_copy(space_t(), active_mpTgtElms_h);
-
-  p_MPs->rebuild(numMPs, active_mpTgtElms_d, addNumActiveMPs, active_mp2Elm_d, active_mpIDs_d);
+  Kokkos::View<int*> tgtMpElm("tgtMpElm", count);
+  auto mpAppID = p_MPs->getData<polyMPO::MPF_MP_APP_ID>();
+  kkIntViewHostU mpTgtElmsIn_h(tgtMpElmIn, numMPs);
+  auto mpTgtElmsIn_d = Kokkos::create_mirror_view_and_copy(space_t(), mpTgtElmsIn_h);
+  auto setTgtMpElm = PS_LAMBDA(const int& elm, const int& mp, const int& mask){
+    if(mask){
+      tgtMpElm(mp) = mpTgtElmsIn_d(mpAppID(mp));
+    }
+  };
+  p_MPs->parallel_for(setTgtMpElm, "setTgtMpElm");
+  p_MPs->rebuild(tgtMpElm, addNumActiveMPs, active_mp2Elm_d, active_mpIDs_d);
 }
 
 void polympo_getMPCurElmID(MPMesh_ptr p_mpmesh,

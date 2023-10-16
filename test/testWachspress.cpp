@@ -10,7 +10,6 @@ int main(int argc, char** argv) {
     MPI_Init(&argc, &argv);
     Kokkos::initialize(argc, argv);
 
-    // const int testMeshOption = 1;
     const int replicateFactor = 100;
     const int testMPOption = 1;
     //test init Test Mesh and run assembly and Wachspress

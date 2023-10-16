@@ -10,14 +10,12 @@ int main(int argc, char** argv) {
     MPI_Init(&argc, &argv);
     Kokkos::initialize(argc, argv);
 
-    const int testMeshOption = 1;
+    // const int testMeshOption = 1;
     const int replicateFactor = 100;
     const int testMPOption = 1;
     //test init Test Mesh and run assembly and Wachspress
-    {
-        auto m = polyMPO::Mesh();
-        auto mp = polyMPO::MaterialPoints();
-        
+    for (int testMeshOption = 1; testMeshOption <= 2; testMeshOption++){
+
         auto mesh = initTestMesh(testMeshOption, replicateFactor);
         auto mpMesh = initTestMPMesh(mesh,testMPOption);
         

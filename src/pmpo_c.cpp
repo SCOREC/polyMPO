@@ -170,6 +170,7 @@ void polympo_createMPs(MPMesh_ptr p_mpmesh,
 }
 
 void polympo_rebuildMPs(MPMesh_ptr p_mpmesh,
+                       int numMPs,
                        int* tgtMpElm,
                        int newNumMPs, // >= number of active MPs to add
                        int* newMp2Elm,
@@ -202,10 +203,10 @@ void polympo_rebuildMPs(MPMesh_ptr p_mpmesh,
   kkIntViewHostU active_mpIDs_h(active_mpIDs.data(), addNumActiveMPs);
   auto active_mpIDs_d = Kokkos::create_mirror_view_and_copy(space_t(), active_mpIDs_h);
 
-  kkIntViewHostU active_mpTgtElms_h(tgtMpElm, p_MPs->getCount());
+  kkIntViewHostU active_mpTgtElms_h(tgtMpElm, numMPs);
   auto active_mpTgtElms_d = Kokkos::create_mirror_view_and_copy(space_t(), active_mpTgtElms_h);
 
-  p_MPs->rebuild(active_mpTgtElms_d, addNumActiveMPs, active_mp2Elm_d, active_mpIDs_d);
+  p_MPs->rebuild(numMPs, active_mpTgtElms_d, addNumActiveMPs, active_mp2Elm_d, active_mpIDs_d);
 }
 
 void polympo_getMPCurElmID(MPMesh_ptr p_mpmesh,

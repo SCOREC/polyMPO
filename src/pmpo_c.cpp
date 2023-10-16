@@ -170,9 +170,9 @@ void polympo_createMPs(MPMesh_ptr p_mpmesh,
 }
 
 void polympo_rebuildMPs(MPMesh_ptr p_mpmesh,
-                       int numMPs,
+                       int numMPs, // >= number of active MPs
                        int* tgtMpElmIn,
-                       int newNumMPs, // >= number of active MPs to add
+                       int newNumMPs,
                        int* newMp2Elm,
                        int* newIsMPActive) {
   checkMPMeshValid(p_mpmesh);

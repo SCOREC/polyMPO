@@ -79,12 +79,12 @@ module polympo
   !> @param newMp2Elm(in) element ID for each new MP
   !> @param newIsMPActive(in) set to 1 if the new MP is active, 0 otherwise
   !---------------------------------------------------------------------------
-  subroutine polympo_rebuildMPs(mpMesh, numMPs, tgtMpElm, newNumMPs, newMp2Elm, newIsMPActive) &
+  subroutine polympo_rebuildMPs(mpMesh, numMPs, tgtMpElmIn, newNumMPs, newMp2Elm, newIsMPActive) &
     bind(C, NAME='polympo_rebuildMPs')
     use :: iso_c_binding
     type(c_ptr), value :: mpMesh
     integer(c_int), value :: numMPs
-    type(c_ptr), intent(in), value :: tgtMpElm
+    type(c_ptr), intent(in), value :: tgtMpElmIn
     integer(c_int), value :: newNumMPs
     type(c_ptr), intent(in), value :: newMp2Elm
     type(c_ptr), intent(in), value :: newIsMPActive

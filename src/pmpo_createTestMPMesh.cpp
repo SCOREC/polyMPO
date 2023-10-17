@@ -68,20 +68,18 @@ Mesh* initTestMesh(const int testMeshOption, const int replicateFactor){
                     {0.80,0.45,1.1},{0.90,0.47,1.1},{1.00,0.55,1.1},{0.60,0.60,1.1},{0.37,0.80,1.1}, //15
                     {0.00,1.00,1.1},{0.37,1.00,1.1},{0.48,1.00,1.1},{1.00,1.00,1.1}};                //19
         
-        if(testMeshOption==2){
-            double degree = M_PI / 6.00;
-            
+        if(testMeshOption==2){ 
             // rotation around x axis by 30 degrees
+            double rad  = M_PI / 6.00;
             std::vector<std::vector<double>> R1 = {{1.00, 0.00, 0.00}, 
-                                    {0.00, cos(degree), -sin(degree)},
-                                    {0.00, sin(degree), cos(degree) }};
-
-            degree = M_PI / 4.00;
+                                    {0.00, cos(rad), -sin(rad)},
+                                    {0.00, sin(rad), cos(rad) }};
             // rotation around z axis by 45 degrees
-            std::vector<std::vector<double>> R2 = {{cos(degree), -sin(degree), 0.00}, 
-                                    {sin(degree), cos(degree), 0.00},
+            rad = M_PI / 4.00;
+            std::vector<std::vector<double>> R2 = {{cos(rad), -sin(rad), 0.00}, 
+                                    {sin(rad), cos(rad), 0.00},
                                     {0.00, 0.00, 1.00}};
-           
+
             for (int i = 0; i < (int)  v_array_coords.size(); i++) {
                 std::vector<double> tmp_vec(3);
                 tmp_vec[0] = v_array_coords[i][0] * R1[0][0]
@@ -105,7 +103,6 @@ Mesh* initTestMesh(const int testMeshOption, const int replicateFactor){
                                      + tmp_vec[2] * R2[2][2];
             }
         }
-
         const std::vector<std::vector<double>> v_array = v_array_coords;
         const std::vector<std::vector<int>> elm2VtxConn_array = //[nCells_size][maxVtxsPerElm]
             {{1,2,4,5,9,8,7,6},       {2,3,4,-1,-1,-1,-1,-1},
@@ -133,7 +130,6 @@ Mesh* initTestMesh(const int testMeshOption, const int replicateFactor){
         }else{
             return meshReturn; 
         }
-     
     }else{
         fprintf(stderr,"TestMeshOption not avaiable! return an empty mesh!");
         return new Mesh();

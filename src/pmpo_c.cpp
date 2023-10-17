@@ -170,29 +170,23 @@ void polympo_createMPs(MPMesh_ptr p_mpmesh,
 }
 
 void polympo_rebuildMPs(MPMesh_ptr p_mpmesh,
-                       int numMPs, // >= number of active MPs
-                       int* tgtMpElmIn,
-                       int newNumMPs,
-                       int* newMp2Elm,
-                       int* newIsMPActive) {
+                        int numMPs, // >= number of active MPs
+                        int* tgtMpElmIn,
+                        int* newMp2Elm,
+                        int* newIsMPActive) {
   checkMPMeshValid(p_mpmesh);
-
-  //the mesh must be fixed/set before adding MPs
-  auto p_mesh = ((polyMPO::MPMesh*)p_mpmesh)->p_mesh;
   auto p_MPs = ((polyMPO::MPMesh*)p_mpmesh)->p_MPs;
-  
-  PMT_ALWAYS_ASSERT(!p_mesh->meshEditable());
   PMT_ALWAYS_ASSERT(numMPs >= p_MPs->getCount());
 
   int offset = p_MPs->getElmIDoffset();
   int numMPsPMPO = p_MPs->getCount();
 
-  std::vector<int> active_mpIDs(newNumMPs);
-  std::vector<int> active_mp2Elm(newNumMPs);
+  std::vector<int> active_mpIDs(numMPs);
+  std::vector<int> active_mp2Elm(numMPs);
   int addNumActiveMPs = 0;
-  for(int i=0; i<newNumMPs; i++) {
+  for(int i=0; i<numMPs; i++) {
     if(newIsMPActive[i] == MP_ACTIVE) {
-      active_mpIDs[addNumActiveMPs] = numMPsPMPO + i;
+      active_mpIDs[addNumActiveMPs] = i;
       active_mp2Elm[addNumActiveMPs] = newMp2Elm[i]-offset; //adjust for 1 based indexing if needed
       addNumActiveMPs++;
     }

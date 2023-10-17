@@ -21,7 +21,7 @@ void polympo_setMPICommunicator(MPI_Fint fcomm);//TODO:is MPI_Fint best? or some
 
 //MP info
 void polympo_createMPs(MPMesh_ptr p_mpmesh, int numElms, int numMPs, int* mpsPerElm, int* mp2Elm, int* isMPActive);
-void polympo_rebuildMPs(MPMesh_ptr p_mpmesh, int numMPs, int* tgtMpElmIn, int newNumMPs, int* newMp2Elm, int* newIsMPActive);
+void polympo_rebuildMPs(MPMesh_ptr p_mpmesh, int numMPs, int* tgtMpElmIn, int* newMp2Elm, int* newIsMPActive);
 void polympo_getMPCurElmID(MPMesh_ptr p_mpmesh, int numMPs, int* elmIDs);
 void polympo_getMPPositions(MPMesh_ptr p_mpmesh, int numComps, int numMPs, double* mpPositionsIn);
 

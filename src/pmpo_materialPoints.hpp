@@ -28,21 +28,22 @@ typedef double mp_constv_mdl_param_t[12];
 
 enum MaterialPointSlice {
   MPF_Status = 0,
-  MPF_Cur_Elm_ID,        //1
-  MPF_Tgt_Elm_ID, 
+  MPF_Cur_Elm_ID,
+  MPF_Tgt_Elm_ID,
   MPF_Cur_Pos_Rot_Lat_Lon,
   MPF_Tgt_Pos_Rot_Lat_Lon,
-  MPF_Cur_Pos_XYZ,       //5
-  MPF_Tgt_Pos_XYZ,       
+  MPF_Cur_Pos_XYZ,
+  MPF_Tgt_Pos_XYZ,
   MPF_Flag_Basis_Vals,
   MPF_Basis_Vals,
   MPF_Basis_Grad_Vals,
-  MPF_Mass,              //10
-  MPF_Vel,               
+  MPF_Mass,
+  MPF_Vel,
+  MPF_Rot_Lat_Lon_Incr,
   MPF_Strain_Rate,
   MPF_Stress,
   MPF_Stress_Div,
-  MPF_Shear_Traction,    //15
+  MPF_Shear_Traction,
   MPF_Constv_Mdl_Param,
   MPF_MP_APP_ID
 };
@@ -60,6 +61,7 @@ const static std::map<MaterialPointSlice, std::pair<int,MeshFieldIndex>>
                            {MPF_Basis_Grad_Vals, {maxVtxsPerElm*2,MeshF_Invalid}},
                            {MPF_Mass,            {1,MeshF_Unsupported}},
                            {MPF_Vel,             {2,MeshF_Vel}},
+                           {MPF_Rot_Lat_Lon_Incr,{2,MeshF_RotLatLonIncr}},
                            {MPF_Strain_Rate,     {6,MeshF_Unsupported}},
                            {MPF_Stress,          {6,MeshF_Unsupported}},
                            {MPF_Stress_Div,      {3,MeshF_Unsupported}},
@@ -84,6 +86,7 @@ typedef MemberTypes<mp_flag_t,              //MP_Status
                     mp_basis_grad2d_t,      //MP_Basis_Grad_Vals
                     mp_sclr_t,              //MP_Mass //TODO: test Mass in assembly
                     mp_vec2d_t,             //MP_Vel
+                    mp_vec2d_t,             //MP_Rot_Lat_Lon_Incr
                     mp_sym_mat3d_t,         //MP_Strain_Rate
                     mp_sym_mat3d_t,         //MP_Stress
                     mp_vec3d_t,             //MP_Stress_Div

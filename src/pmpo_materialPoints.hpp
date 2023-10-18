@@ -97,7 +97,7 @@ typedef ps::ParticleStructure<MaterialPointTypes> PS;
 PS* createDPS(int numElms, int numMPs, DoubleVec3dView positions, IntView mpsPerElm, IntView mp2elm);
 PS* createDPS(int numElms, int numMPs, IntView mpsPerElm, IntView mp2elm, IntView isMPActive);
 
-pumipic::MemberTypeViews createMemberViews(int newNumMPs, IntView newMp2elm, IntView newMpAppID);
+pumipic::MemberTypeViews createInternalMemberViews(int newNumMPs, IntView newMp2elm, IntView newMpAppID);
 
 class MaterialPoints {
   private:
@@ -128,7 +128,7 @@ class MaterialPoints {
       MPs->rebuild(tgtElm);
     }
     void rebuild(IntView tgtElm, int newNumMPs, IntView newMp2elm, IntView newMpAppID) {
-      auto newMpInfo = createMemberViews(newNumMPs, newMp2elm, newMpAppID);
+      auto newMpInfo = createInternalMemberViews(newNumMPs, newMp2elm, newMpAppID);
       MPs->rebuild(tgtElm, newMp2elm, newMpInfo);
     }
     void updateMPElmID(){

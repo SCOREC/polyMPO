@@ -172,7 +172,6 @@ void polympo_createMPs(MPMesh_ptr p_mpmesh,
 void polympo_rebuildMPs(MPMesh_ptr p_mpmesh,
                         int numMPs, // >= number of active MPs
                         int* tgtMpElmIn,
-                        int* newMp2Elm,
                         int* newIsMPActive) {
   checkMPMeshValid(p_mpmesh);
   auto p_MPs = ((polyMPO::MPMesh*)p_mpmesh)->p_MPs;
@@ -187,7 +186,7 @@ void polympo_rebuildMPs(MPMesh_ptr p_mpmesh,
   for(int i=0; i<numMPs; i++) {
     if(newIsMPActive[i] == MP_ACTIVE) {
       active_mpIDs[addNumActiveMPs] = i;
-      active_mp2Elm[addNumActiveMPs] = newMp2Elm[i]-offset; //adjust for 1 based indexing if needed
+      active_mp2Elm[addNumActiveMPs] = tgtMpElmIn[i]-offset; //adjust for 1 based indexing if needed
       addNumActiveMPs++;
     }
   }

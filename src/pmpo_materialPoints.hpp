@@ -194,7 +194,18 @@ class MaterialPoints {
 //MUTATOR  
     template <MaterialPointSlice index> void fillData(double value);//use PS_LAMBDA fill up to 1
     void T2LTracking(Vec2dView dx);
-    
+
+    void updateRotLatLon(){
+        auto curPosRotLatLon = getData<MPF_Cur_Pos_Rot_Lat_Lon>();
+        auto rotLatLonIncr = getData<MPF_Rot_Lat_Lon_Incr>();
+
+        auto updateRotLatLon = PS_LAMBDA(const int& elm, const int& mp, const int& mask){
+        if(mask){
+            //TODO: use given math equations
+        }
+        };
+        ps::parallel_for(MPs, updateRotLatLon, "updateRotationalLatitudeLongitude");
+    }
 };
 
 template <MaterialPointSlice index>

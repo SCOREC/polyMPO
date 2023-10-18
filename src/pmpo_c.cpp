@@ -4,6 +4,7 @@
 
 #define MP_DETACHED -1 //TODO: consider other ways later, like enum
 #define MP_ACTIVE 1
+#define MP_DELETE -1
 
 namespace{
   std::vector<MPMesh_ptr> p_mpmeshes;////store the p_mpmeshes that is legal
@@ -101,7 +102,7 @@ typedef Kokkos::View<
 
 void polympo_createMPs(MPMesh_ptr p_mpmesh,
                        int numElms,
-                       int numMPs, // total number of MPs which is >= number of active MPs
+                       int numMPs, // total number of MPs which is GREATER than or equal to number of active MPs
                        int* mpsPerElm,
                        int* mp2Elm,
                        int* isMPActive) {
@@ -170,8 +171,8 @@ void polympo_createMPs(MPMesh_ptr p_mpmesh,
 }
 
 void polympo_rebuildMPs(MPMesh_ptr p_mpmesh,
-                        int numMPs, // total number of MPs which is >= number of active MPs
-                        int* allTgtMpElmIn,
+                        int numMPs, // total number of MPs which is GREATER than or equal to number of active MPs
+                        int* allMP2Elm,
                         int* addedMPMask) {
   checkMPMeshValid(p_mpmesh);
   auto p_MPs = ((polyMPO::MPMesh*)p_mpmesh)->p_MPs;
@@ -186,7 +187,7 @@ void polympo_rebuildMPs(MPMesh_ptr p_mpmesh,
   for(int i=0; i<numMPs; i++) {
     if(addedMPMask[i] == MP_ACTIVE) {
       added_mpIDs[numAddedMPs] = i;
-      added_mp2Elm[numAddedMPs] = allTgtMpElmIn[i]-offset; //adjust for 1 based indexing if needed
+      added_mp2Elm[numAddedMPs] = allMP2Elm[i]-offset; //adjust for 1 based indexing if needed
       numAddedMPs++;
     }
   }
@@ -201,11 +202,14 @@ void polympo_rebuildMPs(MPMesh_ptr p_mpmesh,
 
   Kokkos::View<int*> tgtMpElm("tgtMpElm", numMPsPMPO);
   auto mpAppID = p_MPs->getData<polyMPO::MPF_MP_APP_ID>();
-  kkIntViewHostU mpTgtElmsIn_h(allTgtMpElmIn, numMPs);
-  auto mpTgtElmsIn_d = Kokkos::create_mirror_view_and_copy(space_t(), mpTgtElmsIn_h);
+  kkIntViewHostU allMP2Elm_h(allMP2Elm, numMPs);
+  auto mpMP2ElmIn_d = Kokkos::create_mirror_view_and_copy(space_t(), allMP2Elm_h);
   auto setTgtMpElm = PS_LAMBDA(const int& elm, const int& mp, const int& mask){
     if(mask){
-      tgtMpElm(mp) = mpTgtElmsIn_d(mpAppID(mp));
+      if (addedMPMask[mpAppID(mp)] == MP_ACTIVE)
+        tgtMpElm(mp) = MP_DELETE;
+      else
+        tgtMpElm(mp) = mpMP2ElmIn_d(mpAppID(mp));
     }
   };
   p_MPs->parallel_for(setTgtMpElm, "setTgtMpElm");

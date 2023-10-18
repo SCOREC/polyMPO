@@ -38,5 +38,17 @@ namespace polyMPO{
         PMT_ALWAYS_ASSERT(vtxRotLatLonIncrMapEntry.first == MeshFType_VtxBased);
         vtxRotLatLonIncr_ = DoubleVec2dView(vtxRotLatLonIncrMapEntry.second,numVtxs_);
     }
+    
+    void Mesh::computeRotLatLonIncr(){
+        PMT_ALWAYS_ASSERT(geomType_ == geom_spherical_surf);
+       
+        auto dispIncr = getMeshField<MeshF_OnSurfDispIncr>();
+        auto rotLatLonIncr = getMeshField<MeshF_RotLatLonIncr>();
+        Kokkos::parallel_for("set nEdgesPerElm", numVtxs_, KOKKOS_LAMBDA(const int iVtx){
+            //TODO implement math
+            rotLatLonIncr(iVtx, 0) = dispIncr(iVtx, 0);
+            rotLatLonIncr(iVtx, 1) = dispIncr(iVtx, 1);
+        });
+    }
 
 } // namespace polyMPO

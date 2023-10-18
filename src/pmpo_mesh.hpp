@@ -128,6 +128,8 @@ class Mesh {
                                                      elm2VtxConn_ = elm2VtxConn; }
     void setElm2ElmConn(IntElm2ElmView elm2ElmConn) {PMT_ALWAYS_ASSERT(meshEdit_);
                                                      elm2ElmConn_ = elm2ElmConn; }
+    
+    void computeRotLatLonIncr();
 };
 
 template<MeshFieldIndex index>

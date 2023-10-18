@@ -23,7 +23,8 @@ enum MeshFieldIndex{
     MeshF_VtxRotLatLon,
     MeshF_Vel,
     MeshF_OnSurfVeloIncr,
-    MeshF_OnSurfDispIncr
+    MeshF_OnSurfDispIncr,
+    MeshF_RotLatLonIncr
 };
 enum MeshFieldType{
     MeshFType_Invalid = -2,
@@ -39,7 +40,8 @@ const std::map<MeshFieldIndex, std::pair<MeshFieldType,
                {MeshF_VtxRotLatLon,        {MeshFType_VtxBased,"MeshField_VerticesLatitudeLongitude"}},
                {MeshF_Vel,              {MeshFType_VtxBased,"MeshField_Velocity"}},
                {MeshF_OnSurfVeloIncr,   {MeshFType_VtxBased,"MeshField_OnSurfaceVelocityIncrement"}},
-               {MeshF_OnSurfDispIncr,   {MeshFType_VtxBased,"MeshField_OnSurfaceDisplacementIncrement"}}};
+               {MeshF_OnSurfDispIncr,   {MeshFType_VtxBased,"MeshField_OnSurfaceDisplacementIncrement"}},
+               {MeshF_RotLatLonIncr,    {MeshFType_VtxBased,"MeshField_RotationalLatitudeLongitudeIncreasement"}}};
 
 enum mesh_type {mesh_unrecognized_lower = -1,
                 mesh_general_polygonal, //other meshes
@@ -70,6 +72,7 @@ class Mesh {
     DoubleVec2dView vtxVel_;
     DoubleVec2dView vtxOnSurfVeloIncr_;
     DoubleVec2dView vtxOnSurfDispIncr_;
+    DoubleVec2dView vtxRotLatLonIncr_;
     //DoubleMat2DView vtxStress_;
 
   public:
@@ -151,6 +154,9 @@ auto Mesh::getMeshField(){
     }
     else if constexpr (index==MeshF_OnSurfDispIncr){
         return vtxOnSurfDispIncr_;
+    }
+    else if constexpr (index==MeshF_RotLatLonIncr){
+        return vtxRotLatLonIncr_;
     }
     fprintf(stderr,"Mesh Field Index error!\n");
     exit(1);

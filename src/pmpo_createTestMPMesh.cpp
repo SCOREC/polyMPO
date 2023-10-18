@@ -138,7 +138,7 @@ MaterialPoints* initTestMPs(Mesh* mesh, int testMPOption){
     },numMPs);
 
     DoubleVec3dView positions("MPpositions",numMPs);
-    DoubleVec2dView latLonPositions("MPLatLonPositions",numMPs); 
+    DoubleVec2dView latLonPositions("MPRotLatLonPositions",numMPs); 
     if(geomType == geom_planar_surf){     
         Kokkos::parallel_for("intializeMPsPositionPlanar", numMPs, KOKKOS_LAMBDA(const int iMP){
             int ielm = MPToElement(iMP);
@@ -156,14 +156,14 @@ MaterialPoints* initTestMPs(Mesh* mesh, int testMPOption){
     }else if(geomType == geom_spherical_surf){
         Kokkos::Random_XorShift64_Pool<> random_pool(randSeed);
         const double radius = mesh->getSphereRadius();
-        DoubleVec2dView vtxLatLon = mesh->getMeshField<MeshF_VtxLatLon>();
+        DoubleVec2dView vtxRotLatLon = mesh->getMeshField<MeshF_VtxRotLatLon>();
         Kokkos::parallel_for("intializeMPsPositionSpherical", numMPs, KOKKOS_LAMBDA(const int iMP){
             int ielm = MPToElement(iMP);
             int numVtx = elm2VtxConn(ielm,0);
             double lat = 0.0, lon = 0.0; 
             for(int i=1; i<= numVtx; i++){
-                lat += vtxLatLon(elm2VtxConn(ielm,i)-1,0);
-                lon += vtxLatLon(elm2VtxConn(ielm,i)-1,1);
+                lat += vtxRotLatLon(elm2VtxConn(ielm,i)-1,0);
+                lon += vtxRotLatLon(elm2VtxConn(ielm,i)-1,1);
             }
             lat /= numVtx;
             lon /= numVtx;
@@ -179,12 +179,12 @@ MaterialPoints* initTestMPs(Mesh* mesh, int testMPOption){
     }
     if(geomType == geom_spherical_surf){
         auto p_MPs = new MaterialPoints(numElms,numMPs,positions,numMPsPerElement,MPToElement);
-        auto mpLatLonField = p_MPs->getData<MPF_Cur_Pos_Lat_Lon>();
-        auto setLatLon = PS_LAMBDA(const int& elm, const int& mp, const int& mask){
-            mpLatLonField(mp,0) = latLonPositions(mp,0);
-            mpLatLonField(mp,1) = latLonPositions(mp,1);
+        auto mpRotLatLonField = p_MPs->getData<MPF_Cur_Pos_Rot_Lat_Lon>();
+        auto setRotLatLon = PS_LAMBDA(const int& elm, const int& mp, const int& mask){
+            mpRotLatLonField(mp,0) = latLonPositions(mp,0);
+            mpRotLatLonField(mp,1) = latLonPositions(mp,1);
         };
-        p_MPs->parallel_for(setLatLon, "set MP latitude longtitude");
+        p_MPs->parallel_for(setRotLatLon, "set MP latitude longtitude");
         return p_MPs;
     }else{
         return new MaterialPoints(numElms,numMPs,positions,numMPsPerElement,MPToElement);

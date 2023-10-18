@@ -25,8 +25,8 @@ void polympo_getMPCurElmID(MPMesh_ptr p_mpmesh, int numMPs, int* elmIDs);
 void polympo_getMPPositions(MPMesh_ptr p_mpmesh, int numComps, int numMPs, double* mpPositionsIn);
 
 //MP slices
-void polympo_setMPLatLon(MPMesh_ptr p_mpmesh, int numComps, int numMPs, double* mpLatLonIn);
-void polympo_getMPLatLon(MPMesh_ptr p_mpmesh, int numComps, int numMPs, double* mpLatLonHost);
+void polympo_setMPRotLatLon(MPMesh_ptr p_mpmesh, int numComps, int numMPs, double* mpRotLatLonIn);
+void polympo_getMPRotLatLon(MPMesh_ptr p_mpmesh, int numComps, int numMPs, double* mpRotLatLonHost);
 void polympo_setMPVel(MPMesh_ptr p_mpmesh, int size, double* array);
 void polympo_getMPVel(MPMesh_ptr p_mpmesh, int size, double* array);
 
@@ -50,8 +50,8 @@ void polympo_setMeshElm2ElmConn(MPMesh_ptr p_mpmesh, int maxEdges, int nCells, i
 //Mesh fields
 void polympo_setMeshVtxCoords(MPMesh_ptr p_mpmesh, int nVertices, double* xArray, double* yArray, double* zArray);
 void polympo_getMeshVtxCoords(MPMesh_ptr p_mpmesh, int nVertices, double* xArray, double* yArray, double* zArray);
-void polympo_setMeshVtxLatLon(MPMesh_ptr p_mpmesh, int nVertices, double* latitude, double* longitude);
-void polympo_getMeshVtxLatLon(MPMesh_ptr p_mpmesh, int nVertices, double* latitude, double* longitude);
+void polympo_setMeshVtxRotLatLon(MPMesh_ptr p_mpmesh, int nVertices, double* latitude, double* longitude);
+void polympo_getMeshVtxRotLatLon(MPMesh_ptr p_mpmesh, int nVertices, double* latitude, double* longitude);
 void polympo_setMeshOnSurfVeloIncr(MPMesh_ptr p_mpmesh, int nComps, int nVertices, double* array);//vec2d
 void polympo_getMeshOnSurfVeloIncr(MPMesh_ptr p_mpmesh, int nComps, int nVertices, double* array);//vec2d
 void polympo_setMeshOnSurfDispIncr(MPMesh_ptr p_mpmesh, int nComps, int nVertices, double* array);//vec2d

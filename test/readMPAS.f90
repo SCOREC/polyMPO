@@ -114,7 +114,7 @@ subroutine loadMPASMesh(mpMesh, filename)
 
     !set vtxCoords which is a mesh field 
     call polympo_setMeshVtxCoords(mpMesh,nVertices,c_loc(xVertex),c_loc(yVertex),c_loc(zVertex))
-    call polympo_setMeshVtxLatLon(mpMesh,nVertices,c_loc(latVertex),c_loc(lonVertex))
+    call polympo_setMeshVtxRotLatLon(mpMesh,nVertices,c_loc(latVertex),c_loc(lonVertex))
     !unloadMPASMesh to deallocated
     deallocate(nEdgesOnCell)
     deallocate(xVertex)

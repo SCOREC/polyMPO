@@ -106,8 +106,8 @@ module polympo
   !> @param array(in)  input MP current lat and lon 2D array (2,numMPs),
   !>                   allocated by user
   !---------------------------------------------------------------------------
-  subroutine polympo_setMPLatLon(mpMesh, nComps, numMPs, array) &
-             bind(C, NAME='polympo_setMPLatLon')
+  subroutine polympo_setMPRotLatLon(mpMesh, nComps, numMPs, array) &
+             bind(C, NAME='polympo_setMPRotLatLon')
     use :: iso_c_binding
     type(c_ptr), value :: mpMesh
     integer(c_int), value :: nComps, numMPs
@@ -121,8 +121,8 @@ module polympo
   !> @param array(in/out) output MP current lat and lon 2D array (2,numMPs),
   !>                      allocated by user
   !---------------------------------------------------------------------------
-  subroutine polympo_getMPLatLon(mpMesh, nComps, numMPs, array) &
-             bind(C, NAME='polympo_getMPLatLon')
+  subroutine polympo_getMPRotLatLon(mpMesh, nComps, numMPs, array) &
+             bind(C, NAME='polympo_getMPRotLatLon')
     use :: iso_c_binding
     type(c_ptr), value :: mpMesh
     integer(c_int), value :: nComps, numMPs
@@ -360,8 +360,8 @@ module polympo
   !> @param nVertices(in) length of array in 
   !> @param latitude/longitude(in) the 1D arrays of vertices lat/lon
   !---------------------------------------------------------------------------
-  subroutine polympo_setMeshVtxLatLon(mpMesh, nVertices, latitude, longitude) &
-             bind(C, NAME='polympo_setMeshVtxLatLon')
+  subroutine polympo_setMeshVtxRotLatLon(mpMesh, nVertices, latitude, longitude) &
+             bind(C, NAME='polympo_setMeshVtxRotLatLon')
     use :: iso_c_binding
     type(c_ptr), value :: mpMesh
     integer(c_int), value :: nVertices
@@ -373,8 +373,8 @@ module polympo
   !> @param nVertices(in) length of array in, use for assertion
   !> @param latitude/longitude(in/out) the 1D arrays of vertices lat/lon
   !---------------------------------------------------------------------------
-  subroutine polympo_getMeshLatLon(mpMesh, nVertices, latitude, longitude) &
-             bind(C, NAME='polympo_getMeshLatLon')
+  subroutine polympo_getMeshRotLatLon(mpMesh, nVertices, latitude, longitude) &
+             bind(C, NAME='polympo_getMeshRotLatLon')
     use :: iso_c_binding
     type(c_ptr), value :: mpMesh
     integer(c_int), value :: nVertices

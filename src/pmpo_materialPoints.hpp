@@ -30,8 +30,8 @@ enum MaterialPointSlice {
   MPF_Status = 0,
   MPF_Cur_Elm_ID,        //1
   MPF_Tgt_Elm_ID, 
-  MPF_Cur_Pos_Lat_Lon,
-  MPF_Tgt_Pos_Lat_Lon,
+  MPF_Cur_Pos_Rot_Lat_Lon,
+  MPF_Tgt_Pos_Rot_Lat_Lon,
   MPF_Cur_Pos_XYZ,       //5
   MPF_Tgt_Pos_XYZ,       
   MPF_Flag_Basis_Vals,
@@ -51,8 +51,8 @@ const static std::map<MaterialPointSlice, std::pair<int,MeshFieldIndex>>
       mpSlice2MeshFieldIndex = {{MPF_Status,     {1,MeshF_Invalid}},
                            {MPF_Cur_Elm_ID,      {0,MeshF_Invalid}},
                            {MPF_Tgt_Elm_ID,      {0,MeshF_Invalid}},
-                           {MPF_Cur_Pos_Lat_Lon, {2,MeshF_Invalid}},
-                           {MPF_Tgt_Pos_Lat_Lon, {2,MeshF_Invalid}},
+                           {MPF_Cur_Pos_Rot_Lat_Lon, {2,MeshF_Invalid}},
+                           {MPF_Tgt_Pos_Rot_Lat_Lon, {2,MeshF_Invalid}},
                            {MPF_Cur_Pos_XYZ,     {3,MeshF_Invalid}},
                            {MPF_Tgt_Pos_XYZ,     {3,MeshF_Invalid}},
                            {MPF_Flag_Basis_Vals, {1,MeshF_Invalid}},
@@ -69,14 +69,14 @@ const static std::map<MaterialPointSlice, std::pair<int,MeshFieldIndex>>
 
 const static std::vector<std::pair<MaterialPointSlice, MaterialPointSlice>>
         mpSliceSwap = {{MPF_Cur_Elm_ID, MPF_Tgt_Elm_ID},
-                       {MPF_Cur_Pos_Lat_Lon, MPF_Tgt_Pos_Lat_Lon},
+                       {MPF_Cur_Pos_Rot_Lat_Lon, MPF_Tgt_Pos_Rot_Lat_Lon},
                        {MPF_Cur_Pos_XYZ, MPF_Tgt_Pos_XYZ}};
 
 typedef MemberTypes<mp_flag_t,              //MP_Status
                     mp_elm_id_t,            //MP_Cur_Elm_ID
                     mp_elm_id_t,            //MP_Tgt_Elm_ID
-                    mp_vec2d_t,             //MP_Cur_Pos_Lat_Lon
-                    mp_vec2d_t,             //MP_Tgt_Pos_Lat_Lon
+                    mp_vec2d_t,             //MP_Cur_Pos_Rot_Lat_Lon
+                    mp_vec2d_t,             //MP_Tgt_Pos_Rot_Lat_Lon
                     mp_vec3d_t,             //MP_Cur_Pos_XYZ
                     mp_vec3d_t,             //MP_Tgt_Pos_XYZ
                     mp_flag_t,              //MP_Flag_Basis_Vals
@@ -160,7 +160,7 @@ class MaterialPoints {
     }
     void updateMPSliceAll(){
         updateMPElmID();
-        updateMPSlice<MPF_Cur_Pos_Lat_Lon,MPF_Tgt_Pos_Lat_Lon>();
+        updateMPSlice<MPF_Cur_Pos_Rot_Lat_Lon,MPF_Tgt_Pos_Rot_Lat_Lon>();
         updateMPSlice<MPF_Cur_Pos_XYZ,MPF_Tgt_Pos_XYZ>();
     }
 

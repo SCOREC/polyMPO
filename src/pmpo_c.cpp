@@ -79,13 +79,6 @@ typedef Kokkos::View<
         > kkVec2dViewHostU;//TODO:put it to mesh.hpp
 
 typedef Kokkos::View<
-          double*[vec3d_nEntries],
-          Kokkos::LayoutLeft,
-          Kokkos::DefaultHostExecutionSpace,
-          Kokkos::MemoryTraits<Kokkos::Unmanaged>
-        > kkVec3dViewHostU;//TODO:put it to mesh.hpp
-                         
-typedef Kokkos::View<
           double**,
           Kokkos::LayoutLeft,
           Kokkos::DefaultHostExecutionSpace,

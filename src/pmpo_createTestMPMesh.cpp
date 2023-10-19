@@ -205,7 +205,6 @@ MaterialPoints* initTestMPs(Mesh* mesh, int testMPOption){
             int numVtx = elm2VtxConn(ielm,0);
             auto generator = random_pool.get_state();
             int r1Index = generator.urand(0,numVtx);
-            // int r2Index = (r1Index+numVtx/2)%numVtx;
             int r2Index = (r1Index+1)%numVtx;
             ++r1Index;
             ++r2Index;

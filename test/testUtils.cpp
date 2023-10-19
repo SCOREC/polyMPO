@@ -86,9 +86,6 @@ void interpolateWachspressSphericalTest(MPMesh& mpMesh){
                                               MPsPosition(mp,0),
                                               MPsPosition(mp,1),
                                               MPsPosition(mp,2));*/
-            //assert(wp_coord[0] - MPsPosition(mp,0) < TEST_EPSILON);
-            //assert(wp_coord[1] - MPsPosition(mp,1) < TEST_EPSILON);
-            //assert(wp_coord[2] - MPsPosition(mp,2) < TEST_EPSILON);
         }        
     };
     p_MPs->parallel_for(eval, "interpolateWachspressSphericalTest");

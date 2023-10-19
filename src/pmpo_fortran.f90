@@ -71,23 +71,20 @@ module polympo
     type(c_ptr), intent(in), value :: isMPActive
   end subroutine
   !---------------------------------------------------------------------------
-  !> @brief move MPs to a new element and/or add new MPs
+  !> @brief move MPs to a new element, add new MPs, or delete MPs
   !> @brief the fields associated with the MPs are NOT initialized
   !> @param mpmesh(in/out) MPMesh object
   !> @param newNumMPs(in) number of MPs to add to MPMesh
-  !> @param tgtMpElm(in) the target element for each MP
-  !> @param newMp2Elm(in) element ID for each new MP
-  !> @param newIsMPActive(in) set to 1 if the new MP is active, 0 otherwise
+  !> @param allMP2Elm(in) the target element for each MP
+  !> @param addedMPMask(in) set to 1 each new MP, 0 otherwise
   !---------------------------------------------------------------------------
-  subroutine polympo_rebuildMPs(mpMesh, numMPs, tgtMpElmIn, newNumMPs, newMp2Elm, newIsMPActive) &
+  subroutine polympo_rebuildMPs(mpMesh, numMPs, allMP2Elm, addedMPMask) &
     bind(C, NAME='polympo_rebuildMPs')
     use :: iso_c_binding
     type(c_ptr), value :: mpMesh
     integer(c_int), value :: numMPs
-    type(c_ptr), intent(in), value :: tgtMpElmIn
-    integer(c_int), value :: newNumMPs
-    type(c_ptr), intent(in), value :: newMp2Elm
-    type(c_ptr), intent(in), value :: newIsMPActive
+    type(c_ptr), intent(in), value :: allMP2Elm
+    type(c_ptr), intent(in), value :: addedMPMask
   end subroutine
   !---------------------------------------------------------------------------
   !> @brief get the current element ID MP array from a polympo array

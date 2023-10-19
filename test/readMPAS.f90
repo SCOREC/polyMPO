@@ -15,6 +15,37 @@ module readMPAS
     integer, parameter :: MPAS_RKIND = selected_real_kind(12)
     
 contains
+
+subroutine rebuildTests(mpMesh, numMPs, mp2Elm, isMPActive)
+    implicit none
+    type(c_ptr):: mpMesh
+    integer :: numMPs, i
+    integer, dimension(:), pointer :: mp2Elm, isMPActive, addedMPMask, newMP2Elm
+
+    allocate(addedMPMask(numMPs))
+    addedMPMask = 0
+
+    do i = 0, numMPs
+        if (isMPActive(i) == 0) then
+            addedMPMask(i) = 1
+            mp2Elm(i) = 1
+            exit
+        endif
+    end do
+
+    call polympo_rebuildMPs(mpMesh,numMPs,c_loc(mp2Elm),c_loc(addedMPMask))
+
+    allocate(newMP2Elm(numMPs))
+    call polympo_getMPCurElmID(mpMesh,numMPs,c_loc(newMP2Elm))
+
+    do i = 0, numMPs
+        call assert(mp2Elm(i) .eq. newMP2Elm(i), "wrong element ID for i'th MP after rebuild")
+    end do
+
+    deallocate(addedMPMask)
+    deallocate(newMP2Elm)
+end subroutine
+
 !---------------------------------------------------------------------------
 !> @brief get the MP positions array from a polympo array
 !> @param mpmesh(in/out) MPMesh object to fill, allocated by users
@@ -105,6 +136,8 @@ subroutine loadMPASMesh(mpMesh, filename)
       call assert(mp2Elm(i) .eq. i-2, "wrong element ID for i'th MP")
     end do
     !test end
+
+    call rebuildTests(mpMesh, numMPs, mp2Elm, isMPActive)
 
     deallocate(mpsPerElm)
     deallocate(mp2Elm)

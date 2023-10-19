@@ -416,7 +416,7 @@ void polympo_getMeshVtxCoords(MPMesh_ptr p_mpmesh, int nVertices, double* xArray
   }
 }
 
-void polympo_setMeshCellCenters(MPMesh_ptr p_mpmesh, int nCenters, double* xArray, double* yArray, double* zArray){
+void polympo_setMeshCellCenters(MPMesh_ptr p_mpmesh, int nCells, double* xArray, double* yArray, double* zArray){
 
   checkMPMeshValid(p_mpmesh);
   auto p_mesh = ((polyMPO::MPMesh*)p_mpmesh)->p_mesh;
@@ -431,7 +431,7 @@ void polympo_setMeshCellCenters(MPMesh_ptr p_mpmesh, int nCenters, double* xArra
   Kokkos::deep_copy(centersArray, h_centersArray);
 }
 
-void polympo_getMeshCellCenters(MPMesh_ptr p_mpmesh, int nCenters, double* xArray, double* yArray, double* zArray){
+void polympo_getMeshCellCenters(MPMesh_ptr p_mpmesh, int nCells, double* xArray, double* yArray, double* zArray){
   
   checkMPMeshValid(p_mpmesh);
   auto p_mesh = ((polyMPO::MPMesh*)p_mpmesh)->p_mesh;

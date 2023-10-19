@@ -125,7 +125,8 @@ subroutine readMPASMesh(filename, maxEdges, vertexDegree, &
                         nCells, nVertices, nEdgesOnCell, &
                         onSphere, sphereRadius, &
                         xVertex, yVertex, zVertex, &
-                        verticesOnCell, cellsOnCell)
+                        verticesOnCell, cellsOnCell, &
+                        cellCenters)
     use :: netcdf
     use :: iso_c_binding
     implicit none
@@ -142,7 +143,7 @@ subroutine readMPASMesh(filename, maxEdges, vertexDegree, &
 
     integer :: ncid, status, nCellsID, nVerticesID, maxEdgesID, vertexDegreeID, &
                nEdgesOnCellID, xVertexID, yVertexID, zVertexID, &
-               verticesOnCellID, cellsOnCellID
+               verticesOnCellID, cellsOnCellID, cellCentersID
     
     status = nf90_open(path=trim(filename), mode=nf90_nowrite, ncid=ncid)
     if (status /= nf90_noerr) then
@@ -211,9 +212,10 @@ subroutine readMPASMesh(filename, maxEdges, vertexDegree, &
     allocate(yVertex(nVertices))
     allocate(zVertex(nVertices))
     allocate(nEdgesOnCell(nCells))
+    allocate(cellCenters(nCells))
     allocate(verticesOnCell(maxEdges, nCells))
     allocate(cellsOnCell(maxEdges, nCells))
-   
+    
     status = nf90_get_att(ncid, nf90_global, "on_a_sphere", onSphere)
     if (status /= nf90_noerr) then
         write(0, *) "readMPASMesh: Error on get attribute 'on_a_sphere'"
@@ -311,6 +313,13 @@ subroutine readMPASMesh(filename, maxEdges, vertexDegree, &
     status = nf90_get_var(ncid, cellsOnCellID, cellsOnCell)
     if (status /= nf90_noerr) then
         write(0, *) "readMPASMesh: Error on get var of 'cellsOnCell'"
+        write(0, *) trim(nf90_strerror(status))
+        stop
+    end if
+
+    status = nf90_get_var(ncid, cellCentersID, cellCenters)
+    if (status /= nf90_noerr) then
+        write(0, *) "readMPASMesh: Error on get var of 'cellCenters'"
         write(0, *) trim(nf90_strerror(status))
         stop
     end if

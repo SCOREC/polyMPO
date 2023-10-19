@@ -29,6 +29,7 @@ subroutine rebuildTests(mpMesh, numMPs, mp2Elm, isMPActive)
 
     do i = 1, numMPs
         if (isMPActive(i) == 0) then
+            isMPActive(i) = 1
             addedMPMask(i) = 1
             mp2Elm(i) = 1
             exit

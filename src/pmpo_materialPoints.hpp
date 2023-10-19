@@ -174,6 +174,7 @@ class MaterialPoints {
     void parallel_for(FunctorType kernel, std::string name="") {
       ps::parallel_for(MPs, kernel, name);
     }
+    int getCapacity() { return MPs->capacity(); }
     int getCount() { return MPs->nPtcls(); }
     auto getPositions() { return getData<MPF_Cur_Pos_XYZ>(); }
 

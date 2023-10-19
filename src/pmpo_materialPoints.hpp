@@ -184,7 +184,7 @@ class MaterialPoints {
       return elmIDoffset;
     }
     int getMaxAppID() {
-      PMT_ALWAYS_ASSERT(maxAppID != -1); //fixme - not all tests set this
+      PMT_ALWAYS_ASSERT(maxAppID != -1);
       return maxAppID;
     }
 

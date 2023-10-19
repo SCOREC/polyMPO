@@ -46,7 +46,7 @@ subroutine loadMPASMesh(mpMesh, filename)
     character (len=64) :: onSphere, stringYes = "YES"
     integer :: i
     integer :: maxEdges, vertexDegree, nCells, nVertices
-    integer :: nDims !FIXME - parameter???
+    integer, parameter :: nDims = 3
     integer :: numMPs
     real(kind=MPAS_RKIND) :: ptOne = 0.100000000000000000
     real(kind=MPAS_RKIND) :: sphereRadius
@@ -56,8 +56,6 @@ subroutine loadMPASMesh(mpMesh, filename)
     integer, dimension(:), pointer :: mpsPerElm, mp2Elm, isMPActive
     real(kind=MPAS_RKIND), dimension(:,:), pointer :: mpPosition
 
-    nDims = 3
-    
     call readMPASMesh(trim(filename), maxEdges, vertexDegree, &
                               nCells, nVertices, nEdgesOnCell, &
                               onSphere, sphereRadius, &

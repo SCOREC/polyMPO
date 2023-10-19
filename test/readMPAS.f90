@@ -27,7 +27,7 @@ subroutine rebuildTests(mpMesh, numMPs, mp2Elm, isMPActive)
     allocate(addedMPMask(numMPs))
     addedMPMask = 0
 
-    do i = 0, numMPs
+    do i = 1, numMPs
         if (isMPActive(i) == 0) then
             addedMPMask(i) = 1
             mp2Elm(i) = 1
@@ -41,7 +41,7 @@ subroutine rebuildTests(mpMesh, numMPs, mp2Elm, isMPActive)
     mp2ElmFromPMPO = -1
     call polympo_getMPCurElmID(mpMesh,numMPs,c_loc(mp2ElmFromPMPO))
 
-    do i = 0, numMPs
+    do i = 1, numMPs
         call assert(mp2Elm(i) .eq. mp2ElmFromPMPO(i), "wrong element ID for i'th MP after rebuild")
     end do
 

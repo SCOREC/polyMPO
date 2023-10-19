@@ -17,10 +17,12 @@ module readMPAS
 contains
 
 subroutine rebuildTests(mpMesh, numMPs, mp2Elm, isMPActive)
+    use :: polympo
+    use iso_c_binding
     implicit none
     type(c_ptr):: mpMesh
     integer :: numMPs, i
-    integer, dimension(:), pointer :: mp2Elm, isMPActive, addedMPMask, newMP2Elm
+    integer, dimension(:), pointer :: mp2Elm, isMPActive, addedMPMask, mp2ElmFromPMPO
 
     allocate(addedMPMask(numMPs))
     addedMPMask = 0
@@ -35,15 +37,16 @@ subroutine rebuildTests(mpMesh, numMPs, mp2Elm, isMPActive)
 
     call polympo_rebuildMPs(mpMesh,numMPs,c_loc(mp2Elm),c_loc(addedMPMask))
 
-    allocate(newMP2Elm(numMPs))
-    call polympo_getMPCurElmID(mpMesh,numMPs,c_loc(newMP2Elm))
+    allocate(mp2ElmFromPMPO(numMPs))
+    mp2ElmFromPMPO = -1
+    call polympo_getMPCurElmID(mpMesh,numMPs,c_loc(mp2ElmFromPMPO))
 
     do i = 0, numMPs
-        call assert(mp2Elm(i) .eq. newMP2Elm(i), "wrong element ID for i'th MP after rebuild")
+        call assert(mp2Elm(i) .eq. mp2ElmFromPMPO(i), "wrong element ID for i'th MP after rebuild")
     end do
 
     deallocate(addedMPMask)
-    deallocate(newMP2Elm)
+    deallocate(mp2ElmFromPMPO)
 end subroutine
 
 !---------------------------------------------------------------------------

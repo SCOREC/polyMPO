@@ -442,6 +442,15 @@ module polympo
     integer(c_int), value :: nComps, nVertices
     type(c_ptr), value :: array
   end subroutine
+  !---------------------------------------------------------------------------
+  !> @brief Push TODO haven't finish yet
+  !> @param mpmesh(in/out) MPMesh object
+  !---------------------------------------------------------------------------
+  subroutine polympo_push(mpMesh) &
+             bind(C, NAME='polympo_push')
+    use :: iso_c_binding
+    type(c_ptr), value :: mpMesh
+  end subroutine
   end interface
   contains
   !---------------------------------------------------------------------------

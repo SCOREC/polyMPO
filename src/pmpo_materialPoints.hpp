@@ -195,8 +195,9 @@ class MaterialPoints {
     template <MaterialPointSlice index> void fillData(double value);//use PS_LAMBDA fill up to 1
     void T2LTracking(Vec2dView dx);
 
-    void updateRotLatLon(){
+    void updateRotLatLonAndXYZ(){
         auto curPosRotLatLon = getData<MPF_Cur_Pos_Rot_Lat_Lon>();
+        auto curPosXYZ = getData<MPF_Cur_Pos_XYZ>();
         auto rotLatLonIncr = getData<MPF_Rot_Lat_Lon_Incr>();
 
         auto updateRotLatLon = PS_LAMBDA(const int& elm, const int& mp, const int& mask){

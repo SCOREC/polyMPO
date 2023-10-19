@@ -59,6 +59,7 @@ int main(int argc, char** argv) {
                     }   
                 };
                 p_MPs->parallel_for(check, "check MPF_Vel = MPF_");
+                mpmesh.push();
             }else{ 
                 printf("Warning: No further planar test!\n");
             }

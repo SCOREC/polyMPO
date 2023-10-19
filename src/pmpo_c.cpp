@@ -567,3 +567,7 @@ void polympo_getMeshOnSurfDispIncr(MPMesh_ptr p_mpmesh, int nComps, int nVertice
   Kokkos::deep_copy(arrayHost, vtxField);
 }
 
+void polympo_push(MPMesh_ptr p_mpmesh){
+  checkMPMeshValid(p_mpmesh);
+  ((polyMPO::MPMesh*)p_mpmesh) ->push();
+}

@@ -213,7 +213,7 @@ void getBasisByAreaGblForm_1(Vec2d MP, int numVtxs, Vec2d* vtxCoords, double* ba
     for (int i = 0; i < numVtxs; i++) {
         basis[i] /= denominator;
     }
-} // getBasisByAreaGblForm_1
+} 
 */
 
 } //namespace polyMPO end

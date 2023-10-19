@@ -127,7 +127,7 @@ void getBasisByAreaGblForm(Vec2d MP, int numVtxs, Vec2d* vtxCoords, double* basi
     }
 
     calcBasis(numVtxs, a, c, basis);
-}// getBasisByAreaGblForm
+}
 
 KOKKOS_INLINE_FUNCTION
 void getBasisByAreaGblForm3d(Vec3d MP, int numVtxs, Vec3d* vtxCoords, double* basis) {

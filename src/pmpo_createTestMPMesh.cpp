@@ -71,17 +71,17 @@ Mesh* initTestMesh(const int testMeshOption, const int replicateFactor){
         if(testMeshOption==2){ 
             // rotation around x axis by 30 degrees
             double rad  = M_PI / 6.00;
-            std::vector<std::vector<double>> R1 = {{1.00, 0.00, 0.00}, 
-                                    {0.00, cos(rad), -sin(rad)},
-                                    {0.00, sin(rad), cos(rad) }};
+            std::array<std::array<double, 3>, 3> R1 = {{{1.00, 0.00, 0.00}, 
+                                                       {0.00, cos(rad), -sin(rad)},
+                                                       {0.00, sin(rad), cos(rad) }}};
             // rotation around z axis by 45 degrees
-            rad = M_PI / 4.00;
-            std::vector<std::vector<double>> R2 = {{cos(rad), -sin(rad), 0.00}, 
-                                    {sin(rad), cos(rad), 0.00},
-                                    {0.00, 0.00, 1.00}};
+            double rad2 = M_PI / 4.00;
+            std::array<std::array<double, 3>, 3> R2 = {{{cos(rad2), -sin(rad2), 0.00}, 
+                                                       {sin(rad2), cos(rad2), 0.00},
+                                                       {0.00, 0.00, 1.00}}};
 
             for (int i = 0; i < (int)  v_array_coords.size(); i++) {
-                std::vector<double> tmp_vec(3);
+                std::array<double, 3> tmp_vec = {{0,0,0}};
                 tmp_vec[0] = v_array_coords[i][0] * R1[0][0]
                            + v_array_coords[i][1] * R1[0][1]
                            + v_array_coords[i][2] * R1[0][2];
@@ -205,7 +205,8 @@ MaterialPoints* initTestMPs(Mesh* mesh, int testMPOption){
             int numVtx = elm2VtxConn(ielm,0);
             auto generator = random_pool.get_state();
             int r1Index = generator.urand(0,numVtx);
-            int r2Index = (r1Index+numVtx/2)%numVtx;
+            // int r2Index = (r1Index+numVtx/2)%numVtx;
+            int r2Index = (r1Index+1)%numVtx;
             ++r1Index;
             ++r2Index;
             random_pool.free_state(generator);

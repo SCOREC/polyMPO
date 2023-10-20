@@ -47,6 +47,7 @@ subroutine loadMPASMesh(mpMesh, filename)
     integer :: maxEdges, vertexDegree, nCells, nVertices
     integer, parameter :: nDims = 3
     integer, parameter :: MP_ACTIVE = 1
+    integer, parameter :: MP_INACTIVE = 0
     integer :: numMPs
     real(kind=MPAS_RKIND) :: ptOne = 0.100000000000000000
     real(kind=MPAS_RKIND) :: sphereRadius
@@ -95,8 +96,8 @@ subroutine loadMPASMesh(mpMesh, filename)
     allocate(mp2Elm(numMPs))
     allocate(isMPActive(numMPs))
     
-    isMPActive = 1 !no inactive MPs and some changed below
-    isMPActive(4) = 0 !first/1-st MP is indexed 1 and 4-th MP is inactive
+    isMPActive = MP_ACTIVE !no inactive MPs and some changed below
+    isMPActive(4) = MP_INACTIVE !first/1-st MP is indexed 1 and 4-th MP is inactive
    
     mpsPerElm = 1 !all elements have 1 MP and some changed below
     mpsPerElm(1) = 0 !1st element has 0 MPs

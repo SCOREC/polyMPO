@@ -76,7 +76,7 @@ void interpolateWachspressSphericalTest(MPMesh& mpMesh){
         
             Vec3d wp_coord(0.0,0.0,0.0);
             Vec3d wp_coord2(0.0,0.0,0.0);
-            for(int i=0; i<= numVtx; i++){
+            for(int i=0; i<numVtx; i++){
                 wp_coord = wp_coord + v3d[i]*basisByArea3d[i];
                 wp_coord2 = wp_coord + v3d[i]*basisByArea3d2[i];
             }
@@ -128,7 +128,6 @@ void interpolateWachspress3DTest(MPMesh& mpMesh){
     };
     p_MPs->parallel_for(eval, "interpolateWachspress3DTest");
 }
-
 
 void printVTP(MPMesh& mpMesh){
     auto p_mesh = mpMesh.p_mesh;

@@ -70,10 +70,10 @@ Mesh* initTestMesh(const int testMeshOption, const int replicateFactor){
         
         if(testMeshOption==2){ 
             // rotation around x axis by 30 degrees
-            double rad  = M_PI / 6.00;
+            double rad1  = M_PI / 6.00;
             std::array<std::array<double, 3>, 3> R1 = {{{1.00, 0.00, 0.00}, 
-                                                       {0.00, cos(rad), -sin(rad)},
-                                                       {0.00, sin(rad), cos(rad) }}};
+                                                       {0.00, cos(rad1), -sin(rad1)},
+                                                       {0.00, sin(rad1), cos(rad1) }}};
             // rotation around z axis by 45 degrees
             double rad2 = M_PI / 4.00;
             std::array<std::array<double, 3>, 3> R2 = {{{cos(rad2), -sin(rad2), 0.00}, 
@@ -205,7 +205,7 @@ MaterialPoints* initTestMPs(Mesh* mesh, int testMPOption){
             int numVtx = elm2VtxConn(ielm,0);
             auto generator = random_pool.get_state();
             int r1Index = generator.urand(0,numVtx);
-            int r2Index = (r1Index+1)%numVtx;
+            int r2Index = (r1Index+numVtx/2)%numVtx;
             ++r1Index;
             ++r2Index;
             random_pool.free_state(generator);

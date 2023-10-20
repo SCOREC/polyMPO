@@ -21,16 +21,20 @@ subroutine rebuildTests(mpMesh, numMPs, mp2Elm, isMPActive)
     use iso_c_binding
     implicit none
     type(c_ptr):: mpMesh
-    integer :: numMPs, i
+    integer :: numMPs, i, MPACTIVE, MPINACTIVE
     integer, dimension(:), pointer :: mp2Elm, isMPActive, addedMPMask, mp2ElmFromPMPO
 
-    allocate(addedMPMask(numMPs))
-    addedMPMask = 0
+    MPACTIVE = 1
+    MPINACTIVE = -1
 
+    allocate(addedMPMask(numMPs))
+    addedMPMask = MPINACTIVE
+
+    ! Test 1) adding an MP
     do i = 1, numMPs
         if (isMPActive(i) == 0) then
-            isMPActive(i) = 1
-            addedMPMask(i) = 1
+            isMPActive(i) = MPACTIVE
+            addedMPMask(i) = MPACTIVE
             mp2Elm(i) = 1
             exit
         endif

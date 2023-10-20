@@ -92,7 +92,7 @@ module polympo
   !>                      allocated by user
   !---------------------------------------------------------------------------
   subroutine polympo_getMPPositions(mpMesh, nComps, numMPs, array) &
-             bind(C, NAME='polympo_getMPPositions')
+             bind(C, NAME='polympo_getMPPositions_f')
     use :: iso_c_binding
     type(c_ptr), value :: mpMesh
     integer(c_int), value :: nComps, numMPs

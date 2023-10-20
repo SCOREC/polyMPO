@@ -219,7 +219,7 @@ void polympo_setMPPositions_f(MPMesh_ptr p_mpmesh,
   callCount++;
 }
 
-void polympo_getMPPositions(MPMesh_ptr p_mpmesh,
+void polympo_getMPPositions_f(MPMesh_ptr p_mpmesh,
                             int numComps,
                             int numMPs,
                             double* mpPositionsHost){

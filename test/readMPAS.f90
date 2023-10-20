@@ -21,7 +21,7 @@ subroutine rebuildTests(mpMesh, numMPs, mp2Elm, isMPActive)
     use iso_c_binding
     implicit none
     type(c_ptr):: mpMesh
-    integer :: numMPs, i, MPACTIVE, MPINACTIVE, MPDELETE, numActive
+    integer :: numMPs, i, MPACTIVE, MPINACTIVE, MPDELETE, numActiveBefore, numActiveAfter
     integer, dimension(:), pointer :: mp2Elm, isMPActive, addedMPMask, mp2ElmFromPMPO
 
     MPACTIVE = 1
@@ -54,24 +54,58 @@ subroutine rebuildTests(mpMesh, numMPs, mp2Elm, isMPActive)
     ! Test deleting two MPs
 
     call assert(numMPs >= 5, "not enough MPs for test")
-    numActive = 0
+    numActiveBefore = 0
     do i = 1, numMPs
         if (mp2Elm(i) == 2) then
             isMPActive(i) = MPINACTIVE
             mp2Elm(i) = MPDELETE
-            numActive = numActive + 1
+            numActiveBefore = numActiveBefore + 1
         endif
     end do
-    call assert(numActive > 0, "no active MPs for test")
+    call assert(numActiveBefore > 0, "no active Elm = 2 for test")
 
     addedMPMask = MPINACTIVE
     call polympo_rebuildMPs(mpMesh,numMPs,c_loc(mp2Elm),c_loc(addedMPMask))
     mp2ElmFromPMPO = -1
     call polympo_getMPCurElmID(mpMesh,numMPs,c_loc(mp2ElmFromPMPO))
+    numActiveAfter = 0
     do i = 1, numMPs
-        call assert(mp2ElmFromPMPO(i) /= 2, "MP not deleted after rebuild")
+        call assert(mp2ElmFromPMPO(i) /= 2, "Elm = 2 not deleted after rebuild")
+        if (mp2ElmFromPMPO(i) /= MPINACTIVE) then 
+            numActiveAfter = numActiveAfter + 1 
+        endif
     end do
 
+    ! Test remove 3 and add 2 MPs
+
+    numActiveBefore = numActiveAfter
+
+    do i = 1, 5
+        if (mp2Elm(i) /= MPDELETE) then
+            mp2Elm(i) = 7
+            addedMPMask(i) = MPACTIVE
+        endif
+    end do
+
+    do i = 1, 5
+        if (mp2Elm(i) /= MPDELETE) then
+            mp2Elm(i) = MPDELETE
+            addedMPMask(i) = MPINACTIVE
+            exit
+        endif
+    end do
+
+    call polympo_rebuildMPs(mpMesh,numMPs,c_loc(mp2Elm),c_loc(addedMPMask))
+    mp2ElmFromPMPO = -1
+    call polympo_getMPCurElmID(mpMesh,numMPs,c_loc(mp2ElmFromPMPO))
+    numActiveAfter = 0
+    do i = 1, numMPs
+        if (mp2ElmFromPMPO(i) /= MPINACTIVE) then 
+            numActiveAfter = numActiveAfter + 1 
+        endif
+    end do
+    
+    call assert(numActiveBefore == numActiveAfter + 1, "num active incorrect")
 
     deallocate(addedMPMask)
     deallocate(mp2ElmFromPMPO)

@@ -46,7 +46,7 @@ subroutine loadMPASMesh(mpMesh, filename)
     integer :: i
     integer :: maxEdges, vertexDegree, nCells, nVertices
     integer, parameter :: nDims = 3
-    integer, parameter :: MP_ACTIVE = 3
+    integer, parameter :: MP_ACTIVE = 1
     integer :: numMPs
     real(kind=MPAS_RKIND) :: ptOne = 0.100000000000000000
     real(kind=MPAS_RKIND) :: sphereRadius

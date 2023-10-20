@@ -80,12 +80,6 @@ void interpolateWachspressSphericalTest(MPMesh& mpMesh){
                 wp_coord = wp_coord + v3d[i]*basisByArea3d[i];
                 wp_coord2 = wp_coord + v3d[i]*basisByArea3d2[i];
             }
-            /*printf("interpolation:(%.16e %.16e %.16e)\noriginal MP:(%.16e %.16e %.16e)\n",wp_coord[0],
-                                              wp_coord[1],
-                                              wp_coord[2],
-                                              MPsPosition(mp,0),
-                                              MPsPosition(mp,1),
-                                              MPsPosition(mp,2));*/
         }        
     };
     p_MPs->parallel_for(eval, "interpolateWachspressSphericalTest");

@@ -191,7 +191,7 @@ void polympo_getMPCurElmID(MPMesh_ptr p_mpmesh,
   Kokkos::deep_copy( arrayHost, mpCurElmIDCopy);
 }
 
-void polympo_setMPPositions(MPMesh_ptr p_mpmesh,
+void polympo_setMPPositions_f(MPMesh_ptr p_mpmesh,
                             int numComps,
                             int numMPs,
                             double* mpPositionsIn){

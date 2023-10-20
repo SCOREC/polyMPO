@@ -16,6 +16,8 @@
  */
 void interpolateWachspress2DTest(polyMPO::MPMesh& mpMesh);
 
+void interpolateWachspressSphericalTest(polyMPO::MPMesh& mpMesh);
+
 void interpolateWachspress3DTest(polyMPO::MPMesh& mpMesh);
 
 extern "C" void setWithMPASMeshByFortran(void** p_mpMesh,

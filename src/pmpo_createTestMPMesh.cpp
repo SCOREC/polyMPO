@@ -56,17 +56,54 @@ Mesh* createMesh(const mesh_type meshType, const geom_type geomType,
 
 Mesh* initTestMesh(const int testMeshOption, const int replicateFactor){
     //add a switch statement testMeshOption
-    if(testMeshOption == 1){ //this is a 2d mesh with 10 tri-oct elements
+   if(testMeshOption==1 || testMeshOption==2){//this is a 2d mesh with 10 tri-oct elements
         const mesh_type meshType = mesh_general_polygonal;
         const geom_type geomType = geom_planar_surf;
         const double sphereRadius = 0.0;
         const int nVertices_size = 19;
         const int nCells_size = 10;
-        const std::vector<std::vector<double>> v_array = //[nVertices_size][vec3d_nEntries]
-            {{0.00,0.00,1.1},{0.47,0.00,1.1},{1.00,0.00,1.1},{0.60,0.25,1.1},{0.60,0.40,1.1}, //5
-             {0.00,0.50,1.1},{0.31,0.60,1.1},{0.40,0.60,1.1},{0.45,0.55,1.1},{0.70,0.49,1.1}, //10
-             {0.80,0.45,1.1},{0.90,0.47,1.1},{1.00,0.55,1.1},{0.60,0.60,1.1},{0.37,0.80,1.1}, //15
-             {0.00,1.00,1.1},{0.37,1.00,1.1},{0.48,1.00,1.1},{1.00,1.00,1.1}};                //19
+        std::vector<std::vector<double>> v_array_coords = //[nVertices_size][vec3d_nEntries]
+                    {{0.00,0.00,1.1},{0.47,0.00,1.1},{1.00,0.00,1.1},{0.60,0.25,1.1},{0.60,0.40,1.1}, //5
+                    {0.00,0.50,1.1},{0.31,0.60,1.1},{0.40,0.60,1.1},{0.45,0.55,1.1},{0.70,0.49,1.1}, //10
+                    {0.80,0.45,1.1},{0.90,0.47,1.1},{1.00,0.55,1.1},{0.60,0.60,1.1},{0.37,0.80,1.1}, //15
+                    {0.00,1.00,1.1},{0.37,1.00,1.1},{0.48,1.00,1.1},{1.00,1.00,1.1}};                //19
+        
+        if(testMeshOption==2){ 
+            // rotation around x axis by 30 degrees
+            double rad1  = M_PI / 6.00;
+            std::array<std::array<double, 3>, 3> R1 = {{{1.00, 0.00, 0.00}, 
+                                                       {0.00, cos(rad1), -sin(rad1)},
+                                                       {0.00, sin(rad1), cos(rad1) }}};
+            // rotation around z axis by 45 degrees
+            double rad2 = M_PI / 4.00;
+            std::array<std::array<double, 3>, 3> R2 = {{{cos(rad2), -sin(rad2), 0.00}, 
+                                                       {sin(rad2), cos(rad2), 0.00},
+                                                       {0.00, 0.00, 1.00}}};
+
+            for (int i = 0; i < (int)  v_array_coords.size(); i++) {
+                std::array<double, 3> tmp_vec = {{0,0,0}};
+                tmp_vec[0] = v_array_coords[i][0] * R1[0][0]
+                           + v_array_coords[i][1] * R1[0][1]
+                           + v_array_coords[i][2] * R1[0][2];
+                tmp_vec[1] = v_array_coords[i][0] * R1[1][0]
+                           + v_array_coords[i][1] * R1[1][1]
+                           + v_array_coords[i][2] * R1[1][2];
+                tmp_vec[2] = v_array_coords[i][0] * R1[2][0]
+                           + v_array_coords[i][1] * R1[2][1]
+                           + v_array_coords[i][2] * R1[2][2];
+
+                v_array_coords[i][0] = tmp_vec[0] * R2[0][0]
+                                     + tmp_vec[1] * R2[0][1]
+                                     + tmp_vec[2] * R2[0][2];
+                v_array_coords[i][1] = tmp_vec[0] * R2[1][0]
+                                     + tmp_vec[1] * R2[1][1]
+                                     + tmp_vec[2] * R2[1][2];
+                v_array_coords[i][2] = tmp_vec[0] * R2[2][0]
+                                     + tmp_vec[1] * R2[2][1]
+                                     + tmp_vec[2] * R2[2][2];
+            }
+        }
+        const std::vector<std::vector<double>> v_array = v_array_coords;
         const std::vector<std::vector<int>> elm2VtxConn_array = //[nCells_size][maxVtxsPerElm]
             {{1,2,4,5,9,8,7,6},       {2,3,4,-1,-1,-1,-1,-1},
              {4,3,11,10,5,-1,-1,-1},  {3,12,11,-1,-1,-1,-1,-1},
@@ -93,7 +130,6 @@ Mesh* initTestMesh(const int testMeshOption, const int replicateFactor){
         }else{
             return meshReturn; 
         }
-    
     }else{
         fprintf(stderr,"TestMeshOption not avaiable! return an empty mesh!");
         return new Mesh();

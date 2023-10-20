@@ -31,7 +31,7 @@ subroutine rebuildTests(mpMesh, numMPs, mp2Elm, isMPActive)
     allocate(addedMPMask(numMPs))
     addedMPMask = MPINACTIVE
 
-    ! Test 1) adding an MP
+    ! Test adding an MP
 
     do i = 1, numMPs
         if (isMPActive(i) == MPINACTIVE) then
@@ -51,7 +51,7 @@ subroutine rebuildTests(mpMesh, numMPs, mp2Elm, isMPActive)
         call assert(mp2Elm(i) .eq. mp2ElmFromPMPO(i), "wrong element ID for i'th MP after rebuild")
     end do
 
-    ! Test 1) deleting two MPs
+    ! Test deleting two MPs
 
     call assert(numMPs >= 5, "not enough MPs for test")
     numActive = 0

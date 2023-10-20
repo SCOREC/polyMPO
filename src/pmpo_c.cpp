@@ -171,7 +171,7 @@ void polympo_createMPs(MPMesh_ptr p_mpmesh,
 }
 
 void polympo_rebuildMPs(MPMesh_ptr p_mpmesh,
-                        int numMPs, // total number of MPs which is GREATER than or equal to number of active MPs
+                        const int numMPs, // total number of MPs which is GREATER than or equal to number of active MPs
                         int* allMP2Elm,
                         int* addedMPMask) {
   checkMPMeshValid(p_mpmesh);
@@ -201,13 +201,18 @@ void polympo_rebuildMPs(MPMesh_ptr p_mpmesh,
   int internalMPCapacity = p_MPs->getCapacity();
   Kokkos::View<int*> tgtMpElm("tgtMpElm", internalMPCapacity);
   auto mpAppID = p_MPs->getData<polyMPO::MPF_MP_APP_ID>();
+
   kkIntViewHostU allMP2Elm_h(allMP2Elm, numMPs);
   auto mpMP2ElmIn_d = Kokkos::create_mirror_view_and_copy(space_t(), allMP2Elm_h);
+
+  kkIntViewHostU addedMPMask_h(addedMPMask, numMPs);
+  auto addedMPMask_d = Kokkos::create_mirror_view_and_copy(space_t(), addedMPMask_h);
+
   auto setTgtMpElm = PS_LAMBDA(const int& elm, const int& mp, const int& mask){
     if(mask){
-      // if (addedMPMask[mpAppID(mp)] == MP_ACTIVE)
-      //   tgtMpElm(mp) = MP_DELETE;
-      // else
+      if (addedMPMask_d[mpAppID(mp)] == MP_ACTIVE)
+        tgtMpElm(mp) = MP_DELETE;
+      else
         tgtMpElm(mp) = mpMP2ElmIn_d(mpAppID(mp));
     }
   };

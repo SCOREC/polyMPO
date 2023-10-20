@@ -23,7 +23,6 @@ function epsilonDiff(a,b) result(isSame)
   real(kind=MPAS_RKIND) :: a,b,delta
   parameter (delta=1.0e-8)
   logical :: isSame
-  !delta=1.0e-8
   if (abs(a-b) < delta) then
     isSame = .true.
   else
@@ -47,6 +46,7 @@ subroutine loadMPASMesh(mpMesh, filename)
     integer :: i
     integer :: maxEdges, vertexDegree, nCells, nVertices
     integer, parameter :: nDims = 3
+    integer, parameter :: MP_ACTIVE = 3
     integer :: numMPs
     real(kind=MPAS_RKIND) :: ptOne = 0.100000000000000000
     real(kind=MPAS_RKIND) :: sphereRadius
@@ -126,7 +126,7 @@ subroutine loadMPASMesh(mpMesh, filename)
     mpPosition = 42
     call polympo_getMPPositions(mpMesh,nDims,numMPs,c_loc(mpPosition))
     do i = 1,numMPs
-      if(isMPActive(i) .eq. 1) then
+      if(isMPActive(i) .eq. MP_ACTIVE) then
         call assert(epsilonDiff(mpPosition(1,i),i+ptOne), "x position of MP does not match")
         call assert(epsilonDiff(mpPosition(2,i),numMPs+i+ptOne), "y position of MP does not match")
         call assert(epsilonDiff(mpPosition(3,i),(2*numMPs)+i+ptOne), "z position of MP does not match")

@@ -106,7 +106,7 @@ module polympo
   !> @param array(in) MP current position 2D array (3,numMPs), allocated by user on host
   !---------------------------------------------------------------------------
   subroutine polympo_setMPPositions(mpMesh, nComps, numMPs, array) &
-             bind(C, NAME='polympo_setMPPositions')
+             bind(C, NAME='polympo_setMPPositions_f')
     use :: iso_c_binding
     type(c_ptr), value :: mpMesh
     integer(c_int), value :: nComps, numMPs

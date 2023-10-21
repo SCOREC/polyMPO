@@ -16,13 +16,13 @@ module readMPAS
     
 contains
 
-subroutine rebuildTests(mpMesh, numMPs, mp2Elm, isMPActive)
+subroutine rebuildTests(mpMesh, numMPs, mp2Elm)
     use :: polympo
     use iso_c_binding
     implicit none
     type(c_ptr):: mpMesh
     integer :: numMPs, i, MPACTIVE, MPINACTIVE, MPDELETE
-    integer, dimension(:), pointer :: mp2Elm, isMPActive, addedMPMask, mp2ElmFromPMPO, mp2ElmLarger, addedMPMaskLarger
+    integer, dimension(:), pointer :: mp2Elm, addedMPMask, mp2ElmFromPMPO, mp2ElmLarger, addedMPMaskLarger
 
     MPACTIVE = 1
     MPINACTIVE = 0
@@ -200,7 +200,7 @@ subroutine loadMPASMesh(mpMesh, filename)
     end do
     !test end
 
-    call rebuildTests(mpMesh, numMPs, mp2Elm, isMPActive)
+    call rebuildTests(mpMesh, numMPs, mp2Elm)
 
     deallocate(mpsPerElm)
     deallocate(mp2Elm)

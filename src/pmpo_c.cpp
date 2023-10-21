@@ -170,6 +170,12 @@ void polympo_createMPs(MPMesh_ptr p_mpmesh,
   p_MPs->setElmIDoffset(offset);
 }
 
+template <typename SpaceT, typename DataT>
+auto create_mirror_view_and_copy(SpaceT space_t, DataT array, int size){
+  kkIntViewHostU temp_host(array, size);
+  return Kokkos::create_mirror_view_and_copy(space_t, temp_host);
+}
+
 void polympo_rebuildMPs(MPMesh_ptr p_mpmesh,
                         const int numMPs, // total number of MPs which is GREATER than or equal to number of active MPs
                         int* allMP2Elm,
@@ -190,23 +196,15 @@ void polympo_rebuildMPs(MPMesh_ptr p_mpmesh,
     }
   }
 
-  using space_t = Kokkos::DefaultExecutionSpace::memory_space;
-
-  kkIntViewHostU added_mp2Elm_h(added_mp2Elm.data(), numAddedMPs);
-  auto added_mp2Elm_d = Kokkos::create_mirror_view_and_copy(space_t(), added_mp2Elm_h);
-
-  kkIntViewHostU added_mpIDs_h(added_mpIDs.data(), numAddedMPs);
-  auto added_mpIDs_d = Kokkos::create_mirror_view_and_copy(space_t(), added_mpIDs_h);
-
   int internalMPCapacity = p_MPs->getCapacity(); // pumipic expects full capacity to rebuild
   Kokkos::View<int*> mp2Elm("mp2Elm", internalMPCapacity);
   auto mpAppID = p_MPs->getData<polyMPO::MPF_MP_APP_ID>();
 
-  kkIntViewHostU allMP2Elm_h(allMP2Elm, numMPs);
-  auto mpMP2ElmIn_d = Kokkos::create_mirror_view_and_copy(space_t(), allMP2Elm_h);
-
-  kkIntViewHostU addedMPMask_h(addedMPMask, numMPs);
-  auto addedMPMask_d = Kokkos::create_mirror_view_and_copy(space_t(), addedMPMask_h);
+  using space_t = Kokkos::DefaultExecutionSpace::memory_space;
+  auto added_mp2Elm_d = create_mirror_view_and_copy(space_t(), added_mp2Elm.data(), numAddedMPs);
+  auto added_mpIDs_d = create_mirror_view_and_copy(space_t(), added_mpIDs.data(), numAddedMPs);
+  auto addedMPMask_d = create_mirror_view_and_copy(space_t(), addedMPMask, numMPs);
+  auto mpMP2ElmIn_d = create_mirror_view_and_copy(space_t(), allMP2Elm, numMPs);
 
   auto setMP2Elm = PS_LAMBDA(const int& elm, const int& mp, const int& mask){
     if(mask){

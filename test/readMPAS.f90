@@ -22,7 +22,7 @@ subroutine rebuildTests(mpMesh, numMPs, mp2Elm, isMPActive)
     implicit none
     type(c_ptr):: mpMesh
     integer :: numMPs, i, MPACTIVE, MPINACTIVE, MPDELETE
-    integer, dimension(:), pointer :: mp2Elm, isMPActive, addedMPMask, mp2ElmFromPMPO
+    integer, dimension(:), pointer :: mp2Elm, isMPActive, addedMPMask, mp2ElmFromPMPO, mp2ElmLarger, addedMPMaskLarger
 
     MPACTIVE = 1
     MPINACTIVE = 0
@@ -78,8 +78,35 @@ subroutine rebuildTests(mpMesh, numMPs, mp2Elm, isMPActive)
     call assert(mp2ElmFromPMPO(2) == 7, "MP = 2 not replaced")
     call assert(mp2ElmFromPMPO(3) == MPINACTIVE, "MP = 3 not removed")
 
+    ! Test increasing numMP and adding 1 and adding 1 in newMP and deleting 1
+
+    allocate(mp2ElmLarger(numMPs + 10))
+    allocate(addedMPMaskLarger(numMPs + 10))
+
+    do i = 1, numMPs
+        mp2ElmLarger(i) = mp2Elm(i)
+    end do
+    addedMPMaskLarger = 0
+
+    mp2ElmLarger(4) = 7
+    mp2ElmLarger(5) = MPDELETE
+    mp2ElmLarger(numMPs+8) =  7
+
+    addedMPMaskLarger(4) = MPACTIVE
+    addedMPMaskLarger(numMPs+8) =  MPACTIVE
+
+    call polympo_rebuildMPs(mpMesh,numMPs+10,c_loc(mp2ElmLarger),c_loc(addedMPMaskLarger))
+    mp2ElmLarger = -1
+    call polympo_getMPCurElmID(mpMesh,numMPs+10,c_loc(mp2ElmLarger))
+
+    call assert(mp2ElmLarger(4) == 7, "MP = 4 not added")
+    call assert(mp2ElmLarger(5) == MPINACTIVE, "MP = 5 not deleted")
+    call assert(mp2ElmLarger(numMPs+8) == 7, "MP = numMPs+8 not added")
+
     deallocate(addedMPMask)
     deallocate(mp2ElmFromPMPO)
+    deallocate(mp2ElmLarger)
+    deallocate(addedMPMaskLarger)
 end subroutine
 
 !---------------------------------------------------------------------------

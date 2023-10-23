@@ -101,9 +101,11 @@ subroutine rebuildTests(mpMesh, numMPs, mp2Elm)
     ! Test values
     mp2ElmFromPMPO = -1
     call polympo_getMPCurElmID(mpMesh,numMPs,c_loc(mp2ElmFromPMPO))
-    call assert(mp2ElmFromPMPO(1) == 7, "MP = 1 not added")
-    call assert(mp2ElmFromPMPO(2) == 7, "MP = 2 not replaced")
-    call assert(mp2ElmFromPMPO(3) == MPINACTIVE, "MP = 3 not removed")
+    do i = 1, numMPs
+        if (mp2Elm(i) /= MPDELETE_ELM_ID) then
+            call assert(mp2Elm(i) .eq. mp2ElmFromPMPO(i), "wrong element ID for i'th MP after rebuild")
+        endif
+    end do
 
     ! TEST: increasing numMP and adding 1 and adding 1 in newMP and deleting 1
 

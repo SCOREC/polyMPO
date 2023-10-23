@@ -281,8 +281,8 @@ module polympo
   function polympo_getMeshNumVtxs(mpMesh) result(numVtxs) &
             bind(C, NAME = 'polympo_getMeshNumVtxs')
     use :: iso_c_binding
-    type(c_ptr), intent(in), value :: mpMesh
-    integer(c_int) :: numVtxs
+    type(c_ptr), value :: mpMesh
+    integer(c_int), intent(inout) :: numVtxs
   end function
   !---------------------------------------------------------------------------
   !> @brief set the polympo mesh number of edges per element

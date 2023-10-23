@@ -37,7 +37,8 @@ subroutine rebuildTests(mpMesh, numMPs, mp2Elm, isMPActive)
     implicit none
     type(c_ptr):: mpMesh
     integer :: numMPs, i, MPACTIVE, MPINACTIVE, MPDELETE_ELM_ID
-    integer, dimension(:), pointer :: mp2Elm, addedMPMask, isMPActive, mp2ElmFromPMPO, mp2ElmLarger, addedMPMaskLarger
+    integer, dimension(:), pointer :: mp2Elm, addedMPMask, isMPActive, mp2ElmFromPMPO
+    integer, dimension(:), pointer :: mp2ElmLarger, addedMPMaskLarger, mp2ElmFromPMPOLarger
 
     MPACTIVE = 1
     MPINACTIVE = 0
@@ -126,12 +127,12 @@ subroutine rebuildTests(mpMesh, numMPs, mp2Elm, isMPActive)
     ! PREPARE DATA
     allocate(mp2ElmLarger(numMPs + 10))
     allocate(addedMPMaskLarger(numMPs + 10))
-
+    
     do i = 1, numMPs
         mp2ElmLarger(i) = mp2Elm(i)
     end do
     addedMPMaskLarger = 0
-
+    
     mp2ElmLarger(4) = 7
     mp2ElmLarger(5) = MPDELETE_ELM_ID
     mp2ElmLarger(numMPs+8) =  7
@@ -140,16 +141,18 @@ subroutine rebuildTests(mpMesh, numMPs, mp2Elm, isMPActive)
     ! Rebuild MPs
     call polympo_rebuildMPs(mpMesh,numMPs+10,c_loc(mp2ElmLarger),c_loc(addedMPMaskLarger))
     ! Test values
-    mp2ElmLarger = -1
-    call polympo_getMPCurElmID(mpMesh,numMPs+10,c_loc(mp2ElmLarger))
-    call assert(mp2ElmLarger(4) == 7, "MP = 4 not added")
-    call assert(mp2ElmLarger(5) == MPINACTIVE, "MP = 5 not deleted")
-    call assert(mp2ElmLarger(numMPs+8) == 7, "MP = numMPs+8 not added")
+    allocate(mp2ElmFromPMPOLarger(numMPs + 10))
+    mp2ElmFromPMPOLarger = -1
+    call polympo_getMPCurElmID(mpMesh,numMPs+10,c_loc(mp2ElmFromPMPOLarger))
+    call assert(mp2ElmFromPMPOLarger(4) == 7, "MP = 4 not added")
+    call assert(mp2ElmFromPMPOLarger(5) == MPINACTIVE, "MP = 5 not deleted")
+    call assert(mp2ElmFromPMPOLarger(numMPs+8) == 7, "MP = numMPs+8 not added")
     ! Cleanup
     deallocate(addedMPMask)
     deallocate(mp2ElmFromPMPO)
     deallocate(mp2ElmLarger)
     deallocate(addedMPMaskLarger)
+    deallocate(mp2ElmFromPMPOLarger)
 end subroutine
 
 !---------------------------------------------------------------------------

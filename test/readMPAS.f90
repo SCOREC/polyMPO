@@ -51,9 +51,9 @@ subroutine rebuildTests(mpMesh, numMPs, mp2Elm, isMPActive)
     addedMPMask = MPINACTIVE
     do i = 1, numMPs
         if (isMPActive(i) == MPINACTIVE) then
-            addedMPMask(i) = MPACTIVE
             isMPActive = MPACTIVE
-            mp2Elm(i) = 1
+            mp2Elm(i) = 7
+            addedMPMask(i) = MPACTIVE
             exit
         endif
     end do
@@ -75,10 +75,10 @@ subroutine rebuildTests(mpMesh, numMPs, mp2Elm, isMPActive)
     call assert(numMPs > 4, "not enough MPs for test")
     call assert(isMPActive(1) == MPACTIVE, "mp2Elm = 1 not active")
     call assert(isMPActive(4) == MPACTIVE, "mp2Elm = 4 not active")
-    mp2Elm(1) = MPDELETE_ELM_ID
-    mp2Elm(4) = MPDELETE_ELM_ID
     isMPActive(1) = MPINACTIVE
     isMPActive(4) = MPINACTIVE
+    mp2Elm(1) = MPDELETE_ELM_ID
+    mp2Elm(4) = MPDELETE_ELM_ID
     addedMPMask = MPINACTIVE
     ! Rebuild MPs
     call polympo_rebuildMPs(mpMesh,numMPs,c_loc(mp2Elm),c_loc(addedMPMask))
@@ -99,14 +99,14 @@ subroutine rebuildTests(mpMesh, numMPs, mp2Elm, isMPActive)
     call assert(isMPActive(3) == MPACTIVE, "mp2Elm = 3 not active")
 
     ! PREPARE DATA
+    isMPActive(1) = MPACTIVE
+    isMPActive(2) = MPACTIVE
+    isMPActive(3) = MPINACTIVE
     addedMPMask(1) = MPACTIVE
     addedMPMask(2) = MPACTIVE
     mp2Elm(1) = 7 !ADDED
     mp2Elm(2) = 7 !REPLACED
     mp2Elm(3) = MPDELETE_ELM_ID !DELETED
-    isMPActive(1) = MPACTIVE
-    isMPActive(2) = MPACTIVE
-    isMPActive(3) = MPINACTIVE
     ! Rebuild MPs
     call polympo_rebuildMPs(mpMesh,numMPs,c_loc(mp2Elm),c_loc(addedMPMask))
     ! Test values

@@ -131,9 +131,9 @@ class MaterialPoints {
       ps::parallel_for(MPs, setTgtElm, "setTargetElement");
       MPs->rebuild(tgtElm);
     }
-    void rebuild(IntView tgtElm, int newNumMPs, IntView newMp2elm, IntView newMpAppID) {
-      auto newMpInfo = createInternalMemberViews(newNumMPs, newMp2elm, newMpAppID);
-      MPs->rebuild(tgtElm, newMp2elm, newMpInfo);
+    void rebuild(IntView tgtElm, int newNumMPs, IntView newMP2elm, IntView newMPAppID) {
+      auto newMPInfo = createInternalMemberViews(newNumMPs, newMP2elm, newMPAppID);
+      MPs->rebuild(tgtElm, newMP2elm, newMPInfo);
     }
     void updateMPElmID(){
       auto curElmID = MPs->get<MPF_Cur_Elm_ID>();

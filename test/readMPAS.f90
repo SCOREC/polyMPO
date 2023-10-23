@@ -38,7 +38,7 @@ subroutine rebuildTests(mpMesh, numMPs, mp2Elm, isMPActive)
     type(c_ptr):: mpMesh
     integer :: numMPs, i, MPACTIVE, MPINACTIVE, MPDELETE_ELM_ID
     integer, dimension(:), pointer :: mp2Elm, addedMPMask, isMPActive, mp2ElmFromPMPO
-    integer, dimension(:), pointer :: mp2ElmLarger, addedMPMaskLarger, mp2ElmFromPMPOLarger
+    integer, dimension(:), pointer :: mp2ElmLarger, addedMPMaskLarger, mp2ElmFromPMPOLarger, isMPActiveLarger
 
     MPACTIVE = 1
     MPINACTIVE = 0
@@ -126,31 +126,41 @@ subroutine rebuildTests(mpMesh, numMPs, mp2Elm, isMPActive)
 
     ! PREPARE DATA
     allocate(mp2ElmLarger(numMPs + 10))
+    allocate(isMPActiveLarger(numMPs + 10))
     allocate(addedMPMaskLarger(numMPs + 10))
     
+    mp2ElmLarger = MPDELETE_ELM_ID
+    isMPActiveLarger = MPINACTIVE
+    addedMPMaskLarger = MPINACTIVE
     do i = 1, numMPs
         mp2ElmLarger(i) = mp2Elm(i)
+        isMPActiveLarger(i) = isMPActive(i)
     end do
-    addedMPMaskLarger = 0
-    
+
+    isMPActiveLarger(4) = MPACTIVE
+    isMPActiveLarger(5) = MPINACTIVE
+    isMPActiveLarger(numMPs+8) = MPACTIVE
     mp2ElmLarger(4) = 7
     mp2ElmLarger(5) = MPDELETE_ELM_ID
     mp2ElmLarger(numMPs+8) =  7
     addedMPMaskLarger(4) = MPACTIVE
-    addedMPMaskLarger(numMPs+8) =  MPACTIVE
+    addedMPMaskLarger(numMPs+8) = MPACTIVE
     ! Rebuild MPs
     call polympo_rebuildMPs(mpMesh,numMPs+10,c_loc(mp2ElmLarger),c_loc(addedMPMaskLarger))
     ! Test values
     allocate(mp2ElmFromPMPOLarger(numMPs + 10))
     mp2ElmFromPMPOLarger = -1
     call polympo_getMPCurElmID(mpMesh,numMPs+10,c_loc(mp2ElmFromPMPOLarger))
-    call assert(mp2ElmFromPMPOLarger(4) == 7, "MP = 4 not added")
-    call assert(mp2ElmFromPMPOLarger(5) == MPINACTIVE, "MP = 5 not deleted")
-    call assert(mp2ElmFromPMPOLarger(numMPs+8) == 7, "MP = numMPs+8 not added")
+    do i = 1, numMPs
+        if (isMPActiveLarger(i) == MPACTIVE) then
+            call assert(mp2ElmLarger(i) .eq. mp2ElmFromPMPOLarger(i), "wrong element ID for i'th MP after rebuild")
+        endif
+    end do
     ! Cleanup
     deallocate(addedMPMask)
     deallocate(mp2ElmFromPMPO)
     deallocate(mp2ElmLarger)
+    deallocate(isMPActiveLarger)
     deallocate(addedMPMaskLarger)
     deallocate(mp2ElmFromPMPOLarger)
 end subroutine

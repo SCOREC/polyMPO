@@ -8,6 +8,8 @@ subroutine assert(condition,message)
   endif
 end subroutine
 
+
+
 module readMPAS
     use :: polympo
     use iso_c_binding
@@ -15,6 +17,19 @@ module readMPAS
     integer, parameter :: MPAS_RKIND = selected_real_kind(12)
     
 contains
+
+function epsilonDiff(a,b) result(isSame)
+  implicit none
+  real(kind=MPAS_RKIND) :: a,b,delta
+  parameter (delta=1.0e-8)
+  logical :: isSame
+  if (abs(a-b) < delta) then
+    isSame = .true.
+  else
+    isSame = .false.
+  endif
+end function
+
 
 subroutine rebuildTests(mpMesh, numMPs, mp2Elm)
     use :: polympo
@@ -124,13 +139,18 @@ subroutine loadMPASMesh(mpMesh, filename)
     character (len=64) :: onSphere, stringYes = "YES"
     integer :: i
     integer :: maxEdges, vertexDegree, nCells, nVertices
+    integer, parameter :: nDims = 3
+    integer, parameter :: MP_ACTIVE = 1
+    integer, parameter :: MP_INACTIVE = 0
     integer :: numMPs
+    real(kind=MPAS_RKIND) :: ptOne = 0.100000000000000000
     real(kind=MPAS_RKIND) :: sphereRadius
     integer, dimension(:), pointer :: nEdgesOnCell
     real(kind=MPAS_RKIND), dimension(:), pointer :: xVertex, yVertex, zVertex
     integer, dimension(:,:), pointer :: verticesOnCell, cellsOnCell
     integer, dimension(:), pointer :: mpsPerElm, mp2Elm, isMPActive
-    
+    real(kind=MPAS_RKIND), dimension(:,:), pointer :: mpPosition
+
     call readMPASMesh(trim(filename), maxEdges, vertexDegree, &
                               nCells, nVertices, nEdgesOnCell, &
                               onSphere, sphereRadius, &
@@ -170,8 +190,8 @@ subroutine loadMPASMesh(mpMesh, filename)
     allocate(mp2Elm(numMPs))
     allocate(isMPActive(numMPs))
     
-    isMPActive = 1 !no inactive MPs and some changed below
-    isMPActive(4) = 0 !first/1-st MP is indexed 1 and 4-th MP is inactive
+    isMPActive = MP_ACTIVE !no inactive MPs and some changed below
+    isMPActive(4) = MP_INACTIVE !first/1-st MP is indexed 1 and 4-th MP is inactive
    
     mpsPerElm = 1 !all elements have 1 MP and some changed below
     mpsPerElm(1) = 0 !1st element has 0 MPs
@@ -188,6 +208,25 @@ subroutine loadMPASMesh(mpMesh, filename)
                       !i=numMPs leads to mp2Elm(numMPs=nCells+2)=numMPs-2=nCells
     end do
     call polympo_createMPs(mpMesh,nCells,numMPs,c_loc(mpsPerElm),c_loc(mp2Elm),c_loc(isMPActive))
+
+    !set mp positions
+    allocate(mpPosition(nDims,numMPs))
+    do i = 1,numMPs
+      mpPosition(1,i) = i+ptOne
+      mpPosition(2,i) = numMPs+i+ptOne
+      mpPosition(3,i) = (2*numMPs)+i+ptOne
+    end do
+
+    call polympo_setMPPositions(mpMesh,nDims,numMPs,c_loc(mpPosition))
+    mpPosition = 42
+    call polympo_getMPPositions(mpMesh,nDims,numMPs,c_loc(mpPosition))
+    do i = 1,numMPs
+      if(isMPActive(i) .eq. MP_ACTIVE) then
+        call assert(epsilonDiff(mpPosition(1,i),i+ptOne), "x position of MP does not match")
+        call assert(epsilonDiff(mpPosition(2,i),numMPs+i+ptOne), "y position of MP does not match")
+        call assert(epsilonDiff(mpPosition(3,i),(2*numMPs)+i+ptOne), "z position of MP does not match")
+      endif
+    end do
     
     mp2Elm = -99 !override values and then use get function below
     call polympo_getMPCurElmID(mpMesh,numMPs,c_loc(mp2Elm))
@@ -198,10 +237,11 @@ subroutine loadMPASMesh(mpMesh, filename)
     do i = 5,numMPs
       call assert(mp2Elm(i) .eq. i-2, "wrong element ID for i'th MP")
     end do
+    
+    call rebuildTests(mpMesh, numMPs, mp2Elm)
     !test end
 
-    call rebuildTests(mpMesh, numMPs, mp2Elm)
-
+    deallocate(mpPosition)
     deallocate(mpsPerElm)
     deallocate(mp2Elm)
     deallocate(isMPActive)

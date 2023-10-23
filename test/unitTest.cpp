@@ -173,7 +173,7 @@ int main(int argc, char** argv) {
           PMT_ALWAYS_ASSERT(res);
         }
 
-        interpolateWachspress2DTest(mpMesh);              
+        interpolateWachspress2DTest(mpMesh);
     }
     Kokkos::finalize();
     MPI_Finalize();

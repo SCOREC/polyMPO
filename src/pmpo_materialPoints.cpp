@@ -21,12 +21,14 @@ PS* createDPS(int numElms, int numMPs, DoubleVec3dView positions, IntView mpsPer
   auto mpPositions = ps::getMemberView<MaterialPointTypes, MPF_Cur_Pos_XYZ>(mpInfo);
   auto mpCurElmPos = ps::getMemberView<MaterialPointTypes, MPF_Cur_Elm_ID>(mpInfo);
   auto mpStatus = ps::getMemberView<MaterialPointTypes, MPF_Status>(mpInfo);
+  auto mpAppID_m = ps::getMemberView<MaterialPointTypes, MPF_MP_APP_ID>(mpInfo);
   Kokkos::parallel_for("setMPinfo", numMPs, KOKKOS_LAMBDA(int i) {
     mpPositions(i,0) = positions(i,0);
     mpPositions(i,1) = positions(i,1);
     mpPositions(i,2) = positions(i,2);
     mpCurElmPos(i) = mp2elm(i);
     mpStatus(i) = 1; 
+    mpAppID_m(i) = i;
   });
   Kokkos::TeamPolicy<Kokkos::DefaultExecutionSpace> policy(numElms,Kokkos::AUTO);
   auto dps = new DPS<MaterialPointTypes>(policy, numElms, numMPs, mpsPerElm, elmGids, mp2elm, mpInfo);
@@ -41,6 +43,17 @@ PS* createDPS(int numElms, int numMPs, IntView mpsPerElm, IntView mp2elm, IntVie
   auto dps = new DPS<MaterialPointTypes>(policy, numElms, numMPs, mpsPerElm, elmGids, mp2elm, mpInfo);
   ps::destroyViews<MaterialPointTypes>(mpInfo);
   return dps;
+}
+
+int getMaxAppID(IntView mpAppID) {
+  int maxAppID = 0;
+  Kokkos::parallel_reduce("getMax" , mpAppID.size(),
+    KOKKOS_LAMBDA(const int i, int & valueToUpdate) {
+      if ( mpAppID(i) > valueToUpdate ) valueToUpdate = mpAppID(i) ;
+    },
+    Kokkos::Max<int>(maxAppID)
+  );
+  return maxAppID;
 }
 
 }

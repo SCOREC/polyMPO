@@ -44,16 +44,4 @@ PS* createDPS(int numElms, int numMPs, IntView mpsPerElm, IntView mp2elm, IntVie
   ps::destroyViews<MaterialPointTypes>(mpInfo);
   return dps;
 }
-
-int getMaxAppID(IntView mpAppID) {
-  int maxAppID = 0;
-  Kokkos::parallel_reduce("getMax" , mpAppID.size(),
-    KOKKOS_LAMBDA(const int i, int & valueToUpdate) {
-      if ( mpAppID(i) > valueToUpdate ) valueToUpdate = mpAppID(i) ;
-    },
-    Kokkos::Max<int>(maxAppID)
-  );
-  return maxAppID;
-}
-
 }

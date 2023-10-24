@@ -101,7 +101,7 @@ typedef ps::ParticleStructure<MaterialPointTypes> PS;
 
 PS* createDPS(int numElms, int numMPs, DoubleVec3dView positions, IntView mpsPerElm, IntView mp2elm);
 PS* createDPS(int numElms, int numMPs, IntView mpsPerElm, IntView mp2elm, IntView mpAppID);
-int getMaxAppID(IntView mpAppID);
+void updateMaxAppID();
 
 pumipic::MemberTypeViews createInternalMemberViews(int newNumMPs, IntView newMp2elm, IntView newMpAppID);
 
@@ -121,7 +121,7 @@ class MaterialPoints {
     };
     MaterialPoints(int numElms, int numMPs, IntView mpsPerElm, IntView mp2elm, IntView mpAppID) {
       MPs = createDPS(numElms, numMPs, mpsPerElm, mp2elm, mpAppID);
-      maxAppID = polyMPO::getMaxAppID(mpAppID);
+      updateMaxAppID();
       operating_mode = MP_RELEASE;
     };
     ~MaterialPoints() {
@@ -142,16 +142,7 @@ class MaterialPoints {
     void rebuild(IntView tgtElm, int newNumMPs, IntView newMP2elm, IntView newMPAppID) {
       auto newMPInfo = createInternalMemberViews(newNumMPs, newMP2elm, newMPAppID);
       MPs->rebuild(tgtElm, newMP2elm, newMPInfo);
-      //TODO: extract and combine
-      auto mpInfo = ps::createMemberViews<MaterialPointTypes>(MPs->nPtcls());
-      auto mpAppID_m = ps::getMemberView<MaterialPointTypes, MPF_MP_APP_ID>(mpInfo);
-      maxAppID = 0;
-      Kokkos::parallel_reduce("setMax" , mpAppID_m.size(),
-        KOKKOS_LAMBDA(const int i, int & valueToUpdate) {
-          if ( mpAppID_m(i) > valueToUpdate ) valueToUpdate = mpAppID_m(i) ;
-        },
-        Kokkos::Max<int>(maxAppID)
-      );
+      updateMaxAppID();
     }
     void updateMPElmID(){
       auto curElmID = MPs->get<MPF_Cur_Elm_ID>();
@@ -163,6 +154,17 @@ class MaterialPoints {
         }
       };
       ps::parallel_for(MPs, swap, "swap");
+    }
+    void updateMaxAppID() {
+      auto mpInfo = ps::createMemberViews<MaterialPointTypes>(MPs->nPtcls());
+      auto mpAppID_m = ps::getMemberView<MaterialPointTypes, MPF_MP_APP_ID>(mpInfo);
+      maxAppID = 0;
+      Kokkos::parallel_reduce("setMax" , mpAppID_m.size(),
+        KOKKOS_LAMBDA(const int i, int & valueToUpdate) {
+          if ( mpAppID_m(i) > valueToUpdate ) valueToUpdate = mpAppID_m(i) ;
+        },
+        Kokkos::Max<int>(maxAppID)
+      );
     }
     template <MaterialPointSlice mpfIndexCur, MaterialPointSlice mpfIndexTgt>
     void updateMPSlice(){

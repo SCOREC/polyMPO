@@ -47,6 +47,11 @@ enum MaterialPointSlice {
   MPF_MP_APP_ID
 };
 
+enum Operating_Mode{
+  MPMESH_RELEASE,
+  MPMESH_DEBUG
+};
+
 const static std::map<MaterialPointSlice, std::pair<int,MeshFieldIndex>> 
       mpSlice2MeshFieldIndex = {{MPF_Status,     {1,MeshF_Invalid}},
                            {MPF_Cur_Elm_ID,      {0,MeshF_Invalid}},
@@ -105,16 +110,19 @@ class MaterialPoints {
     PS* MPs;
     int elmIDoffset = -1;
     int maxAppID = -1;
+    Operating_Mode operating_mode;
 
   public:
     MaterialPoints() : MPs(nullptr) {};
     MaterialPoints(int numElms, int numMPs, DoubleVec3dView positions, IntView mpsPerElm, IntView mp2elm) {
       MPs = createDPS(numElms, numMPs, positions, mpsPerElm, mp2elm);
       maxAppID = numMPs; //this ctor does not support inactive MPs
+      operating_mode = MPMESH_RELEASE;
     };
     MaterialPoints(int numElms, int numMPs, IntView mpsPerElm, IntView mp2elm, IntView mpAppID) {
       MPs = createDPS(numElms, numMPs, mpsPerElm, mp2elm, mpAppID);
       maxAppID = polyMPO::getMaxAppID(mpAppID);
+      operating_mode = MPMESH_RELEASE;
     };
     ~MaterialPoints() {
       if(MPs != nullptr)
@@ -191,6 +199,10 @@ class MaterialPoints {
     int getCount() { return MPs->nPtcls(); }
     auto getPositions() { return getData<MPF_Cur_Pos_XYZ>(); }
 
+    Operating_Mode getOpMode() { return operating_mode; }
+    void setOpMode(Operating_Mode op_mode) {
+      operating_mode = op_mode;
+    }
     void setElmIDoffset(int offset) {
       PMT_ALWAYS_ASSERT(offset == 0 || offset == 1);
       elmIDoffset = offset;

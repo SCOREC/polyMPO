@@ -27,9 +27,22 @@ subroutine loadMPASMesh(mpMesh, filename)
    
     type(c_ptr) :: mpMesh
     character (len=*), intent(in) :: filename
+    integer :: maxEdges, vertexDegree, nCells, nVertices
+  
+    call loadMPASMeshReturnInfo(mpMesh, filename, &
+                                maxEdges, vertexDegree, nCells,nVertices)
+end subroutine
+subroutine loadMPASMeshReturnInfo(mpMesh, filename, &
+                                  maxEdges, vertexDegree, nCells, nVertices)
+    use :: netcdf
+    use :: iso_c_binding
+    implicit none
+   
+    type(c_ptr) :: mpMesh
+    character (len=*), intent(in) :: filename
     character (len=64) :: onSphere, stringYes = "YES"
     integer :: i
-    integer :: maxEdges, vertexDegree, nCells, nVertices
+    integer, intent(out) :: maxEdges, vertexDegree, nCells, nVertices
     integer :: numMPs
     real(kind=MPAS_RKIND) :: sphereRadius
     integer, dimension(:), pointer :: nEdgesOnCell

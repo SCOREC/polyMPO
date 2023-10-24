@@ -183,6 +183,7 @@ void polympo_rebuildMPs(MPMesh_ptr p_mpmesh,
   checkMPMeshValid(p_mpmesh);
   auto p_MPs = ((polyMPO::MPMesh*)p_mpmesh)->p_MPs;
   PMT_ALWAYS_ASSERT(numMPs >= p_MPs->getCount());
+  PMT_ALWAYS_ASSERT(numMPs >= p_MPs->getMaxAppID());
 
   int offset = p_MPs->getElmIDoffset();
   std::vector<int> added_mpIDs(numMPs);

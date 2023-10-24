@@ -61,7 +61,7 @@ subroutine rebuildTests(mpMesh, numMPs, mp2Elm, isMPActive)
     call polympo_rebuildMPs(mpMesh,numMPs,c_loc(mp2Elm),c_loc(addedMPMask))
     ! Test values
     allocate(mp2ElmFromPMPO(numMPs))
-    mp2ElmFromPMPO = MPINACTIVE
+    mp2ElmFromPMPO = MPDELETE_ELM_ID
     call polympo_getMPCurElmID(mpMesh,numMPs,c_loc(mp2ElmFromPMPO))
     do i = 1, numMPs
         if (isMPActive(i) == MPACTIVE) then
@@ -83,7 +83,7 @@ subroutine rebuildTests(mpMesh, numMPs, mp2Elm, isMPActive)
     ! Rebuild MPs
     call polympo_rebuildMPs(mpMesh,numMPs,c_loc(mp2Elm),c_loc(addedMPMask))
     ! Test values
-    mp2ElmFromPMPO = MPINACTIVE
+    mp2ElmFromPMPO = MPDELETE_ELM_ID
     call polympo_getMPCurElmID(mpMesh,numMPs,c_loc(mp2ElmFromPMPO))
     do i = 1, numMPs
         if (isMPActive(i) == MPACTIVE) then
@@ -109,7 +109,7 @@ subroutine rebuildTests(mpMesh, numMPs, mp2Elm, isMPActive)
     ! Rebuild MPs
     call polympo_rebuildMPs(mpMesh,numMPs,c_loc(mp2Elm),c_loc(addedMPMask))
     ! Test values
-    mp2ElmFromPMPO = MPINACTIVE
+    mp2ElmFromPMPO = MPDELETE_ELM_ID
     call polympo_getMPCurElmID(mpMesh,numMPs,c_loc(mp2ElmFromPMPO))
     do i = 1, numMPs
         if (isMPActive(i) == MPACTIVE) then
@@ -148,7 +148,7 @@ subroutine rebuildTests(mpMesh, numMPs, mp2Elm, isMPActive)
     call polympo_rebuildMPs(mpMesh,numMPsLarger,c_loc(mp2ElmLarger),c_loc(addedMPMaskLarger))
     ! Test values
     allocate(mp2ElmFromPMPOLarger(numMPsLarger))
-    mp2ElmFromPMPOLarger = MPINACTIVE
+    mp2ElmFromPMPOLarger = MPDELETE_ELM_ID
     call polympo_getMPCurElmID(mpMesh,numMPsLarger,c_loc(mp2ElmFromPMPOLarger))
     do i = 1, numMPs
         if (isMPActiveLarger(i) == MPACTIVE) then

@@ -207,8 +207,8 @@ void polympo_rebuildMPs(MPMesh_ptr p_mpmesh,
   auto addedMPMask_d = create_mirror_view_and_copy(space_t(), addedMPMask, numMPs);
   auto mpMP2ElmIn_d = create_mirror_view_and_copy(space_t(), allMP2Elm, numMPs);
 
-  auto setMP2Elm = PS_LAMBDA(const int& elm, const int& mp, const int& mask){
-    if(mask){
+  auto setMP2Elm = PS_LAMBDA(const int& elm, const int& mp, const int& mask) {
+    if(mask) {
       if (addedMPMask_d[mpAppID(mp)] == MP_ACTIVE)
         mp2Elm(mp) = MP_DELETE;
       else
@@ -217,6 +217,17 @@ void polympo_rebuildMPs(MPMesh_ptr p_mpmesh,
   };
   p_MPs->parallel_for(setMP2Elm, "setMP2Elm");
   p_MPs->rebuild(mp2Elm, numAddedMPs, added_mp2Elm_d, added_mpIDs_d);
+
+  // check mpAppID is unique (on GPUs)
+  mpAppID = p_MPs->getData<polyMPO::MPF_MP_APP_ID>();
+  Kokkos::View<int*> mpAppIDCount("mpAppIDCount", p_MPs->getCount());
+  auto checkAppIDs = PS_LAMBDA(const int& elm, const int& mp, const int& mask){
+    if(mask) {
+      int prev = Kokkos::atomic_fetch_add(&mpAppIDCount(mpAppID(mp)), 1);
+      assert(prev == 0);
+    }
+  };
+  p_MPs->parallel_for(checkAppIDs, "checkAppIDs");
 }
 
 void polympo_getMPCurElmID_f(MPMesh_ptr p_mpmesh,

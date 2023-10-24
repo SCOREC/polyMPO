@@ -82,12 +82,12 @@ set(TEST_NC_FILE_SPHERICAL
 if(EXISTS ${TEST_NC_FILE_SPHERICAL})
     message(STATUS "Found Spherical NC File: ${TEST_NC_FILE_SPHERICAL}") 
     set(TEST_NC_FILE ${TEST_NC_FILE_SPHERICAL})
+    # this test only works for spherical NC files!
+    pmpo_add_test(testFortranInterpolatePush ./testFortranInterpolatePush ${TEST_NC_FILE}) 
 else()
     set(TEST_NC_FILE ${TEST_NC_FILE_PLANAR})
 endif()
 pmpo_add_test(testFortranReadMPAS ./testFortranReadMPAS ${TEST_NC_FILE})
-pmpo_add_test(testFortranInterpolatePush ./testFortranInterpolatePush
-${TEST_NC_FILE}) 
 
 pmpo_add_test(test_timing ./timeAssmblyWachspress 1 ${TEST_NC_FILE})
 pmpo_add_test(test_wachspress ./testWachspress ${TEST_NC_FILE})

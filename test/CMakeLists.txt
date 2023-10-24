@@ -52,7 +52,7 @@ pmpo_add_fortran_exe(testFortranInit testFortranInit.f90)
 pmpo_add_fortran_exe(testFortran testFortran.f90)
 pmpo_add_fortran_exe(testFortranReadMPAS testFortranReadMPAS.f90)
 pmpo_add_fortran_exe(testFortranMPMeshModule testFortranMPMeshModule.f90)
-pmpo_add_fortran_exe(testFortranInterpolatePush testFortranInterpolatePush.f90)
+pmpo_add_fortran_exe(testFortranMPAdvection testFortranMPAdvection.f90)
 
 #add test
 find_program(MPIRUN_EXECUTABLE NAMES mpirun) 
@@ -83,7 +83,7 @@ if(EXISTS ${TEST_NC_FILE_SPHERICAL})
     message(STATUS "Found Spherical NC File: ${TEST_NC_FILE_SPHERICAL}") 
     set(TEST_NC_FILE ${TEST_NC_FILE_SPHERICAL})
     # this test only works for spherical NC files!
-    pmpo_add_test(testFortranInterpolatePush ./testFortranInterpolatePush ${TEST_NC_FILE}) 
+    pmpo_add_test(testFortranMPAdvection ./testFortranMPAdvection ${TEST_NC_FILE}) 
 else()
     set(TEST_NC_FILE ${TEST_NC_FILE_PLANAR})
 endif()

@@ -201,9 +201,9 @@ void MPMesh::push(){
   p_mesh ->computeRotLatLonIncr();
   sphericalInterpolation<MeshF_RotLatLonIncr, MPF_Rot_Lat_Lon_Incr>(*this);
   p_MPs ->updateRotLatLonAndXYZ(); // set Tgt_XYZ
-  //int success = particleTracking() // move to Tgt_XYZ
-  //if(success)
-  //  p_mp->updateTgt2Cur // Tgt_XYZ becomes Cur_XYZ
+
+  //TODO need dx to call CVTTrackingElmCenterBased() // move to Tgt_XYZ
+  p_MPs->updateMPSlice<MPF_Cur_Pos_XYZ, MPF_Tgt_Pos_XYZ>(); // Tgt_XYZ becomes Cur_XYZ
 }
 
 } 

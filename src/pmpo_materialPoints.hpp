@@ -32,7 +32,8 @@ enum MaterialPointSlice {
   MPF_Tgt_Elm_ID,
   MPF_Cur_Pos_Rot_Lat_Lon,
   MPF_Tgt_Pos_Rot_Lat_Lon,
-  MPF_Cur_Pos_XYZ,
+  MPF_Cur_Pos_XYZ
+,
   MPF_Tgt_Pos_XYZ,
   MPF_Flag_Basis_Vals,
   MPF_Basis_Vals,

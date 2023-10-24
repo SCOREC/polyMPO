@@ -48,8 +48,8 @@ enum MaterialPointSlice {
 };
 
 enum Operating_Mode{
-  MPMESH_RELEASE,
-  MPMESH_DEBUG
+  MP_RELEASE,
+  MP_DEBUG
 };
 
 const static std::map<MaterialPointSlice, std::pair<int,MeshFieldIndex>> 
@@ -117,12 +117,12 @@ class MaterialPoints {
     MaterialPoints(int numElms, int numMPs, DoubleVec3dView positions, IntView mpsPerElm, IntView mp2elm) {
       MPs = createDPS(numElms, numMPs, positions, mpsPerElm, mp2elm);
       maxAppID = numMPs; //this ctor does not support inactive MPs
-      operating_mode = MPMESH_RELEASE;
+      operating_mode = MP_RELEASE;
     };
     MaterialPoints(int numElms, int numMPs, IntView mpsPerElm, IntView mp2elm, IntView mpAppID) {
       MPs = createDPS(numElms, numMPs, mpsPerElm, mp2elm, mpAppID);
       maxAppID = polyMPO::getMaxAppID(mpAppID);
-      operating_mode = MPMESH_RELEASE;
+      operating_mode = MP_RELEASE;
     };
     ~MaterialPoints() {
       if(MPs != nullptr)
@@ -142,6 +142,7 @@ class MaterialPoints {
     void rebuild(IntView tgtElm, int newNumMPs, IntView newMP2elm, IntView newMPAppID) {
       auto newMPInfo = createInternalMemberViews(newNumMPs, newMP2elm, newMPAppID);
       MPs->rebuild(tgtElm, newMP2elm, newMPInfo);
+      //TODO: extract and combine
       auto mpInfo = ps::createMemberViews<MaterialPointTypes>(MPs->nPtcls());
       auto mpAppID_m = ps::getMemberView<MaterialPointTypes, MPF_MP_APP_ID>(mpInfo);
       maxAppID = 0;

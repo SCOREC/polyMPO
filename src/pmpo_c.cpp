@@ -144,7 +144,7 @@ void polympo_createMPs_f(MPMesh_ptr p_mpmesh,
   int numActiveMPs = 0;
   for(int i=0; i<numMPs; i++) {
     if(isMPActive[i] == MP_ACTIVE) {
-      active_mpIDs[numActiveMPs] = i;
+      active_mpIDs[numActiveMPs] = i; //creates unique IDs
       active_mp2Elm[numActiveMPs] = mp2Elm[i]-offset; //adjust for 1 based indexing if needed
       numActiveMPs++;
     }
@@ -219,7 +219,7 @@ void polympo_rebuildMPs(MPMesh_ptr p_mpmesh,
   p_MPs->rebuild(mp2Elm, numAddedMPs, added_mp2Elm_d, added_mpIDs_d);
 
   // check mpAppID is unique (on GPUs)
-  if (p_MPs->getOpMode() == polyMPO::MPMESH_DEBUG){
+  if (p_MPs->getOpMode() == polyMPO::MP_DEBUG){
     mpAppID = p_MPs->getData<polyMPO::MPF_MP_APP_ID>();
     Kokkos::View<int*> mpAppIDCount("mpAppIDCount", p_MPs->getCount());
     auto checkAppIDs = PS_LAMBDA(const int& elm, const int& mp, const int& mask){

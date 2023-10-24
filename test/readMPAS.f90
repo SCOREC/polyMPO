@@ -44,18 +44,15 @@ subroutine rebuildTests(mpMesh, numMPs, mp2Elm, isMPActive)
     integer, parameter :: MP_DELETE_ELM_ID = -1
 
     ! TEST: adding MP
-    
+    ! Necessary pre-conditions for test
+    call assert(numMPs >= 4, "not enough MPs for test")
+    call assert(isMPActive(4) == MP_INACTIVE, "mp2Elm = 4 is active")
     ! PREPARE DATA
     allocate(addedMPMask(numMPs))
     addedMPMask = MP_INACTIVE
-    do i = 1, numMPs
-        if (isMPActive(i) == MP_INACTIVE) then
-            isMPActive = MP_ACTIVE
-            mp2Elm(i) = 7
-            addedMPMask(i) = MP_ACTIVE
-            exit
-        endif
-    end do
+    isMPActive(4) = MP_ACTIVE
+    mp2Elm(4) = 7
+    addedMPMask(4) = MP_ACTIVE
     ! Rebuild MPs
     call polympo_rebuildMPs(mpMesh,numMPs,c_loc(mp2Elm),c_loc(addedMPMask))
     ! Test values
@@ -69,8 +66,8 @@ subroutine rebuildTests(mpMesh, numMPs, mp2Elm, isMPActive)
     end do
 
     ! TEST: deleting two MPs
-
-    call assert(numMPs > 4, "not enough MPs for test")
+    ! Necessary pre-conditions for test
+    call assert(numMPs >= 4, "not enough MPs for test")
     call assert(isMPActive(1) == MP_ACTIVE, "mp2Elm = 1 not active")
     call assert(isMPActive(4) == MP_ACTIVE, "mp2Elm = 4 not active")
     ! PREPARE DATA
@@ -90,9 +87,9 @@ subroutine rebuildTests(mpMesh, numMPs, mp2Elm, isMPActive)
         endif
     end do
 
-    ! TEST: adding 1, replacing 1, removing 1
-
-    call assert(numMPs > 3, "not enough MPs for test")
+    ! TEST: adding 1, delete 1 and add in same index, removing 1
+    ! Necessary pre-conditions for test
+    call assert(numMPs >= 3, "not enough MPs for test")
     call assert(isMPActive(1) == MP_INACTIVE, "mp2Elm = 1 not active")
     call assert(isMPActive(2) == MP_ACTIVE, "mp2Elm = 2 is active")
     call assert(isMPActive(3) == MP_ACTIVE, "mp2Elm = 3 not active")
@@ -116,9 +113,10 @@ subroutine rebuildTests(mpMesh, numMPs, mp2Elm, isMPActive)
         endif
     end do
 
-    ! TEST: increasing numMP and adding 1 and adding 1 in newMP and deleting 1
-
-    call assert(numMPs > 5, "not enough MPs for test")
+    ! TEST: increasing numMPs to numMPsLarger
+    ! TEST: adding 1 MP (within numMPs), removing 1 MP (within numMPs), adding 1 (after numMPs, but within numMPsLarger)
+    ! Necessary pre-conditions for test
+    call assert(numMPs >= 5, "not enough MPs for test")
     call assert(isMPActive(4) == MP_INACTIVE, "mp2Elm = 4 not active")
     call assert(isMPActive(5) == MP_ACTIVE, "mp2Elm = 5 is active")
     ! PREPARE DATA
@@ -135,9 +133,9 @@ subroutine rebuildTests(mpMesh, numMPs, mp2Elm, isMPActive)
         isMPActiveLarger(i) = isMPActive(i)
     end do
 
-    isMPActiveLarger(4) = MP_ACTIVE
-    isMPActiveLarger(5) = MP_INACTIVE
-    isMPActiveLarger(numMPsLarger-2) = MP_ACTIVE
+    isMPActiveLarger(4) = MP_ACTIVE ! within numMPs
+    isMPActiveLarger(5) = MP_INACTIVE ! within numMPs
+    isMPActiveLarger(numMPsLarger-2) = MP_ACTIVE ! within numMPsLarger
     mp2ElmLarger(4) = 7
     mp2ElmLarger(5) = MP_DELETE_ELM_ID
     mp2ElmLarger(numMPsLarger-2) =  7

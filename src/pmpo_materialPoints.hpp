@@ -134,6 +134,15 @@ class MaterialPoints {
     void rebuild(IntView tgtElm, int newNumMPs, IntView newMP2elm, IntView newMPAppID) {
       auto newMPInfo = createInternalMemberViews(newNumMPs, newMP2elm, newMPAppID);
       MPs->rebuild(tgtElm, newMP2elm, newMPInfo);
+      auto mpInfo = ps::createMemberViews<MaterialPointTypes>(MPs->nPtcls());
+      auto mpAppID_m = ps::getMemberView<MaterialPointTypes, MPF_MP_APP_ID>(mpInfo);
+      maxAppID = 0;
+      Kokkos::parallel_reduce("setMax" , mpAppID_m.size(),
+        KOKKOS_LAMBDA(const int i, int & valueToUpdate) {
+          if ( mpAppID_m(i) > valueToUpdate ) valueToUpdate = mpAppID_m(i) ;
+        },
+        Kokkos::Max<int>(maxAppID)
+      );
     }
     void updateMPElmID(){
       auto curElmID = MPs->get<MPF_Cur_Elm_ID>();

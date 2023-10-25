@@ -13,6 +13,7 @@ program main
   integer :: argc, i, arglen
   integer :: setMeshOption, setMPOption
   integer :: mpi_comm_handle = MPI_COMM_WORLD
+  integer :: maxEdges, vertexDegree, nCells, nVertices
   character (len=2048) :: filename
   type(c_ptr) :: mpMesh
 
@@ -33,7 +34,8 @@ program main
   setMPOption = 0   !create an empty set of MPs
   mpMesh = polympo_createMPMesh(setMeshOption, setMPOption)
 
-  call loadMPASMesh(mpMesh, filename)
+  call loadMPASMesh(mpMesh, filename, &
+                    maxEdges, vertexDegree, nCells, nVertices)
 
   !todo check the value using get functions. 
   

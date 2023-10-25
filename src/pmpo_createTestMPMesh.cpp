@@ -168,7 +168,7 @@ MaterialPoints* initTestMPs(Mesh* mesh, int testMPOption){
             lat /= numVtx;
             lon /= numVtx;
             latLonPositions(iMP,0) = lat;
-            latLonPositions(iMP,1) = lat;
+            latLonPositions(iMP,1) = lon;
             positions(iMP,0) = radius * std::cos(lat) * std::cos(lon);
             positions(iMP,1) = radius * std::cos(lat) * std::sin(lon);
             positions(iMP,2) = radius * std::sin(lat);

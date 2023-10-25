@@ -330,26 +330,26 @@ module polympo
   !> @param nVertices(in) length of array in 
   !> @param x/y/zArray(in) the 1D arrays of cell coordinates
   !---------------------------------------------------------------------------
-  subroutine polympo_setMeshCellCenters(mpMesh, nCenters, xArray, yArray, zArray) &
-             bind(C, NAME='polympo_setMeshCellCenters')
-    use :: iso_c_binding
-    type(c_ptr), value :: mpMesh
-    integer(c_int), value:: nVertices
-    type(c_ptr), value :: xArray, yArray, zArray
-  end subroutine
+  !subroutine polympo_setMeshCellCenters(mpMesh, nCenters, xArray, yArray, zArray) &
+  !           bind(C, NAME='polympo_setMeshCellCenters')
+  !  use :: iso_c_binding
+  !  type(c_ptr), value :: mpMesh
+  !  integer(c_int), value:: nVertices
+  !  type(c_ptr), value :: xArray, yArray, zArray
+  !end subroutine
   !---------------------------------------------------------------------------
   !> @brief get the polympo mesh cell centers
   !> @param mpmesh(in/out) MPMesh object
   !> @param nVertices(in) length of array in, use for assertion
   !> @param x/y/zArray(in/out) the 1D arrays of vertices coordinates
   !---------------------------------------------------------------------------
-  subroutine polympo_getMeshCellCenters(mpMesh, nCenters, xArray, yArray, zArray) &
-             bind(C, NAME='polympo_getMeshCellCenters')
-    use :: iso_c_binding
-    type(c_ptr), value :: mpMesh
-    integer(c_int), value :: nVertices
-    type(c_ptr), value :: xArray, yArray, zArray
-  end subroutine
+  !subroutine polympo_getMeshCellCenters(mpMesh, nCenters, xArray, yArray, zArray) &
+  !           bind(C, NAME='polympo_getMeshCellCenters')
+  !  use :: iso_c_binding
+  !  type(c_ptr), value :: mpMesh
+  !  integer(c_int), value :: nVertices
+  !  type(c_ptr), value :: xArray, yArray, zArray
+  !end subroutine
   !---------------------------------------------------------------------------
   !> @brief set the spherical velocity increment mesh array 
   !>        from a host array

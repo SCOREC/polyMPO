@@ -31,4 +31,13 @@ namespace polyMPO{
         vtxOnSurfDispIncr_ = DoubleVec2dView(vtxOnSurfDispIncrMapEntry.second,numVtxs_);
     }
 
+    void Mesh::setMeshElmBasedFieldSize(){
+    	PMT_ALWAYS_ASSERT(meshEdit_);
+	
+	auto elmCoordsMapEntry = meshFields2TypeAndString.at(MeshF_ElmCenterXYZ);
+	PMT_ALWAYS_ASSERT(elmCoordsMapEntry.first == MeshFType_ElmBased);
+	elmCenterXYZ_ = DoubleVec3dView(elmCoordsMapEntry.second, numElms_);
+	
+    }
+
 } // namespace polyMPO

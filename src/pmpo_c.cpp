@@ -255,7 +255,6 @@ void polympo_setMeshNumVtxs(MPMesh_ptr p_mpmesh, int numVtxs){
   p_mesh->setMeshVtxBasedFieldSize(); 
 }
 
-
 void polympo_setMeshNumElms(MPMesh_ptr p_mpmesh, int numElms){
   checkMPMeshValid(p_mpmesh);
   auto p_mesh = ((polyMPO::MPMesh*)p_mpmesh)->p_mesh;
@@ -266,6 +265,7 @@ void polympo_setMeshNumElms(MPMesh_ptr p_mpmesh, int numElms){
   p_mesh->setNumElms(numElms);
   p_mesh->setElm2VtxConn(elm2Vtx);
   p_mesh->setElm2ElmConn(elm2Elm);
+  p_mesh->setMeshVtxBasedFieldSize();
 }
 
 
@@ -416,6 +416,7 @@ void polympo_getMeshVtxCoords(MPMesh_ptr p_mpmesh, int nVertices, double* xArray
   }
 }
 
+/*
 void polympo_setMeshCellCenters(MPMesh_ptr p_mpmesh, int nCells, double* xArray, double* yArray, double* zArray){
 
   checkMPMeshValid(p_mpmesh);
@@ -445,6 +446,7 @@ void polympo_getMeshCellCenters(MPMesh_ptr p_mpmesh, int nCells, double* xArray,
     zArray[i] = h_centersArray(i,2);
   }
 }
+*/
 
 void polympo_setMeshOnSurfVeloIncr(MPMesh_ptr p_mpmesh, int nComps, int nVertices, double* array) {
   //check mpMesh is valid

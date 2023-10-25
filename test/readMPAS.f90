@@ -125,8 +125,8 @@ subroutine readMPASMesh(filename, maxEdges, vertexDegree, &
                         nCells, nVertices, nEdgesOnCell, &
                         onSphere, sphereRadius, &
                         xVertex, yVertex, zVertex, &
-                        verticesOnCell, cellsOnCell, &
-                        cellCenters)
+                        verticesOnCell, cellsOnCell)!,&
+                        !cellCenters)
     use :: netcdf
     use :: iso_c_binding
     implicit none
@@ -212,7 +212,7 @@ subroutine readMPASMesh(filename, maxEdges, vertexDegree, &
     allocate(yVertex(nVertices))
     allocate(zVertex(nVertices))
     allocate(nEdgesOnCell(nCells))
-    allocate(cellCenters(nCells))
+    !allocate(cellCenters(nCells))
     allocate(verticesOnCell(maxEdges, nCells))
     allocate(cellsOnCell(maxEdges, nCells))
     
@@ -317,12 +317,12 @@ subroutine readMPASMesh(filename, maxEdges, vertexDegree, &
         stop
     end if
 
-    status = nf90_get_var(ncid, cellCentersID, cellCenters)
-    if (status /= nf90_noerr) then
-        write(0, *) "readMPASMesh: Error on get var of 'cellCenters'"
-        write(0, *) trim(nf90_strerror(status))
-        stop
-    end if
+    !status = nf90_get_var(ncid, cellCentersID, cellCenters)
+    !if (status /= nf90_noerr) then
+    !    write(0, *) "readMPASMesh: Error on get var of 'cellCenters'"
+    !    write(0, *) trim(nf90_strerror(status))
+    !    stop
+    !end if
 
     status = nf90_close(ncid)   
 end subroutine readMPASMesh

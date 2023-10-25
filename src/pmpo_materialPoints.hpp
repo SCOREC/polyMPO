@@ -208,8 +208,8 @@ class MaterialPoints {
             tgtPosRotLatLon(mp,0) = lat;
             tgtPosRotLatLon(mp,1) = lon;
             // x = cosLon cosLat, y = sinLon cosLat, z = sinLat
-            tgtPosXYZ(mp,0) = radius * std::cos(lat) * std::cos(lon);
-            tgtPosXYZ(mp,1) = radius * std::cos(lat) * std::sin(lon);
+            tgtPosXYZ(mp,0) = radius * std::cos(lon) * std::cos(lat);
+            tgtPosXYZ(mp,1) = radius * std::sin(lon) * std::cos(lat);
             tgtPosXYZ(mp,2) = radius * std::sin(lat); 
         } }; ps::parallel_for(MPs, updateRotLatLon,
 "updateRotationalLatitudeLongitude"); } };

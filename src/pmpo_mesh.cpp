@@ -44,13 +44,14 @@ namespace polyMPO{
        
         auto dispIncr = getMeshField<MeshF_OnSurfDispIncr>();
         auto rotLatLonIncr = getMeshField<MeshF_RotLatLonIncr>();
+        auto latLon = getMeshField<MeshF_VtxRotLatLon>();
         auto sphereRadius = getSphereRadius();
         PMT_ALWAYS_ASSERT(sphereRadius > 0); 
         Kokkos::parallel_for("set nEdgesPerElm", numVtxs_, KOKKOS_LAMBDA(const int iVtx){
             // Lat [iVtx,0] = dispIncrY [iVtx,1] /R
-            // Lon [iVtx,1] = dispIncrX [iVtx,0] /R
-            rotLatLonIncr(iVtx, 0) = dispIncr(iVtx, 0)/sphereRadius;
-            rotLatLonIncr(iVtx, 1) = dispIncr(iVtx, 1)/sphereRadius;
+            // Lon [iVtx,1] = dispIncrX [iVtx,0] /(R*cos(lat))
+            rotLatLonIncr(iVtx, 0) = dispIncr(iVtx, 1)/sphereRadius;
+            rotLatLonIncr(iVtx, 1) = dispIncr(iVtx, 0)/(sphereRadius * std::cos(latLon(iVtx,0)));
         });
     }
 

@@ -176,7 +176,7 @@ auto create_mirror_view_and_copy(SpaceT space_t, DataT array, int size){
   return Kokkos::create_mirror_view_and_copy(space_t, temp_host);
 }
 
-void polympo_rebuildMPs(MPMesh_ptr p_mpmesh,
+void polympo_rebuildMPs_f(MPMesh_ptr p_mpmesh,
                         const int numMPs, // total number of MPs which is GREATER than or equal to number of active MPs
                         int* allMP2Elm,
                         int* addedMPMask) {

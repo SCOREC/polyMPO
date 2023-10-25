@@ -79,7 +79,7 @@ module polympo
   !> @param addedMPMask(in) set to 1 each new MP, 0 otherwise
   !---------------------------------------------------------------------------
   subroutine polympo_rebuildMPs(mpMesh, numMPs, allMP2Elm, addedMPMask) &
-    bind(C, NAME='polympo_rebuildMPs')
+    bind(C, NAME='polympo_rebuildMPs_f')
     use :: iso_c_binding
     type(c_ptr), value :: mpMesh
     integer(c_int), value :: numMPs

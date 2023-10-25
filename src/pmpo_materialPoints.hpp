@@ -32,8 +32,7 @@ enum MaterialPointSlice {
   MPF_Tgt_Elm_ID,
   MPF_Cur_Pos_Rot_Lat_Lon,
   MPF_Tgt_Pos_Rot_Lat_Lon,
-  MPF_Cur_Pos_XYZ
-,
+  MPF_Cur_Pos_XYZ,
   MPF_Tgt_Pos_XYZ,
   MPF_Flag_Basis_Vals,
   MPF_Basis_Vals,
@@ -194,26 +193,30 @@ class MaterialPoints {
 
 //MUTATOR  
     template <MaterialPointSlice index> void fillData(double value);//use PS_LAMBDA fill up to 1
-    void T2LTracking(Vec2dView dx);
+    //void T2LTracking(Vec2dView dx);
 
-    void updateRotLatLonAndXYZ(){
+    void updateRotLatLonAndXYZ2Tgt(const double radius){
         auto curPosRotLatLon = getData<MPF_Cur_Pos_Rot_Lat_Lon>();
-        auto curPosXYZ = getData<MPF_Cur_Pos_XYZ>();
+        auto tgtPosRotLatLon = getData<MPF_Tgt_Pos_Rot_Lat_Lon>();
+        auto tgtPosXYZ = getData<MPF_Tgt_Pos_XYZ>();
         auto rotLatLonIncr = getData<MPF_Rot_Lat_Lon_Incr>();
-
+        
         auto updateRotLatLon = PS_LAMBDA(const int& elm, const int& mp, const int& mask){
         if(mask){
-            //TODO: use given math equations
-        }
-        };
-        ps::parallel_for(MPs, updateRotLatLon, "updateRotationalLatitudeLongitude");
-    }
-};
+            auto lat = curPosRotLatLon(mp,0) + rotLatLonIncr(mp,0); // phi
+            auto lon = curPosRotLatLon(mp,1) + rotLatLonIncr(mp,1); // lambda
+            tgtPosRotLatLon(mp,0) = lat;
+            tgtPosRotLatLon(mp,1) = lon;
+            // x = cosLon cosLat, y = sinLon cosLat, z = sinLat
+            tgtPosXYZ(mp,0) = radius * std::cos(lat) * std::cos(lon);
+            tgtPosXYZ(mp,1) = radius * std::cos(lat) * std::sin(lon);
+            tgtPosXYZ(mp,2) = radius * std::sin(lat); 
+        } }; ps::parallel_for(MPs, updateRotLatLon,
+"updateRotationalLatitudeLongitude"); } };
 
-template <MaterialPointSlice index>
-void MaterialPoints::fillData(double value){
-    auto mpData = getData<index>();
-    const int numEntries = mpSlice2MeshFieldIndex.at(index).first;
+template <MaterialPointSlice index> void MaterialPoints::fillData(double value){
+auto mpData = getData<index>(); const int numEntries = mpSlice2MeshFieldIndex.
+at(index).first;
     auto setValue = PS_LAMBDA(const int& elm, const int& mp, const int& mask){
         if(mask) { //if material point is 'active'/'enabled'
             for(int i=0; i<numEntries; i++){

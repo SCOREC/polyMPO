@@ -200,10 +200,11 @@ void MPMesh::T2LTracking(Vec2dView dx){
 void MPMesh::push(){
   p_mesh ->computeRotLatLonIncr();
   sphericalInterpolation<MeshF_RotLatLonIncr, MPF_Rot_Lat_Lon_Incr>(*this);
-  p_MPs ->updateRotLatLonAndXYZ(); // set Tgt_XYZ
+  p_MPs ->updateRotLatLonAndXYZ2Tgt(p_mesh->getSphereRadius()); // set Tgt_XYZ
 
   //TODO need dx to call CVTTrackingElmCenterBased() // move to Tgt_XYZ
   p_MPs->updateMPSlice<MPF_Cur_Pos_XYZ, MPF_Tgt_Pos_XYZ>(); // Tgt_XYZ becomes Cur_XYZ
+  p_MPs->updateMPSlice<MPF_Cur_Pos_Rot_Lat_Lon, MPF_Tgt_Pos_Rot_Lat_Lon>(); // Tgt becomes Cur
 }
 
 } 

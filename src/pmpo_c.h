@@ -21,7 +21,7 @@ void polympo_setMPICommunicator_f(MPI_Fint fcomm);//TODO:is MPI_Fint best? or so
 
 //MP info
 void polympo_createMPs_f(MPMesh_ptr p_mpmesh, int numElms, int numMPs, int* mpsPerElm, int* mp2Elm, int* isMPActive);
-void polympo_rebuildMPs_f(MPMesh_ptr p_mpmesh, int numMPs, int* allTgtMpElmIn, int* addedMPMask);
+void polympo_rebuildMPs_f(MPMesh_ptr p_mpmesh, int numMPs, const int* allTgtMpElmIn, const int* addedMPMask);
 void polympo_getMPCurElmID_f(MPMesh_ptr p_mpmesh, int numMPs, int* elmIDs);
 
 //MP slices

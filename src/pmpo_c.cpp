@@ -172,14 +172,19 @@ void polympo_createMPs_f(MPMesh_ptr p_mpmesh,
 
 template <typename SpaceT, typename DataT>
 auto create_mirror_view_and_copy(SpaceT space_t, DataT array, int size){
-  kkIntViewHostU temp_host(array, size);
+  Kokkos::View<
+          DataT,
+          Kokkos::LayoutLeft,
+          Kokkos::DefaultHostExecutionSpace,
+          Kokkos::MemoryTraits<Kokkos::Unmanaged>
+        > temp_host(array, size);
   return Kokkos::create_mirror_view_and_copy(space_t, temp_host);
 }
 
 void polympo_rebuildMPs_f(MPMesh_ptr p_mpmesh,
                         const int numMPs, // total number of MPs which is GREATER than or equal to number of active MPs
-                        int* allMP2Elm,
-                        int* addedMPMask) {
+                        const int* allMP2Elm,
+                        const int* addedMPMask) {
   checkMPMeshValid(p_mpmesh);
   auto p_MPs = ((polyMPO::MPMesh*)p_mpmesh)->p_MPs;
   PMT_ALWAYS_ASSERT(numMPs >= p_MPs->getCount());

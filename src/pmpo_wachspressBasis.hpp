@@ -23,7 +23,7 @@ namespace polyMPO{
  * */
 //TODO:Change this to support 3d
 KOKKOS_INLINE_FUNCTION
-void getBasisAndGradByAreaGblForm(Vec2d MP,
+void getBasisAndGradByAreaGblForm2d(Vec2d MP,
                                   int numVtxs,
                                   Vec2d* vtxCoords,
                                   double* basis,
@@ -64,8 +64,8 @@ void getBasisAndGradByAreaGblForm(Vec2d MP,
                 productX *= a[index2];
                 productY *= a[index2];
             }
-            productX *= -(vtxCoords[index1 + 1][1] - vtxCoords[index1][1]);
-            productY *= vtxCoords[index1 + 1][0] - vtxCoords[index1][0];
+            productX *= -(e[index1+1][1]);
+            productY *= e[index1+1][0];
             for (int k = j + 1; k < numVtxs - 2; k++){
                 int index2 = (i + k + 1) % numVtxs;
                 productX *= a[index2];
@@ -86,6 +86,91 @@ void getBasisAndGradByAreaGblForm(Vec2d MP,
     for (int i = 0; i < numVtxs; i++){
         basis[i] = w[i] * wSumInv;
         gradBasis[i] = Vec2d(wdx[i] * wSumInv - w[i] * wSumInv * wSumInv * wdxSum, wdy[i] * wSumInv - w[i] * wSumInv * wSumInv * wdySum);
+    }
+}
+
+KOKKOS_INLINE_FUNCTION
+void getBasisAndGradByAreaGblForm3d(Vec3d MP,
+                                  int numVtxs,
+                                  Vec3d* vtxCoords,
+                                  double* basis,
+                                  Vec3d* gradBasis){
+    Vec3d e[maxVtxsPerElm + 1];
+    Vec3d p[maxVtxsPerElm];
+    double w[maxVtxsPerElm];
+    for (int i = 0; i < numVtxs; i++){
+        e[i + 1] = vtxCoords[i + 1] - vtxCoords[i];
+        p[i] = vtxCoords[i] - MP;
+    }
+    e[0] = e[numVtxs];
+
+    double c[maxVtxsPerElm];
+    double a[maxVtxsPerElm];
+    for (int i = 0; i < numVtxs; i++){
+        c[i] = e[i].cross(e[i + 1]).magnitude();
+        a[i] = p[i].cross(e[i + 1]).magnitude();
+    }
+    double wSum = 0.0;
+
+    double wdx[maxVtxsPerElm];
+    double wdy[maxVtxsPerElm];
+    double wdz[maxVtxsPerElm];
+    initArray(wdx, maxVtxsPerElm, 0.0);
+    initArray(wdy, maxVtxsPerElm, 0.0);
+    initArray(wdz, maxVtxsPerElm, 0.0);
+    double wdxSum = 0.0;
+    double wdySum = 0.0;
+    double wdzSum = 0.0;
+    for (int i = 0; i < numVtxs; i++){
+        double aProduct = 1.0;
+        for (int j = 0; j < numVtxs - 2; j++){
+            int index1 = (j + i + 1) % numVtxs;
+            aProduct *= a[index1];
+
+            double productX = 1.0;
+            double productY = 1.0;
+            double productZ = 1.0;
+            for (int k = 0; k < j; k++){
+                int index2 = (i + k + 1) % numVtxs;
+                productX *= a[index2];
+                productY *= a[index2];
+                productZ *= a[index2];
+            }
+
+            // when j = k, find gradient of A_k
+            double c1 = e[index1+1][0];
+            double c2 = e[index1+1][1];
+            double c3 = e[index1+1][2];
+            productX *= (c3 - c2)/a[index1];
+            productY *= (c1 - c3)/a[index1];
+            productZ *= (c2 - c1)/a[index1];
+
+            for (int k = j + 1; k < numVtxs - 2; k++){
+                int index2 = (i + k + 1) % numVtxs;
+                productX *= a[index2];
+                productY *= a[index2];
+                productZ *= a[index2];
+            }
+            wdx[i] += productX;
+            wdy[i] += productY;
+            wdz[i] += productZ;
+        }
+        wdx[i] *= c[i];
+        wdy[i] *= c[i];
+        wdz[i] *= c[i];
+        wdxSum += wdx[i];
+        wdySum += wdy[i];
+        wdzSum += wdz[i];
+        w[i] = c[i] * aProduct;
+        wSum += w[i];
+    }
+
+    double wSumInv = 1.0 / wSum;
+    for (int i = 0; i < numVtxs; i++){
+        basis[i] = w[i] * wSumInv;
+        gradBasis[i] = Vec3d(wdx[i] * wSumInv - w[i] * wSumInv * wSumInv * wdxSum,
+                             wdy[i] * wSumInv - w[i] * wSumInv * wSumInv * wdySum,
+                             wdz[i] * wSumInv - w[i] * wSumInv * wSumInv * wdzSum);
     }
 }
 

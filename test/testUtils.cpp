@@ -26,17 +26,20 @@ void interpolateWachspress2DTest(MPMesh& mpMesh){
             initArray(basisByArea,maxVtxsPerElm,0.0);
             Vec2d gradBasisByArea[maxVtxsPerElm];
             Vec2d position(MPsPosition(mp,0),MPsPosition(mp,1));
-            getBasisAndGradByAreaGblForm(position, numVtx, v, basisByArea, gradBasisByArea);
+            getBasisAndGradByAreaGblForm2d(position, numVtx, v, basisByArea, gradBasisByArea);
             getBasisByAreaGblForm(position, numVtx, v, basisByArea);
-
+            
+            double af = 10.1;
+            double bf = 1.34;
             Vec2d wp_coord(0.0,0.0);
-            double wp_grad = 0.0;
+            Vec2d wp_grad(0.0,0.0);
             for(int i=0; i< numVtx; i++){
                 wp_coord = wp_coord + v[i]*basisByArea[i];
-                wp_grad = wp_grad + gradBasisByArea[i].dot(v[i]);
+                double fi = af * v[i][0] + bf * v[i][1];
+                wp_grad = wp_grad + gradBasisByArea[i] * fi;
             }
-            assert(wp_coord[0] - MPsPosition(mp,0) < TEST_EPSILON);
-            assert(wp_coord[1] - MPsPosition(mp,1) < TEST_EPSILON);
+            assert(wp_grad[0] - af < TEST_EPSILON);
+            assert(wp_grad[1] - bf < TEST_EPSILON);
         }        
     };
     p_MPs->parallel_for(eval, "interpolateWachspress2DTest");

@@ -78,12 +78,18 @@ typedef kkViewHostU<double**> kkDbl2dViewHostU;//TODO:put it somewhere else (may
 typedef kkViewHostU<int**> kkInt2dViewHostU;//TODO:put it somewhere else (maybe)
 typedef kkViewHostU<int*> kkIntViewHostU;//TODO:put it somewhere else (maybe)
 
+template <typename SpaceT, typename DataT>
+auto create_mirror_view_and_copy(SpaceT space_t, DataT array, int size){
+  kkViewHostU<DataT> temp_host(array, size);
+  return Kokkos::create_mirror_view_and_copy(space_t, temp_host);
+}
+
 void polympo_createMPs_f(MPMesh_ptr p_mpmesh,
-                       int numElms,
-                       int numMPs, // total number of MPs which is GREATER than or equal to number of active MPs
-                       int* mpsPerElm,
-                       int* mp2Elm,
-                       int* isMPActive) {
+                       const int numElms,
+                       const int numMPs, // total number of MPs which is GREATER than or equal to number of active MPs
+                       const int* mpsPerElm,
+                       const int* mp2Elm,
+                       const int* isMPActive) {
   checkMPMeshValid(p_mpmesh);
 
   //the mesh must be fixed/set before adding MPs
@@ -132,26 +138,15 @@ void polympo_createMPs_f(MPMesh_ptr p_mpmesh,
   PMT_ALWAYS_ASSERT(numActiveMPs>0);
 
   using space_t = Kokkos::DefaultExecutionSpace::memory_space;
-  kkIntViewHostU mpsPerElm_h(mpsPerElm,numElms);
-  auto mpsPerElm_d = Kokkos::create_mirror_view_and_copy(space_t(), mpsPerElm_h);
-
-  kkIntViewHostU active_mp2Elm_h(active_mp2Elm.data(),numActiveMPs);
-  auto active_mp2Elm_d = Kokkos::create_mirror_view_and_copy(space_t(), active_mp2Elm_h);
-
-  kkIntViewHostU active_mpIDs_h(active_mpIDs.data(),numActiveMPs);
-  auto active_mpIDs_d = Kokkos::create_mirror_view_and_copy(space_t(), active_mpIDs_h);
+  auto mpsPerElm_d = create_mirror_view_and_copy(space_t(), mpsPerElm, numElms);
+  auto active_mp2Elm_d = create_mirror_view_and_copy(space_t(), active_mp2Elm.data(), numActiveMPs);
+  auto active_mpIDs_d = create_mirror_view_and_copy(space_t(), active_mpIDs.data(), numActiveMPs);
 
   delete ((polyMPO::MPMesh*)p_mpmesh)->p_MPs;
   ((polyMPO::MPMesh*)p_mpmesh)->p_MPs =
      new polyMPO::MaterialPoints(numElms, numActiveMPs, mpsPerElm_d, active_mp2Elm_d, active_mpIDs_d);
   auto p_MPs = ((polyMPO::MPMesh*)p_mpmesh)->p_MPs;
   p_MPs->setElmIDoffset(offset);
-}
-
-template <typename SpaceT, typename DataT>
-auto create_mirror_view_and_copy(SpaceT space_t, DataT array, int size){
-  kkViewHostU<DataT> temp_host(array, size);
-  return Kokkos::create_mirror_view_and_copy(space_t, temp_host);
 }
 
 void polympo_rebuildMPs_f(MPMesh_ptr p_mpmesh,

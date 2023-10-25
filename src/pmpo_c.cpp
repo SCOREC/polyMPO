@@ -65,40 +65,18 @@ void polympo_setMPICommunicator_f(MPI_Fint fcomm){
  * allocations.
  */
 //TODO: order of these typedefs to be done later
-typedef Kokkos::View<
-          double*,
+template<typename DataT>
+using kkViewHostU = Kokkos::View<
+          DataT,
           Kokkos::LayoutLeft,
           Kokkos::DefaultHostExecutionSpace,
-          Kokkos::MemoryTraits<Kokkos::Unmanaged>
-        > kkDblViewHostU;//TODO:put it to mesh.hpp
-                         
-typedef Kokkos::View<
-          double*[vec2d_nEntries],
-          Kokkos::LayoutLeft,
-          Kokkos::DefaultHostExecutionSpace,
-          Kokkos::MemoryTraits<Kokkos::Unmanaged>
-        > kkVec2dViewHostU;//TODO:put it to mesh.hpp
+          Kokkos::MemoryTraits<Kokkos::Unmanaged>>;
 
-typedef Kokkos::View<
-          double**,
-          Kokkos::LayoutLeft,
-          Kokkos::DefaultHostExecutionSpace,
-          Kokkos::MemoryTraits<Kokkos::Unmanaged>
-        > kkDbl2dViewHostU;//TODO:put it somewhere else (maybe)
-
-typedef Kokkos::View<
-          int**,
-          Kokkos::LayoutLeft,
-          Kokkos::DefaultHostExecutionSpace,
-          Kokkos::MemoryTraits<Kokkos::Unmanaged>
-        > kkInt2dViewHostU;//TODO:put it somewhere else (maybe)
-
-typedef Kokkos::View<
-          int*,
-          Kokkos::LayoutLeft,
-          Kokkos::DefaultHostExecutionSpace,
-          Kokkos::MemoryTraits<Kokkos::Unmanaged>
-        > kkIntViewHostU;//TODO:put it somewhere else (maybe)
+typedef kkViewHostU<double*> kkDblViewHostU;//TODO:put it to mesh.hpp             
+typedef kkViewHostU<double*[vec2d_nEntries]> kkVec2dViewHostU;//TODO:put it to mesh.hpp
+typedef kkViewHostU<double**> kkDbl2dViewHostU;//TODO:put it somewhere else (maybe)
+typedef kkViewHostU<int**> kkInt2dViewHostU;//TODO:put it somewhere else (maybe)
+typedef kkViewHostU<int*> kkIntViewHostU;//TODO:put it somewhere else (maybe)
 
 void polympo_createMPs_f(MPMesh_ptr p_mpmesh,
                        int numElms,
@@ -172,12 +150,7 @@ void polympo_createMPs_f(MPMesh_ptr p_mpmesh,
 
 template <typename SpaceT, typename DataT>
 auto create_mirror_view_and_copy(SpaceT space_t, DataT array, int size){
-  Kokkos::View<
-          DataT,
-          Kokkos::LayoutLeft,
-          Kokkos::DefaultHostExecutionSpace,
-          Kokkos::MemoryTraits<Kokkos::Unmanaged>
-        > temp_host(array, size);
+  kkViewHostU<DataT> temp_host(array, size);
   return Kokkos::create_mirror_view_and_copy(space_t, temp_host);
 }
 

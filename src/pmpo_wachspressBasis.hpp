@@ -141,9 +141,12 @@ void getBasisAndGradByAreaGblForm3d(Vec3d MP,
             double c1 = e[index1+1][0];
             double c2 = e[index1+1][1];
             double c3 = e[index1+1][2];
-            productX *= (c3 - c2)/a[index1];
-            productY *= (c1 - c3)/a[index1];
-            productZ *= (c2 - c1)/a[index1];
+            double f1 = c2 * (-p[index1][2]) - c3 * (-p[index1][1]);
+            double f2 = c3 * (-p[index1][0]) - c1 * (-p[index1][2]);
+            double f3 = c1 * (-p[index1][1]) - c2 * (-p[index1][0]);
+            productX *= (f2 * c3 - f3 * c2)/a[index1];
+            productY *= (f3 * c1 - f1 * c3)/a[index1];
+            //productZ *= (f1 * c2 - f2 * c1)/a[index1];
 
             for (int k = j + 1; k < numVtxs - 2; k++){
                 int index2 = (i + k + 1) % numVtxs;

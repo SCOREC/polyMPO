@@ -128,20 +128,22 @@ void interpolateWachspress3DTest(MPMesh& mpMesh){
             getBasisByAreaGblForm3d(position, numVtx, v, basisByArea2);
             
             // testing
-            /* const int numVtx_test = 4;
+            /*const int numVtx_test = 4;
             Vec3d position_test(3.0, 2.0, 3.0); // MP
             Vec3d v_test[numVtx_test];
-            double basisByArea_test[numVtx_test];
+            double basisByArea_test[numVtx_test+1];
             Vec3d gradBasisByArea_test[numVtx_test];
             v_test[0] = Vec3d(3.0, 2.0, 5.0);
             v_test[1] = Vec3d(3.0, 3.0, 2.0);
             v_test[2] = Vec3d(2.0, 1.0, 2.0);
             v_test[3] = Vec3d(5.0, 1.0, 2.0);
+            v_test[4] = v_test[0];
             getBasisAndGradByAreaGblForm3d(position_test, numVtx_test, v_test, basisByArea_test, gradBasisByArea_test);
 
             for (int i = 0; i <numVtx_test; i++) {
                 printf("%d: %f %f \n", i, gradBasisByArea_test[i][0],  gradBasisByArea_test[i][1]);
-            }*/
+            }
+            */
             // testing ends
 
             double af = 10.1;

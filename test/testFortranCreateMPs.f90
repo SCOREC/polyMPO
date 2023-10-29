@@ -14,6 +14,12 @@ program main
   character (len=2048) :: filename
   type(c_ptr) :: mpMesh
   integer, dimension(:), pointer :: mpsPerElm, mp2Elm, isMPActive
+  character (len=64) :: onSphere, stringYes = "YES"
+  real(kind=MPAS_RKIND) :: sphereRadius
+  integer, dimension(:), pointer :: nEdgesOnCell
+  real(kind=MPAS_RKIND), dimension(:), pointer :: xVertex, yVertex, zVertex
+  real(kind=MPAS_RKIND), dimension(:), pointer :: latVertex, lonVertex
+  integer, dimension(:,:), pointer :: verticesOnCell, cellsOnCell
 
   call mpi_init(ierr)
   call mpi_comm_rank(mpi_comm_handle, self, ierr)
@@ -32,8 +38,18 @@ program main
   setMPOption = 0   !create an empty set of MPs
   mpMesh = polympo_createMPMesh(setMeshOption, setMPOption)
 
-  call loadMPASMesh(mpMesh, filename, &
-                    maxEdges, vertexDegree, nCells, nVertices)
+  call readMPASMeshFromNCFile(filename, maxEdges, vertexDegree, &
+                        nCells, nVertices, nEdgesOnCell, &
+                        onSphere, sphereRadius, &
+                        xVertex, yVertex, zVertex, &
+                        latVertex, lonVertex, &
+                        verticesOnCell, cellsOnCell)
+  call loadMPASMeshInPolyMPO(mpMesh, maxEdges, vertexDegree, &
+                        nCells, nVertices, nEdgesOnCell, &
+                        onSphere, sphereRadius, &
+                        xVertex, yVertex, zVertex, &
+                        latVertex, lonVertex, &
+                        verticesOnCell, cellsOnCell)
 
   !test on new createMPs
   call assert(nCells .ge. 3, "This test requires a mesh with at least three cells")
@@ -81,6 +97,13 @@ program main
   call polympo_finalize()
 
   call mpi_finalize(ierr)
+  
+  deallocate(nEdgesOnCell)
+  deallocate(xVertex)
+  deallocate(yVertex)
+  deallocate(zVertex)
+  deallocate(verticesOnCell)
+  deallocate(cellsOnCell)
 
   stop
 end program

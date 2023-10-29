@@ -11,8 +11,7 @@ contains
   end subroutine
 end module
 !---------------------------------------------------------------------------
-!> This is a test on how to use loadMPASMesh
-!> For specific usage on setting mesh properties, see test/readMPAS.f90
+!> todo add a discription
 !---------------------------------------------------------------------------
 program main
   use :: polympo
@@ -31,6 +30,12 @@ program main
   integer :: mpi_comm_handle = MPI_COMM_WORLD
   character (len=2048) :: filename
   real(kind=APP_RKIND), dimension(:,:), pointer :: dispIncr
+  character (len=64) :: onSphere, stringYes = "YES"
+  real(kind=MPAS_RKIND) :: sphereRadius
+  integer, dimension(:), pointer :: nEdgesOnCell
+  real(kind=MPAS_RKIND), dimension(:), pointer :: xVertex, yVertex, zVertex
+  real(kind=MPAS_RKIND), dimension(:), pointer :: latVertex, lonVertex
+  integer, dimension(:,:), pointer :: verticesOnCell, cellsOnCell
   integer :: numMPs 
   integer, dimension(:), pointer :: mpsPerElm, mp2Elm, isMPActive
 
@@ -52,7 +57,19 @@ program main
   setMPOption = 0   !create an empty set of MPs
   nCompsDisp = 2
   call createMPMesh(setMeshOption, setMPOption)
-  call loadMPASMesh(mpMesh, filename, maxEdges, vertexDegree, nCells, nVertices)
+  call readMPASMeshFromNCFile(filename, maxEdges, vertexDegree, &
+                        nCells, nVertices, nEdgesOnCell, &
+                        onSphere, sphereRadius, &
+                        xVertex, yVertex, zVertex, &
+                        latVertex, lonVertex, &
+                        verticesOnCell, cellsOnCell)
+  call loadMPASMeshInPolyMPO(mpMesh, maxEdges, vertexDegree, &
+                        nCells, nVertices, nEdgesOnCell, &
+                        onSphere, sphereRadius, &
+                        xVertex, yVertex, zVertex, &
+                        latVertex, lonVertex, &
+                        verticesOnCell, cellsOnCell)
+
   allocate(dispIncr(nCompsDisp,nVertices))
   !createMPs
   numMPs = nCells
@@ -68,6 +85,10 @@ program main
 
   ! set disp incr
   dispIncr = 1
+  !do i = 1,numMPs
+  !  dispIncr(0,i) = 0
+  !  dispIncr(1,i) = 0 !average delta lambda over mesh edges
+  !end do
   call polympo_setMeshOnSurfDispIncr(mpMesh, nCompsDisp, nVertices, c_loc(dispIncr))
   call polympo_push(mpMesh)
  
@@ -75,6 +96,13 @@ program main
   call polympo_finalize()
 
   call mpi_finalize(ierr)
+  
+  deallocate(nEdgesOnCell)
+  deallocate(xVertex)
+  deallocate(yVertex)
+  deallocate(zVertex)
+  deallocate(verticesOnCell)
+  deallocate(cellsOnCell)
 
   stop
 end program

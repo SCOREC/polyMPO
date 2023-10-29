@@ -1,1 +1,2 @@
 planar_nonuniform_cvt_for_square_673elms.nc: A nonuniform centroidal Voronoi tessellation (CVT) for a square domain with 673 elements, generated using the jigsaw tool by Adrian Turner and provided to Onkar Sahni on 9th August 2023.
+spherical_cvt_642elms.nc: A centroidal Voronoi tessellation (CVT) for a spherical domain with 642 elements, taken from <https://web.lcrc.anl.gov/public/e3sm/mpas_standalonedata/mpas-seaice/testcases/strain_stress_divergence/>(dated 19th Oct 2023).

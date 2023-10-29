@@ -79,7 +79,7 @@ pmpo_add_test(testFortranMPMeshModule ./testFortranMPMeshModule)
 #set NC file for test
 set(TEST_NC_FILE_PLANAR "${CMAKE_SOURCE_DIR}/test/sample_mpas_meshes/planar_nonuniform_cvt_for_square_673elms.nc")
 set(TEST_NC_FILE_SPHERICAL
-"${CMAKE_SOURCE_DIR}/test/sample_mpas_meshes/grid.2562.nc")
+"${CMAKE_SOURCE_DIR}/test/sample_mpas_meshes/spherical_cvt_642elms.nc")
 if(EXISTS ${TEST_NC_FILE_SPHERICAL})
     message(STATUS "Found Spherical NC File: ${TEST_NC_FILE_SPHERICAL}") 
     set(TEST_NC_FILE ${TEST_NC_FILE_SPHERICAL})

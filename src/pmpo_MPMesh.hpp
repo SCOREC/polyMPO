@@ -23,7 +23,7 @@ class MPMesh{
     }
 
     void CVTTrackingEdgeCenterBased(Vec2dView dx);
-    void CVTTrackingElmCenterBased(Vec2dView dx);
+    void CVTTrackingElmCenterBased();
     void T2LTracking(Vec2dView dx);
     void push();
 };

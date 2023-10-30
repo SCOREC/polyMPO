@@ -26,7 +26,7 @@ int main(int argc, char* argv[]) {
         IntView TgtElmCVTEdge("TgtElmCVTEdge",p_MPs->getCount());
         copyTgtElm(TgtElmCVTEdge,mpMesh);
 
-        mpMesh.CVTTrackingElmCenterBased(dx);
+        mpMesh.CVTTrackingElmCenterBased();//XXX: this is wrong! need to set mpf_tgt_xyz now
         IntView TgtElmCVTCenter("TgtElmCVTCenter",p_MPs->getCount());
         copyTgtElm(TgtElmCVTCenter,mpMesh);
 

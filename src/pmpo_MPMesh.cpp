@@ -73,7 +73,7 @@ void MPMesh::CVTTrackingEdgeCenterBased(Vec2dView dx){
 }
 
 
-void MPMesh::CVTTrackingElmCenterBased(Vec2dView dx){
+void MPMesh::CVTTrackingElmCenterBased(){
     int numVtxs = p_mesh->getNumVertices();
     int numElms = p_mesh->getNumElements();
     
@@ -82,28 +82,32 @@ void MPMesh::CVTTrackingElmCenterBased(Vec2dView dx){
     auto elm2ElmConn = p_mesh->getElm2ElmConn();
 
     auto mpPositions = p_MPs->getData<MPF_Cur_Pos_XYZ>();
+    auto mpTgtPos = p_MPs->getData<MPF_Tgt_Pos_XYZ>();
     auto MPs2Elm = p_MPs->getData<MPF_Tgt_Elm_ID>();;
 
-    Vec2dView elmCenter("elmentCenter",numElms);
-    auto calcCenter = PS_LAMBDA(const int& elm, const int& mp, const int&mask){
-//        elmCenter(iElm) = calcElmCenter(iElm,elm2VtxConn,vtxCoords);
+    Vec3dView elmCenter("elmentCenter",numElms);
+    Kokkos::parallel_for("calcElmCenter", numElms, KOKKOS_LAMBDA(const int elm){  
         int numVtx = elm2VtxConn(elm,0);
-        double sum_x = 0.0, sum_y = 0.0;
+        double sum_x = 0.0, sum_y = 0.0, sum_z = 0.0;
         for(int i=1; i<= numVtx; i++){
             sum_x += vtxCoords(elm2VtxConn(elm,i)-1,0);
             sum_y += vtxCoords(elm2VtxConn(elm,i)-1,1);
+            sum_z += vtxCoords(elm2VtxConn(elm,i)-1,2);
         }
-    };
-    p_MPs->parallel_for(calcCenter,"calcElmCenter");
+        elmCenter(elm)[0] = sum_x/numVtx;
+        elmCenter(elm)[1] = sum_y/numVtx;
+        elmCenter(elm)[2] = sum_z/numVtx;
+    });
 
     auto CVTElmCalc = PS_LAMBDA(const int& elm, const int& mp, const int&mask){
-        Vec2d MP(mpPositions(mp,0),mpPositions(mp,1));//XXX:the input is XYZ, but we only support 2d vector
+        Vec3d MP(mpPositions(mp,0),mpPositions(mp,1),mpPositions(mp,2));
         if(mask){
             int iElm = elm;
-            Vec2d MPnew = MP + dx(mp);
+            Vec3d dx(mpTgtPos(mp,0),mpTgtPos(mp,1),mpTgtPos(mp,2));
+            Vec3d MPnew = MP + dx;
             while(true){
                 int numVtx = elm2VtxConn(iElm,0);
-                Vec2d delta = MPnew - elmCenter(iElm);
+                Vec3d delta = MPnew - elmCenter(iElm);
                 double minDistSq = delta[0]*delta[0] + delta[1]*delta[1];
                 int closestElm = -1;
                 //go through all the connected elm, calc distance
@@ -118,9 +122,6 @@ void MPMesh::CVTTrackingElmCenterBased(Vec2dView dx){
                 }
                 if(closestElm<0){
                     MPs2Elm(mp) = iElm;
-                    mpPositions(mp,0) = MPnew[0];
-                    mpPositions(mp,1) = MPnew[1];
-                    mpPositions(mp,2) = 0.0; //XXX:we only have 2d vector
                     break;
                 }else{
                     iElm = closestElm;
@@ -202,7 +203,7 @@ void MPMesh::push(){
   sphericalInterpolation<MeshF_RotLatLonIncr, MPF_Rot_Lat_Lon_Incr>(*this);
   p_MPs ->updateRotLatLonAndXYZ2Tgt(p_mesh->getSphereRadius()); // set Tgt_XYZ
 
-  //TODO need dx to call CVTTrackingElmCenterBased() // move to Tgt_XYZ
+  CVTTrackingElmCenterBased(); // move to Tgt_XYZ
   p_MPs->updateMPSlice<MPF_Cur_Pos_XYZ, MPF_Tgt_Pos_XYZ>(); // Tgt_XYZ becomes Cur_XYZ
   p_MPs->updateMPSlice<MPF_Cur_Pos_Rot_Lat_Lon, MPF_Tgt_Pos_Rot_Lat_Lon>(); // Tgt becomes Cur
 }

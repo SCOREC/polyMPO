@@ -15,6 +15,19 @@ module readMPAS
     integer, parameter :: MPAS_RKIND = selected_real_kind(12)
     
 contains
+
+function epsilonDiff(a,b) result(isSame)
+  implicit none
+  real(kind=MPAS_RKIND) :: a,b,delta
+  parameter (delta=1.0e-8)
+  logical :: isSame
+  if (abs(a-b) < delta) then
+    isSame = .true.
+  else
+    isSame = .false.
+  endif
+end function
+
 !---------------------------------------------------------------------------
 !> @brief get the MP positions array from a polympo array
 !> @param mpmesh(in/out) MPMesh object to fill, allocated by users
@@ -33,13 +46,13 @@ subroutine loadMPASMeshInPolyMPO(mpMesh, maxEdges, vertexDegree, &
     type(c_ptr), intent(inout) :: mpMesh
     character (len=64), intent(in) :: onSphere
     character (len=64) :: stringYes = "YES"
-    integer, intent(inout) :: maxEdges, vertexDegree, nCells, nVertices
+    integer, intent(in) :: maxEdges, vertexDegree, nCells, nVertices
     real(kind=MPAS_RKIND), intent(in) :: sphereRadius
-    integer, dimension(:), intent(in), pointer :: nEdgesOnCell
+    integer, dimension(:), pointer :: nEdgesOnCell
     real(kind=MPAS_RKIND), dimension(:), pointer :: xVertex, yVertex, zVertex
     real(kind=MPAS_RKIND), dimension(:), pointer :: latVertex, lonVertex
     integer, dimension(:,:), pointer :: verticesOnCell, cellsOnCell
-    
+
     call polympo_checkPrecisionForRealKind(MPAS_RKIND)
     !check on maxEdges and vertexDegree
     call polympo_checkMeshMaxSettings(mpMesh,maxEdges,vertexDegree)

@@ -48,7 +48,6 @@ int getMaxAppID(IntView mpAppID) {
     },
     Kokkos::Max<int>(maxAppID)
   );
-  fprintf(stderr, "maxAppID %d\n", maxAppID);
   return maxAppID;
 }
 

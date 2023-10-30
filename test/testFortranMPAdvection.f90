@@ -24,17 +24,17 @@ program main
 
   integer, parameter :: APP_RKIND = selected_real_kind(15)
   integer :: ierr, self
-  integer :: argc, i, j, arglen, n
+  integer :: argc, i, j, arglen, k
   integer :: setMeshOption, setMPOption
   integer :: maxEdges, vertexDegree, nCells, nVertices
   integer :: nCompsDisp
   integer :: mpi_comm_handle = MPI_COMM_WORLD
-  real(kind=MPAS_RKIND) :: x, y, z, maxlon, minlon, delta, lon
+  real(kind=MPAS_RKIND) :: x, y, z, radius, maxlon, minlon, deltaLon, lon
   real(kind=MPAS_RKIND) :: pi = 4*atan(1.0)
   character (len=2048) :: filename
   real(kind=APP_RKIND), dimension(:,:), pointer :: dispIncr
   character (len=64) :: onSphere
-  real(kind=MPAS_RKIND) :: sphereRadius
+  real(kind=MPAS_RKIND) :: sphereRadius, xComputed, yComputed, zComputed
   integer, dimension(:), pointer :: nEdgesOnCell
   real(kind=MPAS_RKIND), dimension(:), pointer :: xVertex, yVertex, zVertex
   real(kind=MPAS_RKIND), dimension(:), pointer :: latVertex, lonVertex
@@ -94,20 +94,29 @@ program main
   call polympo_createMPs(mpMesh,nCells,numMPs,c_loc(mpsPerElm),c_loc(mp2Elm),c_loc(isMPActive))
   do i = 1, nCells
     if (.true.) then
-      do n = 1, nEdgesOnCell(i)
-        j = verticesOnCell(n,i)
+      do k = 1, nEdgesOnCell(i)
+        j = verticesOnCell(k,i)
         x = x + xVertex(j) 
         y = y + yVertex(j) 
         z = z + zVertex(j) 
+        !xComputed = sphereRadius*cos(lonVertex(j))*cos(latVertex(j))
+        !yComputed = sphereRadius*sin(lonVertex(j))*cos(latVertex(j))
+        !zComputed = sphereRadius*sin(latVertex(j))
+        xComputed = sphereRadius*cos(latVertex(j))*cos(lonVertex(j))
+        yComputed = sphereRadius*cos(latVertex(j))*sin(lonVertex(j))
+        zComputed = sphereRadius*sin(latVertex(j))
+        write(*,*)  xVertex(i), xComputed
+        write(*,*)  yVertex(i), yComputed
+        write(*,*)  zVertex(i), zComputed
       end do
       x = x/nEdgesOnCell(i)
       y = y/nEdgesOnCell(i)
       z = z/nEdgesOnCell(i)
       ! normalize
-      n = sqrt(x*x + y*y + z*z)
-      x = x/n * sphereRadius
-      y = y/n * sphereRadius
-      z = z/n * sphereRadius
+      radius = sqrt(x*x + y*y + z*z)! assuming sphere center to be at origin
+      x = x/radius * sphereRadius
+      y = y/radius * sphereRadius
+      z = z/radius * sphereRadius
       mpPosition(1,i) = x
       mpPosition(2,i) = y
       mpPosition(3,i) = z
@@ -131,10 +140,15 @@ program main
       minlon = lonVertex(j)
     endif
   end do
-  delta = maxlon - minlon
+  !todo setLatLonMPPositions
+  !todo setXYZMPPositions
+  
+  deltaLon = maxlon - minlon
+  !todo getLatLonMPPositions
   do i = 1,numMPs
-    dispIncr(1,i) = 0
-    dispIncr(2,i) = delta
+    ! R*cos(latMP) *deltaLon
+    dispIncr(1,i) = 0!sphereRadius*cos(
+    dispIncr(2,i) = deltaLon
   end do
   call polympo_setMeshOnSurfDispIncr(mpMesh, nCompsDisp, nVertices, c_loc(dispIncr))
   call polympo_push(mpMesh)

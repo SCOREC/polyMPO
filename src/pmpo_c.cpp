@@ -35,6 +35,7 @@ MPMesh_ptr polympo_createMPMesh_f(int testMeshOption, int testMPOption) {
   }
   polyMPO::MaterialPoints* p_mps;
   if(testMPOption){
+    PMT_ALWAYS_ASSERT(testMeshOption >= 1);
     p_mps = polyMPO::initTestMPs(p_mesh, testMPOption);
   }else{
     p_mps = new polyMPO::MaterialPoints();  

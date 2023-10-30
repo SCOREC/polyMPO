@@ -278,12 +278,12 @@ module polympo
   !> @param mpMesh(in) mpMesh object
   !> @param numVtxs(return)) the number of vertices
   !---------------------------------------------------------------------------
-  function polympo_getMeshNumVtxs(mpMesh) result(numVtxs) &
-            bind(C, NAME = 'polympo_getMeshNumVtxs')
+  subroutine polympo_getMeshNumVertices(mpMesh, numVtx) &
+            bind(C, NAME = 'polympo_getMeshNumVertices')
     use :: iso_c_binding
     type(c_ptr), value :: mpMesh
-    integer(c_int), intent(inout) :: numVtxs
-  end function
+    integer(c_int), intent(inout) :: numVtx
+  end subroutine
   !---------------------------------------------------------------------------
   !> @brief set the polympo mesh number of edges per element
   !>        modifies mesh topology polympo_startMeshFill required

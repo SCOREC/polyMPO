@@ -64,8 +64,8 @@ program main
   do i = 1,numMPs 
     call assert(abs(MPPositions(3,i) - 1.1) .lt. test_epsilon, "Assert zPositions for MP array Fail")
   end do
-  call polyMPO_getMeshNumVertices(mpMesh, nvertsGet)
-  call assert(nverts.ne.nvertsGet,"num. verts mismatch")
+  call polympo_getMeshNumVertices(mpMesh, nvertsGet)
+  call assert(nverts.eq.nvertsGet,"num. verts mismatch")
   do i = 1,numCompsVel
     do j = 1,nverts 
         Mesharray(i,j) = (i-1)*numCompsVel + j

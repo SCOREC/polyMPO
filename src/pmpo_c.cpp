@@ -23,7 +23,7 @@ void polympo_finalize_f() {
   Kokkos::finalize();
 }
 
-MPMesh_ptr polympo_createMPMesh_f(int testMeshOption, int testMPOption) {
+MPMesh_ptr polympo_createMPMesh_f(const int testMeshOption, const int testMPOption) {
   polyMPO::Mesh* p_mesh;
   if(testMeshOption){
     int replicateFactor = 1;
@@ -76,7 +76,7 @@ typedef kkViewHostU<int**> kkInt2dViewHostU;//TODO:put it somewhere else (maybe)
 typedef kkViewHostU<int*> kkIntViewHostU;//TODO:put it somewhere else (maybe)
 
 template <typename SpaceT, typename DataT>
-auto create_mirror_view_and_copy(SpaceT space_t, DataT array, int size){
+auto create_mirror_view_and_copy(SpaceT space_t, DataT array, const int size){
   kkViewHostU<DataT> temp_host(array, size);
   return Kokkos::create_mirror_view_and_copy(space_t, temp_host);
 }
@@ -147,9 +147,9 @@ void polympo_createMPs_f(MPMesh_ptr p_mpmesh,
 }
 
 void polympo_rebuildMPs_f(MPMesh_ptr p_mpmesh,
-                        const int numMPs, // total number of MPs which is GREATER than or equal to number of active MPs
-                        const int* allMP2Elm,
-                        const int* addedMPMask) {
+                         const int numMPs, // total number of MPs which is GREATER than or equal to number of active MPs
+                         const int* allMP2Elm,
+                         const int* addedMPMask) {
   checkMPMeshValid(p_mpmesh);
   auto p_MPs = ((polyMPO::MPMesh*)p_mpmesh)->p_MPs;
   PMT_ALWAYS_ASSERT(numMPs >= p_MPs->getCount());
@@ -203,7 +203,7 @@ void polympo_rebuildMPs_f(MPMesh_ptr p_mpmesh,
 }
 
 void polympo_getMPCurElmID_f(MPMesh_ptr p_mpmesh,
-                           int numMPs,
+                           const int numMPs,
                            int* elmIDs){
   checkMPMeshValid(p_mpmesh);
   auto p_MPs = ((polyMPO::MPMesh*)p_mpmesh)->p_MPs;
@@ -225,8 +225,8 @@ void polympo_getMPCurElmID_f(MPMesh_ptr p_mpmesh,
 }
 
 void polympo_setMPPositions_f(MPMesh_ptr p_mpmesh,
-                            int numComps,
-                            int numMPs,
+                            const int numComps,
+                            const int numMPs,
                             double* mpPositionsIn){
   static int callCount = 0;
   PMT_ALWAYS_ASSERT(callCount == 0);
@@ -253,8 +253,8 @@ void polympo_setMPPositions_f(MPMesh_ptr p_mpmesh,
 }
 
 void polympo_getMPPositions_f(MPMesh_ptr p_mpmesh,
-                            int numComps,
-                            int numMPs,
+                            const int numComps,
+                            const int numMPs,
                             double* mpPositionsHost){
   checkMPMeshValid(p_mpmesh);
   auto p_MPs = ((polyMPO::MPMesh*)p_mpmesh)->p_MPs;
@@ -277,7 +277,7 @@ void polympo_getMPPositions_f(MPMesh_ptr p_mpmesh,
   Kokkos::deep_copy(arrayHost, mpPositionsCopy);
 }
 
-void polympo_setMPVel_f(MPMesh_ptr p_mpmesh, int size, double* array) {
+void polympo_setMPVel_f(MPMesh_ptr p_mpmesh, const int size, double* array) {
   fprintf(stderr,"%s is no longer supported\n", __func__);
   PMT_ALWAYS_ASSERT(false);
   (void)p_mpmesh;// to silence the unused param warning
@@ -285,7 +285,7 @@ void polympo_setMPVel_f(MPMesh_ptr p_mpmesh, int size, double* array) {
   (void)array;
 }
 
-void polympo_getMPVel_f(MPMesh_ptr p_mpmesh, int size, double* array) {
+void polympo_getMPVel_f(MPMesh_ptr p_mpmesh, const int size, double* array) {
   fprintf(stderr,"%s is no longer supported\n", __func__);
   PMT_ALWAYS_ASSERT(false);
   (void)p_mpmesh;// to silence the unused param warning
@@ -305,13 +305,13 @@ void polympo_endMeshFill_f(MPMesh_ptr p_mpmesh){
   p_mesh->setMeshEdit(false);  
 }
 
-void polympo_checkMeshMaxSettings_f(MPMesh_ptr p_mpmesh, int maxEdges, int vertexDegree){
+void polympo_checkMeshMaxSettings_f(MPMesh_ptr p_mpmesh, const int maxEdges, const int vertexDegree){
   checkMPMeshValid(p_mpmesh);
   PMT_ALWAYS_ASSERT(maxEdges <= maxVtxsPerElm);
   PMT_ALWAYS_ASSERT(vertexDegree <=  maxElmsPerVtx);
 }
 
-void polympo_setMeshNumVtxs_f(MPMesh_ptr p_mpmesh, int numVtxs){
+void polympo_setMeshNumVtxs_f(MPMesh_ptr p_mpmesh, const int numVtxs){
   checkMPMeshValid(p_mpmesh);
   auto p_mesh = ((polyMPO::MPMesh*)p_mpmesh)->p_mesh;
   p_mesh->setNumVtxs(numVtxs);
@@ -325,7 +325,7 @@ int polympo_getMeshNumVtxs_f(MPMesh_ptr p_mpmesh) {
   return nVtxs;
 }
 
-void polympo_setMeshNumElms_f(MPMesh_ptr p_mpmesh, int numElms){
+void polympo_setMeshNumElms_f(MPMesh_ptr p_mpmesh, const int numElms){
   checkMPMeshValid(p_mpmesh);
   auto p_mesh = ((polyMPO::MPMesh*)p_mpmesh)->p_mesh;
 
@@ -368,7 +368,7 @@ void polympo_setMeshGeomTypeSpherical_f(MPMesh_ptr p_mpmesh){
   ((polyMPO::MPMesh*)p_mpmesh)->p_mesh->setGeomType(polyMPO::geom_spherical_surf);
 }
 
-void polympo_setMeshSphereRadius_f(MPMesh_ptr p_mpmesh, double sphereRadius){
+void polympo_setMeshSphereRadius_f(MPMesh_ptr p_mpmesh, const double sphereRadius){
   //chech validity
   checkMPMeshValid(p_mpmesh);
   auto p_mesh = ((polyMPO::MPMesh*)p_mpmesh)->p_mesh;
@@ -376,7 +376,7 @@ void polympo_setMeshSphereRadius_f(MPMesh_ptr p_mpmesh, double sphereRadius){
   p_mesh->setSphereRadius(sphereRadius);
 }
 
-void polympo_setMeshNumEdgesPerElm_f(MPMesh_ptr p_mpmesh, int nCells, int* array){
+void polympo_setMeshNumEdgesPerElm_f(MPMesh_ptr p_mpmesh, const int nCells, int* array){
   //chech vailidity
   checkMPMeshValid(p_mpmesh);
   kkIntViewHostU arrayHost(array,nCells);
@@ -396,7 +396,7 @@ void polympo_setMeshNumEdgesPerElm_f(MPMesh_ptr p_mpmesh, int nCells, int* array
   });
 }
 
-void polympo_setMeshElm2VtxConn_f(MPMesh_ptr p_mpmesh, int maxEdges, int nCells, int* array){
+void polympo_setMeshElm2VtxConn_f(MPMesh_ptr p_mpmesh, const int maxEdges, const int nCells, int* array){
   //chech vailidity
   checkMPMeshValid(p_mpmesh);
   kkInt2dViewHostU arrayHost(array,maxEdges,nCells); 
@@ -417,7 +417,7 @@ void polympo_setMeshElm2VtxConn_f(MPMesh_ptr p_mpmesh, int maxEdges, int nCells,
   });
 }
 
-void polympo_setMeshElm2ElmConn_f(MPMesh_ptr p_mpmesh, int maxEdges, int nCells, int* array){
+void polympo_setMeshElm2ElmConn_f(MPMesh_ptr p_mpmesh, const int maxEdges, const int nCells, int* array){
   //chech vailidity
   checkMPMeshValid(p_mpmesh);
   kkInt2dViewHostU arrayHost(array,maxEdges,nCells); //Fortran is column-major
@@ -438,7 +438,7 @@ void polympo_setMeshElm2ElmConn_f(MPMesh_ptr p_mpmesh, int maxEdges, int nCells,
   });
 }
 
-void polympo_setMeshVtxCoords_f(MPMesh_ptr p_mpmesh, int nVertices, double* xArray, double* yArray, double* zArray){
+void polympo_setMeshVtxCoords_f(MPMesh_ptr p_mpmesh, const int nVertices, double* xArray, double* yArray, double* zArray){
   //chech validity
   checkMPMeshValid(p_mpmesh);
   auto p_mesh = ((polyMPO::MPMesh*)p_mpmesh)->p_mesh;
@@ -457,7 +457,7 @@ void polympo_setMeshVtxCoords_f(MPMesh_ptr p_mpmesh, int nVertices, double* xArr
   Kokkos::deep_copy(coordsArray, h_coordsArray);
 }
 
-void polympo_getMeshVtxCoords_f(MPMesh_ptr p_mpmesh, int nVertices, double* xArray, double* yArray, double* zArray){
+void polympo_getMeshVtxCoords_f(MPMesh_ptr p_mpmesh, const int nVertices, double* xArray, double* yArray, double* zArray){
   //chech validity
   checkMPMeshValid(p_mpmesh);
   auto p_mesh = ((polyMPO::MPMesh*)p_mpmesh)->p_mesh;
@@ -476,7 +476,7 @@ void polympo_getMeshVtxCoords_f(MPMesh_ptr p_mpmesh, int nVertices, double* xArr
   }
 }
 
-void polympo_setMeshOnSurfVeloIncr_f(MPMesh_ptr p_mpmesh, int nComps, int nVertices, double* array) {
+void polympo_setMeshOnSurfVeloIncr_f(MPMesh_ptr p_mpmesh, const int nComps, const int nVertices, double* array) {
   //check mpMesh is valid
   checkMPMeshValid(p_mpmesh);
   auto p_mesh = ((polyMPO::MPMesh*)p_mpmesh)->p_mesh;
@@ -492,7 +492,7 @@ void polympo_setMeshOnSurfVeloIncr_f(MPMesh_ptr p_mpmesh, int nComps, int nVerti
   Kokkos::deep_copy(vtxField,arrayHost);
 }
 
-void polympo_getMeshOnSurfVeloIncr_f(MPMesh_ptr p_mpmesh, int nComps, int nVertices, double* array) {
+void polympo_getMeshOnSurfVeloIncr_f(MPMesh_ptr p_mpmesh, const int nComps, const int nVertices, double* array) {
   //check mpMesh is valid
   checkMPMeshValid(p_mpmesh);
   auto p_mesh = ((polyMPO::MPMesh*)p_mpmesh)->p_mesh;
@@ -509,7 +509,7 @@ void polympo_getMeshOnSurfVeloIncr_f(MPMesh_ptr p_mpmesh, int nComps, int nVerti
   Kokkos::deep_copy(arrayHost, vtxField);
 }
 
-void polympo_setMeshOnSurfDispIncr_f(MPMesh_ptr p_mpmesh, int nComps, int nVertices, double* array) {
+void polympo_setMeshOnSurfDispIncr_f(MPMesh_ptr p_mpmesh, const int nComps, const int nVertices, double* array) {
   //check mpMesh is valid
   checkMPMeshValid(p_mpmesh);
   auto p_mesh = ((polyMPO::MPMesh*)p_mpmesh)->p_mesh;
@@ -525,7 +525,7 @@ void polympo_setMeshOnSurfDispIncr_f(MPMesh_ptr p_mpmesh, int nComps, int nVerti
   Kokkos::deep_copy(vtxField,arrayHost);
 }
 
-void polympo_getMeshOnSurfDispIncr_f(MPMesh_ptr p_mpmesh, int nComps, int nVertices, double* array) {
+void polympo_getMeshOnSurfDispIncr_f(MPMesh_ptr p_mpmesh, const int nComps, const int nVertices, double* array) {
   //check mpMesh is valid
   checkMPMeshValid(p_mpmesh);
   auto p_mesh = ((polyMPO::MPMesh*)p_mpmesh)->p_mesh;

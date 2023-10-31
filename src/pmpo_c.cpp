@@ -3,6 +3,8 @@
 #include "pmpo_c.h"
 #include <stdio.h>
 
+using space_t = Kokkos::DefaultExecutionSpace::memory_space;
+
 namespace{
   std::vector<MPMesh_ptr> p_mpmeshes;////store the p_mpmeshes that is legal
     
@@ -75,10 +77,10 @@ typedef kkViewHostU<double**> kkDbl2dViewHostU;//TODO:put it somewhere else (may
 typedef kkViewHostU<int**> kkInt2dViewHostU;//TODO:put it somewhere else (maybe)
 typedef kkViewHostU<int*> kkIntViewHostU;//TODO:put it somewhere else (maybe)
 
-template <typename SpaceT, typename DataT>
-auto create_mirror_view_and_copy(SpaceT space_t, DataT array, const int size){
+template <typename DataT>
+auto create_mirror_view_and_copy(DataT array, const int size){
   kkViewHostU<DataT> temp_host(array, size);
-  return Kokkos::create_mirror_view_and_copy(space_t, temp_host);
+  return Kokkos::create_mirror_view_and_copy(space_t(), temp_host);
 }
 
 void polympo_createMPs_f(MPMesh_ptr p_mpmesh,
@@ -134,10 +136,9 @@ void polympo_createMPs_f(MPMesh_ptr p_mpmesh,
   //TODO do we care about empty ranks? check just in case...
   PMT_ALWAYS_ASSERT(numActiveMPs>0);
 
-  using space_t = Kokkos::DefaultExecutionSpace::memory_space;
-  auto mpsPerElm_d = create_mirror_view_and_copy(space_t(), mpsPerElm, numElms);
-  auto active_mp2Elm_d = create_mirror_view_and_copy(space_t(), active_mp2Elm.data(), numActiveMPs);
-  auto active_mpIDs_d = create_mirror_view_and_copy(space_t(), active_mpIDs.data(), numActiveMPs);
+  auto mpsPerElm_d = create_mirror_view_and_copy(mpsPerElm, numElms);
+  auto active_mp2Elm_d = create_mirror_view_and_copy(active_mp2Elm.data(), numActiveMPs);
+  auto active_mpIDs_d = create_mirror_view_and_copy(active_mpIDs.data(), numActiveMPs);
 
   delete ((polyMPO::MPMesh*)p_mpmesh)->p_MPs;
   ((polyMPO::MPMesh*)p_mpmesh)->p_MPs =
@@ -171,11 +172,10 @@ void polympo_rebuildMPs_f(MPMesh_ptr p_mpmesh,
   Kokkos::View<int*> mp2Elm("mp2Elm", internalMPCapacity);
   auto mpAppID = p_MPs->getData<polyMPO::MPF_MP_APP_ID>();
 
-  using space_t = Kokkos::DefaultExecutionSpace::memory_space;
-  auto added_mp2Elm_d = create_mirror_view_and_copy(space_t(), added_mp2Elm.data(), numAddedMPs);
-  auto added_mpIDs_d = create_mirror_view_and_copy(space_t(), added_mpIDs.data(), numAddedMPs);
-  auto addedMPMask_d = create_mirror_view_and_copy(space_t(), addedMPMask, numMPs);
-  auto mpMP2ElmIn_d = create_mirror_view_and_copy(space_t(), allMP2Elm, numMPs);
+  auto added_mp2Elm_d = create_mirror_view_and_copy(added_mp2Elm.data(), numAddedMPs);
+  auto added_mpIDs_d = create_mirror_view_and_copy(added_mpIDs.data(), numAddedMPs);
+  auto addedMPMask_d = create_mirror_view_and_copy(addedMPMask, numMPs);
+  auto mpMP2ElmIn_d = create_mirror_view_and_copy(allMP2Elm, numMPs);
 
   auto setMP2Elm = PS_LAMBDA(const int& elm, const int& mp, const int& mask) {
     if(mask) {
@@ -539,6 +539,7 @@ void polympo_getMeshOnSurfDispIncr_f(MPMesh_ptr p_mpmesh, const int nComps, cons
   PMT_ALWAYS_ASSERT(static_cast<size_t>(nVertices*vec2d_nEntries)==vtxField.size());
 
   //copy the device array to the host
+
   Kokkos::deep_copy(arrayHost, vtxField);
 }
 

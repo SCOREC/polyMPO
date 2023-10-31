@@ -1,10 +1,7 @@
 #include "pmpo_createTestMPMesh.hpp"
+#include "pmpo_defines.h"
 #include "pmpo_c.h"
 #include <stdio.h>
-
-#define MP_DETACHED -1 //TODO: consider other ways later, like enum
-#define MP_ACTIVE 1
-#define MP_DELETE -1
 
 namespace{
   std::vector<MPMesh_ptr> p_mpmeshes;////store the p_mpmeshes that is legal

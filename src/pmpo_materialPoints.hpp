@@ -3,13 +3,12 @@
 
 #include "pmpo_utils.hpp"
 #include "pmpo_mesh.hpp"
+#include "pmpo_defines.h"
 
 #include <pumipic_kktypes.hpp>
 #include <particle_structs.hpp>
 #include <Kokkos_Core.hpp>
 #include <map>
-
-#define MP_ACTIVE 1
 
 namespace polyMPO{
 

@@ -1,9 +1,7 @@
 #include "pmpo_createTestMPMesh.hpp"
+#include "pmpo_defines.h"
 #include "pmpo_c.h"
 #include <stdio.h>
-
-#define MP_DETACHED -1 //TODO: consider other ways later, like enum
-#define MP_ACTIVE 1
 
 namespace{
   std::vector<MPMesh_ptr> p_mpmeshes;////store the p_mpmeshes that is legal
@@ -64,47 +62,31 @@ void polympo_setMPICommunicator_f(MPI_Fint fcomm){
  * allocations.
  */
 //TODO: order of these typedefs to be done later
-typedef Kokkos::View<
-          double*,
+template<typename DataT>
+using kkViewHostU = Kokkos::View<
+          DataT,
           Kokkos::LayoutLeft,
           Kokkos::DefaultHostExecutionSpace,
-          Kokkos::MemoryTraits<Kokkos::Unmanaged>
-        > kkDblViewHostU;//TODO:put it to mesh.hpp
-                         
-typedef Kokkos::View<
-          double*[vec2d_nEntries],
-          Kokkos::LayoutLeft,
-          Kokkos::DefaultHostExecutionSpace,
-          Kokkos::MemoryTraits<Kokkos::Unmanaged>
-        > kkVec2dViewHostU;//TODO:put it to mesh.hpp
+          Kokkos::MemoryTraits<Kokkos::Unmanaged>>;
 
-typedef Kokkos::View<
-          double**,
-          Kokkos::LayoutLeft,
-          Kokkos::DefaultHostExecutionSpace,
-          Kokkos::MemoryTraits<Kokkos::Unmanaged>
-        > kkDbl2dViewHostU;//TODO:put it somewhere else (maybe)
+typedef kkViewHostU<double*> kkDblViewHostU;//TODO:put it to mesh.hpp             
+typedef kkViewHostU<double*[vec2d_nEntries]> kkVec2dViewHostU;//TODO:put it to mesh.hpp
+typedef kkViewHostU<double**> kkDbl2dViewHostU;//TODO:put it somewhere else (maybe)
+typedef kkViewHostU<int**> kkInt2dViewHostU;//TODO:put it somewhere else (maybe)
+typedef kkViewHostU<int*> kkIntViewHostU;//TODO:put it somewhere else (maybe)
 
-typedef Kokkos::View<
-          int**,
-          Kokkos::LayoutLeft,
-          Kokkos::DefaultHostExecutionSpace,
-          Kokkos::MemoryTraits<Kokkos::Unmanaged>
-        > kkInt2dViewHostU;//TODO:put it somewhere else (maybe)
-
-typedef Kokkos::View<
-          int*,
-          Kokkos::LayoutLeft,
-          Kokkos::DefaultHostExecutionSpace,
-          Kokkos::MemoryTraits<Kokkos::Unmanaged>
-        > kkIntViewHostU;//TODO:put it somewhere else (maybe)
+template <typename SpaceT, typename DataT>
+auto create_mirror_view_and_copy(SpaceT space_t, DataT array, int size){
+  kkViewHostU<DataT> temp_host(array, size);
+  return Kokkos::create_mirror_view_and_copy(space_t, temp_host);
+}
 
 void polympo_createMPs_f(MPMesh_ptr p_mpmesh,
-                       int numElms,
-                       int numMPs, // >= number of active MPs
-                       int* mpsPerElm,
-                       int* mp2Elm,
-                       int* isMPActive) {
+                       const int numElms,
+                       const int numMPs, // total number of MPs which is GREATER than or equal to number of active MPs
+                       const int* mpsPerElm,
+                       const int* mp2Elm,
+                       const int* isMPActive) {
   checkMPMeshValid(p_mpmesh);
 
   //the mesh must be fixed/set before adding MPs
@@ -143,7 +125,7 @@ void polympo_createMPs_f(MPMesh_ptr p_mpmesh,
   int numActiveMPs = 0;
   for(int i=0; i<numMPs; i++) {
     if(isMPActive[i] == MP_ACTIVE) {
-      active_mpIDs[numActiveMPs] = i;
+      active_mpIDs[numActiveMPs] = i; //creates unique IDs
       active_mp2Elm[numActiveMPs] = mp2Elm[i]-offset; //adjust for 1 based indexing if needed
       numActiveMPs++;
     }
@@ -153,20 +135,71 @@ void polympo_createMPs_f(MPMesh_ptr p_mpmesh,
   PMT_ALWAYS_ASSERT(numActiveMPs>0);
 
   using space_t = Kokkos::DefaultExecutionSpace::memory_space;
-  kkIntViewHostU mpsPerElm_h(mpsPerElm,numElms);
-  auto mpsPerElm_d = Kokkos::create_mirror_view_and_copy(space_t(), mpsPerElm_h);
-
-  kkIntViewHostU active_mp2Elm_h(active_mp2Elm.data(),numActiveMPs);
-  auto active_mp2Elm_d = Kokkos::create_mirror_view_and_copy(space_t(), active_mp2Elm_h);
-
-  kkIntViewHostU active_mpIDs_h(active_mpIDs.data(),numActiveMPs);
-  auto active_mpIDs_d = Kokkos::create_mirror_view_and_copy(space_t(), active_mpIDs_h);
+  auto mpsPerElm_d = create_mirror_view_and_copy(space_t(), mpsPerElm, numElms);
+  auto active_mp2Elm_d = create_mirror_view_and_copy(space_t(), active_mp2Elm.data(), numActiveMPs);
+  auto active_mpIDs_d = create_mirror_view_and_copy(space_t(), active_mpIDs.data(), numActiveMPs);
 
   delete ((polyMPO::MPMesh*)p_mpmesh)->p_MPs;
   ((polyMPO::MPMesh*)p_mpmesh)->p_MPs =
      new polyMPO::MaterialPoints(numElms, numActiveMPs, mpsPerElm_d, active_mp2Elm_d, active_mpIDs_d);
   auto p_MPs = ((polyMPO::MPMesh*)p_mpmesh)->p_MPs;
   p_MPs->setElmIDoffset(offset);
+}
+
+void polympo_rebuildMPs_f(MPMesh_ptr p_mpmesh,
+                        const int numMPs, // total number of MPs which is GREATER than or equal to number of active MPs
+                        const int* allMP2Elm,
+                        const int* addedMPMask) {
+  checkMPMeshValid(p_mpmesh);
+  auto p_MPs = ((polyMPO::MPMesh*)p_mpmesh)->p_MPs;
+  PMT_ALWAYS_ASSERT(numMPs >= p_MPs->getCount());
+  PMT_ALWAYS_ASSERT(numMPs >= p_MPs->getMaxAppID());
+
+  int offset = p_MPs->getElmIDoffset();
+  std::vector<int> added_mpIDs(numMPs);
+  std::vector<int> added_mp2Elm(numMPs);
+  int numAddedMPs = 0;
+  for(int i=0; i<numMPs; i++) {
+    if(addedMPMask[i] == MP_ACTIVE) {
+      added_mpIDs[numAddedMPs] = i;
+      added_mp2Elm[numAddedMPs] = allMP2Elm[i]-offset; //adjust for 1 based indexing if needed
+      numAddedMPs++;
+    }
+  }
+
+  int internalMPCapacity = p_MPs->getCapacity(); // pumipic expects full capacity to rebuild
+  Kokkos::View<int*> mp2Elm("mp2Elm", internalMPCapacity);
+  auto mpAppID = p_MPs->getData<polyMPO::MPF_MP_APP_ID>();
+
+  using space_t = Kokkos::DefaultExecutionSpace::memory_space;
+  auto added_mp2Elm_d = create_mirror_view_and_copy(space_t(), added_mp2Elm.data(), numAddedMPs);
+  auto added_mpIDs_d = create_mirror_view_and_copy(space_t(), added_mpIDs.data(), numAddedMPs);
+  auto addedMPMask_d = create_mirror_view_and_copy(space_t(), addedMPMask, numMPs);
+  auto mpMP2ElmIn_d = create_mirror_view_and_copy(space_t(), allMP2Elm, numMPs);
+
+  auto setMP2Elm = PS_LAMBDA(const int& elm, const int& mp, const int& mask) {
+    if(mask) {
+      if (addedMPMask_d[mpAppID(mp)] == MP_ACTIVE) //two MPs can not occupy the same slot
+        mp2Elm(mp) = MP_DELETE;
+      else
+        mp2Elm(mp) = mpMP2ElmIn_d(mpAppID(mp));
+    }
+  };
+  p_MPs->parallel_for(setMP2Elm, "setMP2Elm");
+  p_MPs->rebuild(mp2Elm, numAddedMPs, added_mp2Elm_d, added_mpIDs_d);
+
+  // check mpAppID is unique (on GPUs)
+  if (p_MPs->getOpMode() == polyMPO::MP_DEBUG){
+    mpAppID = p_MPs->getData<polyMPO::MPF_MP_APP_ID>();
+    Kokkos::View<int*> mpAppIDCount("mpAppIDCount", p_MPs->getCount());
+    auto checkAppIDs = PS_LAMBDA(const int& elm, const int& mp, const int& mask){
+      if(mask) {
+        int prev = Kokkos::atomic_fetch_add(&mpAppIDCount(mpAppID(mp)), 1);
+        assert(prev == 0);
+      }
+    };
+    p_MPs->parallel_for(checkAppIDs, "checkAppIDs");
+  }
 }
 
 void polympo_getMPCurElmID_f(MPMesh_ptr p_mpmesh,

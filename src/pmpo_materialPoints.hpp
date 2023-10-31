@@ -3,6 +3,7 @@
 
 #include "pmpo_utils.hpp"
 #include "pmpo_mesh.hpp"
+#include "pmpo_defines.h"
 
 #include <pumipic_kktypes.hpp>
 #include <particle_structs.hpp>
@@ -45,6 +46,11 @@ enum MaterialPointSlice {
   MPF_Shear_Traction,    //15
   MPF_Constv_Mdl_Param,
   MPF_MP_APP_ID
+};
+
+enum Operating_Mode{
+  MP_RELEASE,
+  MP_DEBUG
 };
 
 const static std::map<MaterialPointSlice, std::pair<int,MeshFieldIndex>> 
@@ -96,23 +102,28 @@ typedef ps::ParticleStructure<MaterialPointTypes> PS;
 
 PS* createDPS(int numElms, int numMPs, DoubleVec3dView positions, IntView mpsPerElm, IntView mp2elm);
 PS* createDPS(int numElms, int numMPs, IntView mpsPerElm, IntView mp2elm, IntView mpAppID);
-int getMaxAppID(IntView mpAppID);
+void updateMaxAppID();
+
+pumipic::MemberTypeViews createInternalMemberViews(int newNumMPs, IntView newMp2elm, IntView newMpAppID);
 
 class MaterialPoints {
   private:
     PS* MPs;
     int elmIDoffset = -1;
     int maxAppID = -1;
+    Operating_Mode operating_mode;
 
   public:
     MaterialPoints() : MPs(nullptr) {};
     MaterialPoints(int numElms, int numMPs, DoubleVec3dView positions, IntView mpsPerElm, IntView mp2elm) {
       MPs = createDPS(numElms, numMPs, positions, mpsPerElm, mp2elm);
       maxAppID = numMPs; //this ctor does not support inactive MPs
+      operating_mode = MP_RELEASE;
     };
     MaterialPoints(int numElms, int numMPs, IntView mpsPerElm, IntView mp2elm, IntView mpAppID) {
       MPs = createDPS(numElms, numMPs, mpsPerElm, mp2elm, mpAppID);
-      maxAppID = polyMPO::getMaxAppID(mpAppID);
+      updateMaxAppID();
+      operating_mode = MP_RELEASE;
     };
     ~MaterialPoints() {
       if(MPs != nullptr)
@@ -129,6 +140,11 @@ class MaterialPoints {
       ps::parallel_for(MPs, setTgtElm, "setTargetElement");
       MPs->rebuild(tgtElm);
     }
+    void rebuild(IntView tgtElm, int newNumMPs, IntView newMP2elm, IntView newMPAppID) {
+      auto newMPInfo = createInternalMemberViews(newNumMPs, newMP2elm, newMPAppID);
+      MPs->rebuild(tgtElm, newMP2elm, newMPInfo);
+      updateMaxAppID();
+    }
     void updateMPElmID(){
       auto curElmID = MPs->get<MPF_Cur_Elm_ID>();
       auto tgtElmID = MPs->get<MPF_Tgt_Elm_ID>();
@@ -139,6 +155,17 @@ class MaterialPoints {
         }
       };
       ps::parallel_for(MPs, swap, "swap");
+    }
+    void updateMaxAppID() {
+      auto mpInfo = ps::createMemberViews<MaterialPointTypes>(MPs->nPtcls());
+      auto mpAppID_m = ps::getMemberView<MaterialPointTypes, MPF_MP_APP_ID>(mpInfo);
+      maxAppID = 0;
+      Kokkos::parallel_reduce("setMax" , mpAppID_m.size(),
+        KOKKOS_LAMBDA(const int i, int & valueToUpdate) {
+          if ( mpAppID_m(i) > valueToUpdate ) valueToUpdate = mpAppID_m(i) ;
+        },
+        Kokkos::Max<int>(maxAppID)
+      );
     }
     template <MaterialPointSlice mpfIndexCur, MaterialPointSlice mpfIndexTgt>
     void updateMPSlice(){
@@ -172,9 +199,14 @@ class MaterialPoints {
     void parallel_for(FunctorType kernel, std::string name="") {
       ps::parallel_for(MPs, kernel, name);
     }
+    int getCapacity() { return MPs->capacity(); }
     int getCount() { return MPs->nPtcls(); }
     auto getPositions() { return getData<MPF_Cur_Pos_XYZ>(); }
 
+    Operating_Mode getOpMode() { return operating_mode; }
+    void setOpMode(Operating_Mode op_mode) {
+      operating_mode = op_mode;
+    }
     void setElmIDoffset(int offset) {
       PMT_ALWAYS_ASSERT(offset == 0 || offset == 1);
       elmIDoffset = offset;

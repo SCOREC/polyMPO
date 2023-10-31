@@ -9,7 +9,7 @@ pumipic::MemberTypeViews createInternalMemberViews(int numMPs, IntView mp2elm, I
   auto mpStatus_m = ps::getMemberView<MaterialPointTypes, MPF_Status>(mpInfo);
   Kokkos::parallel_for("setMPinfo", numMPs, KOKKOS_LAMBDA(int i) {
     mpCurElmPos_m(i) = mp2elm(i);
-    mpStatus_m(i) = 1;
+    mpStatus_m(i) = MP_ACTIVE;
     mpAppID_m(i) = mpAppID(i);
   });
   return mpInfo;
@@ -27,7 +27,7 @@ PS* createDPS(int numElms, int numMPs, DoubleVec3dView positions, IntView mpsPer
     mpPositions(i,1) = positions(i,1);
     mpPositions(i,2) = positions(i,2);
     mpCurElmPos(i) = mp2elm(i);
-    mpStatus(i) = 1; 
+    mpStatus(i) = MP_ACTIVE; 
     mpAppID_m(i) = i;
   });
   Kokkos::TeamPolicy<Kokkos::DefaultExecutionSpace> policy(numElms,Kokkos::AUTO);

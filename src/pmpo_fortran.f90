@@ -74,9 +74,9 @@ module polympo
   !> @brief move MPs to a new element, add new MPs, or delete MPs
   !> @brief the fields associated with the MPs are NOT initialized
   !> @param mpmesh(in/out) MPMesh object
-  !> @param newNumMPs(in) number of MPs to add to MPMesh
-  !> @param allMP2Elm(in) the target element for each MP
-  !> @param addedMPMask(in) set to 1 each new MP, 0 otherwise
+  !> @param numMPs(in) total number of MPs, total = number of active + number of inactive
+  !> @param allMP2Elm(in) the target element for each MP (length of numMPs)
+  !> @param addedMPMask(in) set to 1 for each new MP, 0 otherwise (length of numMPs)
   !---------------------------------------------------------------------------
   subroutine polympo_rebuildMPs(mpMesh, numMPs, allMP2Elm, addedMPMask) &
     bind(C, NAME='polympo_rebuildMPs_f')

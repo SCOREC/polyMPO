@@ -182,7 +182,7 @@ void polympo_rebuildMPs_f(MPMesh_ptr p_mpmesh,
 
   auto setMP2Elm = PS_LAMBDA(const int& elm, const int& mp, const int& mask) {
     if(mask) {
-      if (addedMPMask_d[mpAppID(mp)] == MP_ACTIVE)
+      if (addedMPMask_d[mpAppID(mp)] == MP_ACTIVE) //two MPs can not occupy the same slot
         mp2Elm(mp) = MP_DELETE;
       else
         mp2Elm(mp) = mpMP2ElmIn_d(mpAppID(mp));

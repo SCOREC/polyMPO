@@ -9,6 +9,8 @@
 #include <Kokkos_Core.hpp>
 #include <map>
 
+#define MP_ACTIVE 1
+
 namespace polyMPO{
 
 using particle_structs::DPS;

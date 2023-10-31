@@ -277,7 +277,7 @@ void polympo_getMPPositions_f(MPMesh_ptr p_mpmesh,
   Kokkos::deep_copy(arrayHost, mpPositionsCopy);
 }
 
-void polympo_setMPVel_f(MPMesh_ptr p_mpmesh, const int size, double* array) {
+void polympo_setMPVel_f(MPMesh_ptr p_mpmesh, const int size, const double* array) {
   fprintf(stderr,"%s is no longer supported\n", __func__);
   PMT_ALWAYS_ASSERT(false);
   (void)p_mpmesh;// to silence the unused param warning
@@ -285,7 +285,7 @@ void polympo_setMPVel_f(MPMesh_ptr p_mpmesh, const int size, double* array) {
   (void)array;
 }
 
-void polympo_getMPVel_f(MPMesh_ptr p_mpmesh, const int size, double* array) {
+void polympo_getMPVel_f(MPMesh_ptr p_mpmesh, const int size, const double* array) {
   fprintf(stderr,"%s is no longer supported\n", __func__);
   PMT_ALWAYS_ASSERT(false);
   (void)p_mpmesh;// to silence the unused param warning
@@ -539,7 +539,6 @@ void polympo_getMeshOnSurfDispIncr_f(MPMesh_ptr p_mpmesh, const int nComps, cons
   PMT_ALWAYS_ASSERT(static_cast<size_t>(nVertices*vec2d_nEntries)==vtxField.size());
 
   //copy the device array to the host
-
   Kokkos::deep_copy(arrayHost, vtxField);
 }
 

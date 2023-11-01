@@ -376,18 +376,15 @@ void polympo_setMeshSphereRadius_f(MPMesh_ptr p_mpmesh, const double sphereRadiu
   p_mesh->setSphereRadius(sphereRadius);
 }
 
-void polympo_setMeshNumEdgesPerElm_f(MPMesh_ptr p_mpmesh, const int nCells, int* array){
+void polympo_setMeshNumEdgesPerElm_f(MPMesh_ptr p_mpmesh, const int nCells, const int* array){
   //chech vailidity
   checkMPMeshValid(p_mpmesh);
-  kkIntViewHostU arrayHost(array,nCells);
   auto p_mesh = ((polyMPO::MPMesh*)p_mpmesh)->p_mesh;
   PMT_ALWAYS_ASSERT(p_mesh->meshEditable());
 
   //check the size
   PMT_ALWAYS_ASSERT(p_mesh->getNumElements()==nCells);
-  
-  polyMPO::IntView nEdgesPerElm("MeshNumEdgesPerElm",nCells);
-  Kokkos::deep_copy(nEdgesPerElm, arrayHost);
+  auto nEdgesPerElm = create_mirror_view_and_copy(array, nCells);
   auto elm2VtxConn = p_mesh->getElm2VtxConn();
   auto elm2ElmConn = p_mesh->getElm2ElmConn();
   Kokkos::parallel_for("set nEdgesPerElm", nCells, KOKKOS_LAMBDA(const int elm){

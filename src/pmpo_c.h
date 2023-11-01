@@ -43,7 +43,7 @@ void polympo_setMeshNumVtxs_f(MPMesh_ptr p_mpmesh, int numVtxs);
 int polympo_getMeshNumVtxs_f(MPMesh_ptr p_mpmesh);
 void polympo_setMeshNumElms_f(MPMesh_ptr p_mpmesh, int numElms);
 int polympo_getMeshNumElms_f(MPMesh_ptr p_mpmesh);
-void polympo_setMeshNumEdgesPerElm_f(MPMesh_ptr p_mpmesh, int nCells, int* array);
+void polympo_setMeshNumEdgesPerElm_f(MPMesh_ptr p_mpmesh, int nCells, const int* array);
 void polympo_setMeshElm2VtxConn_f(MPMesh_ptr p_mpmesh, int maxEdges, int nCells, int* array);
 void polympo_setMeshElm2ElmConn_f(MPMesh_ptr p_mpmesh, int maxEdges, int nCells, int* array);
 

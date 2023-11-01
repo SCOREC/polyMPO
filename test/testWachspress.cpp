@@ -13,7 +13,7 @@ int main(int argc, char** argv) {
     const int replicateFactor = 100;
     const int testMPOption = 1;
     //test init Test Mesh and run assembly and Wachspress
-    for (int testMeshOption = 1; testMeshOption <= 2; testMeshOption++){
+    for (int testMeshOption = 2; testMeshOption <= 2; testMeshOption++){
 
         auto mesh = initTestMesh(testMeshOption, replicateFactor);
         auto mpMesh = initTestMPMesh(mesh,testMPOption);

@@ -147,6 +147,7 @@ void getBasisAndGradByAreaGblForm3d(Vec3d MP,
             productX *= (f2 * c3 - f3 * c2)/a[index1];
             productY *= (f3 * c1 - f1 * c3)/a[index1];
             productZ *= (f1 * c2 - f2 * c1)/a[index1];
+            printf("f1: %.16e f2: %.16e, c1: %.16e c2: %.16e \n ", f1, f2, c1, c2);
 
             for (int k = j + 1; k < numVtxs - 2; k++){
                 int index2 = (i + k + 1) % numVtxs;

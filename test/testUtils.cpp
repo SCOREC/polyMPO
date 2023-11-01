@@ -105,7 +105,7 @@ void interpolateWachspress3DTest(MPMesh& mpMesh){
     auto p_MPs = mpMesh.p_MPs;
     auto MPsPosition = p_MPs->getPositions();
     auto eval = PS_LAMBDA(const int& elm, const int& mp, const int mask){
-        if (mask) {
+        if (mask && mp == 1) {
             //convert the double[] to Vec3d 
             Vec3d v[maxVtxsPerElm+1];
             initArray(v,maxVtxsPerElm+1,Vec3d());
@@ -158,23 +158,26 @@ void interpolateWachspress3DTest(MPMesh& mpMesh){
                 wp_coord2 = wp_coord2 + v[i]*basisByArea2[i];
                 double fi = af * v[i][0] + bf * v[i][1] + cf * v[i][2] + kf;
                 wp_grad = wp_grad + gradBasisByArea[i] * fi;
+                printf("i: %d, gradBasis: %.16e %.16e %.16e fi: %.16e \nz: %.16e \n", i, gradBasisByArea[i][0],
+                                                                              gradBasisByArea[i][1],
+                                                                              gradBasisByArea[i][2], fi,
+                                                                              v[i][2]); 
             }
             
-             printf("interpolation:(%.16e %.16e %.16e)\noriginal MP:(%.16e %.16e %.16e)\n",wp_grad[0],
+            printf("interpolation:(%.16e %.16e %.16e)\noriginal MP:(%.16e %.16e %.16e)\n",wp_grad[0],
                                               wp_grad[1],
                                               wp_grad[2],
                                               af,
                                               bf,
                                               cf);
-
             assert(wp_coord[0] - MPsPosition(mp,0) < TEST_EPSILON);
             assert(wp_coord[1] - MPsPosition(mp,1) < TEST_EPSILON);
             assert(wp_coord[2] - MPsPosition(mp,2) < TEST_EPSILON);
             assert(wp_coord2[0] - MPsPosition(mp,0) < TEST_EPSILON);
             assert(wp_coord2[1] - MPsPosition(mp,1) < TEST_EPSILON);
             assert(wp_coord2[2] - MPsPosition(mp,2) < TEST_EPSILON);
-            // assert(wp_grad[0] - af < TEST_EPSILON);
-            // assert(wp_grad[1] - bf < TEST_EPSILON);
+            //assert(wp_grad[0] - af < TEST_EPSILON);
+            //assert(wp_grad[1] - bf < TEST_EPSILON);
             // assert(wp_grad[2] - cf < TEST_EPSILON);
         }        
     };

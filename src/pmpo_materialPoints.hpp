@@ -129,10 +129,44 @@ class MaterialPoints {
       if(MPs != nullptr)
         delete MPs;
     }
-    void rebuild();
-    void rebuild(IntView tgtElm, int newNumMPs, IntView newMP2elm, IntView newMPAppID);
-    void updateMPElmID();
-    void updateMaxAppID();
+    void rebuild() {
+      IntView tgtElm("tgtElm", MPs->capacity());
+      auto tgtMpElm = MPs->get<MPF_Tgt_Elm_ID>();
+      auto setTgtElm = PS_LAMBDA(const int& elm, const int& mp, const int& mask) {
+        if(mask) {
+          tgtElm(mp) = tgtMpElm(mp);
+        }
+      };
+      ps::parallel_for(MPs, setTgtElm, "setTargetElement");
+      MPs->rebuild(tgtElm);
+    }
+    void rebuild(IntView tgtElm, int newNumMPs, IntView newMP2elm, IntView newMPAppID) {
+      auto newMPInfo = createInternalMemberViews(newNumMPs, newMP2elm, newMPAppID);
+      MPs->rebuild(tgtElm, newMP2elm, newMPInfo);
+      updateMaxAppID();
+    }
+    void updateMPElmID(){
+      auto curElmID = MPs->get<MPF_Cur_Elm_ID>();
+      auto tgtElmID = MPs->get<MPF_Tgt_Elm_ID>();
+      auto swap = PS_LAMBDA(const int& elm, const int& mp, const int& mask) {
+        if(mask){
+            curElmID(mp) = tgtElmID(mp);
+            tgtElmID(mp) = -1;
+        }
+      };
+      ps::parallel_for(MPs, swap, "swap");
+    }
+    void updateMaxAppID() {
+      auto mpInfo = ps::createMemberViews<MaterialPointTypes>(MPs->nPtcls());
+      auto mpAppID_m = ps::getMemberView<MaterialPointTypes, MPF_MP_APP_ID>(mpInfo);
+      maxAppID = 0;
+      Kokkos::parallel_reduce("setMax" , mpAppID_m.size(),
+        KOKKOS_LAMBDA(const int i, int & valueToUpdate) {
+          if ( mpAppID_m(i) > valueToUpdate ) valueToUpdate = mpAppID_m(i) ;
+        },
+        Kokkos::Max<int>(maxAppID)
+      );
+    }
     template <MaterialPointSlice mpfIndexCur, MaterialPointSlice mpfIndexTgt>
     void updateMPSlice(){
       auto curData = MPs->get<mpfIndexCur>();

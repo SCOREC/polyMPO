@@ -12,7 +12,7 @@ void polympo_initialize_f();
 void polympo_finalize_f();
 
 //create/delete MpMesh object
-MPMesh_ptr polympo_createMPMesh_f(int setMeshOption, int setMPOption);
+MPMesh_ptr polympo_createMPMesh_f(const int setMeshOption, const int setMPOption);
 void polympo_deleteMPMesh_f(MPMesh_ptr p_mpmesh);
 
 //set MPI communicator
@@ -27,7 +27,7 @@ void polympo_getMPCurElmID_f(MPMesh_ptr p_mpmesh, const int numMPs, int* elmIDs)
 //MP slices
 void polympo_getMPPositions_f(MPMesh_ptr p_mpmesh, const int numComps, const int numMPs, double* mpPositionsIn);
 void polympo_setMPPositions_f(MPMesh_ptr p_mpmesh, const int numComps, const int numMPs, const double* mpPositionsIn);
-void polympo_setMPVel_f(MPMesh_ptr p_mpmesh, const int size, double* array);
+void polympo_setMPVel_f(MPMesh_ptr p_mpmesh, const int size, const double* array);
 void polympo_getMPVel_f(MPMesh_ptr p_mpmesh, const int size, double* array);
 
 //Mesh info
@@ -44,15 +44,15 @@ int polympo_getMeshNumVtxs_f(MPMesh_ptr p_mpmesh);
 void polympo_setMeshNumElms_f(MPMesh_ptr p_mpmesh, const int numElms);
 int polympo_getMeshNumElms_f(MPMesh_ptr p_mpmesh);
 void polympo_setMeshNumEdgesPerElm_f(MPMesh_ptr p_mpmesh, const int nCells, const int* array);
-void polympo_setMeshElm2VtxConn_f(MPMesh_ptr p_mpmesh, const int maxEdges, const int nCells, int* array);
+void polympo_setMeshElm2VtxConn_f(MPMesh_ptr p_mpmesh, const int maxEdges, const int nCells, const int* array);
 void polympo_setMeshElm2ElmConn_f(MPMesh_ptr p_mpmesh, const int maxEdges, const int nCells, const int* array);
 
 //Mesh fields
 void polympo_setMeshVtxCoords_f(MPMesh_ptr p_mpmesh, const int nVertices, const double* xArray, const double* yArray, const double* zArray);
 void polympo_getMeshVtxCoords_f(MPMesh_ptr p_mpmesh, const int nVertices, double* xArray, double* yArray, double* zArray);
-void polympo_setMeshOnSurfVeloIncr_f(MPMesh_ptr p_mpmesh, const int nComps, const int nVertices, double* array);//vec2d
+void polympo_setMeshOnSurfVeloIncr_f(MPMesh_ptr p_mpmesh, const int nComps, const int nVertices, const double* array);//vec2d
 void polympo_getMeshOnSurfVeloIncr_f(MPMesh_ptr p_mpmesh, const int nComps, const int nVertices, double* array);//vec2d
-void polympo_setMeshOnSurfDispIncr_f(MPMesh_ptr p_mpmesh, const int nComps, const int nVertices, double* array);//vec2d
+void polympo_setMeshOnSurfDispIncr_f(MPMesh_ptr p_mpmesh, const int nComps, const int nVertices, const double* array);//vec2d
 void polympo_getMeshOnSurfDispIncr_f(MPMesh_ptr p_mpmesh, const int nComps, const int nVertices, double* array);//vec2d
 }
 #endif

@@ -22,19 +22,19 @@ program main
   implicit none
   include 'mpif.h'
 
-  integer, parameter :: APP_RKIND = selected_real_kind(15)
+  !integer, parameter :: APP_RKIND = selected_real_kind(15)
   integer :: ierr, self
   integer :: argc, i, j, arglen, k
   integer :: setMeshOption, setMPOption
   integer :: maxEdges, vertexDegree, nCells, nVertices
   integer :: nCompsDisp
   integer :: mpi_comm_handle = MPI_COMM_WORLD
-  real(kind=MPAS_RKIND) :: x, y, z, radius, maxlon, minlon, deltaLon, lon
+  real(kind=MPAS_RKIND) :: xc, yc, zc, radius, maxlon, minlon, deltaLon, lon
   real(kind=MPAS_RKIND) :: pi = 4*atan(1.0)
   character (len=2048) :: filename
-  real(kind=APP_RKIND), dimension(:,:), pointer :: dispIncr
+  real(kind=MPAS_RKIND), dimension(:,:), pointer :: dispIncr
   character (len=64) :: onSphere
-  real(kind=MPAS_RKIND) :: sphereRadius, xComputed, yComputed, zComputed
+  real(kind=MPAS_RKIND) :: sphereRadius, xComputed, yComputed, zComputed, latComputed, lonComputed
   integer, dimension(:), pointer :: nEdgesOnCell
   real(kind=MPAS_RKIND), dimension(:), pointer :: xVertex, yVertex, zVertex
   real(kind=MPAS_RKIND), dimension(:), pointer :: latVertex, lonVertex
@@ -49,7 +49,7 @@ program main
   call polympo_setMPICommunicator(mpi_comm_handle)
   call polympo_initialize()
 
-  call polympo_checkPrecisionForRealKind(APP_RKIND)
+  call polympo_checkPrecisionForRealKind(MPAS_RKIND)
   argc = command_argument_count()
   if(argc == 1) then
     call get_command_argument(1, filename)
@@ -94,11 +94,14 @@ program main
   call polympo_createMPs(mpMesh,nCells,numMPs,c_loc(mpsPerElm),c_loc(mp2Elm),c_loc(isMPActive))
   do i = 1, nCells
     if (.true.) then
+      xc = 0.0_MPAS_RKIND
+      yc = 0.0_MPAS_RKIND
+      zc = 0.0_MPAS_RKIND
       do k = 1, nEdgesOnCell(i)
         j = verticesOnCell(k,i)
-        x = xVertex(j) 
-        y = yVertex(j) 
-        z = zVertex(j) 
+        xc = xc + xVertex(j) 
+        yc = yc + yVertex(j) 
+        zc = zc + zVertex(j) 
         !xComputed = sphereRadius*cos(lonVertex(j))*cos(latVertex(j))
         !yComputed = sphereRadius*sin(lonVertex(j))*cos(latVertex(j))
         !zComputed = sphereRadius*sin(latVertex(j))
@@ -108,33 +111,30 @@ program main
         !write(*,*)  xVertex(j), xComputed
         !write(*,*)  yVertex(j), yComputed
         !write(*,*)  zVertex(j), zComputed
+        latComputed = asin(zVertex(j)/sphereRadius)
+        lonComputed = atan2(yVertex(j),xVertex(j))
+        write(*,*)  latVertex(j), latComputed
+        write(*,*)  lonVertex(j), lonComputed
+
       end do
-      !x = x/nEdgesOnCell(i)
-      !y = y/nEdgesOnCell(i)
-      !z = z/nEdgesOnCell(i)
-      x = xVertex(i)
-      y = yVertex(i)
-      z = zVertex(i)
+      xc = xc/nEdgesOnCell(i)
+      yc = yc/nEdgesOnCell(i)
+      zc = zc/nEdgesOnCell(i)
       ! normalize
-      radius = sqrt(x*x + y*y + z*z)! assuming sphere center to be at origin
-      x = x/radius * sphereRadius
-      y = y/radius * sphereRadius
-      z = z/radius * sphereRadius
-      mpPosition(1,i) = x
-      mpPosition(2,i) = y
-      mpPosition(3,i) = z
-      mpLatLon(1,i) = asin(z/sphereRadius)
-      lon = atan2(y,x)
+      radius = sqrt(xc*xc + yc*yc + zc*zc)! assuming sphere center to be at origin
+      xc = xc/radius * sphereRadius
+      yc = yc/radius * sphereRadius
+      zc = zc/radius * sphereRadius
+      mpPosition(1,i) = xc
+      mpPosition(2,i) = yc
+      mpPosition(3,i) = zc
+      mpLatLon(1,i) = asin(zc/sphereRadius)
+      lon = atan2(yc,xc)
       if (lon .le. 0.0) then ! lon[0,2pi]
         lon = lon + 2*pi
       endif 
       mpLatLon(2,i) = lon
     endif
-    do k = 1, nEdgesOnCell(i)
-      j = verticesOnCell(k,i)
-      write(*,*)  latVertex(i), mpLatLon(1,i)
-      write(*,*)  lonVertex(i), mpLatLon(2,i)
-    end do
   end do
   ! check first element/cell for delta
   maxlon = minval(lonVertex)

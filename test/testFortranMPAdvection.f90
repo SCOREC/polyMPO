@@ -96,22 +96,25 @@ program main
     if (.true.) then
       do k = 1, nEdgesOnCell(i)
         j = verticesOnCell(k,i)
-        x = x + xVertex(j) 
-        y = y + yVertex(j) 
-        z = z + zVertex(j) 
+        x = xVertex(j) 
+        y = yVertex(j) 
+        z = zVertex(j) 
         !xComputed = sphereRadius*cos(lonVertex(j))*cos(latVertex(j))
         !yComputed = sphereRadius*sin(lonVertex(j))*cos(latVertex(j))
         !zComputed = sphereRadius*sin(latVertex(j))
         xComputed = sphereRadius*cos(latVertex(j))*cos(lonVertex(j))
         yComputed = sphereRadius*cos(latVertex(j))*sin(lonVertex(j))
         zComputed = sphereRadius*sin(latVertex(j))
-        write(*,*)  xVertex(i), xComputed
-        write(*,*)  yVertex(i), yComputed
-        write(*,*)  zVertex(i), zComputed
+        !write(*,*)  xVertex(j), xComputed
+        !write(*,*)  yVertex(j), yComputed
+        !write(*,*)  zVertex(j), zComputed
       end do
-      x = x/nEdgesOnCell(i)
-      y = y/nEdgesOnCell(i)
-      z = z/nEdgesOnCell(i)
+      !x = x/nEdgesOnCell(i)
+      !y = y/nEdgesOnCell(i)
+      !z = z/nEdgesOnCell(i)
+      x = xVertex(i)
+      y = yVertex(i)
+      z = zVertex(i)
       ! normalize
       radius = sqrt(x*x + y*y + z*z)! assuming sphere center to be at origin
       x = x/radius * sphereRadius
@@ -127,6 +130,11 @@ program main
       endif 
       mpLatLon(2,i) = lon
     endif
+    do k = 1, nEdgesOnCell(i)
+      j = verticesOnCell(k,i)
+      write(*,*)  latVertex(i), mpLatLon(1,i)
+      write(*,*)  lonVertex(i), mpLatLon(2,i)
+    end do
   end do
   ! check first element/cell for delta
   maxlon = minval(lonVertex)

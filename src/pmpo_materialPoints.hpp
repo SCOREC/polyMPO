@@ -100,12 +100,6 @@ typedef MemberTypes<mp_flag_t,              //MP_Status
 typedef ps::ParticleStructure<MaterialPointTypes> PS;
 
 
-PS* createDPS(int numElms, int numMPs, DoubleVec3dView positions, IntView mpsPerElm, IntView mp2elm);
-PS* createDPS(int numElms, int numMPs, IntView mpsPerElm, IntView mp2elm, IntView mpAppID);
-void updateMaxAppID();
-
-pumipic::MemberTypeViews createInternalMemberViews(int newNumMPs, IntView newMp2elm, IntView newMpAppID);
-
 class MaterialPoints {
   private:
     PS* MPs;
@@ -116,12 +110,12 @@ class MaterialPoints {
   public:
     MaterialPoints() : MPs(nullptr) {};
     MaterialPoints(int numElms, int numMPs, DoubleVec3dView positions, IntView mpsPerElm, IntView mp2elm) {
-      MPs = createDPS(numElms, numMPs, positions, mpsPerElm, mp2elm);
+      MPs = _createDPS(numElms, numMPs, positions, mpsPerElm, mp2elm);
       maxAppID = numMPs; //this ctor does not support inactive MPs
       operating_mode = MP_RELEASE;
     };
     MaterialPoints(int numElms, int numMPs, IntView mpsPerElm, IntView mp2elm, IntView mpAppID) {
-      MPs = createDPS(numElms, numMPs, mpsPerElm, mp2elm, mpAppID);
+      MPs = _createDPS(numElms, numMPs, mpsPerElm, mp2elm, mpAppID);
       updateMaxAppID();
       operating_mode = MP_RELEASE;
     };
@@ -141,7 +135,7 @@ class MaterialPoints {
       MPs->rebuild(tgtElm);
     }
     void rebuild(IntView tgtElm, int newNumMPs, IntView newMP2elm, IntView newMPAppID) {
-      auto newMPInfo = createInternalMemberViews(newNumMPs, newMP2elm, newMPAppID);
+      auto newMPInfo = _createInternalMemberViews(newNumMPs, newMP2elm, newMPAppID);
       MPs->rebuild(tgtElm, newMP2elm, newMPInfo);
       updateMaxAppID();
     }
@@ -220,9 +214,14 @@ class MaterialPoints {
       return maxAppID;
     }
 
-//MUTATOR  
+    // MUTATOR  
     template <MaterialPointSlice index> void fillData(double value);//use PS_LAMBDA fill up to 1
     void T2LTracking(Vec2dView dx);
+
+    // INTERNAL DO NOT CALL
+    PS* _createDPS(int numElms, int numMPs, DoubleVec3dView positions, IntView mpsPerElm, IntView mp2elm);
+    PS* _createDPS(int numElms, int numMPs, IntView mpsPerElm, IntView mp2elm, IntView mpAppID);
+    pumipic::MemberTypeViews _createInternalMemberViews(int newNumMPs, IntView newMp2elm, IntView newMpAppID);
     
 };
 

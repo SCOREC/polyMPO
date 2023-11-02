@@ -96,20 +96,24 @@ void polympo_createMPs_f(MPMesh_ptr p_mpmesh,
   PMT_ALWAYS_ASSERT(!p_mesh->meshEditable());
   PMT_ALWAYS_ASSERT(p_mesh->getNumElements() == numElms);
 
-  int firstElmWithMPs=-1;
-  for (int i=0; i<numElms; i++) {
-    if(mpsPerElm[i]) {
-      firstElmWithMPs = i;
-      break;
-    }
-  }
-
+  int numActiveMPs = 0;
   int minElmID = numElms+1;
   for(int i = 0; i < numMPs; i++) {
     if(isMPActive[i] == MP_ACTIVE) {
       if(mp2Elm[i] < minElmID) {
         minElmID = mp2Elm[i];
+        numActiveMPs++;
       }
+    }
+  }
+  //TODO do we care about empty ranks? check just in case...
+  PMT_ALWAYS_ASSERT(numActiveMPs>0);
+
+  int firstElmWithMPs=-1;
+  for (int i=0; i<numElms; i++) {
+    if(mpsPerElm[i]) {
+      firstElmWithMPs = i;
+      break;
     }
   }
   int offset = -1;
@@ -124,7 +128,7 @@ void polympo_createMPs_f(MPMesh_ptr p_mpmesh,
 
   std::vector<int> active_mpIDs(numMPs);
   std::vector<int> active_mp2Elm(numMPs);
-  int numActiveMPs = 0;
+  numActiveMPs = 0;
   for(int i=0; i<numMPs; i++) {
     if(isMPActive[i] == MP_ACTIVE) {
       active_mpIDs[numActiveMPs] = i; //creates unique IDs
@@ -132,9 +136,6 @@ void polympo_createMPs_f(MPMesh_ptr p_mpmesh,
       numActiveMPs++;
     }
   }
-
-  //TODO do we care about empty ranks? check just in case...
-  PMT_ALWAYS_ASSERT(numActiveMPs>0);
 
   auto mpsPerElm_d = create_mirror_view_and_copy(mpsPerElm, numElms);
   auto active_mp2Elm_d = create_mirror_view_and_copy(active_mp2Elm.data(), numActiveMPs);

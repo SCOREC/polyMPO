@@ -178,15 +178,22 @@ void polympo_rebuildMPs_f(MPMesh_ptr p_mpmesh,
   auto addedMPMask_d = create_mirror_view_and_copy(addedMPMask, numMPs);
   auto mpMP2ElmIn_d = create_mirror_view_and_copy(allMP2Elm, numMPs);
 
+  Kokkos::View<int*> numDeletedMPs_d("numDeletedMPs", 1);
   auto setMP2Elm = PS_LAMBDA(const int& elm, const int& mp, const int& mask) {
     if(mask) {
       if (addedMPMask_d[mpAppID(mp)] == MP_ACTIVE) //two MPs can not occupy the same slot
         mp2Elm(mp) = MP_DELETE;
       else
         mp2Elm(mp) = mpMP2ElmIn_d(mpAppID(mp));
+      if (mp2Elm(mp) == MP_DELETE)
+        Kokkos::atomic_increment(&numDeletedMPs_d(0));
     }
   };
   p_MPs->parallel_for(setMP2Elm, "setMP2Elm");
+
+  int numDeletedMPs = pumipic::getLastValue(numDeletedMPs_d);
+  PMT_ALWAYS_ASSERT(numAddedMPs > 0 || numDeletedMPs > 0);
+
   p_MPs->rebuild(mp2Elm, numAddedMPs, added_mp2Elm_d, added_mpIDs_d);
 
   // check mpAppID is unique (on GPUs)

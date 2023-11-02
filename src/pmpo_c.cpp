@@ -135,6 +135,7 @@ void polympo_createMPs_f(MPMesh_ptr p_mpmesh,
   }else if (minElmID-firstElmWithMPs==0){
     offset = 0;
   }else {
+    //fprintf(stderr,"minElmID: %d firstElmWithMPs: %d\n", minElmID, firstElmWithMPs);
     fprintf(stderr,"The minElmID is incorrect! Offset is wrong!\n");
     exit(1);
   }

@@ -1,16 +1,3 @@
-module mpMesh_ptr
-use polympo
-use iso_c_binding
-implicit none
-
-  type(c_ptr):: mpMesh
-contains
-  subroutine createMPMesh(setMeshOption, setMPOption)
-    integer:: setMeshOption, setMPOption
-    mpMesh = polympo_createMPMesh(setMeshOption,setMPOption) !creates test mesh
-  end subroutine
-end module
-
 !---------------------------------------------------------------------------
 !> todo add a discription
 !---------------------------------------------------------------------------
@@ -18,11 +5,11 @@ program main
   use :: polympo
   use :: readMPAS
   use :: iso_c_binding
-  use mpMesh_ptr
   implicit none
   include 'mpif.h'
 
   !integer, parameter :: APP_RKIND = selected_real_kind(15)
+  type(c_ptr) :: mpMesh
   integer :: ierr, self
   integer :: argc, i, j, arglen, k
   integer :: setMeshOption, setMPOption
@@ -43,6 +30,9 @@ program main
   integer, dimension(:), pointer :: mpsPerElm, mp2Elm, isMPActive
   real(kind=MPAS_RKIND), dimension(:,:), pointer :: mpPosition, mpLatLon
   logical :: inBound
+  integer, parameter :: MP_ACTIVE = 1
+  integer, parameter :: MP_INACTIVE = 0
+  integer, parameter :: INVALID_ELM_ID = -1
 
   call mpi_init(ierr)
   call mpi_comm_rank(mpi_comm_handle, self, ierr)
@@ -58,10 +48,6 @@ program main
     write(0, *) "Usage: ./testFortranInterpolatePush <path to the nc file>"
   end if
 
-  setMeshOption = 0 !create an empty mesh
-  setMPOption = 0   !create an empty set of MPs
-  nCompsDisp = 2
-  call createMPMesh(setMeshOption, setMPOption)
   call readMPASMeshFromNCFile(filename, maxEdges, vertexDegree, &
                         nCells, nVertices, nEdgesOnCell, &
                         onSphere, sphereRadius, &
@@ -72,13 +58,18 @@ program main
     write (*,*) "The mesh is not spherical!"
     call exit(1)
   end if
+
+  setMeshOption = 0 !create an empty mesh
+  setMPOption = 0   !create an empty set of MPs
+  mpMesh = polympo_createMPMesh(setMeshOption,setMPOption) !creates test mesh
   call loadMPASMeshInPolyMPO(mpMesh, maxEdges, vertexDegree, &
                         nCells, nVertices, nEdgesOnCell, &
                         onSphere, sphereRadius, &
                         xVertex, yVertex, zVertex, &
                         latVertex, lonVertex, &
                         verticesOnCell, cellsOnCell)
-
+ 
+  nCompsDisp = 2
   allocate(dispIncr(nCompsDisp,nVertices))
   !createMPs
   numMPs = nCells
@@ -87,18 +78,22 @@ program main
   allocate(isMPActive(numMPs))
   allocate(mpPosition(3,numMPs))
   allocate(mpLatLon(2,numMPs))
-  isMPActive = 1 !no inactive MPs and some changed below
+  isMPActive = MP_ACTIVE !all active MPs and some changed below
   mpsPerElm = 1 !all elements have 1 MP and some changed below
   do i = 1,numMPs
     mp2Elm(i) = i
   end do
-  call polympo_createMPs(mpMesh,nCells,numMPs,c_loc(mpsPerElm),c_loc(mp2Elm),c_loc(isMPActive))
   do i = 1, nCells
     inBound = .true.
     do k = 1, nEdgesOnCell(i)
       j = verticesOnCell(k,i)
-      if ((latVertex(j) .lt. 0.4) .or. (latVertex(j) .gt. pi - 0.4)) then
-        inBound = .false.  
+      if ((latVertex(j) .gt. 0.4*pi) .or. (latVertex(j) .lt. -0.4*pi)) then
+        write(*,*) "near pole ", i
+        inBound = .false.
+        isMPActive(i) = MP_INACTIVE
+        mpsPerElm(i) = 0
+        mp2Elm(i) = INVALID_ELM_ID
+        EXIT  
       endif
     end do
 
@@ -117,16 +112,16 @@ program main
         xComputed = sphereRadius*cos(latVertex(j))*cos(lonVertex(j))
         yComputed = sphereRadius*cos(latVertex(j))*sin(lonVertex(j))
         zComputed = sphereRadius*sin(latVertex(j))
-        write(*,*)  xVertex(j), xComputed
-        write(*,*)  yVertex(j), yComputed
-        write(*,*)  zVertex(j), zComputed
+        !write(*,*) xVertex(j), xComputed
+        !write(*,*) yVertex(j), yComputed
+        !write(*,*) zVertex(j), zComputed
         latComputed = asin(zVertex(j)/sphereRadius)
         lonComputed = atan2(yVertex(j),xVertex(j))
         if (lonComputed .le. 0.0) then ! lon[0,2pi]
           lonComputed = lonComputed + 2*pi
         endif
-        write(*,*)  latVertex(j), latComputed
-        write(*,*)  lonVertex(j), lonComputed
+        !write(*,*) latVertex(j), latComputed
+        !write(*,*) lonVertex(j), lonComputed
 
       end do
       xc = xc/nEdgesOnCell(i)
@@ -160,6 +155,7 @@ program main
       minlon = lonVertex(j)
     endif
   end do
+  call polympo_createMPs(mpMesh,nCells,numMPs,c_loc(mpsPerElm),c_loc(mp2Elm),c_loc(isMPActive))
   !todo setLatLonMPPositions
   !todo setXYZMPPositions
   
@@ -167,8 +163,8 @@ program main
   !todo getLatLonMPPositions
   do i = 1,numMPs
     ! R*cos(latMP) *deltaLon
-    dispIncr(1,i) = 0!sphereRadius*cos(
-    dispIncr(2,i) = deltaLon
+    dispIncr(1,i) = 0!sphereRadius*cos(mpLat(i))*deltaLon
+    dispIncr(2,i) = 0.0_MPAS_RKIND
   end do
   call polympo_setMeshOnSurfDispIncr(mpMesh, nCompsDisp, nVertices, c_loc(dispIncr))
   call polympo_push(mpMesh)

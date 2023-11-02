@@ -42,6 +42,7 @@ program main
   integer :: numMPs 
   integer, dimension(:), pointer :: mpsPerElm, mp2Elm, isMPActive
   real(kind=MPAS_RKIND), dimension(:,:), pointer :: mpPosition, mpLatLon
+  logical :: inBound
 
   call mpi_init(ierr)
   call mpi_comm_rank(mpi_comm_handle, self, ierr)
@@ -93,7 +94,15 @@ program main
   end do
   call polympo_createMPs(mpMesh,nCells,numMPs,c_loc(mpsPerElm),c_loc(mp2Elm),c_loc(isMPActive))
   do i = 1, nCells
-    if (.true.) then
+    inBound = .true.
+    do k = 1, nEdgesOnCell(i)
+      j = verticesOnCell(k,i)
+      if ((latVertex(j) .lt. 0.4) .or. (latVertex(j) .gt. pi - 0.4)) then
+        inBound = .false.  
+      endif
+    end do
+
+    if (inBound) then
       xc = 0.0_MPAS_RKIND
       yc = 0.0_MPAS_RKIND
       zc = 0.0_MPAS_RKIND

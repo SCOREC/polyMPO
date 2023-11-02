@@ -216,6 +216,7 @@ void polympo_getMPCurElmID_f(MPMesh_ptr p_mpmesh,
   checkMPMeshValid(p_mpmesh);
   auto p_MPs = ((polyMPO::MPMesh*)p_mpmesh)->p_MPs;
   PMT_ALWAYS_ASSERT(numMPs >= p_MPs->getCount());
+  PMT_ALWAYS_ASSERT(numMPs >= p_MPs->getMaxAppID());
   auto mpCurElmID = p_MPs->getData<polyMPO::MPF_Cur_Elm_ID>();
   auto mpAppID = p_MPs->getData<polyMPO::MPF_MP_APP_ID>();
   auto elmIDoffset = p_MPs->getElmIDoffset();

@@ -106,6 +106,7 @@ class MaterialPoints {
     int elmIDoffset = -1;
     int maxAppID = -1;
     Operating_Mode operating_mode;
+    pumipic::MemberTypeViews buildSlices;
 
   public:
     MaterialPoints() : MPs(nullptr) {};
@@ -113,11 +114,13 @@ class MaterialPoints {
       MPs = _createDPS(numElms, numMPs, positions, mpsPerElm, mp2elm);
       maxAppID = numMPs; //this ctor does not support inactive MPs
       operating_mode = MP_RELEASE;
+      buildSlices = ps::createMemberViews<MaterialPointTypes>(numMPs);
     };
     MaterialPoints(int numElms, int numMPs, IntView mpsPerElm, IntView mp2elm, IntView mpAppID) {
       MPs = _createDPS(numElms, numMPs, mpsPerElm, mp2elm, mpAppID);
       updateMaxAppID();
       operating_mode = MP_RELEASE;
+      buildSlices = ps::createMemberViews<MaterialPointTypes>(numMPs);
     };
     ~MaterialPoints() {
       if(MPs != nullptr)
@@ -160,6 +163,13 @@ class MaterialPoints {
         },
         Kokkos::Max<int>(maxAppID)
       );
+    }
+    template <MaterialPointSlice mpSliceIndex, typename mpSliceData>
+    void setMPSlice(int numMPs, mpSliceData data) {
+      auto setData = ps::getMemberView<MaterialPointTypes, mpSliceIndex>(buildSlices);
+      Kokkos::parallel_for("setMPinfo", numMPs, KOKKOS_LAMBDA(int i) {
+        setData(i) = data(i);
+      });
     }
     template <MaterialPointSlice mpfIndexCur, MaterialPointSlice mpfIndexTgt>
     void updateMPSlice(){

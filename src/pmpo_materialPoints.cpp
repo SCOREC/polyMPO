@@ -2,7 +2,7 @@
 
 namespace polyMPO {
 
-pumipic::MemberTypeViews MaterialPoints::_createInternalMemberViews(int numMPs, IntView mp2elm, IntView mpAppID){
+pumipic::MemberTypeViews MaterialPoints::createInternalMemberViews(int numMPs, IntView mp2elm, IntView mpAppID){
   auto mpInfo = ps::createMemberViews<MaterialPointTypes>(numMPs);
   auto mpCurElmPos_m = ps::getMemberView<MaterialPointTypes, MPF_Cur_Elm_ID>(mpInfo);
   auto mpAppID_m = ps::getMemberView<MaterialPointTypes, MPF_MP_APP_ID>(mpInfo);
@@ -15,7 +15,7 @@ pumipic::MemberTypeViews MaterialPoints::_createInternalMemberViews(int numMPs, 
   return mpInfo;
 }
 
-PS* MaterialPoints::_createDPS(int numElms, int numMPs, DoubleVec3dView positions, IntView mpsPerElm, IntView mp2elm) {
+PS* MaterialPoints::createDPS(int numElms, int numMPs, DoubleVec3dView positions, IntView mpsPerElm, IntView mp2elm) {
   PS::kkGidView elmGids("elementGlobalIds", numElms); //TODO - initialize this to [0..numElms)
   auto mpInfo = ps::createMemberViews<MaterialPointTypes>(numMPs);
   auto mpPositions = ps::getMemberView<MaterialPointTypes, MPF_Cur_Pos_XYZ>(mpInfo);
@@ -36,9 +36,9 @@ PS* MaterialPoints::_createDPS(int numElms, int numMPs, DoubleVec3dView position
   return dps;
 }
 
-PS* MaterialPoints::_createDPS(int numElms, int numMPs, IntView mpsPerElm, IntView mp2elm, IntView mpAppID) {
+PS* MaterialPoints::createDPS(int numElms, int numMPs, IntView mpsPerElm, IntView mp2elm, IntView mpAppID) {
   PS::kkGidView elmGids("elementGlobalIds", numElms); //TODO - initialize this to [0..numElms)
-  auto mpInfo = _createInternalMemberViews(numMPs, mp2elm, mpAppID);
+  auto mpInfo = createInternalMemberViews(numMPs, mp2elm, mpAppID);
   Kokkos::TeamPolicy<Kokkos::DefaultExecutionSpace> policy(numElms,Kokkos::AUTO);
   auto dps = new DPS<MaterialPointTypes>(policy, numElms, numMPs, mpsPerElm, elmGids, mp2elm, mpInfo);
   ps::destroyViews<MaterialPointTypes>(mpInfo);

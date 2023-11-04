@@ -33,7 +33,7 @@ program main
   integer, parameter :: MP_ACTIVE = 1
   integer, parameter :: MP_INACTIVE = 0
   integer, parameter :: INVALID_ELM_ID = -1
-  real(kind=MPAS_RKIND), dimension(:,:), pointer :: mpLat
+  real(kind=MPAS_RKIND), dimension(:), pointer :: mpLat
 
   call mpi_init(ierr)
   call mpi_comm_rank(mpi_comm_handle, self, ierr)
@@ -79,7 +79,7 @@ program main
   allocate(isMPActive(numMPs))
   allocate(mpPosition(3,numMPs))
   allocate(mpLatLon(2,numMPs))
-  allocate(mpLat(2,numMPs))
+  allocate(mpLat(numMPs))
 
   isMPActive = MP_ACTIVE !all active MPs and some changed below
   mpsPerElm = 1 !all elements have 1 MP and some changed below
@@ -109,9 +109,6 @@ program main
         xc = xc + xVertex(j) 
         yc = yc + yVertex(j) 
         zc = zc + zVertex(j) 
-        !xComputed = sphereRadius*cos(lonVertex(j))*cos(latVertex(j))
-        !yComputed = sphereRadius*sin(lonVertex(j))*cos(latVertex(j))
-        !zComputed = sphereRadius*sin(latVertex(j))
         xComputed = sphereRadius*cos(latVertex(j))*cos(lonVertex(j))
         yComputed = sphereRadius*cos(latVertex(j))*sin(lonVertex(j))
         zComputed = sphereRadius*sin(latVertex(j))
@@ -160,9 +157,9 @@ program main
   end do
   call polympo_createMPs(mpMesh,nCells,numMPs,c_loc(mpsPerElm),c_loc(mp2Elm),c_loc(isMPActive))
   !todo setLatLonMPPositions
-  !call polympo_setMPRotLatLon(mpMesh, nCompsDisp, numMPs, c_loc(mpLatLon))
+  call polympo_setMPRotLatLon(mpMesh, nCompsDisp, numMPs, c_loc(mpLatLon))
   !todo setXYZMPPositions
-  !call polympo_setMPPositions(mpMesh, nCompsDisp, numMPs, c_loc(mpPosition))
+  call polympo_setMPPositions(mpMesh, 3, numMPs, c_loc(mpPosition))
 
   
   deltaLon = maxlon - minlon

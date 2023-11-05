@@ -285,12 +285,11 @@ void polympo_getMPRotLatLon_f(MPMesh_ptr p_mpmesh,
 
   auto mpRotLatLon = p_MPs->getData<polyMPO::MPF_Cur_Pos_Rot_Lat_Lon>();
   auto mpAppID = p_MPs->getData<polyMPO::MPF_MP_APP_ID>();
-  Kokkos::View<double**> mpRotLatLonCopy("mpRotLatLonCopy",vec3d_nEntries,numMPs);
+  Kokkos::View<double**> mpRotLatLonCopy("mpRotLatLonCopy",vec2d_nEntries,numMPs);
   auto getPos = PS_LAMBDA(const int& elm, const int& mp, const int& mask){
     if(mask){
       mpRotLatLonCopy(0,mpAppID(mp)) = mpRotLatLon(mp,0);
       mpRotLatLonCopy(1,mpAppID(mp)) = mpRotLatLon(mp,1);
-      mpRotLatLonCopy(2,mpAppID(mp)) = mpRotLatLon(mp,2);
     }
   };
   p_MPs->parallel_for(getPos, "getMPRotLatLon");

@@ -168,7 +168,6 @@ program main
   end do
   call polympo_setMeshOnSurfDispIncr(mpMesh,nCompsDisp,nVertices,c_loc(dispIncr))
   call polympo_push(mpMesh)
- 
   call polympo_deleteMPMesh(mpMesh)
   call polympo_finalize()
 

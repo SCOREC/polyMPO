@@ -5,6 +5,8 @@
 
 namespace polyMPO{
 
+void printVTP_mesh(MPMesh& mpMesh);
+
 void MPMesh::CVTTrackingEdgeCenterBased(Vec2dView dx){
     int numVtxs = p_mesh->getNumVertices();
     int numElms = p_mesh->getNumElements();
@@ -16,7 +18,7 @@ void MPMesh::CVTTrackingEdgeCenterBased(Vec2dView dx){
     const auto vtxCoords = p_mesh->getMeshField<polyMPO::MeshF_VtxCoords>(); 
     auto mpPositions = p_MPs->getData<MPF_Cur_Pos_XYZ>();
     Kokkos::View<Vec2d*[maxVtxsPerElm]> edgeCenters("EdgeCenters",numElms);
-  
+   
     Kokkos::parallel_for("calcEdgeCenter", numElms, KOKKOS_LAMBDA(const int elm){  
         int numVtx = elm2VtxConn(elm,0);
         int v[maxVtxsPerElm];
@@ -76,7 +78,8 @@ void MPMesh::CVTTrackingEdgeCenterBased(Vec2dView dx){
 void MPMesh::CVTTrackingElmCenterBased(){
     int numVtxs = p_mesh->getNumVertices();
     int numElms = p_mesh->getNumElements();
-    
+    auto numMPs = p_MPs->getCount();
+
     const auto vtxCoords = p_mesh->getMeshField<polyMPO::MeshF_VtxCoords>(); 
     auto elm2VtxConn = p_mesh->getElm2VtxConn();
     auto elm2ElmConn = p_mesh->getElm2ElmConn();
@@ -84,6 +87,8 @@ void MPMesh::CVTTrackingElmCenterBased(){
     auto mpPositions = p_MPs->getData<MPF_Cur_Pos_XYZ>();
     auto mpTgtPos = p_MPs->getData<MPF_Tgt_Pos_XYZ>();
     auto MPs2Elm = p_MPs->getData<MPF_Tgt_Elm_ID>();;
+ 
+    printVTP_mesh(*this);
 
     Vec3dView elmCenter("elmentCenter",numElms);
     Kokkos::parallel_for("calcElmCenter", numElms, KOKKOS_LAMBDA(const int elm){  
@@ -98,6 +103,11 @@ void MPMesh::CVTTrackingElmCenterBased(){
         elmCenter(elm)[1] = sum_y/numVtx;
         elmCenter(elm)[2] = sum_z/numVtx;
     });
+
+    const int printVTP = 0;
+    Vec3dView history("positionHistory",numMPs);
+    Vec3dView resultLeft("positionResult",numMPs);
+    Vec3dView resultRight("positionResult",numMPs); 
 
     auto CVTElmCalc = PS_LAMBDA(const int& elm, const int& mp, const int&mask){
         Vec3d MP(mpPositions(mp,0),mpPositions(mp,1),mpPositions(mp,2));
@@ -126,10 +136,61 @@ void MPMesh::CVTTrackingElmCenterBased(){
                 }else{
                     iElm = closestElm;
                 }
+            }
+            if(printVTP>=0){ 
+                //Vec3d MParrow = MP + dx(mp)*0.7;
+                //Vec3d shift = Vec3d(-dx(mp)[1],dx(mp)[0])*0.1;
+                //Vec3d MPLeft = MParrow + shift;
+                //Vec3d MPRight = MParrow - shift;
+                history(mp) = MP;
+                //resultLeft(mp) = MPLeft;
+                //resultRight(mp) = MPRight;
             } 
         }
     };
     p_MPs->parallel_for(CVTElmCalc,"CVTTrackingElmCenterBasedCalc");
+
+    if(printVTP>=0){
+        const int maxNum = 5;
+        Vec3dView::HostMirror h_history = Kokkos::create_mirror_view(history);
+        Kokkos::deep_copy(h_history, history);
+        //kokkos::fence();
+
+        //IntView::HostMirror h_countNum = Kokkos::create_mirror_view(countNum);
+        //Kokkos::deep_copy(h_countNum, countNum);
+        //Kokkos::fence();
+
+        const int totalNumMPs = numMPs;
+        for(int iCountNum = 0; iCountNum <= maxNum; iCountNum++){
+            //numMPs = h_countNum(iCountNum);
+            printf("%d-%d:%d\n",iCountNum,printVTP,numMPs); 
+//* printVTP file
+            char* fileOutput = (char *)malloc(sizeof(char) * 256); 
+            sprintf(fileOutput, "polyMpmTestVTPOutput_across%d-%d.vtp",iCountNum,printVTP);
+            FILE * pFile = fopen(fileOutput,"w");
+            free(fileOutput);   
+            fprintf(pFile, "<VTKFile type=\"PolyData\" version=\"1.0\" byte_order=\"LittleEndian\" header_type=\"UInt64\">\n  <PolyData>\n    <Piece NumberOfPoints=\"%d\" NumberOfVerts=\"0\" NumberOfLines=\"%d\" NumberOfStrips=\"0\" NumberOfPolys=\"0\">\n      <Points>\n        <DataArray type=\"Float32\" Name=\"Points\" NumberOfComponents=\"3\" format=\"ascii\">\n",numMPs*4,numMPs*2); 
+            for(int i=0; i<totalNumMPs; i++){
+                //if(h_count(i) == iCountNum || (iCountNum == maxNum && h_count(i) >= maxNum))
+                //XXX: MPsPosition is the updated new position, h_history is the old position
+                    //fprintf(pFile,"          %f %f 0.0\n          %f %f 0.0\n          %f %f 0.0\n          %f %f 0.0\n",
+                            //h_history(i)[0],h_history(i)[1],h_MPsPosition(i)[0],h_MPsPosition(i)[1],h_resultLeft(i)[0],
+                            //h_resultLeft(i)[1],h_resultRight(i)[0],h_resultRight(i)[1]);
+            }
+            fprintf(pFile,"        </DataArray>\n      </Points>\n      <Lines>\n        <DataArray type=\"Int64\" Name=\"connectivity\" format=\"ascii\">\n"); 
+            for(int i=0; i<numMPs*4; i+=4){
+                // 01 213
+                fprintf(pFile,"          %d %d\n          %d %d %d\n",i,i+1,i+2,i+1,i+3);
+            }
+            fprintf(pFile,"        </DataArray>\n        <DataArray type=\"Int64\" Name=\"offsets\" format=\"ascii\">\n");
+            for(int i=0; i<numMPs*5; i+=5){
+                fprintf(pFile,"          %d\n          %d\n",i+2,i+5);
+            }
+            fprintf(pFile,"        </DataArray>\n      </Lines>\n    </Piece>\n  </PolyData>\n</VTKFile>\n");
+            fclose(pFile);
+//===*/
+        }
+    }
 }
 
 void MPMesh::T2LTracking(Vec2dView dx){
@@ -208,4 +269,53 @@ void MPMesh::push(){
   p_MPs->updateMPSlice<MPF_Cur_Pos_Rot_Lat_Lon, MPF_Tgt_Pos_Rot_Lat_Lon>(); // Tgt becomes Cur
 }
 
-} 
+void printVTP_mesh(MPMesh& mpMesh){
+    auto p_mesh = mpMesh.p_mesh;
+    auto vtxCoords = p_mesh->getMeshField<polyMPO::MeshF_VtxCoords>();
+    auto elm2VtxConn = p_mesh->getElm2VtxConn();
+
+    auto p_MPs = mpMesh.p_MPs;
+    auto MPsPosition = p_MPs->getPositions();
+
+    char* fileOutput = (char *)malloc(sizeof(char) * 256); 
+    sprintf(fileOutput,"mesh.vtp");
+    FILE * pFile = fopen(fileOutput,"w");
+    if(pFile == NULL) //if file does not exist, create it
+    {
+        printf("ERROR! \n");
+        pFile = fopen(fileOutput,"wb");
+    } else {
+        printf("SUCCESS! \n");
+    }
+    free(fileOutput);
+
+    DoubleVec3dView::HostMirror h_vtxCoords = Kokkos::create_mirror_view(vtxCoords);
+    IntVtx2ElmView::HostMirror h_elm2VtxConn = Kokkos::create_mirror_view(elm2VtxConn);
+    const int nCells = p_mesh->getNumElements();
+    const int nVertices = p_mesh->getNumVertices();
+    Kokkos::deep_copy(h_vtxCoords,vtxCoords);
+    Kokkos::deep_copy(h_elm2VtxConn,elm2VtxConn);
+    fprintf(pFile, "<VTKFile type=\"PolyData\" version=\"1.0\" byte_order=\"LittleEndian\" header_type=\"UInt64\">\n  <PolyData>\n    <Piece NumberOfPoints=\"%d\" NumberOfVerts=\"0\" NumberOfLines=\"0\" NumberOfStrips=\"0\" NumberOfPolys=\"%d\">\n      <Points>\n        <DataArray type=\"Float32\" Name=\"Points\" NumberOfComponents=\"3\" format=\"ascii\">\n",nVertices,nCells);
+    for(int i=0; i<nVertices; i++){
+        fprintf(pFile, "          %f %f %f\n",h_vtxCoords(i,0),h_vtxCoords(i,1),h_vtxCoords(i,2));
+    }
+    fprintf(pFile, "        </DataArray>\n      </Points>\n      <Polys>\n        <DataArray type=\"Int64\" Name=\"connectivity\" format=\"ascii\">\n");
+    for(int i=0; i<nCells; i++){
+        fprintf(pFile, "          ");
+        for(int j=0; j< h_elm2VtxConn(i,0); j++){
+            fprintf(pFile, "%d ", h_elm2VtxConn(i,j+1)-1);
+        } 
+        fprintf(pFile, "\n");
+    }
+    fprintf(pFile, "        </DataArray>\n        <DataArray type=\"Int64\" Name=\"offsets\" format=\"ascii\">\n");
+    
+    int count = 0;
+    for(int i=0;i<nCells; i++){
+        count += h_elm2VtxConn(i,0);
+        fprintf(pFile, "          %d\n",count);
+    }
+    fprintf(pFile, "        </DataArray>\n      </Polys>\n    </Piece>\n  </PolyData>\n</VTKFile>\n");
+    fclose(pFile);
+}
+
+}

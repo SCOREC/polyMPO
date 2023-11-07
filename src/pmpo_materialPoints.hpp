@@ -137,20 +137,7 @@ class MaterialPoints {
       ps::parallel_for(MPs, setTgtElm, "setTargetElement");
       MPs->rebuild(tgtElm);
     }
-    void startRebuild(int newNumMPs, IntView newMP2elm, IntView newMPAppID) {
-      buildSlices = ps::createMemberViews<MaterialPointTypes, hostSpace>(newNumMPs);
-      auto mpCurElmPos_m = ps::getMemberView<MaterialPointTypes, MPF_Cur_Elm_ID, hostSpace>(buildSlices);
-      auto mpAppID_m = ps::getMemberView<MaterialPointTypes, MPF_MP_APP_ID, hostSpace>(buildSlices);
-      auto mpStatus_m = ps::getMemberView<MaterialPointTypes, MPF_Status, hostSpace>(buildSlices);
-      auto exec = Kokkos::RangePolicy<hostSpace::execution_space>(hostSpace::execution_space(), 0, newNumMPs);
-      auto newMP2elm_h = Kokkos::create_mirror_view_and_copy(hostSpace(), newMP2elm);
-      auto newMPAppID_h = Kokkos::create_mirror_view_and_copy(hostSpace(), newMPAppID);
-      for(int i=0; i < newNumMPs; i++) {
-        mpCurElmPos_m(i) = newMP2elm_h(i);
-        mpStatus_m(i) = MP_ACTIVE;
-        mpAppID_m(i) = newMPAppID_h(i);
-      }
-    }
+    void startRebuild(int newNumMPs, IntView newMP2elm, IntView newMPAppID);
     void finishRebuild(int newNumMPs, IntView tgtElm, IntView newMP2elm) {
       auto buildData_d = ps::createMemberViews<MaterialPointTypes, defaultSpace>(newNumMPs);
       ps::CopyMemSpaceToMemSpace<defaultSpace, hostSpace, MaterialPointTypes>(buildData_d, buildSlices);
@@ -250,7 +237,8 @@ class MaterialPoints {
     // INTERNAL DO NOT CALL
     PS* _createDPS(int numElms, int numMPs, DoubleVec3dView positions, IntView mpsPerElm, IntView mp2elm);
     PS* _createDPS(int numElms, int numMPs, IntView mpsPerElm, IntView mp2elm, IntView mpAppID);
-    pumipic::MemberTypeViews _createInternalMemberViews(int newNumMPs, IntView newMp2elm, IntView newMpAppID);
+    template<typename MemSpace = defaultSpace, typename View>
+    pumipic::MemberTypeViews _createInternalMemberViews(int newNumMPs, View newMp2elm, View newMpAppID);
     
 };
 

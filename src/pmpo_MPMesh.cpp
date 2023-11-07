@@ -108,7 +108,7 @@ void MPMesh::CVTTrackingElmCenterBased(const int printVTP){
     Vec3dView history("positionHistory",numMPs);
     Vec3dView resultLeft("positionResult",numMPs);
     Vec3dView resultRight("positionResult",numMPs);
-    IntView count("countCrossMPs",numMPs); 
+    Vec3dView mpTgtPosArray("positionTarget",numMPs);
 
     auto CVTElmCalc = PS_LAMBDA(const int& elm, const int& mp, const int&mask){
         Vec3d MP(mpPositions(mp,0),mpPositions(mp,1),mpPositions(mp,2));
@@ -146,6 +146,7 @@ void MPMesh::CVTTrackingElmCenterBased(const int printVTP){
                 history(mp) = MP;
                 resultLeft(mp) = MPLeft;
                 resultRight(mp) = MPRight;
+                mpTgtPosArray(mp) = MPnew;
             }
             //MPs2Elm(mp) = iElm;
             mpPositions(mp,0) = MPnew[0];
@@ -157,58 +158,40 @@ void MPMesh::CVTTrackingElmCenterBased(const int printVTP){
     p_MPs->parallel_for(CVTElmCalc,"CVTTrackingElmCenterBasedCalc");
 
     if(printVTP>=0){
-        const int maxNum = 5;
 
-        IntView::HostMirror h_count = Kokkos::create_mirror_view(count);
         Vec3dView::HostMirror h_history = Kokkos::create_mirror_view(history);
         Vec3dView::HostMirror h_resultLeft = Kokkos::create_mirror_view(resultLeft);
         Vec3dView::HostMirror h_resultRight = Kokkos::create_mirror_view(resultRight);
-        //Vec3dView::HostMirror h_MPsPosition = Kokkos::create_mirror_view(mpPositions);
+        Vec3dView::HostMirror h_mpTgtPos = Kokkos::create_mirror_view(mpTgtPosArray);
 
-        Kokkos::deep_copy(h_count,count);
         Kokkos::deep_copy(h_history, history);
         Kokkos::deep_copy(h_resultLeft, resultLeft);
         Kokkos::deep_copy(h_resultRight, resultRight);
-        //Kokkos::deep_copy(h_MPsPosition, mpPositions);
+        Kokkos::deep_copy(h_mpTgtPos, mpTgtPosArray);
 
-        //IntView::HostMirror h_countNum = Kokkos::create_mirror_view(countNum);
-        //Kokkos::deep_copy(h_countNum, countNum);
-        //Kokkos::fence();
-
-        const int totalNumMPs = numMPs;
-        for(int iCountNum = 0; iCountNum <= maxNum; iCountNum++){
-            //numMPs = h_countNum(iCountNum);
-            printf("%d-%d:%d\n",iCountNum,printVTP,numMPs); 
-//* printVTP file
-            char* fileOutput = (char *)malloc(sizeof(char) * 256); 
-            sprintf(fileOutput, "polyMpmTestVTPOutput_across%d-%d.vtp",iCountNum,printVTP);
-            FILE * pFile = fopen(fileOutput,"w");
-            free(fileOutput);   
-            fprintf(pFile, "<VTKFile type=\"PolyData\" version=\"1.0\" byte_order=\"LittleEndian\" header_type=\"UInt64\">\n  <PolyData>\n    <Piece NumberOfPoints=\"%d\" NumberOfVerts=\"0\" NumberOfLines=\"%d\" NumberOfStrips=\"0\" NumberOfPolys=\"0\">\n      <Points>\n        <DataArray type=\"Float32\" Name=\"Points\" NumberOfComponents=\"3\" format=\"ascii\">\n",numMPs*4,numMPs*2); 
-            for(int i=0; i<totalNumMPs; i++){
-                printf("i: %d \n", i);
-                if(h_count(i) == iCountNum || (iCountNum == maxNum && h_count(i) >= maxNum)) ; /* 
-                //XXX: MPsPosition is the updated new position, h_history is the old position
-                    fprintf(pFile,"          %f %f %f\n          %f %f %f\n          %f %f %f\n          %f %f %f\n",
-                            h_history(i)[0],h_history(i)[1],h_history(i)[2],
-                            mpPositions(i,0),mpPositions(i,1),mpPositions(i,2),
-                            h_resultLeft(i)[0],h_resultLeft(i)[1],h_resultLeft(i)[2],
-                            h_resultRight(i)[0],h_resultRight(i)[1],h_resultRight(i)[2]
-                            );*/
-            }
-            fprintf(pFile,"        </DataArray>\n      </Points>\n      <Lines>\n        <DataArray type=\"Int64\" Name=\"connectivity\" format=\"ascii\">\n"); 
-            for(int i=0; i<numMPs*4; i+=4){
-                // 01 213
-                fprintf(pFile,"          %d %d\n          %d %d %d\n",i,i+1,i+2,i+1,i+3);
-            }
-            fprintf(pFile,"        </DataArray>\n        <DataArray type=\"Int64\" Name=\"offsets\" format=\"ascii\">\n");
-            for(int i=0; i<numMPs*5; i+=5){
-                fprintf(pFile,"          %d\n          %d\n",i+2,i+5);
-            }
-            fprintf(pFile,"        </DataArray>\n      </Lines>\n    </Piece>\n  </PolyData>\n</VTKFile>\n");
-            fclose(pFile);
-//===*/
+        //* printVTP file
+        char* fileOutput = (char *)malloc(sizeof(char) * 256); 
+        sprintf(fileOutput, "polyMPOMPTracks.vtp");
+        FILE * pFile = fopen(fileOutput,"w");
+        free(fileOutput);   
+        fprintf(pFile, "<VTKFile type=\"PolyData\" version=\"1.0\" byte_order=\"LittleEndian\" header_type=\"UInt64\">\n  <PolyData>\n    <Piece NumberOfPoints=\"%d\" NumberOfVerts=\"0\" NumberOfLines=\"%d\" NumberOfStrips=\"0\" NumberOfPolys=\"0\">\n      <Points>\n        <DataArray type=\"Float32\" Name=\"Points\" NumberOfComponents=\"3\" format=\"ascii\">\n",numMPs*4,numMPs*2); 
+        for(int i=0; i<numMPs; i++){
+            fprintf(pFile,"          %f %f %f\n          %f %f %f\n          %f %f %f\n          %f %f %f\n",
+                          h_history(i)[0],h_history(i)[1],h_history(i)[2],
+                          h_mpTgtPos(i)[0],h_mpTgtPos(i)[1],h_mpTgtPos(i)[2],
+                          h_resultLeft(i)[0],h_resultLeft(i)[1],h_resultLeft(i)[2],
+                          h_resultRight(i)[0],h_resultRight(i)[1],h_resultRight(i)[2]);
         }
+        fprintf(pFile,"        </DataArray>\n      </Points>\n      <Lines>\n        <DataArray type=\"Int64\" Name=\"connectivity\" format=\"ascii\">\n"); 
+        for(int i=0; i<numMPs*4; i+=4){
+             fprintf(pFile,"          %d %d\n          %d %d %d\n",i,i+1,i+2,i+1,i+3);
+        }
+        fprintf(pFile,"        </DataArray>\n        <DataArray type=\"Int64\" Name=\"offsets\" format=\"ascii\">\n");
+        for(int i=0; i<numMPs*5; i+=5){
+            fprintf(pFile,"          %d\n          %d\n",i+2,i+5);
+        }
+        fprintf(pFile,"        </DataArray>\n      </Lines>\n    </Piece>\n  </PolyData>\n</VTKFile>\n");
+        fclose(pFile);
     }
 }
 

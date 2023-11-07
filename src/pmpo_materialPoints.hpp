@@ -136,14 +136,16 @@ class MaterialPoints {
       MPs->rebuild(tgtElm);
     }
     void startRebuild(int newNumMPs, IntView newMP2elm, IntView newMPAppID) {
-      buildSlices = ps::createMemberViews<MaterialPointTypes, Kokkos::HostSpace>(newNumMPs);
-      auto mpCurElmPos_m = ps::getMemberView<MaterialPointTypes, MPF_Cur_Elm_ID>(buildSlices);
-      auto mpAppID_m = ps::getMemberView<MaterialPointTypes, MPF_MP_APP_ID>(buildSlices);
-      auto mpStatus_m = ps::getMemberView<MaterialPointTypes, MPF_Status>(buildSlices);
-      for (int i=0; i < newNumMPs; i++) {
-        mpCurElmPos_m(i) = newMP2elm(i);
+      using hostSpace = Kokkos::HostSpace;
+      buildSlices = ps::createMemberViews<MaterialPointTypes, hostSpace>(newNumMPs);
+      auto mpCurElmPos_m = ps::getMemberView<MaterialPointTypes, MPF_Cur_Elm_ID, hostSpace>(buildSlices);
+      auto mpAppID_m = ps::getMemberView<MaterialPointTypes, MPF_MP_APP_ID, hostSpace>(buildSlices);
+      auto mpStatus_m = ps::getMemberView<MaterialPointTypes, MPF_Status, hostSpace>(buildSlices);
+      auto exec = Kokkos::RangePolicy<Kokkos::DefaultHostExecutionSpace>(Kokkos::DefaultHostExecutionSpace(), 0, newNumMPs);
+      for(int i=0; i < newNumMPs; i++) {
+        mpCurElmPos_m(i) = 1;
         mpStatus_m(i) = MP_ACTIVE;
-        mpAppID_m(i) = newMPAppID(i);
+        mpAppID_m(i) = 1;
       }
     }
     void finishRebuild(IntView tgtElm, IntView newMP2elm) {
@@ -151,6 +153,7 @@ class MaterialPoints {
       updateMaxAppID();
     }
     void rebuild(IntView tgtElm, int newNumMPs, IntView newMP2elm, IntView newMPAppID) {
+      startRebuild(newNumMPs, newMP2elm, newMPAppID);
       auto newMPInfo = _createInternalMemberViews(newNumMPs, newMP2elm, newMPAppID);
       MPs->rebuild(tgtElm, newMP2elm, newMPInfo);
       updateMaxAppID();

@@ -75,7 +75,7 @@ void MPMesh::CVTTrackingEdgeCenterBased(Vec2dView dx){
 }
 
 
-void MPMesh::CVTTrackingElmCenterBased(){
+void MPMesh::CVTTrackingElmCenterBased(const int printVTP){
     int numVtxs = p_mesh->getNumVertices();
     int numElms = p_mesh->getNumElements();
     auto numMPs = p_MPs->getCount();
@@ -104,10 +104,11 @@ void MPMesh::CVTTrackingElmCenterBased(){
         elmCenter(elm)[2] = sum_z/numVtx;
     });
 
-    const int printVTP = 0;
+    //const int printVTP = 0;
     Vec3dView history("positionHistory",numMPs);
     Vec3dView resultLeft("positionResult",numMPs);
-    Vec3dView resultRight("positionResult",numMPs); 
+    Vec3dView resultRight("positionResult",numMPs);
+    IntView count("countCrossMPs",numMPs); 
 
     auto CVTElmCalc = PS_LAMBDA(const int& elm, const int& mp, const int&mask){
         Vec3d MP(mpPositions(mp,0),mpPositions(mp,1),mpPositions(mp,2));
@@ -138,23 +139,37 @@ void MPMesh::CVTTrackingElmCenterBased(){
                 }
             }
             if(printVTP>=0){ 
-                //Vec3d MParrow = MP + dx(mp)*0.7;
-                //Vec3d shift = Vec3d(-dx(mp)[1],dx(mp)[0])*0.1;
-                //Vec3d MPLeft = MParrow + shift;
-                //Vec3d MPRight = MParrow - shift;
+                Vec3d MParrow = MP + dx*0.7;
+                Vec3d shift = Vec3d(-dx[1],dx[0],dx[2])*0.1;
+                Vec3d MPLeft = MParrow + shift;
+                Vec3d MPRight = MParrow - shift;
                 history(mp) = MP;
-                //resultLeft(mp) = MPLeft;
-                //resultRight(mp) = MPRight;
-            } 
+                resultLeft(mp) = MPLeft;
+                resultRight(mp) = MPRight;
+            }
+            //MPs2Elm(mp) = iElm;
+            mpPositions(mp,0) = MPnew[0];
+            mpPositions(mp,1) = MPnew[1];
+            mpPositions(mp,2) = MPnew[2];
+            //printf("mp: %d \n", mp); 
         }
     };
     p_MPs->parallel_for(CVTElmCalc,"CVTTrackingElmCenterBasedCalc");
 
     if(printVTP>=0){
         const int maxNum = 5;
+
+        IntView::HostMirror h_count = Kokkos::create_mirror_view(count);
         Vec3dView::HostMirror h_history = Kokkos::create_mirror_view(history);
+        Vec3dView::HostMirror h_resultLeft = Kokkos::create_mirror_view(resultLeft);
+        Vec3dView::HostMirror h_resultRight = Kokkos::create_mirror_view(resultRight);
+        //Vec3dView::HostMirror h_MPsPosition = Kokkos::create_mirror_view(mpPositions);
+
+        Kokkos::deep_copy(h_count,count);
         Kokkos::deep_copy(h_history, history);
-        //kokkos::fence();
+        Kokkos::deep_copy(h_resultLeft, resultLeft);
+        Kokkos::deep_copy(h_resultRight, resultRight);
+        //Kokkos::deep_copy(h_MPsPosition, mpPositions);
 
         //IntView::HostMirror h_countNum = Kokkos::create_mirror_view(countNum);
         //Kokkos::deep_copy(h_countNum, countNum);
@@ -171,11 +186,15 @@ void MPMesh::CVTTrackingElmCenterBased(){
             free(fileOutput);   
             fprintf(pFile, "<VTKFile type=\"PolyData\" version=\"1.0\" byte_order=\"LittleEndian\" header_type=\"UInt64\">\n  <PolyData>\n    <Piece NumberOfPoints=\"%d\" NumberOfVerts=\"0\" NumberOfLines=\"%d\" NumberOfStrips=\"0\" NumberOfPolys=\"0\">\n      <Points>\n        <DataArray type=\"Float32\" Name=\"Points\" NumberOfComponents=\"3\" format=\"ascii\">\n",numMPs*4,numMPs*2); 
             for(int i=0; i<totalNumMPs; i++){
-                //if(h_count(i) == iCountNum || (iCountNum == maxNum && h_count(i) >= maxNum))
+                printf("i: %d \n", i);
+                if(h_count(i) == iCountNum || (iCountNum == maxNum && h_count(i) >= maxNum)) ; /* 
                 //XXX: MPsPosition is the updated new position, h_history is the old position
-                    //fprintf(pFile,"          %f %f 0.0\n          %f %f 0.0\n          %f %f 0.0\n          %f %f 0.0\n",
-                            //h_history(i)[0],h_history(i)[1],h_MPsPosition(i)[0],h_MPsPosition(i)[1],h_resultLeft(i)[0],
-                            //h_resultLeft(i)[1],h_resultRight(i)[0],h_resultRight(i)[1]);
+                    fprintf(pFile,"          %f %f %f\n          %f %f %f\n          %f %f %f\n          %f %f %f\n",
+                            h_history(i)[0],h_history(i)[1],h_history(i)[2],
+                            mpPositions(i,0),mpPositions(i,1),mpPositions(i,2),
+                            h_resultLeft(i)[0],h_resultLeft(i)[1],h_resultLeft(i)[2],
+                            h_resultRight(i)[0],h_resultRight(i)[1],h_resultRight(i)[2]
+                            );*/
             }
             fprintf(pFile,"        </DataArray>\n      </Points>\n      <Lines>\n        <DataArray type=\"Int64\" Name=\"connectivity\" format=\"ascii\">\n"); 
             for(int i=0; i<numMPs*4; i+=4){
@@ -264,7 +283,7 @@ void MPMesh::push(){
   sphericalInterpolation<MeshF_RotLatLonIncr, MPF_Rot_Lat_Lon_Incr>(*this);
   p_MPs ->updateRotLatLonAndXYZ2Tgt(p_mesh->getSphereRadius()); // set Tgt_XYZ
 
-  CVTTrackingElmCenterBased(); // move to Tgt_XYZ
+  CVTTrackingElmCenterBased(0); // move to Tgt_XYZ
   p_MPs->updateMPSlice<MPF_Cur_Pos_XYZ, MPF_Tgt_Pos_XYZ>(); // Tgt_XYZ becomes Cur_XYZ
   p_MPs->updateMPSlice<MPF_Cur_Pos_Rot_Lat_Lon, MPF_Tgt_Pos_Rot_Lat_Lon>(); // Tgt becomes Cur
 }
@@ -280,13 +299,6 @@ void printVTP_mesh(MPMesh& mpMesh){
     char* fileOutput = (char *)malloc(sizeof(char) * 256); 
     sprintf(fileOutput,"mesh.vtp");
     FILE * pFile = fopen(fileOutput,"w");
-    if(pFile == NULL) //if file does not exist, create it
-    {
-        printf("ERROR! \n");
-        pFile = fopen(fileOutput,"wb");
-    } else {
-        printf("SUCCESS! \n");
-    }
     free(fileOutput);
 
     DoubleVec3dView::HostMirror h_vtxCoords = Kokkos::create_mirror_view(vtxCoords);

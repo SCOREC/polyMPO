@@ -139,8 +139,16 @@ void MPMesh::CVTTrackingElmCenterBased(const int printVTP){
                 }
             }
             if(printVTP>=0){ 
+                double d1 = dx[0];
+                double d2 = dx[2];
+                double d3 = dx[3];
+                double m1 = MP[0];
+                double m2 = MP[1];
+                double m3 = MP[2];
                 Vec3d MParrow = MP + dx*0.7;
-                Vec3d shift = Vec3d(-dx[1],dx[0],dx[2])*0.1;
+                //Vec3d shift = Vec3d(-dx[1],dx[0],dx[2])*0.1;
+                Vec3d r = MParrow * (1.0/dx.magnitude());
+                Vec3d shift = dx.cross(r) * (1.0/(dx.cross(r)).magnitude());
                 Vec3d MPLeft = MParrow + shift;
                 Vec3d MPRight = MParrow - shift;
                 history(mp) = MP;
@@ -152,7 +160,6 @@ void MPMesh::CVTTrackingElmCenterBased(const int printVTP){
             mpPositions(mp,0) = MPnew[0];
             mpPositions(mp,1) = MPnew[1];
             mpPositions(mp,2) = MPnew[2];
-            //printf("mp: %d \n", mp); 
         }
     };
     p_MPs->parallel_for(CVTElmCalc,"CVTTrackingElmCenterBasedCalc");

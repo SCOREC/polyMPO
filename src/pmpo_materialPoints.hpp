@@ -14,6 +14,8 @@ namespace polyMPO{
 
 using particle_structs::DPS;
 using particle_structs::MemberTypes;
+using hostSpace = Kokkos::HostSpace;
+using defaultSpace = Kokkos::DefaultExecutionSpace::memory_space;
 
 //typedef bool mp_flag_t;
 typedef int mp_flag_t;
@@ -136,27 +138,28 @@ class MaterialPoints {
       MPs->rebuild(tgtElm);
     }
     void startRebuild(int newNumMPs, IntView newMP2elm, IntView newMPAppID) {
-      using hostSpace = Kokkos::HostSpace;
       buildSlices = ps::createMemberViews<MaterialPointTypes, hostSpace>(newNumMPs);
       auto mpCurElmPos_m = ps::getMemberView<MaterialPointTypes, MPF_Cur_Elm_ID, hostSpace>(buildSlices);
       auto mpAppID_m = ps::getMemberView<MaterialPointTypes, MPF_MP_APP_ID, hostSpace>(buildSlices);
       auto mpStatus_m = ps::getMemberView<MaterialPointTypes, MPF_Status, hostSpace>(buildSlices);
-      auto exec = Kokkos::RangePolicy<Kokkos::DefaultHostExecutionSpace>(Kokkos::DefaultHostExecutionSpace(), 0, newNumMPs);
+      auto exec = Kokkos::RangePolicy<hostSpace::execution_space>(hostSpace::execution_space(), 0, newNumMPs);
+      auto newMP2elm_h = Kokkos::create_mirror_view_and_copy(hostSpace(), newMP2elm);
+      auto newMPAppID_h = Kokkos::create_mirror_view_and_copy(hostSpace(), newMPAppID);
       for(int i=0; i < newNumMPs; i++) {
-        mpCurElmPos_m(i) = 1;
+        mpCurElmPos_m(i) = newMP2elm_h(i);
         mpStatus_m(i) = MP_ACTIVE;
-        mpAppID_m(i) = 1;
+        mpAppID_m(i) = newMPAppID_h(i);
       }
     }
-    void finishRebuild(IntView tgtElm, IntView newMP2elm) {
-      MPs->rebuild(tgtElm, newMP2elm, buildSlices);
+    void finishRebuild(int newNumMPs, IntView tgtElm, IntView newMP2elm) {
+      auto buildData_d = ps::createMemberViews<MaterialPointTypes, defaultSpace>(newNumMPs);
+      ps::CopyMemSpaceToMemSpace<defaultSpace, hostSpace, MaterialPointTypes>(buildData_d, buildSlices);
+      MPs->rebuild(tgtElm, newMP2elm, buildData_d);
       updateMaxAppID();
     }
     void rebuild(IntView tgtElm, int newNumMPs, IntView newMP2elm, IntView newMPAppID) {
       startRebuild(newNumMPs, newMP2elm, newMPAppID);
-      auto newMPInfo = _createInternalMemberViews(newNumMPs, newMP2elm, newMPAppID);
-      MPs->rebuild(tgtElm, newMP2elm, newMPInfo);
-      updateMaxAppID();
+      finishRebuild(newNumMPs, tgtElm, newMP2elm);
     }
     void updateMPElmID(){
       auto curElmID = MPs->get<MPF_Cur_Elm_ID>();
@@ -182,7 +185,7 @@ class MaterialPoints {
     }
     template <MaterialPointSlice mpSliceIndex, typename mpSliceData>
     void setMPSliceHost(int numMPs, mpSliceData mpSliceIn) {
-      auto mpSlice = ps::getMemberView<MaterialPointTypes, mpSliceIndex>(buildSlices);
+      auto mpSlice = ps::getMemberView<MaterialPointTypes, mpSliceIndex, hostSpace>(buildSlices);
       for (int i=0; i < numMPs; i++) {
         mpSlice(i) = mpSliceIn(i);
       }

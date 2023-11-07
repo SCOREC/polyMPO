@@ -114,13 +114,11 @@ class MaterialPoints {
       MPs = _createDPS(numElms, numMPs, positions, mpsPerElm, mp2elm);
       maxAppID = numMPs; //this ctor does not support inactive MPs
       operating_mode = MP_RELEASE;
-      buildSlices = ps::createMemberViews<MaterialPointTypes>(numMPs);
     };
     MaterialPoints(int numElms, int numMPs, IntView mpsPerElm, IntView mp2elm, IntView mpAppID) {
       MPs = _createDPS(numElms, numMPs, mpsPerElm, mp2elm, mpAppID);
       updateMaxAppID();
       operating_mode = MP_RELEASE;
-      buildSlices = ps::createMemberViews<MaterialPointTypes>(numMPs);
     };
     ~MaterialPoints() {
       if(MPs != nullptr)
@@ -136,6 +134,21 @@ class MaterialPoints {
       };
       ps::parallel_for(MPs, setTgtElm, "setTargetElement");
       MPs->rebuild(tgtElm);
+    }
+    void startRebuild(int newNumMPs, IntView newMP2elm, IntView newMPAppID) {
+      buildSlices = ps::createMemberViews<MaterialPointTypes, Kokkos::HostSpace>(newNumMPs);
+      auto mpCurElmPos_m = ps::getMemberView<MaterialPointTypes, MPF_Cur_Elm_ID>(buildSlices);
+      auto mpAppID_m = ps::getMemberView<MaterialPointTypes, MPF_MP_APP_ID>(buildSlices);
+      auto mpStatus_m = ps::getMemberView<MaterialPointTypes, MPF_Status>(buildSlices);
+      for (int i=0; i < newNumMPs; i++) {
+        mpCurElmPos_m(i) = newMP2elm(i);
+        mpStatus_m(i) = MP_ACTIVE;
+        mpAppID_m(i) = newMPAppID(i);
+      }
+    }
+    void finishRebuild(IntView tgtElm, IntView newMP2elm) {
+      MPs->rebuild(tgtElm, newMP2elm, buildSlices);
+      updateMaxAppID();
     }
     void rebuild(IntView tgtElm, int newNumMPs, IntView newMP2elm, IntView newMPAppID) {
       auto newMPInfo = _createInternalMemberViews(newNumMPs, newMP2elm, newMPAppID);
@@ -165,11 +178,11 @@ class MaterialPoints {
       );
     }
     template <MaterialPointSlice mpSliceIndex, typename mpSliceData>
-    void setMPSlice(int numMPs, mpSliceData data) {
-      auto setData = ps::getMemberView<MaterialPointTypes, mpSliceIndex>(buildSlices);
-      Kokkos::parallel_for("setMPinfo", numMPs, KOKKOS_LAMBDA(int i) {
-        setData(i) = data(i);
-      });
+    void setMPSliceHost(int numMPs, mpSliceData mpSliceIn) {
+      auto mpSlice = ps::getMemberView<MaterialPointTypes, mpSliceIndex>(buildSlices);
+      for (int i=0; i < numMPs; i++) {
+        mpSlice(i) = mpSliceIn(i);
+      }
     }
     template <MaterialPointSlice mpfIndexCur, MaterialPointSlice mpfIndexTgt>
     void updateMPSlice(){

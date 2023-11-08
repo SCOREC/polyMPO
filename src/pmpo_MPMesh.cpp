@@ -274,6 +274,7 @@ void MPMesh::push(){
   CVTTrackingElmCenterBased(0); // move to Tgt_XYZ
   p_MPs->updateMPSlice<MPF_Cur_Pos_XYZ, MPF_Tgt_Pos_XYZ>(); // Tgt_XYZ becomes Cur_XYZ
   p_MPs->updateMPSlice<MPF_Cur_Pos_Rot_Lat_Lon, MPF_Tgt_Pos_Rot_Lat_Lon>(); // Tgt becomes Cur
+  p_MPs->rebuild();
 }
 
 void printVTP_mesh(MPMesh& mpMesh){

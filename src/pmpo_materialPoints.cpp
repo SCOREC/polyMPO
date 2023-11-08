@@ -3,6 +3,7 @@
 namespace polyMPO {
 
 namespace {
+
 template<typename MemSpace = defaultSpace, typename View>
 pumipic::MemberTypeViews createInternalMemberViews(int numMPs, View mp2elm, View mpAppID){
   auto mpInfo = ps::createMemberViews<MaterialPointTypes, MemSpace>(numMPs);
@@ -47,7 +48,8 @@ PS* createDPS(int numElms, int numMPs, IntView mpsPerElm, IntView mp2elm, IntVie
   ps::destroyViews<MaterialPointTypes>(mpInfo);
   return dps;
 }
-}
+
+} //End anonymous namespace
 
 MaterialPoints::MaterialPoints(int numElms, int numMPs, DoubleVec3dView positions, IntView mpsPerElm, IntView mp2elm) {
   MPs = createDPS(numElms, numMPs, positions, mpsPerElm, mp2elm);

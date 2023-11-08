@@ -115,20 +115,10 @@ class MaterialPoints {
 
   public:
     MaterialPoints() : MPs(nullptr) {};
-    MaterialPoints(int numElms, int numMPs, DoubleVec3dView positions, IntView mpsPerElm, IntView mp2elm) {
-      MPs = _createDPS(numElms, numMPs, positions, mpsPerElm, mp2elm);
-      maxAppID = numMPs; //this ctor does not support inactive MPs
-      operating_mode = MP_RELEASE;
-    };
-    MaterialPoints(int numElms, int numMPs, IntView mpsPerElm, IntView mp2elm, IntView mpAppID) {
-      MPs = _createDPS(numElms, numMPs, mpsPerElm, mp2elm, mpAppID);
-      updateMaxAppID();
-      operating_mode = MP_RELEASE;
-    };
-    ~MaterialPoints() {
-      if(MPs != nullptr)
-        delete MPs;
-    }
+    MaterialPoints(int numElms, int numMPs, DoubleVec3dView positions, IntView mpsPerElm, IntView mp2elm);
+    MaterialPoints(int numElms, int numMPs, IntView mpsPerElm, IntView mp2elm, IntView mpAppID);
+    ~MaterialPoints();
+    void rebuild(IntView tgtElm, int newNumMPs, IntView newMP2elm, IntView newMPAppID);
     void rebuild() {
       IntView tgtElm("tgtElm", MPs->capacity());
       auto tgtMpElm = MPs->get<MPF_Tgt_Elm_ID>();
@@ -237,14 +227,7 @@ class MaterialPoints {
 
     // MUTATOR  
     template <MaterialPointSlice index> void fillData(double value);//use PS_LAMBDA fill up to 1
-    void T2LTracking(Vec2dView dx);
-
-    // INTERNAL DO NOT CALL
-    PS* _createDPS(int numElms, int numMPs, DoubleVec3dView positions, IntView mpsPerElm, IntView mp2elm);
-    PS* _createDPS(int numElms, int numMPs, IntView mpsPerElm, IntView mp2elm, IntView mpAppID);
-    template<typename MemSpace = defaultSpace, typename View>
-    pumipic::MemberTypeViews _createInternalMemberViews(int newNumMPs, View newMp2elm, View newMpAppID);
-    
+    void T2LTracking(Vec2dView dx);    
 };
 
 template <MaterialPointSlice index>

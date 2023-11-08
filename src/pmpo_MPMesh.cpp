@@ -104,7 +104,6 @@ void MPMesh::CVTTrackingElmCenterBased(const int printVTP){
         elmCenter(elm)[2] = sum_z/numVtx;
     });
 
-    //const int printVTP = 0;
     Vec3dView history("positionHistory",numMPs);
     Vec3dView resultLeft("positionResult",numMPs);
     Vec3dView resultRight("positionResult",numMPs);
@@ -114,8 +113,8 @@ void MPMesh::CVTTrackingElmCenterBased(const int printVTP){
         Vec3d MP(mpPositions(mp,0),mpPositions(mp,1),mpPositions(mp,2));
         if(mask){
             int iElm = elm;
-            Vec3d dx(mpTgtPos(mp,0),mpTgtPos(mp,1),mpTgtPos(mp,2));
-            Vec3d MPnew = MP + dx;
+            Vec3d MPnew(mpTgtPos(mp,0),mpTgtPos(mp,1),mpTgtPos(mp,2));
+            Vec3d dx = MPnew-MP;
             while(true){
                 int numVtx = elm2VtxConn(iElm,0);
                 Vec3d delta = MPnew - elmCenter(iElm);
@@ -146,9 +145,8 @@ void MPMesh::CVTTrackingElmCenterBased(const int printVTP){
                 double m2 = MP[1];
                 double m3 = MP[2];
                 Vec3d MParrow = MP + dx*0.7;
-                //Vec3d shift = Vec3d(-dx[1],dx[0],dx[2])*0.1;
-                Vec3d r = MParrow * (1.0/dx.magnitude());
-                Vec3d shift = dx.cross(r) * (1.0/(dx.cross(r)).magnitude());
+                Vec3d r = MPnew * (1.0/MPnew.magnitude());
+                Vec3d shift = dx.cross(r) * ((1.0-0.7)*dx.magnitude()/(dx.cross(r)).magnitude());
                 Vec3d MPLeft = MParrow + shift;
                 Vec3d MPRight = MParrow - shift;
                 history(mp) = MP;

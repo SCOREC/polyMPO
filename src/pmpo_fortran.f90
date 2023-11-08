@@ -387,8 +387,8 @@ module polympo
   !> @param nVertices(in) length of array in, use for assertion
   !> @param latitude/longitude(in/out) the 1D arrays of vertices lat/lon
   !---------------------------------------------------------------------------
-  subroutine polympo_getMeshRotLatLon(mpMesh, nVertices, latitude, longitude) &
-             bind(C, NAME='polympo_getMeshRotLatLon_f')
+  subroutine polympo_getMeshVtxRotLatLon(mpMesh, nVertices, latitude, longitude) &
+             bind(C, NAME='polympo_getMeshVtxRotLatLon_f')
     use :: iso_c_binding
     type(c_ptr), value :: mpMesh
     integer(c_int), value :: nVertices

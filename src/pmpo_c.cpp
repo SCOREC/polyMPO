@@ -514,7 +514,7 @@ void polympo_setMeshVtxRotLatLon_f(MPMesh_ptr p_mpmesh, int nVertices, double* l
   Kokkos::deep_copy(coordsArray, h_coordsArray);
 }
 
-void polympo_getMeshVtxRotLatLon(MPMesh_ptr p_mpmesh, int nVertices, double* latitude, double* longitude){
+void polympo_getMeshVtxRotLatLon_f(MPMesh_ptr p_mpmesh, int nVertices, double* latitude, double* longitude){
   //chech validity
   checkMPMeshValid(p_mpmesh);
   auto p_mesh = ((polyMPO::MPMesh*)p_mpmesh)->p_mesh;

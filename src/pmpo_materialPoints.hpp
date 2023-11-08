@@ -139,10 +139,6 @@ class MaterialPoints {
       ps::destroyViews<MaterialPointTypes>(buildSlices);
       ps::destroyViews<MaterialPointTypes>(rebuildData_d);
     }
-    void rebuild(IntView tgtElm, int newNumMPs, IntView newMP2elm, IntView newMPAppID) {
-      startRebuild(tgtElm, newNumMPs, newMP2elm, newMPAppID);
-      finishRebuild();
-    }
     void updateMPElmID(){
       auto curElmID = MPs->get<MPF_Cur_Elm_ID>();
       auto tgtElmID = MPs->get<MPF_Tgt_Elm_ID>();

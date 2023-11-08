@@ -3,7 +3,7 @@
 namespace polyMPO {
 
 namespace {
-template<typename MemSpace, typename View>
+template<typename MemSpace = defaultSpace, typename View>
 pumipic::MemberTypeViews createInternalMemberViews(int numMPs, View mp2elm, View mpAppID){
   auto mpInfo = ps::createMemberViews<MaterialPointTypes, MemSpace>(numMPs);
   auto mpCurElmPos_m = ps::getMemberView<MaterialPointTypes, MPF_Cur_Elm_ID, MemSpace>(mpInfo);
@@ -66,18 +66,17 @@ MaterialPoints::~MaterialPoints() {
     delete MPs;
 }
 
-void MaterialPoints::rebuild(IntView tgtElm, int newNumMPs, IntView newMP2elm, IntView newMPAppID) {
-  auto newMPInfo = createInternalMemberViews(newNumMPs, newMP2elm, newMPAppID);
-  MPs->rebuild(tgtElm, newMP2elm, newMPInfo);
-  updateMaxAppID();
-}
-
 void MaterialPoints::startRebuild(IntView tgtElm, int newNumMPs, IntView newMP2elm, IntView newMPAppID) {
   rebuildNumNewMPs = newNumMPs;
   rebuildNewMP2elm = newMP2elm;
   rebuildtgtElm = tgtElm;
   auto newMP2elm_h = Kokkos::create_mirror_view_and_copy(hostSpace(), newMP2elm);
   auto newMPAppID_h = Kokkos::create_mirror_view_and_copy(hostSpace(), newMPAppID);
-  buildSlices = _createInternalMemberViews<hostSpace>(newNumMPs, newMP2elm_h, newMPAppID_h);
+  buildSlices = createInternalMemberViews<hostSpace>(newNumMPs, newMP2elm_h, newMPAppID_h);
+}
+
+void MaterialPoints::rebuild(IntView tgtElm, int newNumMPs, IntView newMP2elm, IntView newMPAppID) {
+  startRebuild(tgtElm, newNumMPs, newMP2elm, newMPAppID);
+  finishRebuild();
 }
 }

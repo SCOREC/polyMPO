@@ -20,7 +20,7 @@ program main
   include 'mpif.h'
     
   integer, parameter :: APP_RKIND = selected_real_kind(15)
-  integer :: nverts, nvertsGet, numCompsVel, numCompsCoords, numMPs, numElms
+  integer :: nverts, nvertsGet, nElmsGet, numCompsVel, numCompsCoords, numMPs, numElms
   integer :: i, j
   integer :: setMeshOption, setMPOption
   integer :: mpi_comm_handle = MPI_COMM_WORLD
@@ -66,6 +66,9 @@ program main
   end do
   call polympo_getMeshNumVertices(mpMesh, nvertsGet)
   call assert(nverts.eq.nvertsGet,"num. verts mismatch")
+
+  call polympo_getMeshNumElements(mpMesh, nElmsGet)
+  call assert(numElms.eq.nElmsGet,"num. elms mismatch")
   do i = 1,numCompsVel
     do j = 1,nverts 
         Mesharray(i,j) = (i-1)*numCompsVel + j

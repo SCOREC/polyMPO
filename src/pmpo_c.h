@@ -40,7 +40,7 @@ void polympo_setMeshSphereRadius(MPMesh_ptr p_mpmesh, double sphereRadius);
 void polympo_setMeshNumVtxs(MPMesh_ptr p_mpmesh, int numVtxs);
 void polympo_getMeshNumVertices(MPMesh_ptr p_mpmesh, int & numVtxs);
 void polympo_setMeshNumElms(MPMesh_ptr p_mpmesh, int numElms);
-void polympo_getMeshNumElms(MPMesh_ptr p_mpmesh, int & numElms);
+void polympo_getMeshNumElements(MPMesh_ptr p_mpmesh, int & numElms);
 void polympo_setMeshNumEdgesPerElm(MPMesh_ptr p_mpmesh, int nCells, int* array);
 void polympo_setMeshElm2VtxConn(MPMesh_ptr p_mpmesh, int maxEdges, int nCells, int* array);
 void polympo_setMeshElm2ElmConn(MPMesh_ptr p_mpmesh, int maxEdges, int nCells, int* array);

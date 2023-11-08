@@ -267,12 +267,12 @@ module polympo
   !> @param mpMesh(in) mpMesh object
   !> @param numVtxs(return)) the number of elements
   !---------------------------------------------------------------------------
-  function polympo_getMeshNumElms(mpMesh) result(numElms) &
-            bind(C, NAME = 'polympo_getMeshNumElms')
+  subroutine polympo_getMeshNumElements(mpMesh, numElm) &
+            bind(C, NAME = 'polympo_getMeshNumElements')
     use :: iso_c_binding
-    type(c_ptr), intent(in), value :: mpMesh
-    integer(c_int) :: numElms
-  end function
+    type(c_ptr), value :: mpMesh
+    integer(c_int), intent(inout) :: numElm
+  end subroutine
   !---------------------------------------------------------------------------
   !> @brief get the number of vertices from the mesh holding by polyMPO
   !> @param mpMesh(in) mpMesh object

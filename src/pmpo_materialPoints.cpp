@@ -2,6 +2,7 @@
 
 namespace polyMPO {
 
+namespace {
 pumipic::MemberTypeViews createInternalMemberViews(int numMPs, IntView mp2elm, IntView mpAppID){
   auto mpInfo = ps::createMemberViews<MaterialPointTypes>(numMPs);
   auto mpCurElmPos_m = ps::getMemberView<MaterialPointTypes, MPF_Cur_Elm_ID>(mpInfo);
@@ -43,5 +44,29 @@ PS* createDPS(int numElms, int numMPs, IntView mpsPerElm, IntView mp2elm, IntVie
   auto dps = new DPS<MaterialPointTypes>(policy, numElms, numMPs, mpsPerElm, elmGids, mp2elm, mpInfo);
   ps::destroyViews<MaterialPointTypes>(mpInfo);
   return dps;
+}
+}
+
+MaterialPoints::MaterialPoints(int numElms, int numMPs, DoubleVec3dView positions, IntView mpsPerElm, IntView mp2elm) {
+  MPs = createDPS(numElms, numMPs, positions, mpsPerElm, mp2elm);
+  maxAppID = numMPs; //this ctor does not support inactive MPs
+  operating_mode = MP_RELEASE;
+};
+
+MaterialPoints::MaterialPoints(int numElms, int numMPs, IntView mpsPerElm, IntView mp2elm, IntView mpAppID) {
+  MPs = createDPS(numElms, numMPs, mpsPerElm, mp2elm, mpAppID);
+  updateMaxAppID();
+  operating_mode = MP_RELEASE;
+};
+
+MaterialPoints::~MaterialPoints() {
+  if(MPs != nullptr)
+    delete MPs;
+}
+
+void MaterialPoints::rebuild(IntView tgtElm, int newNumMPs, IntView newMP2elm, IntView newMPAppID) {
+  auto newMPInfo = createInternalMemberViews(newNumMPs, newMP2elm, newMPAppID);
+  MPs->rebuild(tgtElm, newMP2elm, newMPInfo);
+  updateMaxAppID();
 }
 }

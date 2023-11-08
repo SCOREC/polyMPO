@@ -47,7 +47,10 @@ PS* MaterialPoints::_createDPS(int numElms, int numMPs, IntView mpsPerElm, IntVi
   return dps;
 }
 
-void MaterialPoints::startRebuild(int newNumMPs, IntView newMP2elm, IntView newMPAppID) {
+void MaterialPoints::startRebuild(IntView tgtElm, int newNumMPs, IntView newMP2elm, IntView newMPAppID) {
+  rebuildNumNewMPs = newNumMPs;
+  rebuildNewMP2elm = newMP2elm;
+  rebuildtgtElm = tgtElm;
   auto newMP2elm_h = Kokkos::create_mirror_view_and_copy(hostSpace(), newMP2elm);
   auto newMPAppID_h = Kokkos::create_mirror_view_and_copy(hostSpace(), newMPAppID);
   buildSlices = _createInternalMemberViews<hostSpace>(newNumMPs, newMP2elm_h, newMPAppID_h);

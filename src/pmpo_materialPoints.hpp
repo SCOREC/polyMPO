@@ -108,7 +108,10 @@ class MaterialPoints {
     int elmIDoffset = -1;
     int maxAppID = -1;
     Operating_Mode operating_mode;
+    int rebuildNumNewMPs;
     pumipic::MemberTypeViews buildSlices;
+    IntView rebuildNewMP2elm;
+    IntView rebuildtgtElm;
 
   public:
     MaterialPoints() : MPs(nullptr) {};
@@ -137,16 +140,18 @@ class MaterialPoints {
       ps::parallel_for(MPs, setTgtElm, "setTargetElement");
       MPs->rebuild(tgtElm);
     }
-    void startRebuild(int newNumMPs, IntView newMP2elm, IntView newMPAppID);
-    void finishRebuild(int newNumMPs, IntView tgtElm, IntView newMP2elm) {
-      auto buildData_d = ps::createMemberViews<MaterialPointTypes, defaultSpace>(newNumMPs);
-      ps::CopyMemSpaceToMemSpace<defaultSpace, hostSpace, MaterialPointTypes>(buildData_d, buildSlices);
-      MPs->rebuild(tgtElm, newMP2elm, buildData_d);
+    void startRebuild(IntView tgtElm, int newNumMPs, IntView newMP2elm, IntView newMPAppID);
+    void finishRebuild() {
+      auto rebuildData_d = ps::createMemberViews<MaterialPointTypes, defaultSpace>(rebuildNumNewMPs);
+      ps::CopyMemSpaceToMemSpace<defaultSpace, hostSpace, MaterialPointTypes>(rebuildData_d, buildSlices);
+      MPs->rebuild(rebuildtgtElm, rebuildNewMP2elm, rebuildData_d);
       updateMaxAppID();
+      ps::destroyViews<MaterialPointTypes>(buildSlices);
+      ps::destroyViews<MaterialPointTypes>(rebuildData_d);
     }
     void rebuild(IntView tgtElm, int newNumMPs, IntView newMP2elm, IntView newMPAppID) {
-      startRebuild(newNumMPs, newMP2elm, newMPAppID);
-      finishRebuild(newNumMPs, tgtElm, newMP2elm);
+      startRebuild(tgtElm, newNumMPs, newMP2elm, newMPAppID);
+      finishRebuild();
     }
     void updateMPElmID(){
       auto curElmID = MPs->get<MPF_Cur_Elm_ID>();

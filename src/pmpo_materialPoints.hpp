@@ -123,7 +123,7 @@ class MaterialPoints {
     void startRebuild(IntView tgtElm, int newNumMPs, IntView newMP2elm, IntView newMPAppID);
     void finishRebuild();
     template <MaterialPointSlice mpSliceIndex, typename mpSliceData>
-    void setRebuildMPSlice(int numMPs, mpSliceData mpSliceIn);
+    void setRebuildMPSlice(mpSliceData mpSliceIn);
 
     void rebuild() {
       IntView tgtElm("tgtElm", MPs->capacity());

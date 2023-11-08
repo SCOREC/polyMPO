@@ -148,7 +148,7 @@ void polympo_createMPs_f(MPMesh_ptr p_mpmesh,
   p_MPs->setElmIDoffset(offset);
 }
 
-void polympo_rebuildMPs_f(MPMesh_ptr p_mpmesh,
+void polympo_startRebuildMPs_f(MPMesh_ptr p_mpmesh,
                          const int numMPs, // total number of MPs which is GREATER than or equal to number of active MPs
                          const int* allMP2Elm,
                          const int* addedMPMask) {
@@ -194,7 +194,7 @@ void polympo_rebuildMPs_f(MPMesh_ptr p_mpmesh,
   int numDeletedMPs = pumipic::getLastValue(numDeletedMPs_d);
   PMT_ALWAYS_ASSERT(numAddedMPs > 0 || numDeletedMPs > 0);
 
-  p_MPs->rebuild(mp2Elm, numAddedMPs, added_mp2Elm_d, added_mpIDs_d);
+  p_MPs->startRebuild(mp2Elm, numAddedMPs, added_mp2Elm_d, added_mpIDs_d);
 
   // check mpAppID is unique (on GPUs)
   if (p_MPs->getOpMode() == polyMPO::MP_DEBUG){
@@ -208,6 +208,21 @@ void polympo_rebuildMPs_f(MPMesh_ptr p_mpmesh,
     };
     p_MPs->parallel_for(checkAppIDs, "checkAppIDs");
   }
+}
+
+void polympo_finishRebuildMPs_f(MPMesh_ptr p_mpmesh)
+{
+  checkMPMeshValid(p_mpmesh);
+  auto p_MPs = ((polyMPO::MPMesh*)p_mpmesh)->p_MPs;
+  p_MPs->finishRebuild();
+}
+
+void polympo_rebuildMPs_f(MPMesh_ptr p_mpmesh,
+                         const int numMPs, // total number of MPs which is GREATER than or equal to number of active MPs
+                         const int* allMP2Elm,
+                         const int* addedMPMask) {
+  polympo_startRebuildMPs_f(p_mpmesh, numMPs, allMP2Elm, addedMPMask);
+  polympo_finishRebuildMPs_f(p_mpmesh);
 }
 
 void polympo_getMPCurElmID_f(MPMesh_ptr p_mpmesh,

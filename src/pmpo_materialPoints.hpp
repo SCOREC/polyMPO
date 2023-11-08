@@ -118,7 +118,13 @@ class MaterialPoints {
     MaterialPoints(int numElms, int numMPs, DoubleVec3dView positions, IntView mpsPerElm, IntView mp2elm);
     MaterialPoints(int numElms, int numMPs, IntView mpsPerElm, IntView mp2elm, IntView mpAppID);
     ~MaterialPoints();
+
     void rebuild(IntView tgtElm, int newNumMPs, IntView newMP2elm, IntView newMPAppID);
+    void startRebuild(IntView tgtElm, int newNumMPs, IntView newMP2elm, IntView newMPAppID);
+    void finishRebuild();
+    template <MaterialPointSlice mpSliceIndex, typename mpSliceData>
+    void setRebuildMPSlice(int numMPs, mpSliceData mpSliceIn);
+
     void rebuild() {
       IntView tgtElm("tgtElm", MPs->capacity());
       auto tgtMpElm = MPs->get<MPF_Tgt_Elm_ID>();
@@ -129,15 +135,6 @@ class MaterialPoints {
       };
       ps::parallel_for(MPs, setTgtElm, "setTargetElement");
       MPs->rebuild(tgtElm);
-    }
-    void startRebuild(IntView tgtElm, int newNumMPs, IntView newMP2elm, IntView newMPAppID);
-    void finishRebuild() {
-      auto rebuildData_d = ps::createMemberViews<MaterialPointTypes, defaultSpace>(rebuildNumNewMPs);
-      ps::CopyMemSpaceToMemSpace<defaultSpace, hostSpace, MaterialPointTypes>(rebuildData_d, buildSlices);
-      MPs->rebuild(rebuildtgtElm, rebuildNewMP2elm, rebuildData_d);
-      updateMaxAppID();
-      ps::destroyViews<MaterialPointTypes>(buildSlices);
-      ps::destroyViews<MaterialPointTypes>(rebuildData_d);
     }
     void updateMPElmID(){
       auto curElmID = MPs->get<MPF_Cur_Elm_ID>();
@@ -160,13 +157,6 @@ class MaterialPoints {
         },
         Kokkos::Max<int>(maxAppID)
       );
-    }
-    template <MaterialPointSlice mpSliceIndex, typename mpSliceData>
-    void setMPSliceHost(int numMPs, mpSliceData mpSliceIn) {
-      auto mpSlice = ps::getMemberView<MaterialPointTypes, mpSliceIndex, hostSpace>(buildSlices);
-      for (int i=0; i < numMPs; i++) {
-        mpSlice(i) = mpSliceIn(i);
-      }
     }
     template <MaterialPointSlice mpfIndexCur, MaterialPointSlice mpfIndexTgt>
     void updateMPSlice(){

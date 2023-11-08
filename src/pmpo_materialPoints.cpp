@@ -77,8 +77,25 @@ void MaterialPoints::startRebuild(IntView tgtElm, int newNumMPs, IntView newMP2e
   buildSlices = createInternalMemberViews<hostSpace>(newNumMPs, newMP2elm_h, newMPAppID_h);
 }
 
+void MaterialPoints::finishRebuild() {
+  auto rebuildData_d = ps::createMemberViews<MaterialPointTypes, defaultSpace>(rebuildNumNewMPs);
+  ps::CopyMemSpaceToMemSpace<defaultSpace, hostSpace, MaterialPointTypes>(rebuildData_d, buildSlices);
+  MPs->rebuild(rebuildtgtElm, rebuildNewMP2elm, rebuildData_d);
+  updateMaxAppID();
+  ps::destroyViews<MaterialPointTypes>(buildSlices);
+  ps::destroyViews<MaterialPointTypes>(rebuildData_d);
+}
+
 void MaterialPoints::rebuild(IntView tgtElm, int newNumMPs, IntView newMP2elm, IntView newMPAppID) {
   startRebuild(tgtElm, newNumMPs, newMP2elm, newMPAppID);
   finishRebuild();
+}
+
+template <MaterialPointSlice mpSliceIndex, typename mpSliceData>
+void MaterialPoints::setRebuildMPSlice(int numMPs, mpSliceData mpSliceIn) {
+  auto mpSlice = ps::getMemberView<MaterialPointTypes, mpSliceIndex, hostSpace>(buildSlices);
+  for (int i=0; i < numMPs; i++) {
+    mpSlice(i) = mpSliceIn(i);
+  }
 }
 }

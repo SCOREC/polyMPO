@@ -91,11 +91,4 @@ void MaterialPoints::rebuild(IntView tgtElm, int newNumMPs, IntView newMP2elm, I
   finishRebuild();
 }
 
-template <MaterialPointSlice mpSliceIndex, typename mpSliceData>
-void MaterialPoints::setRebuildMPSlice(mpSliceData mpSliceIn) {
-  auto mpSlice = ps::getMemberView<MaterialPointTypes, mpSliceIndex, hostSpace>(buildSlices);
-  for (int i=0; i < rebuildNumNewMPs; i++) {
-    mpSlice(i) = mpSliceIn(i);
-  }
-}
 }

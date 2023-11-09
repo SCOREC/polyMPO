@@ -122,8 +122,15 @@ class MaterialPoints {
     void rebuild(IntView tgtElm, int newNumMPs, IntView newMP2elm, IntView newMPAppID);
     void startRebuild(IntView tgtElm, int newNumMPs, IntView newMP2elm, IntView newMPAppID);
     void finishRebuild();
-    template <MaterialPointSlice mpSliceIndex, typename mpSliceData>
-    void setRebuildMPSlice(mpSliceData mpSliceIn);
+    template<int mpSliceIndex, typename mpSliceData>
+    void setRebuildMPSlice(mpSliceData mpSliceIn) {
+      auto mpSliceIn_h = Kokkos::create_mirror_view_and_copy(hostSpace(), mpSliceIn);
+      auto mpSlice = ps::getMemberView<MaterialPointTypes, mpSliceIndex, hostSpace>(buildSlices);
+      auto appID = ps::getMemberView<MaterialPointTypes, MPF_MP_APP_ID, hostSpace>(buildSlices);
+      for (int i=0; i < mpSlice.extent(0); i++)
+        for (int j=0; j < mpSlice.extent(1); j++)
+          mpSlice(i,j) = mpSliceIn_h(i,appID(j));
+    }
 
     void rebuild() {
       IntView tgtElm("tgtElm", MPs->capacity());

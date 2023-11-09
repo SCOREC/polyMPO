@@ -27,6 +27,7 @@ void polympo_rebuildMPs_f(MPMesh_ptr p_mpmesh, const int numMPs, const int* allT
 void polympo_getMPCurElmID_f(MPMesh_ptr p_mpmesh, const int numMPs, int* elmIDs);
 
 //MP slices
+void polympo_setRebuildMPPositions_f(MPMesh_ptr p_mpmesh, const int numComps, const int numMPs, const double* mpPositionsIn);
 void polympo_getMPPositions_f(MPMesh_ptr p_mpmesh, const int numComps, const int numMPs, double* mpPositionsIn);
 void polympo_setMPPositions_f(MPMesh_ptr p_mpmesh, const int numComps, const int numMPs, const double* mpPositionsIn);
 void polympo_setMPVel_f(MPMesh_ptr p_mpmesh, const int size, const double* array);

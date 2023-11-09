@@ -248,6 +248,16 @@ void polympo_getMPCurElmID_f(MPMesh_ptr p_mpmesh,
   Kokkos::deep_copy( arrayHost, mpCurElmIDCopy);
 }
 
+void polympo_setRebuildMPPositions_f(MPMesh_ptr p_mpmesh,
+                            const int numComps,
+                            const int numMPs,
+                            const double* mpPositionsIn){
+  checkMPMeshValid(p_mpmesh);
+  auto p_MPs = ((polyMPO::MPMesh*)p_mpmesh)->p_MPs;
+  kkViewHostU<const double**> mpPositionsIn_h(mpPositionsIn,numComps,numMPs);
+  p_MPs->setRebuildMPSlice<polyMPO::MPF_Cur_Pos_XYZ>(mpPositionsIn_h);
+}
+
 void polympo_setMPPositions_f(MPMesh_ptr p_mpmesh,
                             const int numComps,
                             const int numMPs,

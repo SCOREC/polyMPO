@@ -68,10 +68,11 @@ MaterialPoints::~MaterialPoints() {
     delete MPs;
 }
 
-void MaterialPoints::startRebuild(IntView tgtElm, int newNumMPs, IntView newMP2elm, IntView newMPAppID) {
+void MaterialPoints::startRebuild(IntView tgtElm, int newNumMPs, IntView newMP2elm, IntView newMPAppID, IntView addedMPMask) {
   rebuildNumNewMPs = newNumMPs;
   rebuildNewMP2elm = newMP2elm;
   rebuildtgtElm = tgtElm;
+  rebuildAddedMPMask = Kokkos::create_mirror_view_and_copy(hostSpace(), addedMPMask);
   auto newMP2elm_h = Kokkos::create_mirror_view_and_copy(hostSpace(), newMP2elm);
   auto newMPAppID_h = Kokkos::create_mirror_view_and_copy(hostSpace(), newMPAppID);
   buildSlices = createInternalMemberViews<hostSpace>(newNumMPs, newMP2elm_h, newMPAppID_h);
@@ -84,11 +85,6 @@ void MaterialPoints::finishRebuild() {
   updateMaxAppID();
   ps::destroyViews<MaterialPointTypes>(buildSlices);
   ps::destroyViews<MaterialPointTypes>(rebuildData_d);
-}
-
-void MaterialPoints::rebuild(IntView tgtElm, int newNumMPs, IntView newMP2elm, IntView newMPAppID) {
-  startRebuild(tgtElm, newNumMPs, newMP2elm, newMPAppID);
-  finishRebuild();
 }
 
 }

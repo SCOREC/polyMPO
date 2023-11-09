@@ -194,7 +194,7 @@ void polympo_startRebuildMPs_f(MPMesh_ptr p_mpmesh,
   int numDeletedMPs = pumipic::getLastValue(numDeletedMPs_d);
   PMT_ALWAYS_ASSERT(numAddedMPs > 0 || numDeletedMPs > 0);
 
-  p_MPs->startRebuild(mp2Elm, numAddedMPs, added_mp2Elm_d, added_mpIDs_d);
+  p_MPs->startRebuild(mp2Elm, numAddedMPs, added_mp2Elm_d, added_mpIDs_d, addedMPMask_d);
 
   // check mpAppID is unique (on GPUs)
   if (p_MPs->getOpMode() == polyMPO::MP_DEBUG){

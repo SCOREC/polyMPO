@@ -112,6 +112,7 @@ class MaterialPoints {
     pumipic::MemberTypeViews buildSlices;
     IntView rebuildNewMP2elm;
     IntView rebuildtgtElm;
+    Kokkos::View<int*, hostSpace> rebuildAddedMPMask;
 
   public:
     MaterialPoints() : MPs(nullptr) {};
@@ -119,8 +120,7 @@ class MaterialPoints {
     MaterialPoints(int numElms, int numMPs, IntView mpsPerElm, IntView mp2elm, IntView mpAppID);
     ~MaterialPoints();
 
-    void rebuild(IntView tgtElm, int newNumMPs, IntView newMP2elm, IntView newMPAppID);
-    void startRebuild(IntView tgtElm, int newNumMPs, IntView newMP2elm, IntView newMPAppID);
+    void startRebuild(IntView tgtElm, int newNumMPs, IntView newMP2elm, IntView newMPAppID, IntView addedMPMask);
     void finishRebuild();
     template<int mpSliceIndex, typename mpSliceData>
     void setRebuildMPSlice(mpSliceData mpSliceIn) {
@@ -129,7 +129,8 @@ class MaterialPoints {
       auto appID = ps::getMemberView<MaterialPointTypes, MPF_MP_APP_ID, hostSpace>(buildSlices);
       for (int i=0; i < mpSlice.extent(0); i++)
         for (int j=0; j < mpSlice.extent(1); j++)
-          mpSlice(i,j) = mpSliceIn_h(i,appID(j));
+          if (rebuildAddedMPMask(j) == MP_ACTIVE)
+            mpSlice(i,j) = mpSliceIn_h(i,appID(j));
     }
 
     void rebuild() {

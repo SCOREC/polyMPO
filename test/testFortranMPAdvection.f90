@@ -86,7 +86,7 @@ program main
   do i = 1,numMPs
     mp2Elm(i) = i
   end do
-  do i = 1, nCells
+  do i = 1, numMPs
     inBound = .true.
     do k = 1, nEdgesOnCell(i)
       j = verticesOnCell(k,i)
@@ -111,16 +111,11 @@ program main
         xComputed = sphereRadius*cos(latVertex(j))*cos(lonVertex(j))
         yComputed = sphereRadius*cos(latVertex(j))*sin(lonVertex(j))
         zComputed = sphereRadius*sin(latVertex(j))
-        !write(*,*) xVertex(j), xComputed
-        !write(*,*) yVertex(j), yComputed
-        !write(*,*) zVertex(j), zComputed
         latComputed = asin(zVertex(j)/sphereRadius)
         lonComputed = atan2(yVertex(j),xVertex(j))
         if (lonComputed .le. 0.0) then ! lon[0,2pi]
           lonComputed = lonComputed + 2*pi
         endif
-        !write(*,*) latVertex(j), latComputed
-        !write(*,*) lonVertex(j), lonComputed
 
       end do
       xc = xc/nEdgesOnCell(i)

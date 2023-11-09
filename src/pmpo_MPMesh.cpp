@@ -154,16 +154,11 @@ void MPMesh::CVTTrackingElmCenterBased(const int printVTP){
                 resultRight(mp) = MPRight;
                 mpTgtPosArray(mp) = MPnew;
             }
-            //MPs2Elm(mp) = iElm;
-            mpPositions(mp,0) = MPnew[0];
-            mpPositions(mp,1) = MPnew[1];
-            mpPositions(mp,2) = MPnew[2];
         }
     };
     p_MPs->parallel_for(CVTElmCalc,"CVTTrackingElmCenterBasedCalc");
 
     if(printVTP>=0){
-
         Vec3dView::HostMirror h_history = Kokkos::create_mirror_view(history);
         Vec3dView::HostMirror h_resultLeft = Kokkos::create_mirror_view(resultLeft);
         Vec3dView::HostMirror h_resultRight = Kokkos::create_mirror_view(resultRight);
@@ -272,9 +267,10 @@ void MPMesh::push(){
   p_MPs ->updateRotLatLonAndXYZ2Tgt(p_mesh->getSphereRadius()); // set Tgt_XYZ
 
   CVTTrackingElmCenterBased(0); // move to Tgt_XYZ
+
   p_MPs->updateMPSlice<MPF_Cur_Pos_XYZ, MPF_Tgt_Pos_XYZ>(); // Tgt_XYZ becomes Cur_XYZ
   p_MPs->updateMPSlice<MPF_Cur_Pos_Rot_Lat_Lon, MPF_Tgt_Pos_Rot_Lat_Lon>(); // Tgt becomes Cur
-  p_MPs->rebuild();
+  p_MPs->rebuild(); //update mp Elm IDs, rebuild pumi-pic
 }
 
 void printVTP_mesh(MPMesh& mpMesh){

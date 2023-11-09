@@ -457,7 +457,8 @@ module polympo
     type(c_ptr), value :: array
   end subroutine
   !---------------------------------------------------------------------------
-  !> @brief Push TODO haven't finish yet
+  !> @brief calculate the MPs from given mesh vertices rotational latitude
+  !>        longitude, update the MP slices
   !> @param mpmesh(in/out) MPMesh object
   !---------------------------------------------------------------------------
   subroutine polympo_push(mpMesh) &

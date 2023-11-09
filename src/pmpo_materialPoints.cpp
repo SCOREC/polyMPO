@@ -69,21 +69,21 @@ MaterialPoints::~MaterialPoints() {
 }
 
 void MaterialPoints::startRebuild(IntView tgtElm, int newNumMPs, IntView newMP2elm, IntView newMPAppID, IntView addedMPMask) {
-  rebuildNumNewMPs = newNumMPs;
-  rebuildNewMP2elm = newMP2elm;
-  rebuildtgtElm = tgtElm;
-  rebuildAddedMPMask = Kokkos::create_mirror_view_and_copy(hostSpace(), addedMPMask);
+  rebuildFields.numNewMPs = newNumMPs;
+  rebuildFields.newMP2elm = newMP2elm;
+  rebuildFields.allTgtElm = tgtElm;
+  rebuildFields.addedMPMask = Kokkos::create_mirror_view_and_copy(hostSpace(), addedMPMask);
   auto newMP2elm_h = Kokkos::create_mirror_view_and_copy(hostSpace(), newMP2elm);
   auto newMPAppID_h = Kokkos::create_mirror_view_and_copy(hostSpace(), newMPAppID);
-  buildSlices = createInternalMemberViews<hostSpace>(newNumMPs, newMP2elm_h, newMPAppID_h);
+  rebuildFields.slices = createInternalMemberViews<hostSpace>(newNumMPs, newMP2elm_h, newMPAppID_h);
 }
 
 void MaterialPoints::finishRebuild() {
-  auto rebuildData_d = ps::createMemberViews<MaterialPointTypes, defaultSpace>(rebuildNumNewMPs);
-  ps::CopyMemSpaceToMemSpace<defaultSpace, hostSpace, MaterialPointTypes>(rebuildData_d, buildSlices);
-  MPs->rebuild(rebuildtgtElm, rebuildNewMP2elm, rebuildData_d);
+  auto rebuildData_d = ps::createMemberViews<MaterialPointTypes, defaultSpace>(rebuildFields.numNewMPs);
+  ps::CopyMemSpaceToMemSpace<defaultSpace, hostSpace, MaterialPointTypes>(rebuildData_d, rebuildFields.slices);
+  MPs->rebuild(rebuildFields.allTgtElm, rebuildFields.newMP2elm, rebuildData_d);
   updateMaxAppID();
-  ps::destroyViews<MaterialPointTypes>(buildSlices);
+  ps::destroyViews<MaterialPointTypes>(rebuildFields.slices);
   ps::destroyViews<MaterialPointTypes>(rebuildData_d);
 }
 

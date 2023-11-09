@@ -101,6 +101,13 @@ typedef MemberTypes<mp_flag_t,              //MP_Status
                     >MaterialPointTypes;
 typedef ps::ParticleStructure<MaterialPointTypes> PS;
 
+struct RebuildHelper {
+  int numNewMPs;
+  pumipic::MemberTypeViews slices;
+  IntView newMP2elm;
+  IntView allTgtElm;
+  Kokkos::View<int*, hostSpace> addedMPMask;
+};
 
 class MaterialPoints {
   private:
@@ -108,11 +115,7 @@ class MaterialPoints {
     int elmIDoffset = -1;
     int maxAppID = -1;
     Operating_Mode operating_mode;
-    int rebuildNumNewMPs;
-    pumipic::MemberTypeViews buildSlices;
-    IntView rebuildNewMP2elm;
-    IntView rebuildtgtElm;
-    Kokkos::View<int*, hostSpace> rebuildAddedMPMask;
+    RebuildHelper rebuildFields;
 
   public:
     MaterialPoints() : MPs(nullptr) {};
@@ -125,11 +128,11 @@ class MaterialPoints {
     template<int mpSliceIndex, typename mpSliceData>
     void setRebuildMPSlice(mpSliceData mpSliceIn) {
       auto mpSliceIn_h = Kokkos::create_mirror_view_and_copy(hostSpace(), mpSliceIn);
-      auto mpSlice = ps::getMemberView<MaterialPointTypes, mpSliceIndex, hostSpace>(buildSlices);
-      auto appID = ps::getMemberView<MaterialPointTypes, MPF_MP_APP_ID, hostSpace>(buildSlices);
+      auto mpSlice = ps::getMemberView<MaterialPointTypes, mpSliceIndex, hostSpace>(rebuildFields.slices);
+      auto appID = ps::getMemberView<MaterialPointTypes, MPF_MP_APP_ID, hostSpace>(rebuildFields.slices);
       for (int i=0; i < mpSlice.extent(0); i++)
         for (int j=0; j < mpSlice.extent(1); j++)
-          if (rebuildAddedMPMask(j) == MP_ACTIVE)
+          if (rebuildFields.addedMPMask(j) == MP_ACTIVE)
             mpSlice(i,j) = mpSliceIn_h(i,appID(j));
     }
 

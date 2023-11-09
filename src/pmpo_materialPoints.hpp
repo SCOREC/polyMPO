@@ -131,7 +131,6 @@ class MaterialPoints {
       };
       ps::parallel_for(MPs, setTgtElm, "setTargetElement");
       MPs->rebuild(tgtElm);
-      updateMPElmID();
     }
     void updateMPElmID(){
       auto curElmID = MPs->get<MPF_Cur_Elm_ID>();

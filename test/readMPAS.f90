@@ -31,7 +31,7 @@ function epsilonDiff(a,b) result(isSame)
 end function
 
 
-subroutine rebuildTests(mpMesh, numMPs, mp2Elm, isMPActive)
+subroutine rebuildTests(mpMesh, numMPs, mp2Elm, isMPActive, mpPosition)
     use :: polympo
     use iso_c_binding
     implicit none
@@ -39,6 +39,8 @@ subroutine rebuildTests(mpMesh, numMPs, mp2Elm, isMPActive)
     integer :: numMPs, i, numMPsLarger
     integer, dimension(:), pointer :: mp2Elm, addedMPMask, isMPActive, mp2ElmFromPMPO
     integer, dimension(:), pointer :: mp2ElmLarger, addedMPMaskLarger, mp2ElmFromPMPOLarger, isMPActiveLarger
+    real(kind=MPAS_RKIND), dimension(:,:), pointer :: mpPosition, mpPositionFromPMPO
+    integer, parameter :: nDims = 3
     integer, parameter :: MP_ACTIVE = 1
     integer, parameter :: MP_INACTIVE = 0
     integer, parameter :: MP_DELETE_ELM_ID = -1
@@ -53,15 +55,24 @@ subroutine rebuildTests(mpMesh, numMPs, mp2Elm, isMPActive)
     isMPActive(4) = MP_ACTIVE
     mp2Elm(4) = 7
     addedMPMask(4) = MP_ACTIVE
+    mpPosition(1,4) = 1.1
+    mpPosition(2,4) = 2.1
+    mpPosition(3,4) = 3.1
     ! Rebuild MPs
-    call polympo_rebuildMPs(mpMesh,numMPs,c_loc(mp2Elm),c_loc(addedMPMask))
+    call polympo_startRebuildMPs(mpMesh,numMPs,c_loc(mp2Elm),c_loc(addedMPMask))
+    call polympo_setRebuildMPPositions(mpMesh,nDims,numMPs,c_loc(mpPosition))
+    call polympo_finishRebuildMPs(mpMesh)
     ! Test values
     allocate(mp2ElmFromPMPO(numMPs))
     mp2ElmFromPMPO = MP_DELETE_ELM_ID
     call polympo_getMPCurElmID(mpMesh,numMPs,c_loc(mp2ElmFromPMPO))
+    allocate(mpPositionFromPMPO(nDims,numMPs))
+    call polympo_getMPPositions(mpMesh,nDims,numMPs,c_loc(mpPositionFromPMPO))
+
     do i = 1, numMPs
         if (isMPActive(i) == MP_ACTIVE) then
             call assert(mp2Elm(i) .eq. mp2ElmFromPMPO(i), "wrong element ID for i'th MP after rebuild")
+            call assert(mpPosition(1,i) == mpPositionFromPMPO(1,i), "mpPosition not set after rebuild")
         endif
     end do
 
@@ -275,7 +286,7 @@ subroutine loadMPASMesh(mpMesh, filename)
       call assert(mp2Elm(i) .eq. i-2, "wrong element ID for i'th MP")
     end do
     
-    call rebuildTests(mpMesh, numMPs, mp2Elm, isMPActive)
+    call rebuildTests(mpMesh, numMPs, mp2Elm, isMPActive, mpPosition)
     !test end
 
     deallocate(mpPosition)

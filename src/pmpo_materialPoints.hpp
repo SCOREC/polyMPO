@@ -132,8 +132,9 @@ class MaterialPoints {
       auto appID = ps::getMemberView<MaterialPointTypes, MPF_MP_APP_ID, hostSpace>(rebuildFields.slices);
       for (int i=0; i < mpSlice.extent(0); i++)
         for (int j=0; j < mpSlice.extent(1); j++)
-          if (rebuildFields.addedMPMask(j) == MP_ACTIVE)
+          if (rebuildFields.addedMPMask(appID(j)) == MP_ACTIVE) {
             mpSlice(i,j) = mpSliceIn_h(i,appID(j));
+          }
     }
 
     void rebuild() {

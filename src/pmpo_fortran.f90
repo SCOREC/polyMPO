@@ -87,6 +87,32 @@ module polympo
     type(c_ptr), intent(in), value :: addedMPMask
   end subroutine
   !---------------------------------------------------------------------------
+  !> @brief move MPs to a new element, add new MPs, or delete MPs
+  !> @brief the fields associated with the MPs are NOT initialized
+  !> @param mpmesh(in/out) MPMesh object
+  !> @param numMPs(in) total number of MPs, total = number of active + number of inactive
+  !> @param allMP2Elm(in) the target element for each MP (length of numMPs)
+  !> @param addedMPMask(in) set to 1 for each new MP, 0 otherwise (length of numMPs)
+  !---------------------------------------------------------------------------
+  subroutine polympo_startRebuildMPs(mpMesh, numMPs, allMP2Elm, addedMPMask) &
+    bind(C, NAME='polympo_startRebuildMPs_f')
+    use :: iso_c_binding
+    type(c_ptr), value :: mpMesh
+    integer(c_int), value :: numMPs
+    type(c_ptr), intent(in), value :: allMP2Elm
+    type(c_ptr), intent(in), value :: addedMPMask
+  end subroutine
+  !---------------------------------------------------------------------------
+  !> @brief called after startRebuild()
+  !> @brief called after initializing MP fields
+  !> @param mpmesh(in/out) MPMesh object
+  !---------------------------------------------------------------------------
+  subroutine polympo_finishRebuildMPs(mpMesh) &
+    bind(C, NAME='polympo_finishRebuildMPs_f')
+    use :: iso_c_binding
+    type(c_ptr), value :: mpMesh
+  end subroutine
+  !---------------------------------------------------------------------------
   !> @brief get the current element ID MP array from a polympo array
   !> @param mpmesh(in/out) MPMesh object
   !> @param numMPs(in) length of array, number of the MPs
@@ -109,6 +135,20 @@ module polympo
   !---------------------------------------------------------------------------
   subroutine polympo_getMPPositions(mpMesh, nComps, numMPs, array) &
              bind(C, NAME='polympo_getMPPositions_f')
+    use :: iso_c_binding
+    type(c_ptr), value :: mpMesh
+    integer(c_int), value :: nComps, numMPs
+    type(c_ptr), value :: array
+  end subroutine
+  !---------------------------------------------------------------------------
+  !> @brief set the new rebuild MP positions array from a host array
+  !> @param mpmesh(in/out) MPMesh object
+  !> @param nComps(in) number of components, should always be 3
+  !> @param numMPs(in) number of the MPs
+  !> @param array(in) MP current position 2D array (3,numMPs), allocated by user on host
+  !---------------------------------------------------------------------------
+  subroutine polympo_setRebuildMPPositions(mpMesh, nComps, numMPs, array) &
+        bind(C, NAME='polympo_setRebuildMPPositions_f')
     use :: iso_c_binding
     type(c_ptr), value :: mpMesh
     integer(c_int), value :: nComps, numMPs

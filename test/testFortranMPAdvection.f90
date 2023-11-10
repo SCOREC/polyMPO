@@ -33,7 +33,6 @@ program main
   integer, parameter :: MP_ACTIVE = 1
   integer, parameter :: MP_INACTIVE = 0
   integer, parameter :: INVALID_ELM_ID = -1
-  real(kind=MPAS_RKIND), dimension(:,:), pointer :: mpLatLonFromPMPO
 
   call mpi_init(ierr)
   call mpi_comm_rank(mpi_comm_handle, self, ierr)
@@ -79,7 +78,6 @@ program main
   allocate(isMPActive(numMPs))
   allocate(mpPosition(3,numMPs))
   allocate(mpLatLon(2,numMPs))
-  allocate(mpLatLonFromPMPO(2,numMPs))
 
   isMPActive = MP_ACTIVE !all active MPs and some changed below
   mpsPerElm = 1 !all elements have 1 MP and some changed below
@@ -155,16 +153,13 @@ program main
 
   
   deltaLon = maxlon - minlon
-  call polympo_getMPRotLatLon(mpMesh,2,numMPs,c_loc(mpLatLonFromPMPO))
 
   do i = 1,nVertices
     dispIncr(1,i) = sphereRadius*cos(latVertex(i))*deltaLon
     dispIncr(2,i) = 0.0_MPAS_RKIND
   end do
   call polympo_setMeshOnSurfDispIncr(mpMesh,nCompsDisp,nVertices,c_loc(dispIncr))
-  call polympo_setMeshVtxRotLatLon(mpMesh,nVertices,c_loc(latVertex),c_loc(lonVertex))
   call polympo_push(mpMesh)
-  call polympo_getMeshOnSurfDispIncr(mpMesh,nCompsDisp,nVertices,c_loc(dispIncr))
   do i = 1,nVertices
     dispIncr(1,i) = sphereRadius*cos(latVertex(i))*2*deltaLon
     dispIncr(2,i) = 0.0_MPAS_RKIND
@@ -190,7 +185,6 @@ program main
   deallocate(isMPActive)
   deallocate(mpPosition)
   deallocate(mpLatLon)
-  deallocate(mpLatLonFromPMPO)
 
   stop
 end program

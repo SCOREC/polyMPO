@@ -125,8 +125,14 @@ class MaterialPoints {
 
     void startRebuild(IntView tgtElm, int newNumMPs, IntView newMP2elm, IntView newMPAppID, IntView addedMPMask);
     void finishRebuild();
+    
     template<int mpSliceIndex, typename mpSliceData>
-    void setRebuildMPSlice(mpSliceData mpSliceIn);
+    typename std::enable_if<mpSliceData::rank==1>::type
+    setRebuildMPSlice(mpSliceData mpSliceIn);
+
+    template<int mpSliceIndex, typename mpSliceData>
+    typename std::enable_if<mpSliceData::rank==2>::type
+    setRebuildMPSlice(mpSliceData mpSliceIn);
 
     void rebuild() {
       IntView tgtElm("tgtElm", MPs->capacity());
@@ -234,7 +240,18 @@ void MaterialPoints::fillData(double value){
 }
 
 template<int mpSliceIndex, typename mpSliceData>
-void MaterialPoints::setRebuildMPSlice(mpSliceData mpSliceIn) {
+typename std::enable_if<mpSliceData::rank==1>::type
+MaterialPoints::setRebuildMPSlice(mpSliceData mpSliceIn) {
+  auto mpSliceIn_h = Kokkos::create_mirror_view_and_copy(hostSpace(), mpSliceIn);
+  auto mpSlice = ps::getMemberView<MaterialPointTypes, mpSliceIndex, hostSpace>(rebuildFields.slices);
+  auto mpAppID = ps::getMemberView<MaterialPointTypes, MPF_MP_APP_ID, hostSpace>(rebuildFields.slices);
+  for (int i=0; i < mpSlice.extent(0); i++)
+    mpSlice(i) = mpSliceIn_h(mpAppID(i));
+}
+
+template<int mpSliceIndex, typename mpSliceData>
+typename std::enable_if<mpSliceData::rank==2>::type
+MaterialPoints::setRebuildMPSlice(mpSliceData mpSliceIn) {
   auto mpSliceIn_h = Kokkos::create_mirror_view_and_copy(hostSpace(), mpSliceIn);
   auto mpSlice = ps::getMemberView<MaterialPointTypes, mpSliceIndex, hostSpace>(rebuildFields.slices);
   auto mpAppID = ps::getMemberView<MaterialPointTypes, MPF_MP_APP_ID, hostSpace>(rebuildFields.slices);

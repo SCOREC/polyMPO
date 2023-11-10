@@ -36,7 +36,7 @@ subroutine rebuildTests(mpMesh, numMPs, mp2Elm, isMPActive, mpPosition)
     use iso_c_binding
     implicit none
     type(c_ptr):: mpMesh
-    integer :: numMPs, i, numMPsLarger
+    integer :: numMPs, i, j, numMPsLarger
     integer, dimension(:), pointer :: mp2Elm, addedMPMask, isMPActive, mp2ElmFromPMPO
     integer, dimension(:), pointer :: mp2ElmLarger, addedMPMaskLarger, mp2ElmFromPMPOLarger, isMPActiveLarger
     real(kind=MPAS_RKIND), dimension(:,:), pointer :: mpPosition, mpPositionFromPMPO
@@ -55,9 +55,9 @@ subroutine rebuildTests(mpMesh, numMPs, mp2Elm, isMPActive, mpPosition)
     isMPActive(4) = MP_ACTIVE
     mp2Elm(4) = 7
     addedMPMask(4) = MP_ACTIVE
-    mpPosition(1,4) = 1.1
-    mpPosition(2,4) = 2.1
-    mpPosition(3,4) = 3.1
+    mpPosition(1,4) = 1.2
+    mpPosition(2,4) = 2.2
+    mpPosition(3,4) = 3.2
     ! Rebuild MPs
     call polympo_startRebuildMPs(mpMesh,numMPs,c_loc(mp2Elm),c_loc(addedMPMask))
     call polympo_setRebuildMPPositions(mpMesh,nDims,numMPs,c_loc(mpPosition))
@@ -72,7 +72,9 @@ subroutine rebuildTests(mpMesh, numMPs, mp2Elm, isMPActive, mpPosition)
     do i = 1, numMPs
         if (isMPActive(i) == MP_ACTIVE) then
             call assert(mp2Elm(i) .eq. mp2ElmFromPMPO(i), "wrong element ID for i'th MP after rebuild")
-            call assert(mpPosition(1,i) == mpPositionFromPMPO(1,i), "mpPosition not set after rebuild")
+            do j = 1, nDims
+                call assert(mpPosition(j,i) == mpPositionFromPMPO(j,i), "mpPosition not set after rebuild")
+            end do
         endif
     end do
 

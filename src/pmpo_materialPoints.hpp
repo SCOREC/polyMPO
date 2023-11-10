@@ -126,16 +126,7 @@ class MaterialPoints {
     void startRebuild(IntView tgtElm, int newNumMPs, IntView newMP2elm, IntView newMPAppID, IntView addedMPMask);
     void finishRebuild();
     template<int mpSliceIndex, typename mpSliceData>
-    void setRebuildMPSlice(mpSliceData mpSliceIn) {
-      auto mpSliceIn_h = Kokkos::create_mirror_view_and_copy(hostSpace(), mpSliceIn);
-      auto mpSlice = ps::getMemberView<MaterialPointTypes, mpSliceIndex, hostSpace>(rebuildFields.slices);
-      auto appID = ps::getMemberView<MaterialPointTypes, MPF_MP_APP_ID, hostSpace>(rebuildFields.slices);
-      for (int i=0; i < mpSlice.extent(0); i++)
-        for (int j=0; j < mpSlice.extent(1); j++)
-          if (rebuildFields.addedMPMask(appID(j)) == MP_ACTIVE) {
-            mpSlice(i,j) = mpSliceIn_h(i,appID(j));
-          }
-    }
+    void setRebuildMPSlice(mpSliceData mpSliceIn);
 
     void rebuild() {
       IntView tgtElm("tgtElm", MPs->capacity());
@@ -226,22 +217,31 @@ class MaterialPoints {
     // MUTATOR  
     template <MaterialPointSlice index> void fillData(double value);//use PS_LAMBDA fill up to 1
     void T2LTracking(Vec2dView dx);    
-};
+};// End MaterialPoints
 
 template <MaterialPointSlice index>
 void MaterialPoints::fillData(double value){
-    auto mpData = getData<index>();
-    const int numEntries = mpSlice2MeshFieldIndex.at(index).first;
-    auto setValue = PS_LAMBDA(const int& elm, const int& mp, const int& mask){
-        if(mask) { //if material point is 'active'/'enabled'
-            for(int i=0; i<numEntries; i++){
-                mpData(mp,i) = value;
-            }
-        }
-    };
-    parallel_for(setValue, "setValue");
+  auto mpData = getData<index>();
+  const int numEntries = mpSlice2MeshFieldIndex.at(index).first;
+  auto setValue = PS_LAMBDA(const int& elm, const int& mp, const int& mask){
+      if(mask) { //if material point is 'active'/'enabled'
+          for(int i=0; i<numEntries; i++){
+              mpData(mp,i) = value;
+          }
+      }
+  };
+  parallel_for(setValue, "setValue");
 }
 
+template<int mpSliceIndex, typename mpSliceData>
+void MaterialPoints::setRebuildMPSlice(mpSliceData mpSliceIn) {
+  auto mpSliceIn_h = Kokkos::create_mirror_view_and_copy(hostSpace(), mpSliceIn);
+  auto mpSlice = ps::getMemberView<MaterialPointTypes, mpSliceIndex, hostSpace>(rebuildFields.slices);
+  auto mpAppID = ps::getMemberView<MaterialPointTypes, MPF_MP_APP_ID, hostSpace>(rebuildFields.slices);
+  for (int i=0; i < mpSlice.extent(0); i++)
+  for (int j=0; j < mpSlice.extent(1); j++)
+    mpSlice(i,j) = mpSliceIn_h(j,mpAppID(i));
+}
 
 }
 #endif

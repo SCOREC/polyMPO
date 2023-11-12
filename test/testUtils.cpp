@@ -145,10 +145,22 @@ void interpolateWachspress3DTest(MPMesh& mpMesh){
             }
             */
             // testing ends
+            double rt = 1.41421356237; // sqrt 2
+            double rth = 1.73205080757;// sqrt 3
+
+            // rotation matrix
+            Vec3d r[3] = {Vec3d(1.0/rt,-rth/(2*rt),1/(2*rt)),
+                          Vec3d(1.0/rt, rth/(2*rt),-1.0/(2*rt)),
+                          Vec3d(0, -1.0/2.0, rth/2.0)};
+            // r inverse
+            Vec3d ri[3] = {Vec3d(rt - 1.0/rt,1/(rt),0),
+                          Vec3d(-rt/rth + 1.0/(2*rt*rth), rt/rth - 1.0*(2*rt*rth),1.0/2),
+                          Vec3d(1.0/(2.0*rt), -1.0/(2.0*rt), rth/2.0)};
 
             double af = 10.1;
             double bf = 1.34;
             double cf = 100.45;
+            //double cf = 0.0;
             double kf = 3.55;
             Vec3d wp_coord(0.0,0.0,0.0);
             Vec3d wp_coord2(0.0,0.0,0.0);
@@ -156,15 +168,30 @@ void interpolateWachspress3DTest(MPMesh& mpMesh){
             for(int i=0; i<numVtx; i++){
                 wp_coord = wp_coord + v[i]*basisByArea[i];
                 wp_coord2 = wp_coord2 + v[i]*basisByArea2[i];
-                double fi = af * v[i][0] + bf * v[i][1] + cf * v[i][2] + kf;
+                //double fi = af * v[i][0] + bf * v[i][1] + cf * v[i][2] + kf;
+                double v1 = v[i].dot(ri[0]);
+                double v2 = v[i].dot(ri[1]);
+                double v3 = v[i].dot(ri[2]);
+                double fi = af * v1 + bf * v2 + cf * v3 + kf;
                 wp_grad = wp_grad + gradBasisByArea[i] * fi;
-                printf("i: %d, gradBasis: %.16e %.16e %.16e fi: %.16e \nz: %.16e \n", i, gradBasisByArea[i][0],
+                printf("i: %d, gradBasis: %.16e %.16e %.16e fi: %.16e \nz: %.16e \n", i,
+                                                                              gradBasisByArea[i][0],
                                                                               gradBasisByArea[i][1],
-                                                                              gradBasisByArea[i][2], fi,
-                                                                              v[i][2]); 
+                                                                              gradBasisByArea[i][2],
+                                                                              fi,
+                                                                              v3); 
             }
-            
-            printf("interpolation:(%.16e %.16e %.16e)\noriginal MP:(%.16e %.16e %.16e)\n",wp_grad[0],
+            /* 
+            // find gx, gy, gz  
+            double gxt = wp_grad[0]; // gx tilde
+            double gyt = wp_grad[1]; // gy tilde
+            double gzt = wp_grad[2]; // gz tilde
+            wp_grad[0] = gxt * r[0][0] + gyt * r[0][1];
+            wp_grad[1] = gxt * r[1][0] + gyt * r[1][1];
+            wp_grad[2] = gxt * r[2][0] + gyt * r[2][1];
+            */
+            printf("WP gradient:(%.16e %.16e %.16e)\noriginal:(%.16e %.16e %.16e)\n",
+                                              wp_grad[0],
                                               wp_grad[1],
                                               wp_grad[2],
                                               af,

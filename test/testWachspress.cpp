@@ -15,7 +15,7 @@ int main(int argc, char** argv) {
     //test init Test Mesh and run assembly and Wachspress
     for (int testMeshOption = 2; testMeshOption <= 2; testMeshOption++){
 
-        auto mesh = initTestMesh(testMeshOption, replicateFactor);
+        auto mesh = initTestMesh(testMeshOption,replicateFactor);
         auto mpMesh = initTestMPMesh(mesh,testMPOption);
         
         //test assembly in assembly.hpp

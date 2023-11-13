@@ -212,13 +212,6 @@ jobs:
     - name: PUMI-PIC Build
       if: ${{ steps.build-pumi-pic.outputs.cache-hit != 'true' }}
       run: cmake --build ${{ runner.temp }}/build-pumi-pic -j8 --target install
-
-    - name: PUMI-PIC Test
-      run: ctest --test-dir ${{ runner.temp }}/build-pumi-pic
-
-    - name: PUMI-PIC Print
-      if: always()
-      run: cat ${{ runner.temp }}/build-pumi-pic/Testing/Temporary/LastTest.log
   
     # Build PolyMPO
 

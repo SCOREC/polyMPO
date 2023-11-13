@@ -43,12 +43,12 @@ void interpolateWachspress2DTest(MPMesh& mpMesh){
                 double fi = af * v[i][0] + bf * v[i][1] + kf;
                 wp_grad = wp_grad + gradBasisByArea[i] * fi;
             }
-            assert(wp_coord[0] - MPsPosition(mp,0) < TEST_EPSILON);
-            assert(wp_coord[1] - MPsPosition(mp,1) < TEST_EPSILON);
-            assert(wp_coord2[0] - MPsPosition(mp,0) < TEST_EPSILON);
-            assert(wp_coord2[1] - MPsPosition(mp,1) < TEST_EPSILON);
-            assert(wp_grad[0] - af < TEST_EPSILON);
-            assert(wp_grad[1] - bf < TEST_EPSILON);
+            assert(abs(wp_coord[0] - MPsPosition(mp,0)) < TEST_EPSILON);
+            assert(abs(wp_coord[1] - MPsPosition(mp,1)) < TEST_EPSILON);
+            assert(abs(wp_coord2[0] - MPsPosition(mp,0)) < TEST_EPSILON);
+            assert(abs(wp_coord2[1] - MPsPosition(mp,1)) < TEST_EPSILON);
+            assert(abs(wp_grad[0] - af) < TEST_EPSILON);
+            assert(abs(wp_grad[1] - bf) < TEST_EPSILON);
         }        
     };
     p_MPs->parallel_for(eval, "interpolateWachspress2DTest");
@@ -126,7 +126,7 @@ void interpolateWachspress3DTest(MPMesh& mpMesh){
             Vec3d position(MPsPosition(mp,0),MPsPosition(mp,1),MPsPosition(mp,2));
             getBasisAndGradByAreaGblForm3d(position, numVtx, v, basisByArea, gradBasisByArea);
             getBasisByAreaGblForm3d(position, numVtx, v, basisByArea2);
-            
+           
             // testing
             /*const int numVtx_test = 4;
             Vec3d position_test(3.0, 2.0, 3.0); // MP
@@ -151,16 +151,15 @@ void interpolateWachspress3DTest(MPMesh& mpMesh){
             // rotation matrix
             Vec3d r[3] = {Vec3d(1.0/rt,-rth/(2*rt),1/(2*rt)),
                           Vec3d(1.0/rt, rth/(2*rt),-1.0/(2*rt)),
-                          Vec3d(0, -1.0/2.0, rth/2.0)};
+                          Vec3d(0, 1.0/2.0, rth/2.0)};
             // r inverse
             Vec3d ri[3] = {Vec3d(rt - 1.0/rt,1/(rt),0),
-                          Vec3d(-rt/rth + 1.0/(2*rt*rth), rt/rth - 1.0*(2*rt*rth),1.0/2),
+                          Vec3d(-rt/rth + 1.0/(2.0*rt*rth), rt/rth - 1.0/(2.0*rt*rth),1.0/2.0),
                           Vec3d(1.0/(2.0*rt), -1.0/(2.0*rt), rth/2.0)};
-
+    
             double af = 10.1;
             double bf = 1.34;
             double cf = 100.45;
-            //double cf = 0.0;
             double kf = 3.55;
             Vec3d wp_coord(0.0,0.0,0.0);
             Vec3d wp_coord2(0.0,0.0,0.0);
@@ -174,38 +173,42 @@ void interpolateWachspress3DTest(MPMesh& mpMesh){
                 double v3 = v[i].dot(ri[2]);
                 double fi = af * v1 + bf * v2 + cf * v3 + kf;
                 wp_grad = wp_grad + gradBasisByArea[i] * fi;
-                printf("i: %d, gradBasis: %.16e %.16e %.16e fi: %.16e \nz: %.16e \n", i,
+                /*printf("i: %d, gradBasis: %.16e %.16e %.16e fi: %.16e \nx: %.16e y: %.16e z: %.16e \n", i,
                                                                               gradBasisByArea[i][0],
                                                                               gradBasisByArea[i][1],
                                                                               gradBasisByArea[i][2],
                                                                               fi,
+                                                                              v1,
+                                                                              v2,
                                                                               v3); 
+                */
             }
-            /* 
-            // find gx, gy, gz  
-            double gxt = wp_grad[0]; // gx tilde
-            double gyt = wp_grad[1]; // gy tilde
-            double gzt = wp_grad[2]; // gz tilde
-            wp_grad[0] = gxt * r[0][0] + gyt * r[0][1];
-            wp_grad[1] = gxt * r[1][0] + gyt * r[1][1];
-            wp_grad[2] = gxt * r[2][0] + gyt * r[2][1];
-            */
-            printf("WP gradient:(%.16e %.16e %.16e)\noriginal:(%.16e %.16e %.16e)\n",
+              
+            double gxt = af; // gx tilde
+            double gyt = bf; // gy tilde
+
+            Vec3d wp_grad2;
+            wp_grad2[0] = gxt * r[0][0] + gyt * r[0][1];
+            wp_grad2[1] = gxt * r[1][0] + gyt * r[1][1];
+            wp_grad2[2] = gxt * r[2][0] + gyt * r[2][1];
+           
+            printf("WP gradient:(%.16e %.16e %.16e)\nexpected gradient:(%.16e %.16e %.16e)\n",
                                               wp_grad[0],
                                               wp_grad[1],
                                               wp_grad[2],
-                                              af,
-                                              bf,
-                                              cf);
-            assert(wp_coord[0] - MPsPosition(mp,0) < TEST_EPSILON);
-            assert(wp_coord[1] - MPsPosition(mp,1) < TEST_EPSILON);
-            assert(wp_coord[2] - MPsPosition(mp,2) < TEST_EPSILON);
-            assert(wp_coord2[0] - MPsPosition(mp,0) < TEST_EPSILON);
-            assert(wp_coord2[1] - MPsPosition(mp,1) < TEST_EPSILON);
-            assert(wp_coord2[2] - MPsPosition(mp,2) < TEST_EPSILON);
-            //assert(wp_grad[0] - af < TEST_EPSILON);
-            //assert(wp_grad[1] - bf < TEST_EPSILON);
-            // assert(wp_grad[2] - cf < TEST_EPSILON);
+                                              wp_grad2[0],
+                                              wp_grad2[1],
+                                              wp_grad2[2]);
+            
+            assert(abs(wp_coord[0] - MPsPosition(mp,0)) < TEST_EPSILON);
+            assert(abs(wp_coord[1] - MPsPosition(mp,1)) < TEST_EPSILON);
+            assert(abs(wp_coord[2] - MPsPosition(mp,2)) < TEST_EPSILON);
+            assert(abs(wp_coord2[0] - MPsPosition(mp,0)) < TEST_EPSILON);
+            assert(abs(wp_coord2[1] - MPsPosition(mp,1)) < TEST_EPSILON);
+            assert(abs(wp_coord2[2] - MPsPosition(mp,2)) < TEST_EPSILON);
+            assert(abs(wp_grad[0] - wp_grad2[0]) < TEST_EPSILON);
+            assert(abs(wp_grad[1] - wp_grad2[1]) < TEST_EPSILON);
+            assert(abs(wp_grad[2] - wp_grad2[2]) < TEST_EPSILON);
         }        
     };
     p_MPs->parallel_for(eval, "interpolateWachspress3DTest");

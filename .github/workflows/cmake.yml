@@ -220,31 +220,32 @@ jobs:
       if: always()
       run: cat ${{ runner.temp }}/build-pumi-pic/Testing/Temporary/LastTest.log
   
-    # # Build PolyMPO
+    # Build PolyMPO
 
-    # - name: PolyMPO Checkout repo
-    #   uses: actions/checkout@v3
-    #   with:
-    #     submodules: recursive
-    #     repository: SCOREC/polyMPO
-    #     path: polyMPO
+    - name: PolyMPO Checkout repo
+      uses: actions/checkout@v3
+      with:
+        submodules: recursive
+        repository: SCOREC/polyMPO
+        path: polyMPO
 
-    # - name: PolyMPO Create Directory
-    #   run: cmake -E make_directory ${{ runner.temp }}/build-polyMPO
+    - name: PolyMPO Create Directory
+      run: cmake -E make_directory ${{ runner.temp }}/build-polyMPO
 
-    # - name: PolyMPO Configure CMake
-    #   run: cmake -S $GITHUB_WORKSPACE/polyMPO -B ${{ runner.temp }}/build-polyMPO
-    #     -DCMAKE_BUILD_TYPE="Debug"
-    #     -DKokkos_DIR=${{ runner.temp }}/build-kokkos/install/lib64/cmake/Kokkos
-    #     -DCMAKE_CXX_COMPILER=mpicxx
-    #     -DCMAKE_INSTALL_PREFIX=${{ runner.temp }}/build-polyMPO/install
+    - name: PolyMPO Configure CMake
+      run: cmake -S $GITHUB_WORKSPACE/polyMPO -B ${{ runner.temp }}/build-polyMPO
+        -DCMAKE_BUILD_TYPE="Debug"
+        -DKokkos_DIR=${{ runner.temp }}/build-kokkos/install/lib64/cmake/Kokkos
+        -DCMAKE_PREFIX_PATH=${{ runner.temp }}/build-pumi-pic/install
+        -DCMAKE_CXX_COMPILER=mpicxx
+        -DCMAKE_INSTALL_PREFIX=${{ runner.temp }}/build-polyMPO/install
     
-    # - name: PolyMPO Build
-    #   run: cmake --build ${{ runner.temp }}/build-polyMPO -j8 --target install
+    - name: PolyMPO Build
+      run: cmake --build ${{ runner.temp }}/build-polyMPO -j8 --target install
 
-    # - name: PolyMPO Test
-    #   run: ctest --test-dir ${{ runner.temp }}/build-polyMPO
+    - name: PolyMPO Test
+      run: ctest --test-dir ${{ runner.temp }}/build-polyMPO
 
-    # - name: PolyMPO Print
-    #   if: always()
-    #   run: cat ${{ runner.temp }}/build-polyMPO/Testing/Temporary/LastTest.log
+    - name: PolyMPO Print
+      if: always()
+      run: cat ${{ runner.temp }}/build-polyMPO/Testing/Temporary/LastTest.log

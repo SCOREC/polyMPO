@@ -86,7 +86,7 @@ auto create_mirror_view_and_copy(DataT array, const int size){
 void polympo_createMPs_f(MPMesh_ptr p_mpmesh,
                        const int numElms,
                        const int numMPs, // total number of MPs which is GREATER than or equal to number of active MPs
-                       const int* mpsPerElm,
+                       int* mpsPerElm,
                        const int* mp2Elm,
                        const int* isMPActive) {
   checkMPMeshValid(p_mpmesh);

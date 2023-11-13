@@ -29,6 +29,9 @@ jobs:
     - name: Install Valgrind
       run: sudo apt-get install -yq valgrind
 
+    - name: Install NetCDF-Fortran
+      run: sudo apt-get install libnetcdff-dev
+
     # Build Kokkos
 
     - name: Cache Kokkos Build
@@ -232,7 +235,6 @@ jobs:
         -DCMAKE_PREFIX_PATH=${{ runner.temp }}/build-pumi-pic/install
         -DCMAKE_CXX_COMPILER=mpicxx
         -DCMAKE_INSTALL_PREFIX=${{ runner.temp }}/build-polyMPO/install
-        -DPOLYMPO_USE_NETCDF=OFF
     
     - name: PolyMPO Build
       run: cmake --build ${{ runner.temp }}/build-polyMPO -j8 --target install

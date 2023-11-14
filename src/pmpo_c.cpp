@@ -86,7 +86,7 @@ auto create_mirror_view_and_copy(DataT array, const int size){
 void polympo_createMPs_f(MPMesh_ptr p_mpmesh,
                        const int numElms,
                        const int numMPs, // total number of MPs which is GREATER than or equal to number of active MPs
-                       const int* mpsPerElm,
+                       int* mpsPerElm,
                        const int* mp2Elm,
                        const int* isMPActive) {
   checkMPMeshValid(p_mpmesh);
@@ -179,7 +179,7 @@ void polympo_rebuildMPs_f(MPMesh_ptr p_mpmesh,
   auto mpMP2ElmIn_d = create_mirror_view_and_copy(allMP2Elm, numMPs);
 
   Kokkos::View<int*> numDeletedMPs_d("numDeletedMPs", 1);
-  auto setMP2Elm = PS_LAMBDA(const int& elm, const int& mp, const int& mask) {
+  auto setMP2Elm = PS_LAMBDA(const int&, const int& mp, const int& mask) {
     if(mask) {
       if (addedMPMask_d[mpAppID(mp)] == MP_ACTIVE) //two MPs can not occupy the same slot
         mp2Elm(mp) = MP_DELETE;
@@ -200,7 +200,7 @@ void polympo_rebuildMPs_f(MPMesh_ptr p_mpmesh,
   if (p_MPs->getOpMode() == polyMPO::MP_DEBUG){
     mpAppID = p_MPs->getData<polyMPO::MPF_MP_APP_ID>();
     Kokkos::View<int*> mpAppIDCount("mpAppIDCount", p_MPs->getCount());
-    auto checkAppIDs = PS_LAMBDA(const int& elm, const int& mp, const int& mask){
+    auto checkAppIDs = PS_LAMBDA(const int&, const int& mp, const int& mask){
       if(mask) {
         int prev = Kokkos::atomic_fetch_add(&mpAppIDCount(mpAppID(mp)), 1);
         assert(prev == 0);
@@ -224,7 +224,7 @@ void polympo_getMPCurElmID_f(MPMesh_ptr p_mpmesh,
   kkIntViewHostU arrayHost(elmIDs,numMPs);
   polyMPO::IntView mpCurElmIDCopy("mpCurElmIDNewValue",numMPs);
 
-  auto getElmId = PS_LAMBDA(const int& elm, const int& mp, const int& mask){
+  auto getElmId = PS_LAMBDA(const int&, const int& mp, const int& mask){
     if(mask){
         mpCurElmIDCopy(mpAppID(mp)) = mpCurElmID(mp)+elmIDoffset;
     }
@@ -250,7 +250,7 @@ void polympo_setMPPositions_f(MPMesh_ptr p_mpmesh,
   kkViewHostU<const double**> mpPositionsIn_h(mpPositionsIn,numComps,numMPs);
   Kokkos::View<double**> mpPositionsIn_d("mpPositionsDevice",vec3d_nEntries,numMPs);
   Kokkos::deep_copy(mpPositionsIn_d, mpPositionsIn_h);
-  auto setPos = PS_LAMBDA(const int& elm, const int& mp, const int& mask){
+  auto setPos = PS_LAMBDA(const int&, const int& mp, const int& mask){
     if(mask){
       mpPositions(mp,0) = mpPositionsIn_d(0, mpAppID(mp));
       mpPositions(mp,1) = mpPositionsIn_d(1, mpAppID(mp));
@@ -274,7 +274,7 @@ void polympo_getMPPositions_f(MPMesh_ptr p_mpmesh,
   auto mpPositions = p_MPs->getData<polyMPO::MPF_Cur_Pos_XYZ>();
   auto mpAppID = p_MPs->getData<polyMPO::MPF_MP_APP_ID>();
   Kokkos::View<double**> mpPositionsCopy("mpPositionsCopy",vec3d_nEntries,numMPs);
-  auto getPos = PS_LAMBDA(const int& elm, const int& mp, const int& mask){
+  auto getPos = PS_LAMBDA(const int&, const int& mp, const int& mask){
     if(mask){
       mpPositionsCopy(0,mpAppID(mp)) = mpPositions(mp,0);
       mpPositionsCopy(1,mpAppID(mp)) = mpPositions(mp,1);

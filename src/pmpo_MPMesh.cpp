@@ -5,9 +5,7 @@
 namespace polyMPO{
 
 void MPMesh::CVTTrackingEdgeCenterBased(Vec2dView dx){
-    int numVtxs = p_mesh->getNumVertices();
     int numElms = p_mesh->getNumElements();
-    auto numMPs = p_MPs->getCount();
 
     auto elm2VtxConn = p_mesh->getElm2VtxConn();
     auto elm2ElmConn = p_mesh->getElm2ElmConn();
@@ -73,7 +71,6 @@ void MPMesh::CVTTrackingEdgeCenterBased(Vec2dView dx){
 
 
 void MPMesh::CVTTrackingElmCenterBased(Vec2dView dx){
-    int numVtxs = p_mesh->getNumVertices();
     int numElms = p_mesh->getNumElements();
     
     const auto vtxCoords = p_mesh->getMeshField<polyMPO::MeshF_VtxCoords>(); 
@@ -84,7 +81,7 @@ void MPMesh::CVTTrackingElmCenterBased(Vec2dView dx){
     auto MPs2Elm = p_MPs->getData<MPF_Tgt_Elm_ID>();;
 
     Vec2dView elmCenter("elmentCenter",numElms);
-    auto calcCenter = PS_LAMBDA(const int& elm, const int& mp, const int&mask){
+    auto calcCenter = PS_LAMBDA(const int& elm, const int&, const int&){
 //        elmCenter(iElm) = calcElmCenter(iElm,elm2VtxConn,vtxCoords);
         int numVtx = elm2VtxConn(elm,0);
         double sum_x = 0.0, sum_y = 0.0;
@@ -131,9 +128,6 @@ void MPMesh::CVTTrackingElmCenterBased(Vec2dView dx){
 }
 
 void MPMesh::T2LTracking(Vec2dView dx){
-    int numVtxs = p_mesh->getNumVertices();
-    int numElms = p_mesh->getNumElements();
-    
     const auto vtxCoords = p_mesh->getMeshField<polyMPO::MeshF_VtxCoords>(); 
     auto elm2VtxConn = p_mesh->getElm2VtxConn();
     auto elm2ElmConn = p_mesh->getElm2ElmConn();

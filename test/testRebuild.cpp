@@ -28,14 +28,14 @@ int main(int argc, char** argv) {
     };
     p_MPs->parallel_for(setTargetElmMod2, "setTargetElmMod2");
     p_MPs->rebuild();
-    auto checkTargetElmMod2 = PS_LAMBDA(const int& elm, const int& mp, const int& mask){
+    auto checkTargetElmMod2 = PS_LAMBDA(const int&, const int& mp, const int& mask){
       if(mask) assert(mpTgtElm(mp) == mpStatus(mp) % 2);
     };
     p_MPs->parallel_for(checkTargetElmMod2, "setTargetElmMod2");
 
     //move the all mps to elmeent zero, the zeroth mp is marked as inactive
     const auto initNumMPs = p_MPs->getCount();
-    auto setTargetElmZero = PS_LAMBDA(const int& elm, const int& mp, const int& mask){
+    auto setTargetElmZero = PS_LAMBDA(const int&, const int& mp, const int& mask){
       if(mask) { 
         mpTgtElm(mp) = (mp==0) ? -1 : 0;
       }
@@ -43,7 +43,7 @@ int main(int argc, char** argv) {
     p_MPs->parallel_for(setTargetElmZero, "setTargetElmZero");
     p_MPs->rebuild();
     PMT_ALWAYS_ASSERT(p_MPs->getCount() == initNumMPs - 1);
-    auto checkTargetElmZero = PS_LAMBDA(const int& elm, const int& mp, const int& mask){
+    auto checkTargetElmZero = PS_LAMBDA(const int&, const int& mp, const int& mask){
       if(mask) assert(mpTgtElm(mp) == 0);
     };
     p_MPs->parallel_for(checkTargetElmZero, "setTargetElmZero");

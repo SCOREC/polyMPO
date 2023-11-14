@@ -97,7 +97,7 @@ void interpolateWachspressSphericalTest(MPMesh& mpMesh){
     p_MPs->parallel_for(eval, "interpolateWachspressSphericalTest");
 }
 
-void interpolateWachspress3DTest(MPMesh& mpMesh){
+void interpolateWachspress3DTest(MPMesh& mpMesh, const int testMeshOption){
     auto p_mesh = mpMesh.p_mesh;
     auto vtxCoords = p_mesh->getMeshField<polyMPO::MeshF_VtxCoords>();
     auto elm2VtxConn = p_mesh->getElm2VtxConn();
@@ -126,37 +126,31 @@ void interpolateWachspress3DTest(MPMesh& mpMesh){
             Vec3d position(MPsPosition(mp,0),MPsPosition(mp,1),MPsPosition(mp,2));
             getBasisAndGradByAreaGblForm3d(position, numVtx, v, basisByArea, gradBasisByArea);
             getBasisByAreaGblForm3d(position, numVtx, v, basisByArea2);
-           
-            // testing
-            /*const int numVtx_test = 4;
-            Vec3d position_test(3.0, 2.0, 3.0); // MP
-            Vec3d v_test[numVtx_test];
-            double basisByArea_test[numVtx_test+1];
-            Vec3d gradBasisByArea_test[numVtx_test];
-            v_test[0] = Vec3d(3.0, 2.0, 5.0);
-            v_test[1] = Vec3d(3.0, 3.0, 2.0);
-            v_test[2] = Vec3d(2.0, 1.0, 2.0);
-            v_test[3] = Vec3d(5.0, 1.0, 2.0);
-            v_test[4] = v_test[0];
-            getBasisAndGradByAreaGblForm3d(position_test, numVtx_test, v_test, basisByArea_test, gradBasisByArea_test);
-
-            for (int i = 0; i <numVtx_test; i++) {
-                printf("%d: %f %f \n", i, gradBasisByArea_test[i][0],  gradBasisByArea_test[i][1]);
-            }
-            */
-            // testing ends
-            double rt = 1.41421356237; // sqrt 2
-            double rth = 1.73205080757;// sqrt 3
-
-            // rotation matrix
-            Vec3d r[3] = {Vec3d(1.0/rt,-rth/(2*rt),1/(2*rt)),
-                          Vec3d(1.0/rt, rth/(2*rt),-1.0/(2*rt)),
-                          Vec3d(0, 1.0/2.0, rth/2.0)};
+          
+            // rotation matrix 
+            Vec3d r[3] = {Vec3d(1.0, 0.0, 0.0),
+                          Vec3d(0.0, 1.0, 0.0),
+                          Vec3d(0.0, 0.0, 1.0)};
             // r inverse
-            Vec3d ri[3] = {Vec3d(rt - 1.0/rt,1/(rt),0),
-                          Vec3d(-rt/rth + 1.0/(2.0*rt*rth), rt/rth - 1.0/(2.0*rt*rth),1.0/2.0),
-                          Vec3d(1.0/(2.0*rt), -1.0/(2.0*rt), rth/2.0)};
-    
+            Vec3d ri[3] = {Vec3d(1.0, 0.0, 0.0),
+                           Vec3d(0.0, 1.0, 0.0),
+                           Vec3d(0.0, 0.0, 1.0)};
+            
+            if (testMeshOption == 2) {
+                // rotated 30 degrees around x-axis, then 45 degrees around z-axis
+                double rt = 1.41421356237; // sqrt 2
+                double rth = 1.73205080757;// sqrt 3
+               
+                // rotation matrix
+                r[0] = Vec3d(1.0/rt,-rth/(2*rt),1/(2*rt));
+                r[1] = Vec3d(1.0/rt, rth/(2*rt),-1.0/(2*rt));
+                r[2] = Vec3d(0,1.0/2.0,rth/2.0);
+                
+                // r inverse
+                ri[0] = Vec3d(rt - 1.0/rt,1.0/(rt),0.0);
+                ri[1] = Vec3d(-rt/rth + 1.0/(2.0*rt*rth),rt/rth - 1.0/(2.0*rt*rth),1.0/2.0);
+                ri[2] = Vec3d(1.0/(2.0*rt),-1.0/(2.0*rt),rth/2.0);
+            }
             double af = 10.1;
             double bf = 1.34;
             double cf = 100.45;
@@ -167,31 +161,21 @@ void interpolateWachspress3DTest(MPMesh& mpMesh){
             for(int i=0; i<numVtx; i++){
                 wp_coord = wp_coord + v[i]*basisByArea[i];
                 wp_coord2 = wp_coord2 + v[i]*basisByArea2[i];
-                //double fi = af * v[i][0] + bf * v[i][1] + cf * v[i][2] + kf;
                 double v1 = v[i].dot(ri[0]);
                 double v2 = v[i].dot(ri[1]);
                 double v3 = v[i].dot(ri[2]);
                 double fi = af * v1 + bf * v2 + cf * v3 + kf;
                 wp_grad = wp_grad + gradBasisByArea[i] * fi;
-                /*printf("i: %d, gradBasis: %.16e %.16e %.16e fi: %.16e \nx: %.16e y: %.16e z: %.16e \n", i,
-                                                                              gradBasisByArea[i][0],
-                                                                              gradBasisByArea[i][1],
-                                                                              gradBasisByArea[i][2],
-                                                                              fi,
-                                                                              v1,
-                                                                              v2,
-                                                                              v3); 
-                */
             }
               
             double gxt = af; // gx tilde
             double gyt = bf; // gy tilde
-
             Vec3d wp_grad2;
             wp_grad2[0] = gxt * r[0][0] + gyt * r[0][1];
             wp_grad2[1] = gxt * r[1][0] + gyt * r[1][1];
             wp_grad2[2] = gxt * r[2][0] + gyt * r[2][1];
-           
+            
+            /*
             printf("WP gradient:(%.16e %.16e %.16e)\nexpected gradient:(%.16e %.16e %.16e)\n",
                                               wp_grad[0],
                                               wp_grad[1],
@@ -199,7 +183,7 @@ void interpolateWachspress3DTest(MPMesh& mpMesh){
                                               wp_grad2[0],
                                               wp_grad2[1],
                                               wp_grad2[2]);
-            
+            */
             assert(abs(wp_coord[0] - MPsPosition(mp,0)) < TEST_EPSILON);
             assert(abs(wp_coord[1] - MPsPosition(mp,1)) < TEST_EPSILON);
             assert(abs(wp_coord[2] - MPsPosition(mp,2)) < TEST_EPSILON);

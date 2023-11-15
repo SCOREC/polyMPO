@@ -470,6 +470,7 @@ module polympo
   !---------------------------------------------------------------------------
   !> @brief calculate the MPs from given mesh vertices rotational latitude
   !>        longitude, update the MP slices
+  !>        MPs MUST have rotated flag set to True(>0)
   !> @param mpmesh(in/out) MPMesh object
   !---------------------------------------------------------------------------
   subroutine polympo_push(mpMesh) &

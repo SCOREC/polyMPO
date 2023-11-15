@@ -192,6 +192,13 @@ void polympo_getMPCurElmID_f(MPMesh_ptr p_mpmesh,
   Kokkos::deep_copy( arrayHost, mpCurElmIDCopy);
 }
 
+void polympo_setMPLatLonRotatedFlag_f(MPMesh_ptr p_mpmesh, int isRotateFlag){
+  //chech validity
+  checkMPMeshValid(p_mpmesh);
+  ((polyMPO::MPMesh*)p_mpmesh)->p_MPs->setRotatedFlag(isRotateFlag>0);
+
+}
+
 void polympo_setMPPositions_f(MPMesh_ptr p_mpmesh,
                             int numComps,
                             int numMPs,

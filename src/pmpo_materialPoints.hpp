@@ -106,6 +106,7 @@ class MaterialPoints {
     PS* MPs;
     int elmIDoffset = -1;
     int maxAppID = -1;
+    bool _isRotatedFlag = false;
 
   public:
     MaterialPoints() : MPs(nullptr) {};
@@ -189,6 +190,12 @@ class MaterialPoints {
     int getMaxAppID() {
       PMT_ALWAYS_ASSERT(maxAppID != -1);
       return maxAppID;
+    }
+    bool getRotatedFlag() {
+      return _isRotatedFlag;
+    }
+    void setRotatedFlag(bool flagSet) {
+      _isRotatedFlag = flagSet;
     }
 
 //MUTATOR  

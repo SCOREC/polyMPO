@@ -84,6 +84,17 @@ module polympo
     type(c_ptr), value :: array
   end subroutine
   !---------------------------------------------------------------------------
+  !> @brief set the mp lat lon is rotational or normal
+  !> @param mpmesh(in/out) MPMesh object
+  !> @param isRotateFlag(in) Flag>0 = True, otherwise False.
+  !---------------------------------------------------------------------------
+  subroutine polympo_setMPLatLonRotatedFlag(mpMesh, isRotateFlag) &
+             bind(C, NAME='polympo_setMPLatLonRotatedFlag_f')
+    use :: iso_c_binding
+    type(c_ptr), value :: mpMesh
+    integer(c_int), value :: isRotateFlag
+  end subroutine
+  !---------------------------------------------------------------------------
   !> @brief set the MP positions array from a host array
   !> @param mpmesh(in/out) MPMesh object
   !> @param nComps(in) number of components, should always be 3

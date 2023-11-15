@@ -11,6 +11,11 @@ An NVIDIA GPU is required for building and running the software.  CUDA flags for
 
 The following assumes that a valid C and C++ compiler, and `cmake`, are in your PATH.  On SCOREC systems these are provided by `module` commands.  If you are not on a SCOREC system these must be edited accordingly.
 
+## table of contents
+1. [SCOREC GPU Build](#install-dependencies)
+2. [SCOREC CPU Build](#cpu-build-instructions)
+3. [Perlmutterr GPU Build](#perlmutter-gpu-build-instructions)
+
 ## install dependencies
 
 Create a directory to work from.  It will contain all source code and build directories.

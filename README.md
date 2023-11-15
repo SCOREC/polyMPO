@@ -15,6 +15,7 @@ The following assumes that a valid C and C++ compiler, and `cmake`, are in your 
 1. [SCOREC GPU Build](#install-dependencies)
 2. [SCOREC CPU Build](#cpu-build-instructions)
 3. [Perlmutterr GPU Build](#perlmutter-gpu-build-instructions)
+4. [Perlmutterr CPU Build](#perlmutter-cpu-build-instructions)
 
 ## install dependencies
 
@@ -527,6 +528,149 @@ cd /path/to/selected/root/directory
 source envPerlmutter.sh
 export MPICH_GPU_SUPPORT_ENABLED=0 #avoid an error regarding cuda aware mpi
 cd buildPolyMPO-GPU
+ctest
+```
+
+## Perlmutter CPU Build Instructions
+
+Following the approach described for the GPU, below are the environment and
+build scripts needed for building on the CPU.
+
+
+`setupEnvironmentCPU.sh`
+
+```
+export root=$PWD
+module load gcc/11.2.0
+module load cmake/3.22.0
+module load cray-mpich/8.1.25
+module load cray-hdf5/1.12.2.7
+module load cray-netcdf/4.9.0.3
+
+function getname() {
+  name=$1
+  machine=`hostname -s`
+  buildSuffix=${machine}-cpu
+  echo "build-${name}-${buildSuffix}"
+}
+export engpar=$root/`getname engpar`/install # This is where engpar will be (or is) installed
+export kk=$root/`getname kokkos`/install   # This is where kokkos will be (or is) installed
+export oh=$root/`getname omegah`/install  # This is where omega_h will be (or is) installed
+export cab=$root/`getname cabana`/install # This is where cabana will be (or is) installed
+export pumipic=$root/`getname pumipic`/install # This is where PumiPIC will be (or is) installed
+export CMAKE_PREFIX_PATH=$engpar:$kk:$kk/lib64/cmake:$oh:$cab:$pumipic:$CMAKE_PREFIX_PATH
+export MPICH_CXX=$root/kokkos/bin/nvcc_wrapper
+```
+
+`buildAllCPU.sh`
+
+```
+#!/bin/bash -e
+
+cd $root
+
+##kokkos
+git clone -b 4.0.01 https://github.com/kokkos/kokkos.git
+mkdir -p $kk
+cmake -S kokkos -B ${kk%%install} \
+  -DCMAKE_INSTALL_PREFIX=$kk \
+  -DCMAKE_CXX_COMPILER=g++ \
+  -DKokkos_ENABLE_SERIAL=ON \
+  -DKokkos_ENABLE_OPENMP=off \
+  -DKokkos_ENABLE_CUDA=off \
+  -DKokkos_ENABLE_DEBUG=on
+cmake --build ${kk%%install} -j 24 --target install
+
+#engpar
+mkdir -p $engpar
+git clone https://github.com/SCOREC/EnGPar.git
+cmake -S EnGPar -B ${engpar%%install} \
+  -DCMAKE_INSTALL_PREFIX=$engpar \
+  -DCMAKE_BUILD_TYPE="Release" \
+  -DCMAKE_C_COMPILER="mpicc" \
+  -DCMAKE_CXX_COMPILER="mpicxx" \
+  -DCMAKE_CXX_FLAGS="-std=c++11" \
+  -DENABLE_PARMETIS=OFF \
+  -DENABLE_PUMI=OFF \
+  -DIS_TESTING=OFF
+cmake --build ${engpar%%install} -j 24 --target install
+
+#omegah
+mkdir -p $oh
+git clone https://github.com/SCOREC/omega_h.git
+cmake -S omega_h -B ${oh%%install} \
+  -DCMAKE_INSTALL_PREFIX=$oh \
+  -DCMAKE_BUILD_TYPE="Release" \
+  -DBUILD_SHARED_LIBS=OFF \
+  -DOmega_h_USE_Kokkos=ON \
+  -DOmega_h_USE_CUDA=off \
+  -DOmega_h_USE_MPI=on  \
+  -DBUILD_TESTING=off  \
+  -DCMAKE_C_COMPILER=`which mpicc` \
+  -DCMAKE_CXX_COMPILER=`which mpicxx` \
+  -DKokkos_PREFIX=$kk/lib64/cmake
+cmake --build ${oh%%install} -j 24 --target install
+
+#cabana
+mkdir -p $cab
+git clone -b 0.5.0 https://github.com/ECP-copa/Cabana.git cabana
+cmake -S cabana -B ${cab%%install} \
+  -DCMAKE_INSTALL_PREFIX=$cab \
+  -DCMAKE_BUILD_TYPE="Release" \
+  -DCMAKE_CXX_COMPILER=`which mpicxx` \
+  -DCabana_ENABLE_TESTING=OFF \
+  -DCabana_ENABLE_EXAMPLES=OFF
+cmake --build ${cab%%install} -j 24 --target install
+
+#pumipic
+mkdir -p $pumipic
+git clone --recursive -b ac/cuda-off https://github.com/SCOREC/pumi-pic.git
+cmake -S pumi-pic -B ${pumipic%%install} \
+  -DCMAKE_INSTALL_PREFIX=$pumipic \
+  -DCMAKE_BUILD_TYPE="Debug" \
+  -DCMAKE_CXX_COMPILER=mpicxx \
+  -DENABLE_CABANA=ON \
+  -DTEST_DATA_DIR=$root/pumi-pic/pumipic-data \
+  -DOmega_h_PREFIX=$oh \
+  -DEnGPar_PREFIX=$engpar \
+  -DIS_TESTING=OFF \
+  -DPS_IS_TESTING=OFF
+cmake --build ${pumipic%%install} -j 24 --target install
+```
+
+`doConfigPolyMPO-CPU.sh`
+
+```
+bdir=$PWD/buildPolyMPO-CPU
+cmake -S polyMPO -B $bdir \
+-DCMAKE_BUILD_TYPE=Debug \
+-DKokkos_DIR=$kk/lib64/cmake/Kokkos \
+-DCMAKE_CXX_COMPILER=mpicxx \
+-DCMAKE_INSTALL_PREFIX=$bdir/install
+```
+
+`buildPolyMPO-CPU.sh`
+
+```
+bdir=$PWD/buildPolyMPO-CPU
+cmake --build $bdir --target install -j4
+```
+
+### Running interactively
+
+Allocate an interactive node - be sure to set the `account` argument:
+
+```
+salloc --nodes 1 --qos interactive --time 00:10:00 --constraint cpu --account=mXXXX
+```
+
+Once you are logged into the allocated node run the following commands to run
+`ctest`:
+
+```
+cd /path/to/selected/root/directory
+source envPerlmutter.sh
+cd buildPolyMPO-CPU
 ctest
 ```
 

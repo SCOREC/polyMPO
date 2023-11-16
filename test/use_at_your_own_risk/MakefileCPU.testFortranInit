@@ -15,7 +15,7 @@
 ###########################
 ## edit the following paths
 ###########################
-FC=gfortran
+FC=/opt/cray/pe/gcc/11.2.0/bin/gfortran
 
 CUDA_DIR=/opt/nvidia/hpc_sdk/Linux_x86_64/22.7/cuda/11.7/
 

@@ -12,12 +12,13 @@ An NVIDIA GPU is required for building and running the software.  CUDA flags for
 The following assumes that a valid C and C++ compiler, and `cmake`, are in your PATH.  On SCOREC systems these are provided by `module` commands.  If you are not on a SCOREC system these must be edited accordingly.
 
 ## table of contents
-1. [SCOREC GPU Build](#install-dependencies)
-2. [SCOREC CPU Build](#cpu-build-instructions)
+1. [SCOREC GPU Build](#scorec-gpu-build-instructions)
+2. [SCOREC CPU Build](#scorec-cpu-build-instructions)
 3. [Perlmutterr GPU Build](#perlmutter-gpu-build-instructions)
 4. [Perlmutterr CPU Build](#perlmutter-cpu-build-instructions)
 
-## install dependencies
+## scorec gpu build instructions
+### install dependencies
 
 Create a directory to work from.  It will contain all source code and build directories.
 
@@ -240,7 +241,9 @@ rm -rf buildPolyMPO-GPU
 ./buildPolyMpo-GPU.sh
 ```
 
-## CPU Build Instructions
+[Back To Top](#table-of-contents)
+
+## SCOREC CPU Build Instructions
 
 Following the approach described for the GPU, below are the environment and
 build scripts needed for building on the CPU.
@@ -366,6 +369,8 @@ cmake -S polyMPO -B $bdir \
 bdir=$PWD/buildPolyMPO-CPU
 cmake --build $bdir --target install -j4
 ```
+
+[Back To Top](#table-of-contents)
 
 ## Perlmutter GPU Build Instructions
 
@@ -531,6 +536,8 @@ cd buildPolyMPO-GPU
 ctest
 ```
 
+[Back To Top](#table-of-contents)
+
 ## Perlmutter CPU Build Instructions
 
 Following the approach described for the CPU, below are the environment and
@@ -672,4 +679,4 @@ cd buildPolyMPO-CPU
 ctest
 ```
 
-
+[Back To Top](#table-of-contents)

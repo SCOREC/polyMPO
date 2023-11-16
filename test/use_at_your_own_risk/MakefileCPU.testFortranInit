@@ -24,7 +24,7 @@ HDF5_DIR=/opt/cray/pe/hdf5/1.12.2.7/gnu/9.1/
 MPI_DIR=/opt/cray/pe/mpich/8.1.25/ofi/gnu/9.1/
 MPI_LIBS=${MPI_DIR}/lib/libmpifort_gnu_91.so ${MPI_DIR}/lib/libmpi_gnu_91.so
 
-devRoot=/global/homes/y/yygong/develop
+devRoot=/global/homes/c/castia5/cpu-pumi-pic/
 
 KOKKOS_DIR=${devRoot}/build-kokkos-login21-cpu/install/
 KOKKOS_LIB_DIR=${KOKKOS_DIR}/lib64
@@ -39,6 +39,8 @@ CABANA_DIR=${devRoot}/build-cabana-login21-cpu/install/
 
 POLYMPO_DIR=${devRoot}/buildPolyMPO-CPU/install
 
+TEST_DIR=${devRoot}/buildPolyMPO-CPU/test/
+
 ######################################################################################
 ## Dont't change the following unless you know exactly what you are doing...
 ## The following was generated from the CMake generated compile and link commands in
@@ -48,8 +50,8 @@ POLYMPO_LIBS=\
 -L${MPI_DIR}/lib  \
 -L${CUDA_DIR}/targets/x86_64-linux/lib/stubs  \
 -L${CUDA_DIR}/targets/x86_64-linux/lib  \
--Wl,-rpath,${NETCDF_DIR}/lib:${MPI_DIR}/lib: libpmpoUtils.a libpmpoUtils.a \
-${POLYMPO_DIR}/lib/libpolympo_fortran.a libreadMPAS.a libpmpoUtils.a libreadMPAS.a \
+-Wl,-rpath,${NETCDF_DIR}/lib:${MPI_DIR}/lib: ${TEST_DIR}/libpmpoUtils.a ${TEST_DIR}/libpmpoUtils.a \
+${POLYMPO_DIR}/lib/libpolympo_fortran.a ${TEST_DIR}/libreadMPAS.a ${TEST_DIR}/libpmpoUtils.a ${TEST_DIR}/libreadMPAS.a \
 ${POLYMPO_DIR}/lib/libpolyMPO-core.a \
 -lm \
 ${PUMIPIC_DIR}/lib/libpumipic-core.a \
@@ -99,7 +101,8 @@ POLYMPO_COMPILE_FLAGS=\
 -I${ENGPAR_DIR}/include \
 -I${MPI_DIR}/include \
 -I${NETCDF_DIR}/include \
--I${HDF5_DIR}/include
+-I${HDF5_DIR}/include \
+-g -J${devRoot}/buildPolyMPO-CPU/mod_files
 
 testFortranInit: testFortranInit.o
 		${FC} testFortranInit.o -o testFortranInit ${POLYMPO_LIBS}

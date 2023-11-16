@@ -7,6 +7,8 @@
 # editing the paths in the first section **and** modifying the compile and link
 # arguments.  This is not intended to be portable as there is no logic to
 # detect/discover compilers and other system software.
+#
+# This file was generated in July/Aug 2023.
 ############################################################################
 
 

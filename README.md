@@ -533,7 +533,7 @@ ctest
 
 ## Perlmutter CPU Build Instructions
 
-Following the approach described for the GPU, below are the environment and
+Following the approach described for the CPU, below are the environment and
 build scripts needed for building on the CPU.
 
 
@@ -541,9 +541,7 @@ build scripts needed for building on the CPU.
 
 ```
 export root=$PWD
-module load gcc/11.2.0
 module load cmake/3.22.0
-module load cray-mpich/8.1.25
 module load cray-hdf5/1.12.2.7
 module load cray-netcdf/4.9.0.3
 

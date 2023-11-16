@@ -209,17 +209,41 @@ class MaterialPoints {
         auto rotLatLonIncr = getData<MPF_Rot_Lat_Lon_Incr>();
         
         auto updateRotLatLon = PS_LAMBDA(const int& elm, const int& mp, const int& mask){
-        if(mask){
-            auto lat = curPosRotLatLon(mp,0) + rotLatLonIncr(mp,0); // phi
-            auto lon = curPosRotLatLon(mp,1) + rotLatLonIncr(mp,1); // lambda
-            tgtPosRotLatLon(mp,0) = lat;
-            tgtPosRotLatLon(mp,1) = lon;
-            // x = cosLon cosLat, y = sinLon cosLat, z = sinLat
-            tgtPosXYZ(mp,0) = radius * std::cos(lon) * std::cos(lat);
-            tgtPosXYZ(mp,1) = radius * std::sin(lon) * std::cos(lat);
-            tgtPosXYZ(mp,2) = radius * std::sin(lat); 
-        } }; ps::parallel_for(MPs, updateRotLatLon,
-"updateRotationalLatitudeLongitude"); } };
+            if(mask){
+                auto rotLat = curPosRotLatLon(mp,0) + rotLatLonIncr(mp,0); // phi
+                auto rotLon = curPosRotLatLon(mp,1) + rotLatLonIncr(mp,1); // lambda
+                auto geoLat = rotLat;
+                auto geoLon = rotLon;
+                tgtPosRotLatLon(mp,0) = geoLat;
+                tgtPosRotLatLon(mp,1) = geoLon;
+                // x = cosLon cosLat, y = sinLon cosLat, z = sinLat
+                tgtPosXYZ(mp,0) = radius * std::cos(geoLon) * std::cos(geoLat);
+                tgtPosXYZ(mp,1) = radius * std::sin(geoLon) * std::cos(geoLat);
+                tgtPosXYZ(mp,2) = radius * std::sin(geoLat); 
+            } 
+        };
+        if(_isRotatedFlag){
+            //TODO rotation lat lon calc
+            fprintf(stderr, "rotational lat lon in MP is not support yet!");
+            PMT_ALWAYS_ASSERT(false);
+            /*updateRotLatLon = PS_LAMBDA(const int& elm, const int& mp, const int& mask){
+                if(mask){
+                    auto rotLat = curPosRotLatLon(mp,0) + rotLatLonIncr(mp,0); // phi
+                    auto rotLon = curPosRotLatLon(mp,1) + rotLatLonIncr(mp,1); // lambda
+                    auto geoLat = ...
+                    auto geoLon = ...
+                    tgtPosRotLatLon(mp,0) = geoLat;
+                    tgtPosRotLatLon(mp,1) = geoLon;
+                    // x = cosLon cosLat, y = sinLon cosLat, z = sinLat
+                    tgtPosXYZ(mp,0) = radius * std::cos(geoLon) * std::cos(geoLat);
+                    tgtPosXYZ(mp,1) = radius * std::sin(geoLon) * std::cos(geoLat);
+                    tgtPosXYZ(mp,2) = radius * std::sin(geoLat); 
+                } 
+            };*/
+        } 
+        ps::parallel_for(MPs, updateRotLatLon,"updateRotationalLatitudeLongitude"); 
+    } 
+};
 
 template <MaterialPointSlice index> void MaterialPoints::fillData(double value){
 auto mpData = getData<index>(); const int numEntries = mpSlice2MeshFieldIndex.

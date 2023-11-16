@@ -262,10 +262,9 @@ void MPMesh::T2LTracking(Vec2dView dx){
 }
 
 void MPMesh::push(){
-  PMT_ALWAYS_ASSERT(p_MPs->getRotatedFlag());
   p_mesh->computeRotLatLonIncr();
   sphericalInterpolation<MeshF_RotLatLonIncr, MPF_Rot_Lat_Lon_Incr>(*this);
-  p_MPs ->updateRotLatLonAndXYZ2Tgt(p_mesh->getSphereRadius()); // set Tgt_XYZ
+  p_MPs->updateRotLatLonAndXYZ2Tgt(p_mesh->getSphereRadius()); // set Tgt_XYZ
 
   CVTTrackingElmCenterBased(0); // move to Tgt_XYZ
 

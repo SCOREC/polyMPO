@@ -17,7 +17,7 @@ The following assumes that a valid C and C++ compiler, and `cmake`, are in your 
 3. [Perlmutterr GPU Build](#perlmutter-gpu-build-instructions)
 4. [Perlmutterr CPU Build](#perlmutter-cpu-build-instructions)
 
-## scorec gpu build instructions
+## SCOREC gpu build instructions
 ### install dependencies
 
 Create a directory to work from.  It will contain all source code and build directories.

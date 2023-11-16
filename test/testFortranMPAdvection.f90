@@ -66,7 +66,7 @@ program main
                         nCells, nVertices, nEdgesOnCell, &
                         onSphere, sphereRadius, &
                         xVertex, yVertex, zVertex, &
-                        latVertex, lonVertex, &
+                        latVertex, &
                         verticesOnCell, cellsOnCell)
  
   nCompsDisp = 2

@@ -18,9 +18,9 @@ namespace polyMPO{
         PMT_ALWAYS_ASSERT(vtxCoordsMapEntry.first == MeshFType_VtxBased);
         vtxCoords_ = DoubleVec3dView(vtxCoordsMapEntry.second,numVtxs_);
 
-        auto vtxRotLatLonMapEntry = meshFields2TypeAndString.at(MeshF_VtxRotLatLon);
-        PMT_ALWAYS_ASSERT(vtxRotLatLonMapEntry.first == MeshFType_VtxBased);
-        vtxRotLatLon_ = DoubleVec2dView(vtxRotLatLonMapEntry.second,numVtxs_);
+        auto vtxRotLatMapEntry = meshFields2TypeAndString.at(MeshF_VtxRotLat);
+        PMT_ALWAYS_ASSERT(vtxRotLatMapEntry.first == MeshFType_VtxBased);
+        vtxRotLat_ = DoubleSclrView(vtxRotLatMapEntry.second,numVtxs_);
 
         auto vtxVelMapEntry = meshFields2TypeAndString.at(MeshF_Vel);
         PMT_ALWAYS_ASSERT(vtxVelMapEntry.first == MeshFType_VtxBased);
@@ -44,14 +44,14 @@ namespace polyMPO{
        
         auto dispIncr = getMeshField<MeshF_OnSurfDispIncr>();
         auto rotLatLonIncr = getMeshField<MeshF_RotLatLonIncr>();
-        auto latLon = getMeshField<MeshF_VtxRotLatLon>();
+        auto lat = getMeshField<MeshF_VtxRotLat>();
         auto sphereRadius = getSphereRadius();
         PMT_ALWAYS_ASSERT(sphereRadius > 0); 
         Kokkos::parallel_for("set nEdgesPerElm", numVtxs_, KOKKOS_LAMBDA(const int iVtx){
             // Lat [iVtx,0] = dispIncrY [iVtx,1] /R
             // Lon [iVtx,1] = dispIncrX [iVtx,0] /(R*cos(lat))
             rotLatLonIncr(iVtx, 0) = dispIncr(iVtx, 1)/sphereRadius;
-            rotLatLonIncr(iVtx, 1) = dispIncr(iVtx, 0)/(sphereRadius * std::cos(latLon(iVtx,0)));
+            rotLatLonIncr(iVtx, 1) = dispIncr(iVtx, 0)/(sphereRadius * std::cos(lat(iVtx)));
         });
     }
 

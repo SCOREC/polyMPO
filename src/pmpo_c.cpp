@@ -502,7 +502,7 @@ void polympo_getMeshVtxCoords_f(MPMesh_ptr p_mpmesh, int nVertices, double* xArr
   }
 }
 
-void polympo_setMeshVtxRotLatLon_f(MPMesh_ptr p_mpmesh, int nVertices, double* latitude, double* longitude){
+void polympo_setMeshVtxRotLat_f(MPMesh_ptr p_mpmesh, int nVertices, double* latitude){
   //chech validity
   checkMPMeshValid(p_mpmesh);
   auto p_mesh = ((polyMPO::MPMesh*)p_mpmesh)->p_mesh;
@@ -511,16 +511,15 @@ void polympo_setMeshVtxRotLatLon_f(MPMesh_ptr p_mpmesh, int nVertices, double* l
   PMT_ALWAYS_ASSERT(p_mesh->getNumVertices()==nVertices); 
 
   //copy the host array to the device
-  auto coordsArray = p_mesh->getMeshField<polyMPO::MeshF_VtxRotLatLon>();
+  auto coordsArray = p_mesh->getMeshField<polyMPO::MeshF_VtxRotLat>();
   auto h_coordsArray = Kokkos::create_mirror_view(coordsArray);
   for(int i=0; i<nVertices; i++){
-    h_coordsArray(i,0) = latitude[i];
-    h_coordsArray(i,1) = longitude[i];
+    h_coordsArray(i) = latitude[i];
   }
   Kokkos::deep_copy(coordsArray, h_coordsArray);
 }
 
-void polympo_getMeshVtxRotLatLon_f(MPMesh_ptr p_mpmesh, int nVertices, double* latitude, double* longitude){
+void polympo_getMeshVtxRotLat_f(MPMesh_ptr p_mpmesh, int nVertices, double* latitude){
   //chech validity
   checkMPMeshValid(p_mpmesh);
   auto p_mesh = ((polyMPO::MPMesh*)p_mpmesh)->p_mesh;
@@ -529,12 +528,11 @@ void polympo_getMeshVtxRotLatLon_f(MPMesh_ptr p_mpmesh, int nVertices, double* l
   PMT_ALWAYS_ASSERT(p_mesh->getNumVertices()==nVertices); 
   
   //copy the device to host 
-  auto coordsArray = p_mesh->getMeshField<polyMPO::MeshF_VtxRotLatLon>();
+  auto coordsArray = p_mesh->getMeshField<polyMPO::MeshF_VtxRotLat>();
   auto h_coordsArray = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(),
                                                            coordsArray);
   for(int i=0; i<nVertices; i++){
-    latitude[i] = h_coordsArray(i,0);
-    longitude[i] = h_coordsArray(i,1);
+    latitude[i] = h_coordsArray(i);
   }
 }
 

@@ -12,6 +12,7 @@ using IntVtx2ElmView = Kokkos::View<int*[maxVtxsPerElm+1]>;
 using IntElm2VtxView = Kokkos::View<int*[maxElmsPerVtx+1]>;
 using IntElm2ElmView = Kokkos::View<int*[maxVtxsPerElm+1]>;
 
+using DoubleSclrView = Kokkos::View<double*>;
 using DoubleVec2dView = Kokkos::View<double*[vec2d_nEntries]>;
 using DoubleVec3dView = Kokkos::View<double*[vec3d_nEntries]>;
 using DoubleSymMat3dView = Kokkos::View<double*[6]>;
@@ -20,7 +21,7 @@ enum MeshFieldIndex{
     MeshF_Invalid = -2,
     MeshF_Unsupported,
     MeshF_VtxCoords,
-    MeshF_VtxRotLatLon,
+    MeshF_VtxRotLat,
     MeshF_Vel,
     MeshF_OnSurfVeloIncr,
     MeshF_OnSurfDispIncr,
@@ -37,7 +38,7 @@ const std::map<MeshFieldIndex, std::pair<MeshFieldType,
               {{MeshF_Invalid,          {MeshFType_Invalid,"MeshField_InValid!"}},
                {MeshF_Unsupported,      {MeshFType_Unsupported,"MeshField_Unsupported"}},
                {MeshF_VtxCoords,        {MeshFType_VtxBased,"MeshField_VerticesCoords"}},
-               {MeshF_VtxRotLatLon,        {MeshFType_VtxBased,"MeshField_VerticesLatitudeLongitude"}},
+               {MeshF_VtxRotLat,        {MeshFType_VtxBased,"MeshField_VerticesLatitudeLongitude"}},
                {MeshF_Vel,              {MeshFType_VtxBased,"MeshField_Velocity"}},
                {MeshF_OnSurfVeloIncr,   {MeshFType_VtxBased,"MeshField_OnSurfaceVelocityIncrement"}},
                {MeshF_OnSurfDispIncr,   {MeshFType_VtxBased,"MeshField_OnSurfaceDisplacementIncrement"}},
@@ -68,7 +69,7 @@ class Mesh {
   
     //start of meshFields
     DoubleVec3dView vtxCoords_;
-    DoubleVec2dView vtxRotLatLon_;
+    DoubleSclrView vtxRotLat_;
     DoubleVec2dView vtxVel_;
     DoubleVec2dView vtxOnSurfVeloIncr_;
     DoubleVec2dView vtxOnSurfDispIncr_;
@@ -145,8 +146,8 @@ auto Mesh::getMeshField(){
     else if constexpr (index==MeshF_VtxCoords){
         return vtxCoords_;
     }
-    else if constexpr (index==MeshF_VtxRotLatLon){
-        return vtxRotLatLon_;
+    else if constexpr (index==MeshF_VtxRotLat){
+        return vtxRotLat_;
     }
     else if constexpr (index==MeshF_Vel){
         return vtxVel_;

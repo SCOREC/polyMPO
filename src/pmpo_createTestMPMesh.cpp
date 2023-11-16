@@ -192,22 +192,24 @@ MaterialPoints* initTestMPs(Mesh* mesh, int testMPOption){
     }else if(geomType == geom_spherical_surf){
         Kokkos::Random_XorShift64_Pool<> random_pool(randSeed);
         const double radius = mesh->getSphereRadius();
-        DoubleVec2dView vtxRotLatLon = mesh->getMeshField<MeshF_VtxRotLatLon>();
         Kokkos::parallel_for("intializeMPsPositionSpherical", numMPs, KOKKOS_LAMBDA(const int iMP){
             int ielm = MPToElement(iMP);
             int numVtx = elm2VtxConn(ielm,0);
-            double lat = 0.0, lon = 0.0; 
+            double sum_x = 0.0, sum_y = 0.0, sum_z = 0.0;
             for(int i=1; i<= numVtx; i++){
-                lat += vtxRotLatLon(elm2VtxConn(ielm,i)-1,0);
-                lon += vtxRotLatLon(elm2VtxConn(ielm,i)-1,1);
+                sum_x += vtxCoords(elm2VtxConn(ielm,i)-1,0);
+                sum_y += vtxCoords(elm2VtxConn(ielm,i)-1,1);
+                sum_z += vtxCoords(elm2VtxConn(ielm,i)-1,2);
             }
-            lat /= numVtx;
-            lon /= numVtx;
-            latLonPositions(iMP,0) = lat;
-            latLonPositions(iMP,1) = lon;
-            positions(iMP,0) = radius * std::cos(lat) * std::cos(lon);
-            positions(iMP,1) = radius * std::cos(lat) * std::sin(lon);
-            positions(iMP,2) = radius * std::sin(lat);
+            Vec3d center(sum_x/numVtx,sum_y/numVtx,sum_z/numVtx);
+            center = center*(1/std::sqrt(center[0]*center[0]+center[1]*center[1]+center[2]*center[2]));
+            center = center*radius;
+            positions(iMP,0) = center[0];
+            positions(iMP,1) = center[1]; 
+            positions(iMP,2) = center[2];
+            // lat = asin(z/R)  lon = atan2(y,x) 
+            latLonPositions(iMP,0) = std::asin(center[2]/radius);
+            latLonPositions(iMP,1) = std::atan2(center[1],center[0]);
         });
     } else{
         fprintf(stderr,"The geom type is not correct!");
@@ -215,6 +217,7 @@ MaterialPoints* initTestMPs(Mesh* mesh, int testMPOption){
     }
     if(geomType == geom_spherical_surf){
         auto p_MPs = new MaterialPoints(numElms,numMPs,positions,numMPsPerElement,MPToElement);
+        p_MPs->setRotatedFlag(false);
         auto mpRotLatLonField = p_MPs->getData<MPF_Cur_Pos_Rot_Lat_Lon>();
         auto setRotLatLon = PS_LAMBDA(const int& elm, const int& mp, const int& mask){
             mpRotLatLonField(mp,0) = latLonPositions(mp,0);

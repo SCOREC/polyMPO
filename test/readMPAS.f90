@@ -37,7 +37,7 @@ subroutine loadMPASMeshInPolyMPO(mpMesh, maxEdges, vertexDegree, &
                         nCells, nVertices, nEdgesOnCell, &
                         onSphere, sphereRadius, &
                         xVertex, yVertex, zVertex, &
-                        latVertex, lonVertex, &
+                        latVertex, &
                         verticesOnCell, cellsOnCell)
     use :: netcdf
     use :: iso_c_binding
@@ -81,7 +81,7 @@ subroutine loadMPASMeshInPolyMPO(mpMesh, maxEdges, vertexDegree, &
 
     !set vtxCoords which is a mesh field 
     call polympo_setMeshVtxCoords(mpMesh,nVertices,c_loc(xVertex),c_loc(yVertex),c_loc(zVertex))
-    call polympo_setMeshVtxRotLatLon(mpMesh,nVertices,c_loc(latVertex),c_loc(lonVertex))
+    call polympo_setMeshVtxRotLat(mpMesh,nVertices,c_loc(latVertex))
 end subroutine
 
 subroutine readMPASMeshFromNCFile(filename, maxEdges, vertexDegree, &
@@ -342,7 +342,7 @@ subroutine setWithMPASMeshByFortran(mpMesh, fileName, n) bind(C, name="setWithMP
                         nCells, nVertices, nEdgesOnCell, &
                         onSphere, sphereRadius, &
                         xVertex, yVertex, zVertex, &
-                        latVertex, lonVertex, &
+                        latVertex, &
                         verticesOnCell, cellsOnCell)
     
     deallocate(nEdgesOnCell)

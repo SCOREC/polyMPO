@@ -51,7 +51,7 @@ program main
                         nCells, nVertices, nEdgesOnCell, &
                         onSphere, sphereRadius, &
                         xVertex, yVertex, zVertex, &
-                        latVertex, lonVertex, &
+                        latVertex, &
                         verticesOnCell, cellsOnCell)
 
   !todo check the value using get functions. 

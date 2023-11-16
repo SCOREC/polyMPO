@@ -385,12 +385,12 @@ module polympo
   !> @param nVertices(in) length of array in 
   !> @param latitude/longitude(in) the 1D arrays of vertices lat/lon
   !---------------------------------------------------------------------------
-  subroutine polympo_setMeshVtxRotLatLon(mpMesh, nVertices, latitude, longitude) &
-             bind(C, NAME='polympo_setMeshVtxRotLatLon_f')
+  subroutine polympo_setMeshVtxRotLat(mpMesh, nVertices, latitude) &
+             bind(C, NAME='polympo_setMeshVtxRotLat_f')
     use :: iso_c_binding
     type(c_ptr), value :: mpMesh
     integer(c_int), value :: nVertices
-    type(c_ptr), intent(in), value :: latitude, longitude
+    type(c_ptr), intent(in), value :: latitude
   end subroutine
   !---------------------------------------------------------------------------
   !> @brief get the polympo mesh vertices latitude and longitude
@@ -398,12 +398,12 @@ module polympo
   !> @param nVertices(in) length of array in, use for assertion
   !> @param latitude/longitude(in/out) the 1D arrays of vertices lat/lon
   !---------------------------------------------------------------------------
-  subroutine polympo_getMeshVtxRotLatLon(mpMesh, nVertices, latitude, longitude) &
-             bind(C, NAME='polympo_getMeshVtxRotLatLon_f')
+  subroutine polympo_getMeshVtxRotLat(mpMesh, nVertices, latitude) &
+             bind(C, NAME='polympo_getMeshVtxRotLat_f')
     use :: iso_c_binding
     type(c_ptr), value :: mpMesh
     integer(c_int), value :: nVertices
-    type(c_ptr), value :: latitude, longitude
+    type(c_ptr), value :: latitude
   end subroutine
   !---------------------------------------------------------------------------
   !> @brief set the spherical velocity increment mesh array 

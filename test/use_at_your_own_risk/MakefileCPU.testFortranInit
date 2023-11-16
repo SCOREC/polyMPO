@@ -1,0 +1,106 @@
+############################################################################
+# The following is an minimal example of the compile and link commands
+# needed on Perlmutter.  The Perlmutter build of the polyMPO stack followed 
+# the build instructions in README.md - **no other configuration was tested**.
+# 
+# Using this Makefile on a different system is not advised as it will require 
+# editing the paths in the first section **and** modifying the compile and link
+# arguments.  This is not intended to be portable as there is no logic to
+# detect/discover compilers and other system software.
+#
+# This file was generated in July/Aug 2023.
+############################################################################
+
+
+###########################
+## edit the following paths
+###########################
+FC=gfortran
+
+CUDA_DIR=/opt/nvidia/hpc_sdk/Linux_x86_64/22.7/cuda/11.7/
+
+MPI_DIR=/opt/cray/pe/mpich/8.1.25/ofi/gnu/9.1/
+MPI_LIBS=${MPI_DIR}/lib/libmpifort_gnu_91.so ${MPI_DIR}/lib/libmpi_gnu_91.so
+
+devRoot=/global/homes/y/yygong/develop
+
+KOKKOS_DIR=${devRoot}/build-kokkos-login21-cpu/install/
+KOKKOS_LIB_DIR=${KOKKOS_DIR}/lib64
+
+OMEGAH_DIR=${devRoot}/build-omegah-login21-cpu/install/
+
+ENGPAR_DIR=${devRoot}/build-engpar-login21-cpu/install/
+
+PUMIPIC_DIR=${devRoot}/build-pumipic-login21-cpu/install/
+
+CABANA_DIR=${devRoot}/build-cabana-login21-cpu/install/
+
+POLYMPO_DIR=${devRoot}/buildPolyMPO-CPU/install
+
+######################################################################################
+## Dont't change the following unless you know exactly what you are doing...
+## The following was generated from the CMake generated compile and link commands in
+## a CUDA enabled build of polyMPO
+######################################################################################
+POLYMPO_LIBS=\
+-L/opt/cray/pe/mpich/8.1.25/ofi/gnu/9.1/lib  \
+-L/opt/nvidia/hpc_sdk/Linux_x86_64/22.7/cuda/11.7/targets/x86_64-linux/lib/stubs  \
+-L/opt/nvidia/hpc_sdk/Linux_x86_64/22.7/cuda/11.7/targets/x86_64-linux/lib  \
+-Wl,-rpath,/opt/cray/pe/netcdf/4.9.0.3/gnu/9.1/lib:/opt/cray/pe/mpich/8.1.25/ofi/gnu/9.1/lib: libpmpoUtils.a libpmpoUtils.a \
+../src/libpolympo_fortran.a libreadMPAS.a libpmpoUtils.a libreadMPAS.a \
+../src/libpolyMPO-core.a \
+-lm \
+/global/homes/c/castia5/cpu-pumi-pic/build-pumipic-login21-cpu/install/lib/libpumipic-core.a \
+/global/homes/c/castia5/cpu-pumi-pic/build-pumipic-login21-cpu/install/lib/libparticleStructs.a \
+/global/homes/c/castia5/cpu-pumi-pic/build-pumipic-login21-cpu/install/lib/libsupport.a \
+/global/homes/c/castia5/cpu-pumi-pic/build-omegah-login21-cpu/install/lib64/libomega_h.a \
+/global/homes/c/castia5/cpu-pumi-pic/build-kokkos-login21-cpu/install/lib64/libkokkoscontainers.a \
+/global/homes/c/castia5/cpu-pumi-pic/build-kokkos-login21-cpu/install/lib64/libkokkoscore.a \
+-ldl \
+/global/homes/c/castia5/cpu-pumi-pic/build-kokkos-login21-cpu/install/lib64/libkokkossimd.a \
+/usr/lib64/libz.so \
+/global/homes/c/castia5/cpu-pumi-pic/build-engpar-login21-cpu/install/lib/libengpar.a \
+/global/homes/c/castia5/cpu-pumi-pic/build-engpar-login21-cpu/install/lib/libdiffusive.a \
+/global/homes/c/castia5/cpu-pumi-pic/build-engpar-login21-cpu/install/lib/libmultilevel.a \
+/global/homes/c/castia5/cpu-pumi-pic/build-engpar-login21-cpu/install/lib/libengpar_metrics.a \
+/global/homes/c/castia5/cpu-pumi-pic/build-engpar-login21-cpu/install/lib/libcoloring.a \
+/global/homes/c/castia5/cpu-pumi-pic/build-engpar-login21-cpu/install/lib/libagi.a \
+/global/homes/c/castia5/cpu-pumi-pic/build-engpar-login21-cpu/install/lib/libengpar_support.a \
+/global/homes/c/castia5/cpu-pumi-pic/build-engpar-login21-cpu/install/lib/libpcu.a \
+/opt/cray/pe/netcdf/4.9.0.3/gnu/9.1/lib/libnetcdf.so \
+../src/libpolympo_fortran.a \
+/opt/cray/pe/mpich/8.1.25/ofi/gnu/9.1/lib/libmpifort_gnu_91.so \
+/opt/cray/pe/mpich/8.1.25/ofi/gnu/9.1/lib/libmpi_gnu_91.so \
+/opt/cray/pe/netcdf/4.9.0.3/gnu/9.1/lib/libnetcdff.so \
+-lmpi_gnu_91 \
+-lcudadevrt \
+-lcudart_static \
+-lrt \
+-lpthread \
+-ldl \
+-lstdc++ 
+
+POLYMPO_COMPILE_FLAGS=\
+-DFP64 \
+-DKOKKOS_ENABLED \
+-DLOCAL_ID_FTYPE=C_INT32_T \
+-DLOCAL_ID_TYPE=int32_t \
+-DPP_ENABLE_CAB \
+-I/global/homes/c/castia5/cpu-pumi-pic/polyMPO/src \
+-I/global/homes/c/castia5/cpu-pumi-pic/polyMPO/test \
+-I/global/homes/c/castia5/cpu-pumi-pic/buildPolyMPO-CPU/src \
+-I/global/homes/c/castia5/cpu-pumi-pic/build-pumipic-login21-cpu/install/include \
+-I/global/homes/c/castia5/cpu-pumi-pic/build-kokkos-login21-cpu/install/include \
+-I/global/homes/c/castia5/cpu-pumi-pic/build-cabana-login21-cpu/install/include \
+-I/global/homes/c/castia5/cpu-pumi-pic/build-omegah-login21-cpu/install/include \
+-I/usr/include \
+-I/global/homes/c/castia5/cpu-pumi-pic/build-engpar-login21-cpu/install/include \
+-I/opt/cray/pe/mpich/8.1.25/ofi/gnu/9.1/include \
+-I/opt/cray/pe/netcdf/4.9.0.3/gnu/9.1/include \
+-I/opt/cray/pe/hdf5/1.12.2.7/gnu/9.1/include
+
+testFortranInit: testFortranInit.o
+		${FC} testFortranInit.o -o testFortranInit ${POLYMPO_LIBS}
+
+testFortranInit.o: testFortranInit.f90
+		${FC} ${POLYMPO_COMPILE_FLAGS} -c testFortranInit.f90 -o testFortranInit.o

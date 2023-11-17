@@ -106,7 +106,7 @@ class MaterialPoints {
     PS* MPs;
     int elmIDoffset = -1;
     int maxAppID = -1;
-    bool _isRotatedFlag = false;
+    bool isRotatedFlag = false;
 
   public:
     MaterialPoints() : MPs(nullptr) {};
@@ -192,10 +192,10 @@ class MaterialPoints {
       return maxAppID;
     }
     bool getRotatedFlag() {
-      return _isRotatedFlag;
+      return isRotatedFlag;
     }
     void setRotatedFlag(bool flagSet) {
-      _isRotatedFlag = flagSet;
+      isRotatedFlag = flagSet;
     }
 
 //MUTATOR  
@@ -222,7 +222,7 @@ class MaterialPoints {
                 tgtPosXYZ(mp,2) = radius * std::sin(geoLat); 
             } 
         };
-        if(_isRotatedFlag){
+        if(isRotatedFlag){
             //TODO rotation lat lon calc
             fprintf(stderr, "rotational lat lon in MP is not support yet!");
             PMT_ALWAYS_ASSERT(false);

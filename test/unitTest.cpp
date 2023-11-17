@@ -130,7 +130,7 @@ int main(int argc, char** argv) {
         //TODO: write PS_LAMBDA to assign 2 velocity component to be position[0] and [1]
         auto mpVel = p_MPs->getData<MPF_Vel>();
         auto mpCurPosXYZ = p_MPs->getData<MPF_Cur_Pos_XYZ>();
-        auto setVel = PS_LAMBDA(const int& elm, const int& mp, const int& mask){
+        auto setVel = PS_LAMBDA(const int&, const int& mp, const int& mask){
             if(mask) { 
                 for(int i=0; i<2; i++){
                     mpVel(mp,i) = mpCurPosXYZ(mp,i);
@@ -173,7 +173,7 @@ int main(int argc, char** argv) {
           PMT_ALWAYS_ASSERT(res);
         }
 
-        interpolateWachspress2DTest(mpMesh);              
+        interpolateWachspress2DTest(mpMesh);
     }
     Kokkos::finalize();
     MPI_Finalize();

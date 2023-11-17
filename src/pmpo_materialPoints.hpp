@@ -3,6 +3,7 @@
 
 #include "pmpo_utils.hpp"
 #include "pmpo_mesh.hpp"
+#include "pmpo_defines.h"
 
 #include <pumipic_kktypes.hpp>
 #include <particle_structs.hpp>
@@ -45,6 +46,11 @@ enum MaterialPointSlice {
   MPF_Shear_Traction,    //15
   MPF_Constv_Mdl_Param,
   MPF_MP_APP_ID
+};
+
+enum Operating_Mode{
+  MP_RELEASE,
+  MP_DEBUG
 };
 
 const static std::map<MaterialPointSlice, std::pair<int,MeshFieldIndex>> 
@@ -94,30 +100,23 @@ typedef MemberTypes<mp_flag_t,              //MP_Status
 typedef ps::ParticleStructure<MaterialPointTypes> PS;
 
 
-PS* createDPS(int numElms, int numMPs, DoubleVec3dView positions, IntView mpsPerElm, IntView mp2elm);
-PS* createDPS(int numElms, int numMPs, IntView mpsPerElm, IntView mp2elm, IntView isMPActive);
-
 class MaterialPoints {
   private:
     PS* MPs;
     int elmIDoffset = -1;
+    int maxAppID = -1;
+    Operating_Mode operating_mode;
 
   public:
     MaterialPoints() : MPs(nullptr) {};
-    MaterialPoints(int numElms, int numMPs, DoubleVec3dView positions, IntView mpsPerElm, IntView mp2elm) {
-      MPs = createDPS(numElms, numMPs, positions, mpsPerElm, mp2elm);
-    };
-    MaterialPoints(int numElms, int numMPs, IntView mpsPerElm, IntView mp2elm, IntView isMPActive) {
-      MPs = createDPS(numElms, numMPs, mpsPerElm, mp2elm, isMPActive);
-    };
-    ~MaterialPoints() {
-      if(MPs != nullptr)
-        delete MPs;
-    }
+    MaterialPoints(int numElms, int numMPs, DoubleVec3dView positions, IntView mpsPerElm, IntView mp2elm);
+    MaterialPoints(int numElms, int numMPs, IntView mpsPerElm, IntView mp2elm, IntView mpAppID);
+    ~MaterialPoints();
+    void rebuild(IntView tgtElm, int newNumMPs, IntView newMP2elm, IntView newMPAppID);
     void rebuild() {
       IntView tgtElm("tgtElm", MPs->capacity());
       auto tgtMpElm = MPs->get<MPF_Tgt_Elm_ID>();
-      auto setTgtElm = PS_LAMBDA(const int& elm, const int& mp, const int& mask) {
+      auto setTgtElm = PS_LAMBDA(const int&, const int& mp, const int& mask) {
         if(mask) {
           tgtElm(mp) = tgtMpElm(mp);
         }
@@ -128,13 +127,24 @@ class MaterialPoints {
     void updateMPElmID(){
       auto curElmID = MPs->get<MPF_Cur_Elm_ID>();
       auto tgtElmID = MPs->get<MPF_Tgt_Elm_ID>();
-      auto swap = PS_LAMBDA(const int& elm, const int& mp, const int& mask) {
+      auto swap = PS_LAMBDA(const int&, const int& mp, const int& mask) {
         if(mask){
             curElmID(mp) = tgtElmID(mp);
             tgtElmID(mp) = -1;
         }
       };
       ps::parallel_for(MPs, swap, "swap");
+    }
+    void updateMaxAppID() {
+      auto mpInfo = ps::createMemberViews<MaterialPointTypes>(MPs->nPtcls());
+      auto mpAppID_m = ps::getMemberView<MaterialPointTypes, MPF_MP_APP_ID>(mpInfo);
+      maxAppID = 0;
+      Kokkos::parallel_reduce("setMax" , mpAppID_m.size(),
+        KOKKOS_LAMBDA(const int i, int & valueToUpdate) {
+          if ( mpAppID_m(i) > valueToUpdate ) valueToUpdate = mpAppID_m(i) ;
+        },
+        Kokkos::Max<int>(maxAppID)
+      );
     }
     template <MaterialPointSlice mpfIndexCur, MaterialPointSlice mpfIndexTgt>
     void updateMPSlice(){
@@ -144,7 +154,7 @@ class MaterialPoints {
       const int numEntriesTgt = mpSlice2MeshFieldIndex.at(mpfIndexTgt).first;
       PMT_ALWAYS_ASSERT(numEntriesCur == numEntriesTgt);
       
-      auto swap = PS_LAMBDA(const int& elm, const int& mp, const int& mask) {
+      auto swap = PS_LAMBDA(const int&, const int& mp, const int& mask) {
         if(mask){
           for(int i=0; i<numEntriesCur; i++){
             curData(mp,i) = tgtData(mp,i);
@@ -168,9 +178,14 @@ class MaterialPoints {
     void parallel_for(FunctorType kernel, std::string name="") {
       ps::parallel_for(MPs, kernel, name);
     }
+    int getCapacity() { return MPs->capacity(); }
     int getCount() { return MPs->nPtcls(); }
     auto getPositions() { return getData<MPF_Cur_Pos_XYZ>(); }
 
+    Operating_Mode getOpMode() { return operating_mode; }
+    void setOpMode(Operating_Mode op_mode) {
+      operating_mode = op_mode;
+    }
     void setElmIDoffset(int offset) {
       PMT_ALWAYS_ASSERT(offset == 0 || offset == 1);
       elmIDoffset = offset;
@@ -179,18 +194,21 @@ class MaterialPoints {
       PMT_ALWAYS_ASSERT(elmIDoffset == 0 || elmIDoffset == 1);
       return elmIDoffset;
     }
+    int getMaxAppID() {
+      PMT_ALWAYS_ASSERT(maxAppID != -1);
+      return maxAppID;
+    }
 
-//MUTATOR  
+    // MUTATOR  
     template <MaterialPointSlice index> void fillData(double value);//use PS_LAMBDA fill up to 1
-    void T2LTracking(Vec2dView dx);
-    
+    void T2LTracking(Vec2dView dx);    
 };
 
 template <MaterialPointSlice index>
 void MaterialPoints::fillData(double value){
     auto mpData = getData<index>();
     const int numEntries = mpSlice2MeshFieldIndex.at(index).first;
-    auto setValue = PS_LAMBDA(const int& elm, const int& mp, const int& mask){
+    auto setValue = PS_LAMBDA(const int&, const int& mp, const int& mask){
         if(mask) { //if material point is 'active'/'enabled'
             for(int i=0; i<numEntries; i++){
                 mpData(mp,i) = value;

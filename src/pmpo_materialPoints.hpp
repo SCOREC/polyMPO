@@ -107,7 +107,7 @@ struct RebuildHelper {
   pumipic::MemberTypeViews slices;
   IntView newMP2elm;
   IntView allTgtElm;
-  Kokkos::View<int*, hostSpace> addedMPMask;
+  Kokkos::View<const int*, hostSpace> addedMPMask;
 };
 
 class MaterialPoints {
@@ -124,7 +124,7 @@ class MaterialPoints {
     MaterialPoints(int numElms, int numMPs, IntView mpsPerElm, IntView mp2elm, IntView mpAppID);
     ~MaterialPoints();
 
-    void startRebuild(IntView tgtElm, int newNumMPs, IntView newMP2elm, IntView newMPAppID, IntView addedMPMask);
+    void startRebuild(IntView tgtElm, int newNumMPs, IntView newMP2elm, IntView newMPAppID, Kokkos::View<const int*> addedMPMask);
     void finishRebuild();
     bool rebuildOngoing();
     

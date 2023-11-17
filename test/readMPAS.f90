@@ -60,7 +60,7 @@ subroutine rebuildTests(mpMesh, numMPs, mp2Elm, isMPActive, mpPosition)
     mpPosition(3,4) = 3.2
     ! Rebuild MPs
     call polympo_startRebuildMPs(mpMesh,numMPs,c_loc(mp2Elm),c_loc(addedMPMask))
-    call polympo_setRebuildMPPositions(mpMesh,nDims,numMPs,c_loc(mpPosition))
+    call polympo_setMPPositions(mpMesh,nDims,numMPs,c_loc(mpPosition))
     call polympo_finishRebuildMPs(mpMesh)
     ! Test values
     allocate(mp2ElmFromPMPO(numMPs))

@@ -69,6 +69,7 @@ MaterialPoints::~MaterialPoints() {
 }
 
 void MaterialPoints::startRebuild(IntView tgtElm, int newNumMPs, IntView newMP2elm, IntView newMPAppID, IntView addedMPMask) {
+  rebuildFields.ongoing = true;
   rebuildFields.numNewMPs = newNumMPs;
   rebuildFields.newMP2elm = newMP2elm;
   rebuildFields.allTgtElm = tgtElm;
@@ -85,6 +86,9 @@ void MaterialPoints::finishRebuild() {
   updateMaxAppID();
   ps::destroyViews<MaterialPointTypes>(rebuildFields.slices);
   ps::destroyViews<MaterialPointTypes>(rebuildData_d);
+  rebuildFields.ongoing = false;
 }
+
+bool MaterialPoints::rebuildOngoing() { return rebuildFields.ongoing; }
 
 }

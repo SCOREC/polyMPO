@@ -240,31 +240,24 @@ void polympo_getMPCurElmID_f(MPMesh_ptr p_mpmesh,
   Kokkos::deep_copy( arrayHost, mpCurElmIDCopy);
 }
 
-void polympo_setRebuildMPPositions_f(MPMesh_ptr p_mpmesh,
-                            const int numComps,
-                            const int numMPs,
-                            const double* mpPositionsIn){
-  checkMPMeshValid(p_mpmesh);
-  auto p_MPs = ((polyMPO::MPMesh*)p_mpmesh)->p_MPs;
-  kkViewHostU<const double**> mpPositionsIn_h(mpPositionsIn,numComps,numMPs);
-  p_MPs->setRebuildMPSlice<polyMPO::MPF_Cur_Pos_XYZ>(mpPositionsIn_h);
-}
-
 void polympo_setMPPositions_f(MPMesh_ptr p_mpmesh,
                             const int numComps,
                             const int numMPs,
                             const double* mpPositionsIn){
-  static int callCount = 0;
-  PMT_ALWAYS_ASSERT(callCount == 0);
   checkMPMeshValid(p_mpmesh);
   auto p_MPs = ((polyMPO::MPMesh*)p_mpmesh)->p_MPs;
   PMT_ALWAYS_ASSERT(numComps == vec3d_nEntries);
   PMT_ALWAYS_ASSERT(numMPs >= p_MPs->getCount());
   PMT_ALWAYS_ASSERT(numMPs >= p_MPs->getMaxAppID());
+  kkViewHostU<const double**> mpPositionsIn_h(mpPositionsIn,numComps,numMPs);
+
+  if (p_MPs->rebuildOngoing()) {
+    p_MPs->setRebuildMPSlice<polyMPO::MPF_Cur_Pos_XYZ>(mpPositionsIn_h);
+    return;
+  }
 
   auto mpPositions = p_MPs->getData<polyMPO::MPF_Cur_Pos_XYZ>();
   auto mpAppID = p_MPs->getData<polyMPO::MPF_MP_APP_ID>();
-  kkViewHostU<const double**> mpPositionsIn_h(mpPositionsIn,numComps,numMPs);
   Kokkos::View<double**> mpPositionsIn_d("mpPositionsDevice",vec3d_nEntries,numMPs);
   Kokkos::deep_copy(mpPositionsIn_d, mpPositionsIn_h);
   auto setPos = PS_LAMBDA(const int& elm, const int& mp, const int& mask){
@@ -275,7 +268,6 @@ void polympo_setMPPositions_f(MPMesh_ptr p_mpmesh,
     }
   };
   p_MPs->parallel_for(setPos, "setMPPositions");
-  callCount++;
 }
 
 void polympo_getMPPositions_f(MPMesh_ptr p_mpmesh,

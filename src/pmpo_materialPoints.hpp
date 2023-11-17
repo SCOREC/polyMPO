@@ -102,6 +102,7 @@ typedef MemberTypes<mp_flag_t,              //MP_Status
 typedef ps::ParticleStructure<MaterialPointTypes> PS;
 
 struct RebuildHelper {
+  bool ongoing = false;
   int numNewMPs;
   pumipic::MemberTypeViews slices;
   IntView newMP2elm;
@@ -125,6 +126,7 @@ class MaterialPoints {
 
     void startRebuild(IntView tgtElm, int newNumMPs, IntView newMP2elm, IntView newMPAppID, IntView addedMPMask);
     void finishRebuild();
+    bool rebuildOngoing();
     
     template<int mpSliceIndex, typename mpSliceData>
     typename std::enable_if<mpSliceData::rank==1>::type

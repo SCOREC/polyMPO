@@ -38,7 +38,6 @@ void assembly(MPMesh& mpMesh, bool basisWeightFlag, bool massWeightFlag){
       std::cerr << "WARNING: basis and mass weight flags ignored\n";
     }
     auto p_mesh = mpMesh.p_mesh;
-    int numVtxs = p_mesh->getNumVertices();
     auto elm2VtxConn = p_mesh->getElm2VtxConn();
    
     auto p_MPs = mpMesh.p_MPs;

@@ -139,7 +139,7 @@ class MaterialPoints {
     void rebuild() {
       IntView tgtElm("tgtElm", MPs->capacity());
       auto tgtMpElm = MPs->get<MPF_Tgt_Elm_ID>();
-      auto setTgtElm = PS_LAMBDA(const int& elm, const int& mp, const int& mask) {
+      auto setTgtElm = PS_LAMBDA(const int&, const int& mp, const int& mask) {
         if(mask) {
           tgtElm(mp) = tgtMpElm(mp);
         }
@@ -150,7 +150,7 @@ class MaterialPoints {
     void updateMPElmID(){
       auto curElmID = MPs->get<MPF_Cur_Elm_ID>();
       auto tgtElmID = MPs->get<MPF_Tgt_Elm_ID>();
-      auto swap = PS_LAMBDA(const int& elm, const int& mp, const int& mask) {
+      auto swap = PS_LAMBDA(const int&, const int& mp, const int& mask) {
         if(mask){
             curElmID(mp) = tgtElmID(mp);
             tgtElmID(mp) = -1;
@@ -177,7 +177,7 @@ class MaterialPoints {
       const int numEntriesTgt = mpSlice2MeshFieldIndex.at(mpfIndexTgt).first;
       PMT_ALWAYS_ASSERT(numEntriesCur == numEntriesTgt);
       
-      auto swap = PS_LAMBDA(const int& elm, const int& mp, const int& mask) {
+      auto swap = PS_LAMBDA(const int&, const int& mp, const int& mask) {
         if(mask){
           for(int i=0; i<numEntriesCur; i++){
             curData(mp,i) = tgtData(mp,i);
@@ -232,11 +232,11 @@ void MaterialPoints::fillData(double value){
   auto mpData = getData<index>();
   const int numEntries = mpSlice2MeshFieldIndex.at(index).first;
   auto setValue = PS_LAMBDA(const int& elm, const int& mp, const int& mask){
-      if(mask) { //if material point is 'active'/'enabled'
-          for(int i=0; i<numEntries; i++){
-              mpData(mp,i) = value;
-          }
+    if(mask) { //if material point is 'active'/'enabled'
+      for(int i=0; i<numEntries; i++){
+          mpData(mp,i) = value;
       }
+    }
   };
   parallel_for(setValue, "setValue");
 }

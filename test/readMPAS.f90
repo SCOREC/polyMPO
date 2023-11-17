@@ -90,7 +90,8 @@ subroutine rebuildTests(mpMesh, numMPs, mp2Elm, isMPActive, mpPosition)
     mp2Elm(4) = MP_DELETE_ELM_ID
     addedMPMask = MP_INACTIVE
     ! Rebuild MPs
-    call polympo_rebuildMPs(mpMesh,numMPs,c_loc(mp2Elm),c_loc(addedMPMask))
+    call polympo_startRebuildMPs(mpMesh,numMPs,c_loc(mp2Elm),c_loc(addedMPMask))
+    call polympo_finishRebuildMPs(mpMesh)
     ! Test values
     mp2ElmFromPMPO = MP_DELETE_ELM_ID
     call polympo_getMPCurElmID(mpMesh,numMPs,c_loc(mp2ElmFromPMPO))
@@ -116,7 +117,8 @@ subroutine rebuildTests(mpMesh, numMPs, mp2Elm, isMPActive, mpPosition)
     mp2Elm(2) = 7 !REPLACED
     mp2Elm(3) = MP_DELETE_ELM_ID !DELETED
     ! Rebuild MPs
-    call polympo_rebuildMPs(mpMesh,numMPs,c_loc(mp2Elm),c_loc(addedMPMask))
+    call polympo_startRebuildMPs(mpMesh,numMPs,c_loc(mp2Elm),c_loc(addedMPMask))
+    call polympo_finishRebuildMPs(mpMesh)
     ! Test values
     mp2ElmFromPMPO = MP_DELETE_ELM_ID
     call polympo_getMPCurElmID(mpMesh,numMPs,c_loc(mp2ElmFromPMPO))
@@ -155,7 +157,8 @@ subroutine rebuildTests(mpMesh, numMPs, mp2Elm, isMPActive, mpPosition)
     addedMPMaskLarger(4) = MP_ACTIVE
     addedMPMaskLarger(numMPsLarger-2) = MP_ACTIVE
     ! Rebuild MPs
-    call polympo_rebuildMPs(mpMesh,numMPsLarger,c_loc(mp2ElmLarger),c_loc(addedMPMaskLarger))
+    call polympo_startRebuildMPs(mpMesh,numMPsLarger,c_loc(mp2ElmLarger),c_loc(addedMPMaskLarger))
+    call polympo_finishRebuildMPs(mpMesh)
     ! Test values
     allocate(mp2ElmFromPMPOLarger(numMPsLarger))
     mp2ElmFromPMPOLarger = MP_DELETE_ELM_ID

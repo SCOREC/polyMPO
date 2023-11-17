@@ -217,14 +217,6 @@ void polympo_finishRebuildMPs_f(MPMesh_ptr p_mpmesh)
   p_MPs->finishRebuild();
 }
 
-void polympo_rebuildMPs_f(MPMesh_ptr p_mpmesh,
-                         const int numMPs, // total number of MPs which is GREATER than or equal to number of active MPs
-                         const int* allMP2Elm,
-                         const int* addedMPMask) {
-  polympo_startRebuildMPs_f(p_mpmesh, numMPs, allMP2Elm, addedMPMask);
-  polympo_finishRebuildMPs_f(p_mpmesh);
-}
-
 void polympo_getMPCurElmID_f(MPMesh_ptr p_mpmesh,
                            const int numMPs,
                            int* elmIDs){

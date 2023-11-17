@@ -19,7 +19,6 @@ FC=/opt/cray/pe/craype/2.7.20/bin/ftn
 
 NETCDF_DIR=/opt/cray/pe/netcdf/4.9.0.3/gnu/9.1/
 HDF5_DIR=/opt/cray/pe/hdf5/1.12.2.7/gnu/9.1/
-MPI_DIR=/opt/cray/pe/mpich/8.1.25/ofi/gnu/9.1/
 
 devRoot=/global/homes/c/castia5/cpu-pumi-pic
 

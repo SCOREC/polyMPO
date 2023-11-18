@@ -277,7 +277,7 @@ module polympo
     integer(c_int), value :: numElms
   end subroutine
   !---------------------------------------------------------------------------
-  !> @brief get the number of elements from the mesh holding by polyMPO
+  !> @brief get the number of mesh elements
   !> @param mpMesh(in) mpMesh object
   !> @param numVtxs(return)) the number of elements
   !---------------------------------------------------------------------------
@@ -316,23 +316,23 @@ module polympo
     type(c_ptr), intent(in), value :: cellsOnCell
   end subroutine
   !---------------------------------------------------------------------------
-  !> @brief get the number of elements from the mesh holding by polyMPO
+  !> @brief get the number of mesh elements
   !> @param mpMesh(in) mpMesh object
-  !> @param numVtxs(return)) the number of elements
+  !> @param numVtxs(out) the number of elements
   !---------------------------------------------------------------------------
   subroutine polympo_getMeshNumElements(mpMesh, numElm) &
-            bind(C, NAME = 'polympo_getMeshNumElements')
+            bind(C, NAME = 'polympo_getMeshNumElements_f')
     use :: iso_c_binding
     type(c_ptr), value :: mpMesh
     integer(c_int), intent(inout) :: numElm
   end subroutine
   !---------------------------------------------------------------------------
-  !> @brief get the number of vertices from the mesh holding by polyMPO
+  !> @brief get the number of mesh vertices
   !> @param mpMesh(in) mpMesh object
-  !> @param numVtxs(return)) the number of vertices
+  !> @param numVtxs(out) the number of vertices
   !---------------------------------------------------------------------------
   subroutine polympo_getMeshNumVertices(mpMesh, numVtx) &
-            bind(C, NAME = 'polympo_getMeshNumVertices')
+            bind(C, NAME = 'polympo_getMeshNumVertices_f')
     use :: iso_c_binding
     type(c_ptr), value :: mpMesh
     integer(c_int), intent(inout) :: numVtx

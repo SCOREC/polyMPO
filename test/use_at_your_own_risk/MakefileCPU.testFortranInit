@@ -15,10 +15,11 @@
 ###########################
 ## edit the following paths
 ###########################
-FC=/opt/cray/pe/craype/2.7.20/bin/ftn
+FC=/opt/cray/pe/gcc/11.2.0/bin/gfortran
 
 NETCDF_DIR=/opt/cray/pe/netcdf/4.9.0.3/gnu/9.1/
 HDF5_DIR=/opt/cray/pe/hdf5/1.12.2.7/gnu/9.1/
+MPI_DIR=/opt/cray/pe/mpich/8.1.25/ofi/gnu/9.1/
 
 devRoot=/global/homes/c/castia5/cpu-pumi-pic
 
@@ -41,6 +42,8 @@ POLYMPO_DIR=${devRoot}/buildPolyMPO-CPU/install
 ## a CUDA disabled build of polyMPO
 ######################################################################################
 POLYMPO_LIBS=\
+-L${MPI_DIR}/lib \
+-Wl,-rpath,${NETCDF_DIR}/lib:${MPI_DIR}/lib: \
 ${POLYMPO_DIR}/lib/libpolympo_fortran.a \
 ${POLYMPO_DIR}/lib/libpolyMPO-core.a \
 -lm \
@@ -63,12 +66,11 @@ ${ENGPAR_DIR}/lib/libengpar_support.a \
 ${ENGPAR_DIR}/lib/libpcu.a \
 ${NETCDF_DIR}/lib/libnetcdf.so \
 ${POLYMPO_DIR}/lib/libpolympo_fortran.a \
+${MPI_DIR}/lib/libmpifort_gnu_91.so \
+${MPI_DIR}/lib/libmpi_gnu_91.so \
 ${NETCDF_DIR}/lib/libnetcdff.so \
--lhdf5_hl_cpp \
--lhdf5_cpp \
--lnetcdf_c++4 \
--lmvec \
--lstdc++
+-lmpi_gnu_91 \
+-lstdc++ 
 
 POLYMPO_COMPILE_FLAGS=\
 -DFP64 \
@@ -85,6 +87,7 @@ POLYMPO_COMPILE_FLAGS=\
 -I${OMEGAH_DIR}/include \
 -I/usr/include \
 -I${ENGPAR_DIR}/include \
+-I${MPI_DIR}/include \
 -I${NETCDF_DIR}/include \
 -I${HDF5_DIR}/include \
 -g -J${devRoot}/buildPolyMPO-CPU/mod_files

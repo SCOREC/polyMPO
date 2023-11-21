@@ -17,14 +17,11 @@
 ###########################
 FC=/opt/cray/pe/gcc/11.2.0/bin/gfortran
 
-CUDA_DIR=/opt/nvidia/hpc_sdk/Linux_x86_64/22.7/cuda/11.7/
-
 NETCDF_DIR=/opt/cray/pe/netcdf/4.9.0.3/gnu/9.1/
 HDF5_DIR=/opt/cray/pe/hdf5/1.12.2.7/gnu/9.1/
 MPI_DIR=/opt/cray/pe/mpich/8.1.25/ofi/gnu/9.1/
-MPI_LIBS=${MPI_DIR}/lib/libmpifort_gnu_91.so ${MPI_DIR}/lib/libmpi_gnu_91.so
 
-devRoot=/global/homes/y/yygong/develop
+devRoot=/global/homes/c/castia5/cpu-pumi-pic
 
 KOKKOS_DIR=${devRoot}/build-kokkos-login21-cpu/install/
 KOKKOS_LIB_DIR=${KOKKOS_DIR}/lib64
@@ -45,9 +42,7 @@ POLYMPO_DIR=${devRoot}/buildPolyMPO-CPU/install
 ## a CUDA disabled build of polyMPO
 ######################################################################################
 POLYMPO_LIBS=\
--L${MPI_DIR}/lib  \
--L${CUDA_DIR}/targets/x86_64-linux/lib/stubs  \
--L${CUDA_DIR}/targets/x86_64-linux/lib  \
+-L${MPI_DIR}/lib \
 -Wl,-rpath,${NETCDF_DIR}/lib:${MPI_DIR}/lib: \
 ${POLYMPO_DIR}/lib/libpolympo_fortran.a \
 ${POLYMPO_DIR}/lib/libpolyMPO-core.a \
@@ -75,11 +70,6 @@ ${MPI_DIR}/lib/libmpifort_gnu_91.so \
 ${MPI_DIR}/lib/libmpi_gnu_91.so \
 ${NETCDF_DIR}/lib/libnetcdff.so \
 -lmpi_gnu_91 \
--lcudadevrt \
--lcudart_static \
--lrt \
--lpthread \
--ldl \
 -lstdc++ 
 
 POLYMPO_COMPILE_FLAGS=\

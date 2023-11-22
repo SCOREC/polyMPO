@@ -231,7 +231,7 @@ template <MaterialPointSlice index>
 void MaterialPoints::fillData(double value){
   auto mpData = getData<index>();
   const int numEntries = mpSlice2MeshFieldIndex.at(index).first;
-  auto setValue = PS_LAMBDA(const int& elm, const int& mp, const int& mask){
+  auto setValue = PS_LAMBDA(const int&, const int& mp, const int& mask){
     if(mask) { //if material point is 'active'/'enabled'
       for(int i=0; i<numEntries; i++){
           mpData(mp,i) = value;

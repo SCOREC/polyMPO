@@ -80,12 +80,12 @@ void MaterialPoints::startRebuild(IntView tgtElm, int addedNumMPs, IntView added
 }
 
 void MaterialPoints::finishRebuild() {
-  auto rebuildData_d = ps::createMemberViews<MaterialPointTypes, defaultSpace>(rebuildFields.addedNumMPs);
-  ps::CopyMemSpaceToMemSpace<defaultSpace, hostSpace, MaterialPointTypes>(rebuildData_d, rebuildFields.addedSlices_h);
-  MPs->rebuild(rebuildFields.allTgtElm, rebuildFields.addedMP2elm, rebuildData_d);
+  auto addedSlices_d = ps::createMemberViews<MaterialPointTypes, defaultSpace>(rebuildFields.addedNumMPs);
+  ps::CopyMemSpaceToMemSpace<defaultSpace, hostSpace, MaterialPointTypes>(addedSlices_d, rebuildFields.addedSlices_h);
+  MPs->rebuild(rebuildFields.allTgtElm, rebuildFields.addedMP2elm, addedSlices_d);
   updateMaxAppID();
   ps::destroyViews<MaterialPointTypes>(rebuildFields.addedSlices_h);
-  ps::destroyViews<MaterialPointTypes>(rebuildData_d);
+  ps::destroyViews<MaterialPointTypes>(addedSlices_d);
   rebuildFields.ongoing = false;
 }
 

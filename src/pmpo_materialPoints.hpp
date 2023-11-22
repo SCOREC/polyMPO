@@ -103,11 +103,11 @@ typedef ps::ParticleStructure<MaterialPointTypes> PS;
 
 struct RebuildHelper {
   bool ongoing = false;
-  int numNewMPs;
-  pumipic::MemberTypeViews slices;
-  IntView newMP2elm;
+  int addedNumMPs;
+  pumipic::MemberTypeViews addedSlices_h;
+  IntView addedMP2elm;
   IntView allTgtElm;
-  Kokkos::View<const int*, hostSpace> addedMPMask;
+  Kokkos::View<const int*, hostSpace> addedMPMask_h;
 };
 
 class MaterialPoints {
@@ -124,7 +124,7 @@ class MaterialPoints {
     MaterialPoints(int numElms, int numMPs, IntView mpsPerElm, IntView mp2elm, IntView mpAppID);
     ~MaterialPoints();
 
-    void startRebuild(IntView tgtElm, int newNumMPs, IntView newMP2elm, IntView newMPAppID, Kokkos::View<const int*> addedMPMask);
+    void startRebuild(IntView tgtElm, int addedNumMPs, IntView addedMP2elm, IntView addedMPAppID, Kokkos::View<const int*> addedMPMask);
     void finishRebuild();
     bool rebuildOngoing();
     
@@ -245,21 +245,21 @@ template<int mpSliceIndex, typename mpSliceData>
 typename std::enable_if<mpSliceData::rank==1>::type
 MaterialPoints::setRebuildMPSlice(mpSliceData mpSliceIn) {
   auto mpSliceIn_h = Kokkos::create_mirror_view_and_copy(hostSpace(), mpSliceIn);
-  auto mpSlice = ps::getMemberView<MaterialPointTypes, mpSliceIndex, hostSpace>(rebuildFields.slices);
-  auto mpAppID = ps::getMemberView<MaterialPointTypes, MPF_MP_APP_ID, hostSpace>(rebuildFields.slices);
-  for (int i=0; i < mpSlice.extent(0); i++)
-    mpSlice(i) = mpSliceIn_h(mpAppID(i));
+  auto mpSliceAdded_h = ps::getMemberView<MaterialPointTypes, mpSliceIndex, hostSpace>(rebuildFields.addedSlices_h);
+  auto mpAppIDAdded_h = ps::getMemberView<MaterialPointTypes, MPF_MP_APP_ID, hostSpace>(rebuildFields.addedSlices_h);
+  for (int i=0; i < mpSliceAdded_h.extent(0); i++)
+    mpSliceAdded_h(i) = mpSliceIn_h(mpAppIDAdded_h(i));
 }
 
 template<int mpSliceIndex, typename mpSliceData>
 typename std::enable_if<mpSliceData::rank==2>::type
 MaterialPoints::setRebuildMPSlice(mpSliceData mpSliceIn) {
   auto mpSliceIn_h = Kokkos::create_mirror_view_and_copy(hostSpace(), mpSliceIn);
-  auto mpSlice = ps::getMemberView<MaterialPointTypes, mpSliceIndex, hostSpace>(rebuildFields.slices);
-  auto mpAppID = ps::getMemberView<MaterialPointTypes, MPF_MP_APP_ID, hostSpace>(rebuildFields.slices);
-  for (int i=0; i < mpSlice.extent(0); i++)
-  for (int j=0; j < mpSlice.extent(1); j++)
-    mpSlice(i,j) = mpSliceIn_h(j,mpAppID(i));
+  auto mpSliceAdded_h = ps::getMemberView<MaterialPointTypes, mpSliceIndex, hostSpace>(rebuildFields.addedSlices_h);
+  auto mpAppIDAdded_h = ps::getMemberView<MaterialPointTypes, MPF_MP_APP_ID, hostSpace>(rebuildFields.addedSlices_h);
+  for (int i=0; i < mpSliceAdded_h.extent(0); i++)
+  for (int j=0; j < mpSliceAdded_h.extent(1); j++)
+    mpSliceAdded_h(i,j) = mpSliceIn_h(j,mpAppIDAdded_h(i));
 }
 
 }

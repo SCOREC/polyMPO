@@ -68,23 +68,23 @@ MaterialPoints::~MaterialPoints() {
     delete MPs;
 }
 
-void MaterialPoints::startRebuild(IntView tgtElm, int newNumMPs, IntView newMP2elm, IntView newMPAppID, Kokkos::View<const int*> addedMPMask) {
+void MaterialPoints::startRebuild(IntView tgtElm, int addedNumMPs, IntView addedMP2elm, IntView addedMPAppID, Kokkos::View<const int*> addedMPMask) {
   rebuildFields.ongoing = true;
-  rebuildFields.numNewMPs = newNumMPs;
-  rebuildFields.newMP2elm = newMP2elm;
+  rebuildFields.addedNumMPs = addedNumMPs;
+  rebuildFields.addedMP2elm = addedMP2elm;
   rebuildFields.allTgtElm = tgtElm;
-  rebuildFields.addedMPMask = Kokkos::create_mirror_view_and_copy(hostSpace(), addedMPMask);
-  auto newMP2elm_h = Kokkos::create_mirror_view_and_copy(hostSpace(), newMP2elm);
-  auto newMPAppID_h = Kokkos::create_mirror_view_and_copy(hostSpace(), newMPAppID);
-  rebuildFields.slices = createInternalMemberViews<hostSpace>(newNumMPs, newMP2elm_h, newMPAppID_h);
+  rebuildFields.addedMPMask_h = Kokkos::create_mirror_view_and_copy(hostSpace(), addedMPMask);
+  auto addedMP2elm_h = Kokkos::create_mirror_view_and_copy(hostSpace(), addedMP2elm);
+  auto addedMPAppID_h = Kokkos::create_mirror_view_and_copy(hostSpace(), addedMPAppID);
+  rebuildFields.addedSlices_h = createInternalMemberViews<hostSpace>(addedNumMPs, addedMP2elm_h, addedMPAppID_h);
 }
 
 void MaterialPoints::finishRebuild() {
-  auto rebuildData_d = ps::createMemberViews<MaterialPointTypes, defaultSpace>(rebuildFields.numNewMPs);
-  ps::CopyMemSpaceToMemSpace<defaultSpace, hostSpace, MaterialPointTypes>(rebuildData_d, rebuildFields.slices);
-  MPs->rebuild(rebuildFields.allTgtElm, rebuildFields.newMP2elm, rebuildData_d);
+  auto rebuildData_d = ps::createMemberViews<MaterialPointTypes, defaultSpace>(rebuildFields.addedNumMPs);
+  ps::CopyMemSpaceToMemSpace<defaultSpace, hostSpace, MaterialPointTypes>(rebuildData_d, rebuildFields.addedSlices_h);
+  MPs->rebuild(rebuildFields.allTgtElm, rebuildFields.addedMP2elm, rebuildData_d);
   updateMaxAppID();
-  ps::destroyViews<MaterialPointTypes>(rebuildFields.slices);
+  ps::destroyViews<MaterialPointTypes>(rebuildFields.addedSlices_h);
   ps::destroyViews<MaterialPointTypes>(rebuildData_d);
   rebuildFields.ongoing = false;
 }

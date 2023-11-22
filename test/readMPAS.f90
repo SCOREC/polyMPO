@@ -69,7 +69,7 @@ subroutine rebuildTests(mpMesh, numMPs, mp2Elm, isMPActive, mpPosition)
     allocate(mpPositionFromPMPO(nDims,numMPs))
     call polympo_getMPPositions(mpMesh,nDims,numMPs,c_loc(mpPositionFromPMPO))
 
-    do i = 1, numMPs
+    do i = 1, numMPs !check all values match
         if (isMPActive(i) == MP_ACTIVE) then
             call assert(mp2Elm(i) .eq. mp2ElmFromPMPO(i), "wrong element ID for i'th MP after rebuild")
             do j = 1, nDims
@@ -95,7 +95,7 @@ subroutine rebuildTests(mpMesh, numMPs, mp2Elm, isMPActive, mpPosition)
     ! Test values
     mp2ElmFromPMPO = MP_DELETE_ELM_ID
     call polympo_getMPCurElmID(mpMesh,numMPs,c_loc(mp2ElmFromPMPO))
-    do i = 1, numMPs
+    do i = 1, numMPs !check all values match
         if (isMPActive(i) == MP_ACTIVE) then
             call assert(mp2Elm(i) .eq. mp2ElmFromPMPO(i), "wrong element ID for i'th MP after rebuild")
         endif
@@ -122,7 +122,7 @@ subroutine rebuildTests(mpMesh, numMPs, mp2Elm, isMPActive, mpPosition)
     ! Test values
     mp2ElmFromPMPO = MP_DELETE_ELM_ID
     call polympo_getMPCurElmID(mpMesh,numMPs,c_loc(mp2ElmFromPMPO))
-    do i = 1, numMPs
+    do i = 1, numMPs !check all values match
         if (isMPActive(i) == MP_ACTIVE) then
             call assert(mp2Elm(i) .eq. mp2ElmFromPMPO(i), "wrong element ID for i'th MP after rebuild")
         endif
@@ -163,7 +163,7 @@ subroutine rebuildTests(mpMesh, numMPs, mp2Elm, isMPActive, mpPosition)
     allocate(mp2ElmFromPMPOLarger(numMPsLarger))
     mp2ElmFromPMPOLarger = MP_DELETE_ELM_ID
     call polympo_getMPCurElmID(mpMesh,numMPsLarger,c_loc(mp2ElmFromPMPOLarger))
-    do i = 1, numMPs
+    do i = 1, numMPs !check all values match
         if (isMPActiveLarger(i) == MP_ACTIVE) then
             call assert(mp2ElmLarger(i) .eq. mp2ElmFromPMPOLarger(i), "wrong element ID for i'th MP after rebuild")
         endif

@@ -8,9 +8,7 @@ namespace polyMPO{
 void printVTP_mesh(MPMesh& mpMesh);
 
 void MPMesh::CVTTrackingEdgeCenterBased(Vec2dView dx){
-    int numVtxs = p_mesh->getNumVertices();
     int numElms = p_mesh->getNumElements();
-    auto numMPs = p_MPs->getCount();
 
     auto elm2VtxConn = p_mesh->getElm2VtxConn();
     auto elm2ElmConn = p_mesh->getElm2ElmConn();
@@ -91,7 +89,7 @@ void MPMesh::CVTTrackingElmCenterBased(const int printVTP){
     printVTP_mesh(*this);
 
     Vec3dView elmCenter("elmentCenter",numElms);
-    Kokkos::parallel_for("calcElmCenter", numElms, KOKKOS_LAMBDA(const int elm){  
+    auto calcCenter = PS_LAMBDA(const int& elm, const int&, const int&){
         int numVtx = elm2VtxConn(elm,0);
         double sum_x = 0.0, sum_y = 0.0, sum_z = 0.0;
         for(int i=1; i<= numVtx; i++){
@@ -102,7 +100,7 @@ void MPMesh::CVTTrackingElmCenterBased(const int printVTP){
         elmCenter(elm)[0] = sum_x/numVtx;
         elmCenter(elm)[1] = sum_y/numVtx;
         elmCenter(elm)[2] = sum_z/numVtx;
-    });
+    };
 
     Vec3dView history("positionHistory",numMPs);
     Vec3dView resultLeft("positionResult",numMPs);
@@ -196,9 +194,6 @@ void MPMesh::CVTTrackingElmCenterBased(const int printVTP){
 }
 
 void MPMesh::T2LTracking(Vec2dView dx){
-    int numVtxs = p_mesh->getNumVertices();
-    int numElms = p_mesh->getNumElements();
-    
     const auto vtxCoords = p_mesh->getMeshField<polyMPO::MeshF_VtxCoords>(); 
     auto elm2VtxConn = p_mesh->getElm2VtxConn();
     auto elm2ElmConn = p_mesh->getElm2ElmConn();

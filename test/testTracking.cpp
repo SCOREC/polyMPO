@@ -53,7 +53,7 @@ int main(int argc, char* argv[]) {
 //TODO:change to a template function
 void copyTgtElm(IntView& returnView, MPMesh& mpMesh){
     auto mpTgtElm = mpMesh.p_MPs->getData<MPF_Tgt_Elm_ID>();
-    auto copyVal = PS_LAMBDA(const int& elm, const int& mp, const int& mask){
+    auto copyVal = PS_LAMBDA(const int&, const int& mp, const int& mask){
         if(mask){
             returnView(mp) = mpTgtElm(mp);
         }

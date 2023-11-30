@@ -234,7 +234,7 @@ void polympo_getMPCurElmID_f(MPMesh_ptr p_mpmesh,
   Kokkos::deep_copy( arrayHost, mpCurElmIDCopy);
 }
 
-void polympo_setMPLatLonRotatedFlag_f(MPMesh_ptr p_mpmesh, int isRotateFlag){
+void polympo_setMPLatLonRotatedFlag_f(MPMesh_ptr p_mpmesh, const int isRotateFlag){
   //chech validity
   checkMPMeshValid(p_mpmesh);
   ((polyMPO::MPMesh*)p_mpmesh)->p_MPs->setRotatedFlag(isRotateFlag>0);
@@ -295,9 +295,9 @@ void polympo_getMPPositions_f(MPMesh_ptr p_mpmesh,
 }
 
 void polympo_setMPRotLatLon_f(MPMesh_ptr p_mpmesh,
-                         int numComps,
-                         int numMPs,
-                         double* mpRotLatLonIn){
+                         const int numComps,
+                         const int numMPs,
+                         const double* mpRotLatLonIn){
   static int callCount = 0;
   PMT_ALWAYS_ASSERT(callCount == 0);
   checkMPMeshValid(p_mpmesh);
@@ -308,7 +308,7 @@ void polympo_setMPRotLatLon_f(MPMesh_ptr p_mpmesh,
 
   auto mpRotLatLon = p_MPs->getData<polyMPO::MPF_Cur_Pos_Rot_Lat_Lon>();
   auto mpAppID = p_MPs->getData<polyMPO::MPF_MP_APP_ID>();
-  kkDbl2dViewHostU mpRotLatLonIn_h(mpRotLatLonIn,numComps,numMPs);
+  kkViewHostU<const double**> mpRotLatLonIn_h(mpRotLatLonIn,numComps,numMPs);
   Kokkos::View<double**> mpRotLatLonIn_d("mpRotLatLonDevice",vec2d_nEntries,numMPs);
   Kokkos::deep_copy(mpRotLatLonIn_d, mpRotLatLonIn_h);
   auto setPos = PS_LAMBDA(const int& elm, const int& mp, const int& mask){
@@ -322,8 +322,8 @@ void polympo_setMPRotLatLon_f(MPMesh_ptr p_mpmesh,
 }
 
 void polympo_getMPRotLatLon_f(MPMesh_ptr p_mpmesh,
-                         int numComps,
-                         int numMPs,
+                         const int numComps,
+                         const int numMPs,
                          double* mpRotLatLonHost){
   checkMPMeshValid(p_mpmesh);
   auto p_MPs = ((polyMPO::MPMesh*)p_mpmesh)->p_MPs;
@@ -541,7 +541,7 @@ void polympo_getMeshVtxCoords_f(MPMesh_ptr p_mpmesh, const int nVertices, double
   }
 }
 
-void polympo_setMeshVtxRotLat_f(MPMesh_ptr p_mpmesh, int nVertices, double* latitude){
+void polympo_setMeshVtxRotLat_f(MPMesh_ptr p_mpmesh, const int nVertices, const double* latitude){
   //chech validity
   checkMPMeshValid(p_mpmesh);
   auto p_mesh = ((polyMPO::MPMesh*)p_mpmesh)->p_mesh;
@@ -558,7 +558,7 @@ void polympo_setMeshVtxRotLat_f(MPMesh_ptr p_mpmesh, int nVertices, double* lati
   Kokkos::deep_copy(coordsArray, h_coordsArray);
 }
 
-void polympo_getMeshVtxRotLat_f(MPMesh_ptr p_mpmesh, int nVertices, double* latitude){
+void polympo_getMeshVtxRotLat_f(MPMesh_ptr p_mpmesh, const int nVertices, double* latitude){
   //chech validity
   checkMPMeshValid(p_mpmesh);
   auto p_mesh = ((polyMPO::MPMesh*)p_mpmesh)->p_mesh;

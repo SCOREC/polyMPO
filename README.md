@@ -394,7 +394,7 @@ module load cray-netcdf/4.9.0.1
 
 function getname() {
   name=$1
-  machine=`hostname -s`
+  machine=perlmutter
   buildSuffix=${machine}-cuda
   echo "build-${name}-${buildSuffix}"
 }
@@ -554,7 +554,7 @@ module load cray-netcdf/4.9.0.3
 
 function getname() {
   name=$1
-  machine=`hostname -s`
+  machine=perlmutter
   buildSuffix=${machine}-cpu
   echo "build-${name}-${buildSuffix}"
 }

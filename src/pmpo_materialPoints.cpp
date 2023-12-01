@@ -3,12 +3,15 @@
 namespace polyMPO {
 
 namespace {
-pumipic::MemberTypeViews createInternalMemberViews(int numMPs, IntView mp2elm, IntView mpAppID){
-  auto mpInfo = ps::createMemberViews<MaterialPointTypes>(numMPs);
-  auto mpCurElmPos_m = ps::getMemberView<MaterialPointTypes, MPF_Cur_Elm_ID>(mpInfo);
-  auto mpAppID_m = ps::getMemberView<MaterialPointTypes, MPF_MP_APP_ID>(mpInfo);
-  auto mpStatus_m = ps::getMemberView<MaterialPointTypes, MPF_Status>(mpInfo);
-  Kokkos::parallel_for("setMPinfo", numMPs, KOKKOS_LAMBDA(int i) {
+
+template<typename MemSpace = defaultSpace, typename View>
+pumipic::MemberTypeViews createInternalMemberViews(int numMPs, View mp2elm, View mpAppID){
+  auto mpInfo = ps::createMemberViews<MaterialPointTypes, MemSpace>(numMPs);
+  auto mpCurElmPos_m = ps::getMemberView<MaterialPointTypes, MPF_Cur_Elm_ID, MemSpace>(mpInfo);
+  auto mpAppID_m = ps::getMemberView<MaterialPointTypes, MPF_MP_APP_ID, MemSpace>(mpInfo);
+  auto mpStatus_m = ps::getMemberView<MaterialPointTypes, MPF_Status, MemSpace>(mpInfo);
+  auto policy = Kokkos::RangePolicy<typename MemSpace::execution_space>(typename MemSpace::execution_space(), 0, numMPs);
+  Kokkos::parallel_for("setMPinfo", policy, KOKKOS_LAMBDA(int i) {
     mpCurElmPos_m(i) = mp2elm(i);
     mpStatus_m(i) = MP_ACTIVE;
     mpAppID_m(i) = mpAppID(i);
@@ -45,7 +48,8 @@ PS* createDPS(int numElms, int numMPs, IntView mpsPerElm, IntView mp2elm, IntVie
   ps::destroyViews<MaterialPointTypes>(mpInfo);
   return dps;
 }
-}
+
+} //End anonymous namespace
 
 MaterialPoints::MaterialPoints(int numElms, int numMPs, DoubleVec3dView positions, IntView mpsPerElm, IntView mp2elm) {
   MPs = createDPS(numElms, numMPs, positions, mpsPerElm, mp2elm);
@@ -64,9 +68,27 @@ MaterialPoints::~MaterialPoints() {
     delete MPs;
 }
 
-void MaterialPoints::rebuild(IntView tgtElm, int newNumMPs, IntView newMP2elm, IntView newMPAppID) {
-  auto newMPInfo = createInternalMemberViews(newNumMPs, newMP2elm, newMPAppID);
-  MPs->rebuild(tgtElm, newMP2elm, newMPInfo);
-  updateMaxAppID();
+void MaterialPoints::startRebuild(IntView tgtElm, int addedNumMPs, IntView addedMP2elm, IntView addedMPAppID, Kokkos::View<const int*> addedMPMask) {
+  rebuildFields.ongoing = true;
+  rebuildFields.addedNumMPs = addedNumMPs;
+  rebuildFields.addedMP2elm = addedMP2elm;
+  rebuildFields.allTgtElm = tgtElm;
+  rebuildFields.addedMPMask_h = Kokkos::create_mirror_view_and_copy(hostSpace(), addedMPMask);
+  auto addedMP2elm_h = Kokkos::create_mirror_view_and_copy(hostSpace(), addedMP2elm);
+  auto addedMPAppID_h = Kokkos::create_mirror_view_and_copy(hostSpace(), addedMPAppID);
+  rebuildFields.addedSlices_h = createInternalMemberViews<hostSpace>(addedNumMPs, addedMP2elm_h, addedMPAppID_h);
 }
+
+void MaterialPoints::finishRebuild() {
+  auto addedSlices_d = ps::createMemberViews<MaterialPointTypes, defaultSpace>(rebuildFields.addedNumMPs);
+  ps::CopyMemSpaceToMemSpace<defaultSpace, hostSpace, MaterialPointTypes>(addedSlices_d, rebuildFields.addedSlices_h);
+  MPs->rebuild(rebuildFields.allTgtElm, rebuildFields.addedMP2elm, addedSlices_d);
+  updateMaxAppID();
+  ps::destroyViews<MaterialPointTypes>(rebuildFields.addedSlices_h);
+  ps::destroyViews<MaterialPointTypes>(addedSlices_d);
+  rebuildFields.ongoing = false;
+}
+
+bool MaterialPoints::rebuildOngoing() { return rebuildFields.ongoing; }
+
 }

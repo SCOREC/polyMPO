@@ -220,6 +220,67 @@ void polympo_finishRebuildMPs_f(MPMesh_ptr p_mpmesh) {
   assertUniqueID(p_mpmesh);
 }
 
+void polympo_startMigratingMPs_f(MPMesh_ptr p_mpmesh,
+                            const int numMPs, // total number of MPs which is GREATER than or equal to number of active MPs
+                            const int* allMP2Elm,
+                            const int* allMP2Process,
+                            const int* addedMPMask) {
+  checkMPMeshValid(p_mpmesh);
+  auto p_MPs = ((polyMPO::MPMesh*)p_mpmesh)->p_MPs;
+  PMT_ALWAYS_ASSERT(numMPs >= p_MPs->getCount());
+  PMT_ALWAYS_ASSERT(numMPs >= p_MPs->getMaxAppID());
+
+  int offset = p_MPs->getElmIDoffset();
+  std::vector<int> added_mpIDs(numMPs);
+  std::vector<int> added_mp2Elm(numMPs);
+  int numAddedMPs = 0;
+  for(int i=0; i<numMPs; i++) {
+    if(addedMPMask[i] == MP_ACTIVE) {
+      added_mpIDs[numAddedMPs] = i;
+      added_mp2Elm[numAddedMPs] = allMP2Elm[i]-offset; //adjust for 1 based indexing if needed
+      numAddedMPs++;
+    }
+  }
+
+  int internalMPCapacity = p_MPs->getCapacity(); // pumipic expects full capacity to rebuild
+  Kokkos::View<int*> mp2Elm("mp2Elm", internalMPCapacity);
+  Kokkos::View<int*> mp2Process("mp2Process", internalMPCapacity);
+  auto mpAppID = p_MPs->getData<polyMPO::MPF_MP_APP_ID>();
+
+  auto added_mp2Elm_d = create_mirror_view_and_copy(added_mp2Elm.data(), numAddedMPs);
+  auto added_mpIDs_d = create_mirror_view_and_copy(added_mpIDs.data(), numAddedMPs);
+  auto addedMPMask_d = create_mirror_view_and_copy(addedMPMask, numMPs);
+  auto mpMP2ElmIn_d = create_mirror_view_and_copy(allMP2Elm, numMPs);
+  auto mpMP2ProcessIn_d = create_mirror_view_and_copy(allMP2Process, numMPs);
+
+  Kokkos::View<int*> numDeletedMPs_d("numDeletedMPs", 1);
+  auto setMP2Elm = PS_LAMBDA(const int&, const int& mp, const int& mask) {
+    if(mask) {
+      if (addedMPMask_d[mpAppID(mp)] == MP_ACTIVE) //two MPs can not occupy the same slot
+        mp2Elm(mp) = MP_DELETE;
+      else {
+        mp2Elm(mp) = mpMP2ElmIn_d(mpAppID(mp));
+        mp2Process(mp) = mpMP2ProcessIn_d(mpAppID(mp));
+      }
+      if (mp2Elm(mp) == MP_DELETE)
+        Kokkos::atomic_increment(&numDeletedMPs_d(0));
+    }
+  };
+  p_MPs->parallel_for(setMP2Elm, "setMP2Elm");
+
+  int numDeletedMPs = pumipic::getLastValue(numDeletedMPs_d);
+  PMT_ALWAYS_ASSERT(numAddedMPs > 0 || numDeletedMPs > 0);
+
+  p_MPs->startMigrating(mp2Elm, mp2Process, numAddedMPs, added_mp2Elm_d, added_mpIDs_d, addedMPMask_d);
+}
+
+void polympo_finishMigratingMPs_f(MPMesh_ptr p_mpmesh) {
+  checkMPMeshValid(p_mpmesh);
+  auto p_MPs = ((polyMPO::MPMesh*)p_mpmesh)->p_MPs;
+  p_MPs->finishMigrating();
+  assertUniqueID(p_mpmesh);
+}
+
 void polympo_getMPCurElmID_f(MPMesh_ptr p_mpmesh,
                            const int numMPs,
                            int* elmIDs){

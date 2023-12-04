@@ -91,4 +91,8 @@ void MaterialPoints::finishRebuild() {
 
 bool MaterialPoints::rebuildOngoing() { return rebuildFields.ongoing; }
 
+void MaterialPoints::startMigrating(IntView , IntView , int , IntView , IntView , Kokkos::View<const int*> ) {}
+
+void MaterialPoints::finishMigrating() {}
+
 }

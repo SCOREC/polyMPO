@@ -136,6 +136,9 @@ class MaterialPoints {
     typename std::enable_if<mpSliceData::rank==2>::type
     setRebuildMPSlice(mpSliceData mpSliceIn);
 
+    void startMigrating(IntView tgtElm, IntView tgtProcess, int addedNumMPs, IntView addedMP2elm, IntView addedMPAppID, Kokkos::View<const int*> addedMPMask);
+    void finishMigrating();
+
     void rebuild() {
       IntView tgtElm("tgtElm", MPs->capacity());
       auto tgtMpElm = MPs->get<MPF_Tgt_Elm_ID>();

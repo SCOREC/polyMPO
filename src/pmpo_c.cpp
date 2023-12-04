@@ -316,7 +316,7 @@ void polympo_setMPPositions_f(MPMesh_ptr p_mpmesh,
   kkViewHostU<const double**> mpPositionsIn_h(mpPositionsIn,numComps,numMPs);
 
   if (p_MPs->rebuildOngoing()) {
-    p_MPs->setRebuildMPSlice<polyMPO::MPF_Cur_Pos_XYZ>(mpPositionsIn_h);
+    p_MPs->setAddedMPSlice<polyMPO::MPF_Cur_Pos_XYZ>(mpPositionsIn_h);
     return;
   }
 

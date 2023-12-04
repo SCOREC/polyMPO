@@ -130,11 +130,11 @@ class MaterialPoints {
     
     template<int mpSliceIndex, typename mpSliceData>
     typename std::enable_if<mpSliceData::rank==1>::type
-    setRebuildMPSlice(mpSliceData mpSliceIn);
+    setAddedMPSlice(mpSliceData mpSliceIn);
 
     template<int mpSliceIndex, typename mpSliceData>
     typename std::enable_if<mpSliceData::rank==2>::type
-    setRebuildMPSlice(mpSliceData mpSliceIn);
+    setAddedMPSlice(mpSliceData mpSliceIn);
 
     void startMigrating(IntView tgtElm, IntView tgtProcess, int addedNumMPs, IntView addedMP2elm, IntView addedMPAppID, Kokkos::View<const int*> addedMPMask);
     void finishMigrating();
@@ -246,7 +246,7 @@ void MaterialPoints::fillData(double value){
 
 template<int mpSliceIndex, typename mpSliceData>
 typename std::enable_if<mpSliceData::rank==1>::type
-MaterialPoints::setRebuildMPSlice(mpSliceData mpSliceIn) {
+MaterialPoints::setAddedMPSlice(mpSliceData mpSliceIn) {
   auto mpSliceIn_h = Kokkos::create_mirror_view_and_copy(hostSpace(), mpSliceIn);
   auto mpSliceAdded_h = ps::getMemberView<MaterialPointTypes, mpSliceIndex, hostSpace>(rebuildFields.addedSlices_h);
   auto mpAppIDAdded_h = ps::getMemberView<MaterialPointTypes, MPF_MP_APP_ID, hostSpace>(rebuildFields.addedSlices_h);
@@ -256,7 +256,7 @@ MaterialPoints::setRebuildMPSlice(mpSliceData mpSliceIn) {
 
 template<int mpSliceIndex, typename mpSliceData>
 typename std::enable_if<mpSliceData::rank==2>::type
-MaterialPoints::setRebuildMPSlice(mpSliceData mpSliceIn) {
+MaterialPoints::setAddedMPSlice(mpSliceData mpSliceIn) {
   auto mpSliceIn_h = Kokkos::create_mirror_view_and_copy(hostSpace(), mpSliceIn);
   auto mpSliceAdded_h = ps::getMemberView<MaterialPointTypes, mpSliceIndex, hostSpace>(rebuildFields.addedSlices_h);
   auto mpAppIDAdded_h = ps::getMemberView<MaterialPointTypes, MPF_MP_APP_ID, hostSpace>(rebuildFields.addedSlices_h);

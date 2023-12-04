@@ -148,6 +148,22 @@ void polympo_createMPs_f(MPMesh_ptr p_mpmesh,
   p_MPs->setElmIDoffset(offset);
 }
 
+void assertUniqueID(MPMesh_ptr p_mpmesh) {
+  // check mpAppID is unique (on GPUs)
+  auto p_MPs = ((polyMPO::MPMesh*)p_mpmesh)->p_MPs;
+  if (p_MPs->getOpMode() == polyMPO::MP_DEBUG){
+    auto mpAppID = p_MPs->getData<polyMPO::MPF_MP_APP_ID>();
+    Kokkos::View<int*> mpAppIDCount("mpAppIDCount", p_MPs->getCount());
+    auto checkAppIDs = PS_LAMBDA(const int&, const int& mp, const int& mask){
+      if(mask) {
+        int prev = Kokkos::atomic_fetch_add(&mpAppIDCount(mpAppID(mp)), 1);
+        assert(prev == 0);
+      }
+    };
+    p_MPs->parallel_for(checkAppIDs, "checkAppIDs");
+  }
+}
+
 void polympo_startRebuildMPs_f(MPMesh_ptr p_mpmesh,
                          const int numMPs, // total number of MPs which is GREATER than or equal to number of active MPs
                          const int* allMP2Elm,
@@ -195,26 +211,13 @@ void polympo_startRebuildMPs_f(MPMesh_ptr p_mpmesh,
   PMT_ALWAYS_ASSERT(numAddedMPs > 0 || numDeletedMPs > 0);
 
   p_MPs->startRebuild(mp2Elm, numAddedMPs, added_mp2Elm_d, added_mpIDs_d, addedMPMask_d);
-
-  // check mpAppID is unique (on GPUs)
-  if (p_MPs->getOpMode() == polyMPO::MP_DEBUG){
-    mpAppID = p_MPs->getData<polyMPO::MPF_MP_APP_ID>();
-    Kokkos::View<int*> mpAppIDCount("mpAppIDCount", p_MPs->getCount());
-    auto checkAppIDs = PS_LAMBDA(const int&, const int& mp, const int& mask){
-      if(mask) {
-        int prev = Kokkos::atomic_fetch_add(&mpAppIDCount(mpAppID(mp)), 1);
-        assert(prev == 0);
-      }
-    };
-    p_MPs->parallel_for(checkAppIDs, "checkAppIDs");
-  }
 }
 
-void polympo_finishRebuildMPs_f(MPMesh_ptr p_mpmesh)
-{
+void polympo_finishRebuildMPs_f(MPMesh_ptr p_mpmesh) {
   checkMPMeshValid(p_mpmesh);
   auto p_MPs = ((polyMPO::MPMesh*)p_mpmesh)->p_MPs;
   p_MPs->finishRebuild();
+  assertUniqueID(p_mpmesh);
 }
 
 void polympo_getMPCurElmID_f(MPMesh_ptr p_mpmesh,

@@ -78,8 +78,8 @@ module polympo
   !> @param allMP2Elm(in) the target element for each MP (length of numMPs)
   !> @param addedMPMask(in) set to 1 for each new MP, 0 otherwise (length of numMPs)
   !---------------------------------------------------------------------------
-  subroutine polympo_startRebuildMPs(mpMesh, numMPs, allMP2Elm, addedMPMask) &
-    bind(C, NAME='polympo_startRebuildMPs_f')
+  subroutine polympo_startRebuildingMPs(mpMesh, numMPs, allMP2Elm, addedMPMask) &
+    bind(C, NAME='polympo_startRebuildingMPs_f')
     use :: iso_c_binding
     type(c_ptr), value :: mpMesh
     integer(c_int), value :: numMPs
@@ -87,12 +87,12 @@ module polympo
     type(c_ptr), intent(in), value :: addedMPMask
   end subroutine
   !---------------------------------------------------------------------------
-  !> @brief called after startRebuild()
+  !> @brief called after startRebuilding()
   !> @brief called after initializing MP fields
   !> @param mpmesh(in/out) MPMesh object
   !---------------------------------------------------------------------------
-  subroutine polympo_finishRebuildMPs(mpMesh) &
-    bind(C, NAME='polympo_finishRebuildMPs_f')
+  subroutine polympo_finishRebuildingMPs(mpMesh) &
+    bind(C, NAME='polympo_finishRebuildingMPs_f')
     use :: iso_c_binding
     type(c_ptr), value :: mpMesh
   end subroutine

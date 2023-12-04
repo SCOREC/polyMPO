@@ -68,7 +68,7 @@ MaterialPoints::~MaterialPoints() {
     delete MPs;
 }
 
-void MaterialPoints::startRebuild(IntView tgtElm, int addedNumMPs, IntView addedMP2elm, IntView addedMPAppID, Kokkos::View<const int*> addedMPMask) {
+void MaterialPoints::startRebuilding(IntView tgtElm, int addedNumMPs, IntView addedMP2elm, IntView addedMPAppID, Kokkos::View<const int*> addedMPMask) {
   rebuildFields.ongoing = true;
   rebuildFields.addedNumMPs = addedNumMPs;
   rebuildFields.addedMP2elm = addedMP2elm;
@@ -79,7 +79,7 @@ void MaterialPoints::startRebuild(IntView tgtElm, int addedNumMPs, IntView added
   rebuildFields.addedSlices_h = createInternalMemberViews<hostSpace>(addedNumMPs, addedMP2elm_h, addedMPAppID_h);
 }
 
-void MaterialPoints::finishRebuild() {
+void MaterialPoints::finishRebuilding() {
   auto addedSlices_d = ps::createMemberViews<MaterialPointTypes, defaultSpace>(rebuildFields.addedNumMPs);
   ps::CopyMemSpaceToMemSpace<defaultSpace, hostSpace, MaterialPointTypes>(addedSlices_d, rebuildFields.addedSlices_h);
   MPs->rebuild(rebuildFields.allTgtElm, rebuildFields.addedMP2elm, addedSlices_d);

@@ -124,8 +124,8 @@ class MaterialPoints {
     MaterialPoints(int numElms, int numMPs, IntView mpsPerElm, IntView mp2elm, IntView mpAppID);
     ~MaterialPoints();
 
-    void startRebuild(IntView tgtElm, int addedNumMPs, IntView addedMP2elm, IntView addedMPAppID, Kokkos::View<const int*> addedMPMask);
-    void finishRebuild();
+    void startRebuilding(IntView tgtElm, int addedNumMPs, IntView addedMP2elm, IntView addedMPAppID, Kokkos::View<const int*> addedMPMask);
+    void finishRebuilding();
     bool rebuildOngoing();
     
     template<int mpSliceIndex, typename mpSliceData>

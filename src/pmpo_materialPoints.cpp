@@ -69,7 +69,7 @@ MaterialPoints::~MaterialPoints() {
 }
 
 void MaterialPoints::startRebuilding(IntView tgtElm, int addedNumMPs, IntView addedMP2elm, IntView addedMPAppID, Kokkos::View<const int*> addedMPMask) {
-  rebuildFields.ongoing = true;
+  rebuildFields.ongoing = Rebuilding;
   rebuildFields.addedNumMPs = addedNumMPs;
   rebuildFields.addedMP2elm = addedMP2elm;
   rebuildFields.allTgtElm = tgtElm;
@@ -86,13 +86,32 @@ void MaterialPoints::finishRebuilding() {
   updateMaxAppID();
   ps::destroyViews<MaterialPointTypes>(rebuildFields.addedSlices_h);
   ps::destroyViews<MaterialPointTypes>(addedSlices_d);
-  rebuildFields.ongoing = false;
+  rebuildFields.ongoing = None;
 }
 
-bool MaterialPoints::rebuildOngoing() { return rebuildFields.ongoing; }
+bool MaterialPoints::rebuildOngoing() { return rebuildFields.ongoing != None; }
 
-void MaterialPoints::startMigrating(IntView , IntView , int , IntView , IntView , Kokkos::View<const int*> ) {}
+void MaterialPoints::startMigrating(IntView tgtElm, IntView tgtProcess, int addedNumMPs, IntView addedMP2elm, IntView addedMPAppID, Kokkos::View<const int*> addedMPMask) {
+  rebuildFields.ongoing = Migrating;
+  rebuildFields.addedNumMPs = addedNumMPs;
+  rebuildFields.addedMP2elm = addedMP2elm;
+  rebuildFields.allTgtElm = tgtElm;
+  rebuildFields.allTgtProcess = tgtProcess;
+  rebuildFields.addedMPMask_h = Kokkos::create_mirror_view_and_copy(hostSpace(), addedMPMask);
+  auto addedMP2elm_h = Kokkos::create_mirror_view_and_copy(hostSpace(), addedMP2elm);
+  auto addedMPAppID_h = Kokkos::create_mirror_view_and_copy(hostSpace(), addedMPAppID);
+  rebuildFields.addedSlices_h = createInternalMemberViews<hostSpace>(addedNumMPs, addedMP2elm_h, addedMPAppID_h);
+}
 
-void MaterialPoints::finishMigrating() {}
+void MaterialPoints::finishMigrating() {
+  auto addedSlices_d = ps::createMemberViews<MaterialPointTypes, defaultSpace>(rebuildFields.addedNumMPs);
+  ps::CopyMemSpaceToMemSpace<defaultSpace, hostSpace, MaterialPointTypes>(addedSlices_d, rebuildFields.addedSlices_h);
+  ps::Distributor<defaultSpace> dist = ps::Distributor<defaultSpace>();
+  MPs->migrate(rebuildFields.allTgtElm, rebuildFields.allTgtProcess, dist, rebuildFields.addedMP2elm, addedSlices_d);
+  updateMaxAppID();
+  ps::destroyViews<MaterialPointTypes>(rebuildFields.addedSlices_h);
+  ps::destroyViews<MaterialPointTypes>(addedSlices_d);
+  rebuildFields.ongoing = None;
+}
 
 }

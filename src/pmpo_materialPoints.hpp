@@ -55,6 +55,12 @@ enum Operating_Mode{
   MP_DEBUG
 };
 
+enum RebuildType {
+  None,
+  Rebuilding,
+  Migrating
+};
+
 const static std::map<MaterialPointSlice, std::pair<int,MeshFieldIndex>> 
       mpSlice2MeshFieldIndex = {{MPF_Status,     {1,MeshF_Invalid}},
                            {MPF_Cur_Elm_ID,      {0,MeshF_Invalid}},
@@ -102,11 +108,12 @@ typedef MemberTypes<mp_flag_t,              //MP_Status
 typedef ps::ParticleStructure<MaterialPointTypes> PS;
 
 struct RebuildHelper {
-  bool ongoing = false;
+  RebuildType ongoing = None;
   int addedNumMPs;
   pumipic::MemberTypeViews addedSlices_h;
   IntView addedMP2elm;
   IntView allTgtElm;
+  IntView allTgtProcess;
   Kokkos::View<const int*, hostSpace> addedMPMask_h;
 };
 

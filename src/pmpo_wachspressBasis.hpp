@@ -216,7 +216,7 @@ void getBasisByAreaGblForm_1(Vec2d MP, int numVtxs, Vec2d* vtxCoords, double* ba
 } 
 */
 
-//TODO: add comments
+// spherical interpolation of values from mesh vertices to MPsi
 template <MeshFieldIndex mfIndex, MaterialPointSlice mpfIndex>
 void sphericalInterpolation(MPMesh& mpMesh){
     auto p_mesh = mpMesh.p_mesh;
@@ -231,6 +231,7 @@ void sphericalInterpolation(MPMesh& mpMesh){
     auto mpField = p_MPs->getData<mpfIndex>();
     
     const int numEntries = mpSlice2MeshFieldIndex.at(mpfIndex).first;
+    //check field correspondence
     const MeshFieldIndex meshFieldIndex = mpSlice2MeshFieldIndex.at(mpfIndex).second;
     PMT_ALWAYS_ASSERT(meshFieldIndex == mfIndex);
     auto meshField = p_mesh->getMeshField<mfIndex>(); 
@@ -238,6 +239,7 @@ void sphericalInterpolation(MPMesh& mpMesh){
     auto interpolation = PS_LAMBDA(const int& elm, const int& mp, const int& mask) {
         if(mask) { //if material point is 'active'/'enabled'
             Vec3d position3d(MPsPosition(mp,0),MPsPosition(mp,1),MPsPosition(mp,2));
+            // formating 
             Vec3d v3d[maxVtxsPerElm+1];
             int numVtx = elm2VtxConn(elm,0);
             for(int i = 1; i<=numVtx; i++){
@@ -251,12 +253,14 @@ void sphericalInterpolation(MPMesh& mpMesh){
             
             double basisByArea3d[maxVtxsPerElm] = {0.0};
             initArray(basisByArea3d,maxVtxsPerElm,0.0);
+
+            // calc basis
             getBasisByAreaGblFormSpherical2(position3d, numVtx, v3d, radius, basisByArea3d);
             
+            // interpolation step
             for(int entry=0; entry<numEntries; entry++){
                 double mpValue = 0.0;
                 for(int i=0; i<= numVtx; i++){
-                    //wp_coord = wp_coord + v3d[i]*basisByArea3d[i];
                     mpValue += meshField(elm2VtxConn(elm,i),entry)*basisByArea3d[i];
                 }
                 mpField(mp,entry) = mpValue;

@@ -14,6 +14,8 @@ namespace polyMPO{
 
 using particle_structs::DPS;
 using particle_structs::MemberTypes;
+using hostSpace = Kokkos::HostSpace;
+using defaultSpace = Kokkos::DefaultExecutionSpace::memory_space;
 
 //typedef bool mp_flag_t;
 typedef int mp_flag_t;
@@ -102,6 +104,14 @@ typedef MemberTypes<mp_flag_t,              //MP_Status
                     >MaterialPointTypes;
 typedef ps::ParticleStructure<MaterialPointTypes> PS;
 
+struct RebuildHelper {
+  bool ongoing = false;
+  int addedNumMPs;
+  pumipic::MemberTypeViews addedSlices_h;
+  IntView addedMP2elm;
+  IntView allTgtElm;
+  Kokkos::View<const int*, hostSpace> addedMPMask_h;
+};
 
 class MaterialPoints {
   private:
@@ -110,13 +120,26 @@ class MaterialPoints {
     int maxAppID = -1;
     bool isRotatedFlag = false;
     Operating_Mode operating_mode;
+    RebuildHelper rebuildFields;
 
   public:
     MaterialPoints() : MPs(nullptr) {};
     MaterialPoints(int numElms, int numMPs, DoubleVec3dView positions, IntView mpsPerElm, IntView mp2elm);
     MaterialPoints(int numElms, int numMPs, IntView mpsPerElm, IntView mp2elm, IntView mpAppID);
     ~MaterialPoints();
-    void rebuild(IntView tgtElm, int newNumMPs, IntView newMP2elm, IntView newMPAppID);
+
+    void startRebuild(IntView tgtElm, int addedNumMPs, IntView addedMP2elm, IntView addedMPAppID, Kokkos::View<const int*> addedMPMask);
+    void finishRebuild();
+    bool rebuildOngoing();
+    
+    template<int mpSliceIndex, typename mpSliceData>
+    typename std::enable_if<mpSliceData::rank==1>::type
+    setRebuildMPSlice(mpSliceData mpSliceIn);
+
+    template<int mpSliceIndex, typename mpSliceData>
+    typename std::enable_if<mpSliceData::rank==2>::type
+    setRebuildMPSlice(mpSliceData mpSliceIn);
+
     void rebuild() {
       IntView tgtElm("tgtElm", MPs->capacity());
       auto tgtMpElm = MPs->get<MPF_Tgt_Elm_ID>();
@@ -238,22 +261,42 @@ class MaterialPoints {
 
     // MUTATOR  
     template <MaterialPointSlice index> void fillData(double value);//use PS_LAMBDA fill up to 1
-};
+};// End MaterialPoints
 
 template <MaterialPointSlice index>
 void MaterialPoints::fillData(double value){
-    auto mpData = getData<index>();
-    const int numEntries = mpSlice2MeshFieldIndex.at(index).first;
-    auto setValue = PS_LAMBDA(const int&, const int& mp, const int& mask){
-        if(mask) { //if material point is 'active'/'enabled'
-            for(int i=0; i<numEntries; i++){
-                mpData(mp,i) = value;
-            }
-        }
-    };
-    parallel_for(setValue, "setValue");
+  auto mpData = getData<index>();
+  const int numEntries = mpSlice2MeshFieldIndex.at(index).first;
+  auto setValue = PS_LAMBDA(const int&, const int& mp, const int& mask){
+    if(mask) { //if material point is 'active'/'enabled'
+      for(int i=0; i<numEntries; i++){
+          mpData(mp,i) = value;
+      }
+    }
+  };
+  parallel_for(setValue, "setValue");
 }
 
+template<int mpSliceIndex, typename mpSliceData>
+typename std::enable_if<mpSliceData::rank==1>::type
+MaterialPoints::setRebuildMPSlice(mpSliceData mpSliceIn) {
+  auto mpSliceIn_h = Kokkos::create_mirror_view_and_copy(hostSpace(), mpSliceIn);
+  auto mpSliceAdded_h = ps::getMemberView<MaterialPointTypes, mpSliceIndex, hostSpace>(rebuildFields.addedSlices_h);
+  auto mpAppIDAdded_h = ps::getMemberView<MaterialPointTypes, MPF_MP_APP_ID, hostSpace>(rebuildFields.addedSlices_h);
+  for (int i=0; i < mpSliceAdded_h.extent(0); i++)
+    mpSliceAdded_h(i) = mpSliceIn_h(mpAppIDAdded_h(i));
+}
+
+template<int mpSliceIndex, typename mpSliceData>
+typename std::enable_if<mpSliceData::rank==2>::type
+MaterialPoints::setRebuildMPSlice(mpSliceData mpSliceIn) {
+  auto mpSliceIn_h = Kokkos::create_mirror_view_and_copy(hostSpace(), mpSliceIn);
+  auto mpSliceAdded_h = ps::getMemberView<MaterialPointTypes, mpSliceIndex, hostSpace>(rebuildFields.addedSlices_h);
+  auto mpAppIDAdded_h = ps::getMemberView<MaterialPointTypes, MPF_MP_APP_ID, hostSpace>(rebuildFields.addedSlices_h);
+  for (int i=0; i < mpSliceAdded_h.extent(0); i++)
+  for (int j=0; j < mpSliceAdded_h.extent(1); j++)
+    mpSliceAdded_h(i,j) = mpSliceIn_h(j,mpAppIDAdded_h(i));
+}
 
 }
 #endif

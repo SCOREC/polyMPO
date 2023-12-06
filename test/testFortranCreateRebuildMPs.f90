@@ -17,7 +17,7 @@ function epsilonDiff(a,b) result(isSame)
     endif
 end function
 
-subroutine createTest(mpMesh, nCells, numMPs, mp2Elm, isMPActive)
+subroutine createMPsTest(mpMesh, nCells, numMPs, mp2Elm, isMPActive)
     implicit none
     type(c_ptr):: mpMesh
     integer :: nCells, numMPs, i
@@ -27,6 +27,20 @@ subroutine createTest(mpMesh, nCells, numMPs, mp2Elm, isMPActive)
     integer, parameter :: MP_INACTIVE = 0
     integer, dimension(:), pointer :: mpsPerElm, mp2Elm, isMPActive
     real(kind=MPAS_RKIND), dimension(:,:), pointer :: mpPosition
+  
+    isMPActive = MP_ACTIVE !no inactive MPs and some changed below
+    isMPActive(4) = MP_INACTIVE !first/1-st MP is indexed 1 and 4-th MP is inactive
+  
+    !mp2Elm = [2,3,2,0,3,4,5,6,...]
+    mp2Elm(1) = 2
+    mp2Elm(2) = 3
+    mp2Elm(3) = 2
+    !mp2Elm(4) is not needed/used since 4-th MP is inactive
+    do i = 5,numMPs
+      mp2Elm(i) = i-2 !i=5 leads to mp2Elm(5)=3 (5-th MP in 3-rd element)
+                      !i=numMPs leads to mp2Elm(numMPs=nCells+2)=numMPs-2=nCells
+    end do
+  
     allocate(mpsPerElm(nCells))
     mpsPerElm = 1 !all elements have 1 MP and some changed below
     mpsPerElm(1) = 0 !1st element has 0 MPs
@@ -70,7 +84,7 @@ subroutine createTest(mpMesh, nCells, numMPs, mp2Elm, isMPActive)
     deallocate(mpsPerElm)
 end subroutine
 
-subroutine rebuildTests(mpMesh, numMPs, mp2Elm, isMPActive)
+subroutine rebuildMPsTests(mpMesh, numMPs, mp2Elm, isMPActive)
     implicit none
     type(c_ptr):: mpMesh
     integer :: numMPs, i, numMPsLarger
@@ -255,27 +269,14 @@ program main
                         latVertex, &
                         verticesOnCell, cellsOnCell)
 
-  !test on new createMPs
+  !check for allocation
   call assert(nCells .ge. 3, "This test requires a mesh with at least three cells")
   numMPs = nCells+2;
   allocate(mp2Elm(numMPs))
   allocate(isMPActive(numMPs))
   
-  isMPActive = MP_ACTIVE !no inactive MPs and some changed below
-  isMPActive(4) = MP_INACTIVE !first/1-st MP is indexed 1 and 4-th MP is inactive
-  
-  ! mp2Elm = [2,3,2,0,3,4,5,6,...]
-  mp2Elm(1) = 2
-  mp2Elm(2) = 3
-  mp2Elm(3) = 2
-  !mp2Elm(4) is not needed/used since 4-th MP is inactive
-  do i = 5,numMPs
-    mp2Elm(i) = i-2 !i=5 leads to mp2Elm(5)=3 (5-th MP in 3-rd element)
-                    !i=numMPs leads to mp2Elm(numMPs=nCells+2)=numMPs-2=nCells
-  end do
-  
-  call createTest(mpMesh, nCells, numMPs, mp2Elm, isMPActive) 
-  call rebuildTests(mpMesh, numMPs, mp2Elm, isMPActive)
+  call createMPsTest(mpMesh, nCells, numMPs, mp2Elm, isMPActive) 
+  call rebuildMPsTests(mpMesh, numMPs, mp2Elm, isMPActive)
   
   deallocate(mp2Elm)
   deallocate(isMPActive)

@@ -9,6 +9,11 @@ program main
     implicit none
     include 'mpif.h'
 
+    abstract interface
+      integer function func ()
+      end function func
+    end interface
+
     type (QUEUE_STRUCT), pointer :: queue
     logical :: success
     integer :: setMeshOption, setMPOption
@@ -16,7 +21,8 @@ program main
     integer :: mpi_comm_handle = MPI_COMM_WORLD
     integer, dimension(:), pointer :: mpsPerElm, mp2Elm, isMPActive
     type(c_ptr) :: mpMesh
-    integer :: nCells, numMPs
+    integer :: nCells, numMPs, appID
+    procedure (func), pointer :: f_ptr => null ()
     integer, parameter :: MP_ACTIVE = 1
 
     ! Initialize
@@ -50,9 +56,19 @@ program main
     isMPActive = MP_ACTIVE
     call polympo_createMPs(mpMesh,nCells,numMPs,c_loc(mpsPerElm),c_loc(mp2Elm),c_loc(isMPActive))
 
+    f_ptr => GetAppID
+    print *, "AppID: ", f_ptr()
+
     ! Clean Up
     call polympo_deleteMPMesh(mpMesh)
     call queue_destroy(queue)
     call polympo_finalize()
     call mpi_finalize(ierr)
+
+    contains
+
+    integer function GetAppID() result(id)
+        id = queue_retrieve_data(queue)
+    end function
+
 end program

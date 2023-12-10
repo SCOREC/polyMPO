@@ -61,12 +61,10 @@ void interpolateWachspressSphericalTest(MPMesh& mpMesh){
 
     auto p_MPs = mpMesh.p_MPs;
     auto MPsPosition = p_MPs->getPositions();
-    //double radius = p_mesh->getSphereRadius(); TODO: set sphereRadius properly 
-    double radius = 1.0;
-    printf("%f \n", radius);
+    double radius = p_mesh->getSphereRadius(); 
     PMT_ALWAYS_ASSERT(radius >0);
     auto eval = PS_LAMBDA(const int& elm, const int& mp, const int mask){
-        if (mask && mp == 1) {
+        if (mask) {
             Vec3d position3d(MPsPosition(mp,0),MPsPosition(mp,1),MPsPosition(mp,2));
             Vec3d v3d[maxVtxsPerElm+1];
             int numVtx = elm2VtxConn(elm,0);

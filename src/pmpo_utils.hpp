@@ -184,7 +184,6 @@ double sphericalTriangleArea(Vec3d &a, Vec3d &b, Vec3d &c, double radius){
     ca = arcLength(c,a) / radius;
     semiperim = 0.5 * (ab + bc + ca);
 
-    printf("ab: %f, bc: %f, ca: %f \n", ab, bc, ca);
     tanqe = Kokkos::sqrt(Kokkos::fmax(0.0, Kokkos::tan(0.5 * semiperim) * 
                                            Kokkos::tan(0.5 * (semiperim - ab)) *
                                            Kokkos::tan(0.5 * (semiperim - bc)) * 
@@ -200,7 +199,7 @@ double sphericalTriangleArea2(Vec3d &a, Vec3d &b, Vec3d &c, double radius){
     Vec3d a_unit = a*inv_radius;
     Vec3d b_unit = b*inv_radius;
     Vec3d c_unit = c*inv_radius;
-    double tripleProduct = abs(a_unit.dot(b_unit.cross(c_unit)));
+    double tripleProduct = a_unit.dot(b_unit.cross(c_unit));
     double tangent = tripleProduct / (1 + b_unit.dot(c_unit) + c_unit.dot(a_unit) + a_unit.dot(b_unit));
 
     return 2.0 * Kokkos::atan(tangent);

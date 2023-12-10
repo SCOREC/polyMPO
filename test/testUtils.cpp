@@ -61,10 +61,12 @@ void interpolateWachspressSphericalTest(MPMesh& mpMesh){
 
     auto p_MPs = mpMesh.p_MPs;
     auto MPsPosition = p_MPs->getPositions();
-    double radius = p_mesh->getSphereRadius();
+    //double radius = p_mesh->getSphereRadius(); TODO: set sphereRadius properly 
+    double radius = 1.0;
+    printf("%f \n", radius);
     PMT_ALWAYS_ASSERT(radius >0);
     auto eval = PS_LAMBDA(const int& elm, const int& mp, const int mask){
-        if (mask) {
+        if (mask && mp == 1) {
             Vec3d position3d(MPsPosition(mp,0),MPsPosition(mp,1),MPsPosition(mp,2));
             Vec3d v3d[maxVtxsPerElm+1];
             int numVtx = elm2VtxConn(elm,0);
@@ -92,6 +94,20 @@ void interpolateWachspressSphericalTest(MPMesh& mpMesh){
                 wp_coord = wp_coord + v3d[i]*basisByArea3d[i];
                 wp_coord2 = wp_coord + v3d[i]*basisByArea3d2[i];
             }
+            
+            /* 
+            printf("WP gradient:(%.16e %.16e %.16e)\nWP gradient2:(%.16e %.16e %.16e)\nexpected gradient:(%.16e %.16e %.16e)\n",
+                                              wp_coord[0],
+                                              wp_coord[1],
+                                              wp_coord[2],
+                                              wp_coord2[0],
+                                              wp_coord2[1],
+                                              wp_coord2[2],
+                                              MPsPosition(mp,0),
+                                              MPsPosition(mp,1),
+                                              MPsPosition(mp,2));
+            */
+
         }        
     };
     p_MPs->parallel_for(eval, "interpolateWachspressSphericalTest");
@@ -128,13 +144,13 @@ void interpolateWachspress3DTest(MPMesh& mpMesh, const int testMeshOption){
             getBasisByAreaGblForm3d(position, numVtx, v, basisByArea2);
           
             // rotation matrix 
-            Vec3d r[3] = {Vec3d(1.0, 0.0, 0.0),
-                          Vec3d(0.0, 1.0, 0.0),
-                          Vec3d(0.0, 0.0, 1.0)};
+            Vec3d r[3] = {Vec3d(1.0,0.0,0.0),
+                          Vec3d(0.0,1.0,0.0),
+                          Vec3d(0.0,0.0,1.0)};
             // r inverse
-            Vec3d ri[3] = {Vec3d(1.0, 0.0, 0.0),
-                           Vec3d(0.0, 1.0, 0.0),
-                           Vec3d(0.0, 0.0, 1.0)};
+            Vec3d ri[3] = {Vec3d(1.0,0.0,0.0),
+                           Vec3d(0.0,1.0,0.0),
+                           Vec3d(0.0,0.0,1.0)};
             
             if (testMeshOption == 2) {
                 // rotated 30 degrees around x-axis, then 45 degrees around z-axis

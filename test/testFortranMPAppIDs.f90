@@ -10,14 +10,9 @@ program main
     include 'mpif.h'
 
     interface
-        integer function func() bind(C)
-        end function func        
-    end interface
-
-    interface
         subroutine polympo_testFortranPointer(mpAppIDs) bind(C, NAME='polympo_testFortranPointer_f')
             use :: iso_c_binding
-            procedure (func), pointer :: mpAppIDs
+            type(c_funptr), value :: mpAppIDs
         end subroutine
     end interface
 
@@ -29,7 +24,6 @@ program main
     integer, dimension(:), pointer :: mpsPerElm, mp2Elm, isMPActive
     type(c_ptr) :: mpMesh
     integer :: nCells, numMPs, appID
-    procedure (func), pointer :: f_ptr => null ()
     integer, parameter :: MP_ACTIVE = 1
 
     ! Initialize
@@ -47,7 +41,6 @@ program main
 
     print *, queue_retrieve_data(queue)
     print *, queue_retrieve_data(queue)
-    print *, queue_retrieve_data(queue)
     ! Create Mesh
     setMeshOption = 1 !create a hard coded planar test mesh
     setMPOption = 0   !create an empty set of MPs
@@ -63,10 +56,7 @@ program main
     isMPActive = MP_ACTIVE
     call polympo_createMPs(mpMesh,nCells,numMPs,c_loc(mpsPerElm),c_loc(mp2Elm),c_loc(isMPActive))
 
-    f_ptr => GetAppID
-    print *, "AppID: ", f_ptr()
-
-    call polympo_testFortranPointer(f_ptr)
+    call polympo_testFortranPointer(c_funloc(GetAppID))
 
     ! Clean Up
     call polympo_deleteMPMesh(mpMesh)

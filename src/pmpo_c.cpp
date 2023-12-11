@@ -557,3 +557,7 @@ void polympo_getMeshOnSurfDispIncr_f(MPMesh_ptr p_mpmesh, const int nComps, cons
   Kokkos::deep_copy(arrayHost, vtxField);
 }
 
+typedef int (*func_t)();
+void polympo_testFortranPointer_f(func_t appIDs) {
+  printf("Somehow got here %d", appIDs());
+}

@@ -9,9 +9,16 @@ program main
     implicit none
     include 'mpif.h'
 
-    abstract interface
-      integer function func ()
-      end function func
+    interface
+        integer function func() bind(C)
+        end function func        
+    end interface
+
+    interface
+        subroutine polympo_testFortranPointer(mpAppIDs) bind(C, NAME='polympo_testFortranPointer_f')
+            use :: iso_c_binding
+            procedure (func), pointer :: mpAppIDs
+        end subroutine
     end interface
 
     type (QUEUE_STRUCT), pointer :: queue
@@ -58,6 +65,8 @@ program main
 
     f_ptr => GetAppID
     print *, "AppID: ", f_ptr()
+
+    call polympo_testFortranPointer(f_ptr)
 
     ! Clean Up
     call polympo_deleteMPMesh(mpMesh)

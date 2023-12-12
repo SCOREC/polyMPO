@@ -43,8 +43,6 @@ program main
     call queue_append_data( queue, 455, success )
     call queue_append_data( queue, 566, success )
 
-    print *, queue_retrieve_data(queue)
-    print *, queue_retrieve_data(queue)
     ! Create Mesh
     setMeshOption = 1 !create a hard coded planar test mesh
     setMPOption = 0   !create an empty set of MPs

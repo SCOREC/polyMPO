@@ -10,8 +10,12 @@ program main
     include 'mpif.h'
 
     interface
-        subroutine polympo_testFortranPointer(mpAppIDs) bind(C, NAME='polympo_testFortranPointer_f')
+        subroutine polympo_testFortranPointer(mpMesh, numMPs, mp2Elm, mpAppIDs) &
+        bind(C, NAME='polympo_testFortranPointer_f')
             use :: iso_c_binding
+            type(c_ptr), value :: mpMesh
+            integer(c_int), value :: numMPs
+            type(c_ptr), value :: mp2Elm
             type(c_funptr), value :: mpAppIDs
         end subroutine
     end interface
@@ -54,9 +58,9 @@ program main
     mpsPerElm = 1
     mp2Elm = 1
     isMPActive = MP_ACTIVE
-    call polympo_createMPs(mpMesh,nCells,numMPs,c_loc(mpsPerElm),c_loc(mp2Elm),c_loc(isMPActive))
+    call polympo_createMPs(mpMesh, nCells, numMPs, c_loc(mpsPerElm), c_loc(mp2Elm), c_loc(isMPActive))
 
-    call polympo_testFortranPointer(c_funloc(GetAppID))
+    call polympo_testFortranPointer(mpMesh, numMPs, c_loc(mp2Elm), c_funloc(GetAppID))
 
     ! Clean Up
     call polympo_deleteMPMesh(mpMesh)

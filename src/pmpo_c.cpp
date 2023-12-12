@@ -558,6 +558,40 @@ void polympo_getMeshOnSurfDispIncr_f(MPMesh_ptr p_mpmesh, const int nComps, cons
 }
 
 typedef int (*func_t)();
-void polympo_testFortranPointer_f(func_t appIDs) {
-  printf("Somehow got here %d", appIDs());
+void polympo_testFortranPointer_f(MPMesh_ptr p_mpmesh, 
+                              const int numMPs, // total number of MPs which is GREATER than or equal to number of active MPs
+                              const int* allMP2Elm,
+                              func_t appIDs) {
+  checkMPMeshValid(p_mpmesh);
+  auto p_MPs = ((polyMPO::MPMesh*)p_mpmesh)->p_MPs;
+  PMT_ALWAYS_ASSERT(numMPs >= p_MPs->getCount());
+  PMT_ALWAYS_ASSERT(numMPs >= p_MPs->getMaxAppID());
+
+  int internalMPCapacity = p_MPs->getCapacity(); // pumipic expects full capacity to rebuild
+  Kokkos::View<int*> mp2Elm("mp2Elm", internalMPCapacity);
+  Kokkos::parallel_for("set mp2Elm", internalMPCapacity, KOKKOS_LAMBDA (const int i) {
+    if (i < numMPs)
+      mp2Elm(i) = 1;
+  });
+
+  int numAddedMPs = 2;
+  Kokkos::View<int*> added_mp2Elm_d("added_mp2Elm_d", numAddedMPs);
+  Kokkos::parallel_for("set addedMP2Elm", numAddedMPs, KOKKOS_LAMBDA (const int i) {
+    added_mp2Elm_d(i) = i;
+  });
+  
+  Kokkos::View<int*> addedMPMask_d("addedMPMask_d", numMPs + numAddedMPs);
+  Kokkos::parallel_for("set addedMPMask", numMPs + numAddedMPs, KOKKOS_LAMBDA (const int i) {
+    if (i >= numMPs) addedMPMask_d(i) = 1;
+    else addedMPMask_d(i) = 0;
+  });
+
+  std::vector<int> added_mpIDs(numAddedMPs);
+  for(int i=0; i<numMPs; i++) {
+    added_mpIDs[i] = appIDs();
+  }
+  auto added_mpIDs_d = create_mirror_view_and_copy(added_mpIDs.data(), numAddedMPs);
+
+  p_MPs->startRebuild(mp2Elm, numAddedMPs, added_mp2Elm_d, added_mpIDs_d, addedMPMask_d);
+  p_MPs->finishRebuild();
 }

@@ -569,6 +569,8 @@ void polympo_testFortranPointer_f(MPMesh_ptr p_mpmesh,
 
   int internalMPCapacity = p_MPs->getCapacity(); // pumipic expects full capacity to rebuild
   auto mp2Elm = create_mirror_view_and_copy(allMP2Elm, internalMPCapacity);
+  Kokkos::View<int*> mp2Elm_d("mp2Elm_d", internalMPCapacity);
+  Kokkos::deep_copy(mp2Elm_d, mp2Elm);
 
   int numAddedMPs = 2;
   Kokkos::View<int*> added_mp2Elm_d("added_mp2Elm_d", numAddedMPs);
@@ -587,7 +589,7 @@ void polympo_testFortranPointer_f(MPMesh_ptr p_mpmesh,
     added_mpIDs[i] = appIDs();
   auto added_mpIDs_d = create_mirror_view_and_copy(added_mpIDs.data(), numAddedMPs);
 
-  p_MPs->startRebuild(mp2Elm, numAddedMPs, added_mp2Elm_d, added_mpIDs_d, addedMPMask_d);
+  p_MPs->startRebuild(mp2Elm_d, numAddedMPs, added_mp2Elm_d, added_mpIDs_d, addedMPMask_d);
   p_MPs->finishRebuild();
 
   auto newAppID = p_MPs->getData<polyMPO::MPF_MP_APP_ID>();

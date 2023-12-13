@@ -33,7 +33,6 @@ program main
     end interface
 
     type (QUEUE_STRUCT), pointer :: queue
-    logical :: success
     integer :: setMeshOption, setMPOption
     integer :: ierr, self
     integer :: mpi_comm_handle = MPI_COMM_WORLD

@@ -594,6 +594,7 @@ void polympo_testFortranPointer_f(MPMesh_ptr p_mpmesh,
 
   auto newAppID = p_MPs->getData<polyMPO::MPF_MP_APP_ID>();
   Kokkos::parallel_for("print APP ID", numAddedMPs, KOKKOS_LAMBDA (const int i) {
+    printf(" Added %d\n", newAppID(numMPs+i));
     assert(added_mpIDs_d[i] == newAppID(numMPs+i));
   });
 }

@@ -1,5 +1,17 @@
 module MYDATA_QUEUE
     include "queue.f90"
+
+    subroutine create_app_ids(queue)
+        type (QUEUE_STRUCT), pointer :: queue
+        logical :: success
+
+        call queue_create(queue, 5)
+        call queue_append_data( queue, 122, success )
+        call queue_append_data( queue, 233, success )
+        call queue_append_data( queue, 344, success )
+        call queue_append_data( queue, 455, success )
+        call queue_append_data( queue, 566, success )
+    end subroutine
 end module MYDATA_QUEUE
 
 program main
@@ -36,12 +48,7 @@ program main
     call polympo_setMPICommunicator(mpi_comm_handle)
     call polympo_initialize()
     ! Create Queue
-    call queue_create(queue, 5)
-    call queue_append_data( queue, 122, success )
-    call queue_append_data( queue, 233, success )
-    call queue_append_data( queue, 344, success )
-    call queue_append_data( queue, 455, success )
-    call queue_append_data( queue, 566, success )
+    call create_app_ids(queue)
 
     ! Create Mesh
     setMeshOption = 1 !create a hard coded planar test mesh

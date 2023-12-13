@@ -97,6 +97,18 @@ module polympo
     type(c_ptr), value :: mpMesh
   end subroutine
   !---------------------------------------------------------------------------
+  !> @brief needs to be called once when initializing for migration
+  !> @brief called after initializing MP fields
+  !> @param mpmesh(in/out) MPMesh object
+  !> @param mpAppIDs(in) Pointer to function that returns App IDs
+  !---------------------------------------------------------------------------
+  subroutine polympo_setAppIDPointer(mpMesh, mpAppIDs) &
+    bind(C, NAME='polympo_setAppIDPointer_f')
+    use :: iso_c_binding
+    type(c_ptr), value :: mpMesh
+    type(c_funptr), value :: mpAppIDs
+  end subroutine
+  !---------------------------------------------------------------------------
   !> @brief get the current element ID MP array from a polympo array
   !> @param mpmesh(in/out) MPMesh object
   !> @param numMPs(in) length of array, number of the MPs

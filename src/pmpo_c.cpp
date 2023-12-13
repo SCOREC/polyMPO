@@ -557,11 +557,15 @@ void polympo_getMeshOnSurfDispIncr_f(MPMesh_ptr p_mpmesh, const int nComps, cons
   Kokkos::deep_copy(arrayHost, vtxField);
 }
 
-typedef int (*func_t)();
+void polympo_setAppIDPointer_f(MPMesh_ptr p_mpmesh, func_t appIDs) {
+  checkMPMeshValid(p_mpmesh);
+  auto p_MPs = ((polyMPO::MPMesh*)p_mpmesh)->p_MPs;
+  p_MPs->setAppIDPointer(appIDs);
+}
+
 void polympo_testFortranPointer_f(MPMesh_ptr p_mpmesh, 
                               const int numMPs, // total number of MPs which is GREATER than or equal to number of active MPs
-                              const int* allMP2Elm,
-                              func_t appIDs) {
+                              const int* allMP2Elm) {
   checkMPMeshValid(p_mpmesh);
   auto p_MPs = ((polyMPO::MPMesh*)p_mpmesh)->p_MPs;
   PMT_ALWAYS_ASSERT(numMPs >= p_MPs->getCount());
@@ -586,7 +590,7 @@ void polympo_testFortranPointer_f(MPMesh_ptr p_mpmesh,
 
   std::vector<int> added_mpIDs(numAddedMPs);
   for(int i=0; i<numAddedMPs; i++)
-    added_mpIDs[i] = appIDs();
+    added_mpIDs[i] = p_MPs->getNextAppID();
   auto added_mpIDs_d = create_mirror_view_and_copy(added_mpIDs.data(), numAddedMPs);
 
   p_MPs->startRebuild(mp2Elm_d, numAddedMPs, added_mp2Elm_d, added_mpIDs_d, addedMPMask_d);

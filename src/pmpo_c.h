@@ -57,6 +57,7 @@ void polympo_setMeshOnSurfDispIncr_f(MPMesh_ptr p_mpmesh, const int nComps, cons
 void polympo_getMeshOnSurfDispIncr_f(MPMesh_ptr p_mpmesh, const int nComps, const int nVertices, double* array);//vec2d
 
 typedef int (*func_t)();
-void polympo_testFortranPointer_f(MPMesh_ptr p_mpmesh, const int numMPs, const int* allMP2Elm, func_t appIDs);
+void polympo_setAppIDPointer_f(MPMesh_ptr p_mpmesh, func_t appIDs);
+void polympo_testFortranPointer_f(MPMesh_ptr p_mpmesh, const int numMPs, const int* allMP2Elm);
 }
 #endif

@@ -91,20 +91,6 @@ void interpolateWachspressSphericalTest(MPMesh& mpMesh){
                 wp_coord = wp_coord + v3d[i]*basisByArea3d[i];
                 wp_coord2 = wp_coord + v3d[i]*basisByArea3d2[i];
             }
-            
-            /* 
-            printf("WP gradient:(%.16e %.16e %.16e)\nWP gradient2:(%.16e %.16e %.16e)\nexpected gradient:(%.16e %.16e %.16e)\n",
-                                              wp_coord[0],
-                                              wp_coord[1],
-                                              wp_coord[2],
-                                              wp_coord2[0],
-                                              wp_coord2[1],
-                                              wp_coord2[2],
-                                              MPsPosition(mp,0),
-                                              MPsPosition(mp,1),
-                                              MPsPosition(mp,2));
-            */
-
         }        
     };
     p_MPs->parallel_for(eval, "interpolateWachspressSphericalTest");
@@ -188,15 +174,6 @@ void interpolateWachspress3DTest(MPMesh& mpMesh, const int testMeshOption){
             wp_grad2[1] = gxt * r[1][0] + gyt * r[1][1];
             wp_grad2[2] = gxt * r[2][0] + gyt * r[2][1];
             
-            /*
-            printf("WP gradient:(%.16e %.16e %.16e)\nexpected gradient:(%.16e %.16e %.16e)\n",
-                                              wp_grad[0],
-                                              wp_grad[1],
-                                              wp_grad[2],
-                                              wp_grad2[0],
-                                              wp_grad2[1],
-                                              wp_grad2[2]);
-            */
             assert(abs(wp_coord[0] - MPsPosition(mp,0)) < TEST_EPSILON);
             assert(abs(wp_coord[1] - MPsPosition(mp,1)) < TEST_EPSILON);
             assert(abs(wp_coord[2] - MPsPosition(mp,2)) < TEST_EPSILON);

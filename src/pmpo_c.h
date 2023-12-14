@@ -58,6 +58,5 @@ void polympo_getMeshOnSurfDispIncr_f(MPMesh_ptr p_mpmesh, const int nComps, cons
 
 typedef int (*IntVoidFunc)(void*);
 void polympo_setAppIDFunc_f(MPMesh_ptr p_mpmesh, IntVoidFunc getNext, void* appIDs);
-void polympo_testFortranPointer_f(MPMesh_ptr p_mpmesh, const int numMPs, const int* allMP2Elm);
 }
 #endif

@@ -17,7 +17,7 @@ program main
   integer :: nCompsDisp
   integer :: mpi_comm_handle = MPI_COMM_WORLD
   real(kind=MPAS_RKIND) :: xc, yc, zc, radius, maxlon, minlon, deltaLon, lon
-  real(kind=MPAS_RKIND) :: pi = 4*atan(1.0)
+  real(kind=MPAS_RKIND) :: pi = 4.0_MPAS_RKIND*atan(1.0_MPAS_RKIND)
   character (len=2048) :: filename
   real(kind=MPAS_RKIND), dimension(:,:), pointer :: dispIncr
   character (len=64) :: onSphere
@@ -111,8 +111,8 @@ program main
         zComputed = sphereRadius*sin(latVertex(j))
         latComputed = asin(zVertex(j)/sphereRadius)
         lonComputed = atan2(yVertex(j),xVertex(j))
-        if (lonComputed .le. 0.0) then ! lon[0,2pi]
-          lonComputed = lonComputed + 2*pi
+        if (lonComputed .le. 0.0_MPAS_RKIND) then ! lon[0,2pi]
+          lonComputed = lonComputed + 2.0_MPAS_RKIND*pi
         endif
 
       end do
@@ -129,8 +129,8 @@ program main
       mpPosition(3,i) = zc
       mpLatLon(1,i) = asin(zc/sphereRadius)
       lon = atan2(yc,xc)
-      if (lon .le. 0.0) then ! lon[0,2pi]
-        lon = lon + 2*pi
+      if (lon .le. 0.0_MPAS_RKIND) then ! lon[0,2pi]
+        lon = lon + 2.0_MPAS_RKIND*pi
       endif 
       mpLatLon(2,i) = lon
     endif

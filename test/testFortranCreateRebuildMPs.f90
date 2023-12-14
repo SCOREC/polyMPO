@@ -22,7 +22,7 @@ subroutine createMPsTest(mpMesh, nCells, numMPs, mp2Elm, isMPActive, mpPosition)
     type(c_ptr):: mpMesh
     integer :: nCells, numMPs, i
     integer, parameter :: nDims = 3
-    real(kind=MPAS_RKIND) :: ptOne = 0.100_MPAS_RKIND
+    real(kind=MPAS_RKIND) :: ptOne = 0.1_MPAS_RKIND
     integer, parameter :: MP_ACTIVE = 1
     integer, parameter :: MP_INACTIVE = 0
     integer, dimension(:), pointer :: mpsPerElm, mp2Elm, isMPActive
@@ -106,9 +106,9 @@ subroutine rebuildMPsTests(mpMesh, numMPs, mp2Elm, isMPActive, mpPosition)
     isMPActive(4) = MP_ACTIVE
     mp2Elm(4) = 7
     addedMPMask(4) = MP_ACTIVE
-    mpPosition(1,4) = 1.2
-    mpPosition(2,4) = 2.2
-    mpPosition(3,4) = 3.2
+    mpPosition(1,4) = 1.2_MPAS_RKIND
+    mpPosition(2,4) = 2.2_MPAS_RKIND
+    mpPosition(3,4) = 3.2_MPAS_RKIND
     ! Rebuild MPs
     call polympo_startRebuildMPs(mpMesh,numMPs,c_loc(mp2Elm),c_loc(addedMPMask))
     call polympo_setMPPositions(mpMesh,nDims,numMPs,c_loc(mpPosition))

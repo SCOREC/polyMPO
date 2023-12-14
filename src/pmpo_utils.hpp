@@ -29,6 +29,7 @@ typedef double vec3d_t[vec3d_nEntries];
 class Vec2d;
 class Vec3d;
 using Vec2dView = Kokkos::View<Vec2d*>;
+using Vec3dView = Kokkos::View<Vec3d*>;
 using DoubleView = Kokkos::View<double*>;
 using IntView = Kokkos::View<int*>;
 using BoolView = Kokkos::View<bool*>;

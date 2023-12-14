@@ -52,6 +52,8 @@ pmpo_add_fortran_exe(testFortranInit testFortranInit.f90)
 pmpo_add_fortran_exe(testFortran testFortran.f90)
 pmpo_add_fortran_exe(testFortranReadMPAS testFortranReadMPAS.f90)
 pmpo_add_fortran_exe(testFortranMPMeshModule testFortranMPMeshModule.f90)
+pmpo_add_fortran_exe(testFortranMPAdvection testFortranMPAdvection.f90)
+pmpo_add_fortran_exe(testFortranCreateRebuildMPs testFortranCreateRebuildMPs.f90)
 
 #add test
 find_program(MPIRUN_EXECUTABLE NAMES mpirun) 
@@ -67,7 +69,6 @@ endfunction()
 
 pmpo_add_test(unit_test ./unitTest)
 pmpo_add_test(mp_unit_test ./mpUnitTest)
-pmpo_add_test(test_wachspress ./testWachspress)
 pmpo_add_test(test_reconstruction ./testReconstruction)
 pmpo_add_test(test_tracking ./testTracking)
 pmpo_add_test(test_rebuild ./testRebuild)
@@ -77,12 +78,18 @@ pmpo_add_test(testFortranMPMeshModule ./testFortranMPMeshModule)
 
 #set NC file for test
 set(TEST_NC_FILE_PLANAR "${CMAKE_SOURCE_DIR}/test/sample_mpas_meshes/planar_nonuniform_cvt_for_square_673elms.nc")
-set(TEST_NC_FILE_SPHERICAL "${CMAKE_SOURCE_DIR}/test/sample_mpas_meshes/ocean.nc")
+set(TEST_NC_FILE_SPHERICAL
+"${CMAKE_SOURCE_DIR}/test/sample_mpas_meshes/spherical_cvt_642elms.nc")
 if(EXISTS ${TEST_NC_FILE_SPHERICAL})
+    message(STATUS "Found Spherical NC File: ${TEST_NC_FILE_SPHERICAL}") 
     set(TEST_NC_FILE ${TEST_NC_FILE_SPHERICAL})
+    # this test only works for spherical NC files!
+    pmpo_add_test(testFortranMPAdvection ./testFortranMPAdvection ${TEST_NC_FILE}) 
 else()
     set(TEST_NC_FILE ${TEST_NC_FILE_PLANAR})
 endif()
 pmpo_add_test(testFortranReadMPAS ./testFortranReadMPAS ${TEST_NC_FILE})
+pmpo_add_test(testFortranCreateRebuildMPs ./testFortranCreateRebuildMPs ${TEST_NC_FILE})
 
 pmpo_add_test(test_timing ./timeAssmblyWachspress 1 ${TEST_NC_FILE})
+pmpo_add_test(test_wachspress ./testWachspress ${TEST_NC_FILE})

@@ -23,8 +23,9 @@ class MPMesh{
     }
 
     void CVTTrackingEdgeCenterBased(Vec2dView dx);
-    void CVTTrackingElmCenterBased(Vec2dView dx);
+    void CVTTrackingElmCenterBased(const int printVTPIndex = -1);
     void T2LTracking(Vec2dView dx);
+    void push();
 };
 
 }//namespace polyMPO end

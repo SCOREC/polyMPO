@@ -110,19 +110,15 @@ module polympo
     type(c_ptr), value :: array
   end subroutine
   !---------------------------------------------------------------------------
-  !> @brief get the MP positions array from a polympo array
+  !> @brief set the mp lat lon is rotational or normal
   !> @param mpmesh(in/out) MPMesh object
-  !> @param nComps(in) number of components, should always be 3
-  !> @param numMPs(in) number of the MPs
-  !> @param array(in/out) output MP current position 2D array (3,numMPs),
-  !>                      allocated by user
+  !> @param isRotateFlag(in) Flag>0 = True, otherwise False.
   !---------------------------------------------------------------------------
-  subroutine polympo_getMPPositions(mpMesh, nComps, numMPs, array) &
-             bind(C, NAME='polympo_getMPPositions_f')
+  subroutine polympo_setMPLatLonRotatedFlag(mpMesh, isRotateFlag) &
+             bind(C, NAME='polympo_setMPLatLonRotatedFlag_f')
     use :: iso_c_binding
     type(c_ptr), value :: mpMesh
-    integer(c_int), value :: nComps, numMPs
-    type(c_ptr), value :: array
+    integer(c_int), value :: isRotateFlag
   end subroutine
   !---------------------------------------------------------------------------
   !> @brief set the MP positions array from a host array
@@ -138,7 +134,51 @@ module polympo
     integer(c_int), value :: nComps, numMPs
     type(c_ptr), value :: array
   end subroutine
-
+  !---------------------------------------------------------------------------
+  !> @brief get the MP positions array from a polympo array
+  !> @param mpmesh(in/out) MPMesh object
+  !> @param nComps(in) number of components, should always be 3
+  !> @param numMPs(in) number of the MPs
+  !> @param array(in/out) output MP current position 2D array (3,numMPs),
+  !>                      allocated by user
+  !---------------------------------------------------------------------------
+  subroutine polympo_getMPPositions(mpMesh, nComps, numMPs, array) &
+             bind(C, NAME='polympo_getMPPositions_f')
+    use :: iso_c_binding
+    type(c_ptr), value :: mpMesh
+    integer(c_int), value :: nComps, numMPs
+    type(c_ptr), value :: array
+  end subroutine
+  !---------------------------------------------------------------------------
+  !> @brief set the MP latitude and longtitude array from a host array
+  !> @param mpmesh(in/out) MPMesh object
+  !> @param nComps(in) number of components, should always be 2
+  !> @param numMPs(in) number of the MPs
+  !> @param array(in)  input MP current lat and lon 2D array (2,numMPs),
+  !>                   allocated by user
+  !---------------------------------------------------------------------------
+  subroutine polympo_setMPRotLatLon(mpMesh, nComps, numMPs, array) &
+             bind(C, NAME='polympo_setMPRotLatLon_f')
+    use :: iso_c_binding
+    type(c_ptr), value :: mpMesh
+    integer(c_int), value :: nComps, numMPs
+    type(c_ptr), intent(in), value :: array
+  end subroutine
+  !---------------------------------------------------------------------------
+  !> @brief get the MP latitude and longtitude array from a polympo array
+  !> @param mpmesh(in/out) MPMesh object
+  !> @param nComps(in) number of components, should always be 2
+  !> @param numMPs(in) number of the MPs
+  !> @param array(in/out) output MP current lat and lon 2D array (2,numMPs),
+  !>                      allocated by user
+  !---------------------------------------------------------------------------
+  subroutine polympo_getMPRotLatLon(mpMesh, nComps, numMPs, array) &
+             bind(C, NAME='polympo_getMPRotLatLon_f')
+    use :: iso_c_binding
+    type(c_ptr), value :: mpMesh
+    integer(c_int), value :: nComps, numMPs
+    type(c_ptr), value :: array
+  end subroutine
   !---------------------------------------------------------------------------
   !> @brief set the velocity MP array from a host array
   !> @warning THIS IS NOT SUPPORTED YET 
@@ -366,6 +406,32 @@ module polympo
     type(c_ptr), value :: xArray, yArray, zArray
   end subroutine
   !---------------------------------------------------------------------------
+  !> @brief set the polympo mesh vertices latitude and longitude
+  !> @param mpmesh(in/out) MPMesh object
+  !> @param nVertices(in) length of array in 
+  !> @param latitude/longitude(in) the 1D arrays of vertices lat/lon
+  !---------------------------------------------------------------------------
+  subroutine polympo_setMeshVtxRotLat(mpMesh, nVertices, latitude) &
+             bind(C, NAME='polympo_setMeshVtxRotLat_f')
+    use :: iso_c_binding
+    type(c_ptr), value :: mpMesh
+    integer(c_int), value :: nVertices
+    type(c_ptr), intent(in), value :: latitude
+  end subroutine
+  !---------------------------------------------------------------------------
+  !> @brief get the polympo mesh vertices latitude and longitude
+  !> @param mpmesh(in/out) MPMesh object
+  !> @param nVertices(in) length of array in, use for assertion
+  !> @param latitude/longitude(in/out) the 1D arrays of vertices lat/lon
+  !---------------------------------------------------------------------------
+  subroutine polympo_getMeshVtxRotLat(mpMesh, nVertices, latitude) &
+             bind(C, NAME='polympo_getMeshVtxRotLat_f')
+    use :: iso_c_binding
+    type(c_ptr), value :: mpMesh
+    integer(c_int), value :: nVertices
+    type(c_ptr), value :: latitude
+  end subroutine
+  !---------------------------------------------------------------------------
   !> @brief set the spherical velocity increment mesh array 
   !>        from a host array
   !> @param mpmesh(in/out) MPMesh object
@@ -426,6 +492,17 @@ module polympo
     type(c_ptr), value :: mpMesh
     integer(c_int), value :: nComps, nVertices
     type(c_ptr), value :: array
+  end subroutine
+  !---------------------------------------------------------------------------
+  !> @brief calculate the MPs from given mesh vertices rotational latitude
+  !>        longitude, update the MP slices
+  !>        MPs MUST have rotated flag set to True(>0)
+  !> @param mpmesh(in/out) MPMesh object
+  !---------------------------------------------------------------------------
+  subroutine polympo_push(mpMesh) &
+             bind(C, NAME='polympo_push_f')
+    use :: iso_c_binding
+    type(c_ptr), value :: mpMesh
   end subroutine
   end interface
   contains

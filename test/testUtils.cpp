@@ -104,7 +104,7 @@ void interpolateWachspress3DTest(MPMesh& mpMesh, const int testMeshOption){
     auto p_MPs = mpMesh.p_MPs;
     auto MPsPosition = p_MPs->getPositions();
     auto eval = PS_LAMBDA(const int& elm, const int& mp, const int mask){
-        if (mask && mp == 1) {
+        if (mask) {
             //convert the double[] to Vec3d 
             Vec3d v[maxVtxsPerElm+1];
             initArray(v,maxVtxsPerElm+1,Vec3d());

@@ -169,7 +169,7 @@ void MPMesh::CVTTrackingElmCenterBased(const int printVTPIndex){
         Kokkos::deep_copy(h_resultRight, resultRight);
         Kokkos::deep_copy(h_mpTgtPos, mpTgtPosArray);
 
-        //* printVTP file
+        // printVTP file
         char* fileOutput = (char *)malloc(sizeof(char) * 256); 
         sprintf(fileOutput, "polyMPOCVTTrackingElmCenter_MPtracks_%d.vtp", printVTPIndex);
         FILE * pFile = fopen(fileOutput,"w");

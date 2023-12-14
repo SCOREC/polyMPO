@@ -12,7 +12,6 @@ extern "C" {
 void polympo_testFortranPointer_f(MPMesh_ptr p_mpmesh, 
                               const int numMPs, // total number of MPs which is GREATER than or equal to number of active MPs
                               const int* allMP2Elm) {
-//   checkMPMeshValid(p_mpmesh);
   auto p_MPs = ((polyMPO::MPMesh*)p_mpmesh)->p_MPs;
   PMT_ALWAYS_ASSERT(numMPs >= p_MPs->getCount());
   PMT_ALWAYS_ASSERT(numMPs >= p_MPs->getMaxAppID());

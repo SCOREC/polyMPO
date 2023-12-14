@@ -557,10 +557,12 @@ void polympo_getMeshOnSurfDispIncr_f(MPMesh_ptr p_mpmesh, const int nComps, cons
   Kokkos::deep_copy(arrayHost, vtxField);
 }
 
-void polympo_setAppIDPointer_f(MPMesh_ptr p_mpmesh, func_t appIDs) {
+typedef int (*IntVoid)(void*);
+void polympo_setAppIDPointer_f(MPMesh_ptr p_mpmesh, IntVoid getNext, void* appIDs) {
   checkMPMeshValid(p_mpmesh);
   auto p_MPs = ((polyMPO::MPMesh*)p_mpmesh)->p_MPs;
-  p_MPs->setAppIDPointer(appIDs);
+  std::function<int()> getNextAppID = [getNext, appIDs]() { return getNext(appIDs); };
+  p_MPs->setAppIDPointer(getNextAppID);
 }
 
 void polympo_testFortranPointer_f(MPMesh_ptr p_mpmesh, 

@@ -102,11 +102,12 @@ module polympo
   !> @param mpmesh(in/out) MPMesh object
   !> @param mpAppIDs(in) Pointer to function that returns App IDs
   !---------------------------------------------------------------------------
-  subroutine polympo_setAppIDPointer(mpMesh, mpAppIDs) &
+  subroutine polympo_setAppIDPointer(mpMesh, getNext, appIDs) &
     bind(C, NAME='polympo_setAppIDPointer_f')
     use :: iso_c_binding
     type(c_ptr), value :: mpMesh
-    type(c_funptr), value :: mpAppIDs
+    type(c_funptr), value :: getNext
+    type(c_ptr), value :: appIDs
   end subroutine
   !---------------------------------------------------------------------------
   !> @brief get the current element ID MP array from a polympo array

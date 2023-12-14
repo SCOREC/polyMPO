@@ -12,6 +12,14 @@ module MYDATA_QUEUE
         call queue_append_data( queue, 455, success )
         call queue_append_data( queue, 566, success )
     end subroutine
+
+    integer function GetAppID(queueIn) result(id)
+        use :: iso_c_binding
+        type(c_ptr), value :: queueIn
+        type (QUEUE_STRUCT), pointer :: queue
+        call c_f_pointer(queueIn, queue)
+        id = queue_retrieve_data(queue)
+    end function
 end module MYDATA_QUEUE
 
 program main
@@ -62,7 +70,8 @@ program main
     mp2Elm = 1
     isMPActive = MP_ACTIVE
     call polympo_createMPs(mpMesh, nCells, numMPs, c_loc(mpsPerElm), c_loc(mp2Elm), c_loc(isMPActive))
-    call polympo_setAppIDPointer(mpMesh, c_funloc(GetAppID));
+
+    call polympo_setAppIDPointer(mpMesh, c_funloc(GetAppID), c_loc(queue));
     call polympo_testFortranPointer(mpMesh, numMPs, c_loc(mp2Elm))
 
     ! Clean Up
@@ -70,11 +79,5 @@ program main
     call queue_destroy(queue)
     call polympo_finalize()
     call mpi_finalize(ierr)
-
-    contains
-
-    integer function GetAppID() result(id)
-        id = queue_retrieve_data(queue)
-    end function
 
 end program

@@ -28,7 +28,7 @@ typedef double mp_sym_mat3d_t[6];//TODO
 typedef double mp_basis_t[maxVtxsPerElm];
 typedef double mp_basis_grad2d_t[maxVtxsPerElm*2];
 typedef double mp_constv_mdl_param_t[12];
-typedef int (*func_t)();
+typedef std::function<int()> func_t;
 
 enum MaterialPointSlice {
   MPF_Status = 0,

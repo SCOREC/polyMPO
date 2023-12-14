@@ -28,7 +28,7 @@ typedef double mp_sym_mat3d_t[6];//TODO
 typedef double mp_basis_t[maxVtxsPerElm];
 typedef double mp_basis_grad2d_t[maxVtxsPerElm*2];
 typedef double mp_constv_mdl_param_t[12];
-typedef std::function<int()> func_t;
+typedef std::function<int()> IntFunc;
 
 enum MaterialPointSlice {
   MPF_Status = 0,
@@ -118,7 +118,7 @@ class MaterialPoints {
     int maxAppID = -1;
     Operating_Mode operating_mode;
     RebuildHelper rebuildFields;
-    func_t appIDs;
+    IntFunc getAppID;
 
   public:
     MaterialPoints() : MPs(nullptr) {};
@@ -138,7 +138,7 @@ class MaterialPoints {
     typename std::enable_if<mpSliceData::rank==2>::type
     setRebuildMPSlice(mpSliceData mpSliceIn);
 
-    void setAppIDPointer(func_t appIDsIn);
+    void setAppIDPointer(IntFunc getAppIDIn);
     int getNextAppID();
 
     void rebuild() {

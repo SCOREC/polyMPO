@@ -23,5 +23,4 @@ void interpolateWachspress3DTest(polyMPO::MPMesh& mpMesh);
 extern "C" void setWithMPASMeshByFortran(void** p_mpMesh,
                                          const char* fileNameame,
                                          const int length);
-void printVTP(polyMPO::MPMesh& mpMesh);
 #endif

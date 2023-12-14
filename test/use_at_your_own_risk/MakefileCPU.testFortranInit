@@ -1,0 +1,99 @@
+############################################################################
+# The following is an minimal example of the compile and link commands
+# needed on Perlmutter.  The Perlmutter build of the polyMPO stack followed 
+# the build instructions in README.md - **no other configuration was tested**.
+# 
+# Using this Makefile on a different system is not advised as it will require 
+# editing the paths in the first section **and** modifying the compile and link
+# arguments.  This is not intended to be portable as there is no logic to
+# detect/discover compilers and other system software.
+#
+# This file was generated in Nov 16 2023.
+############################################################################
+
+
+###########################
+## edit the following paths
+###########################
+FC=/opt/cray/pe/gcc/11.2.0/bin/gfortran
+
+NETCDF_DIR=/opt/cray/pe/netcdf/4.9.0.3/gnu/9.1/
+HDF5_DIR=/opt/cray/pe/hdf5/1.12.2.7/gnu/9.1/
+MPI_DIR=/opt/cray/pe/mpich/8.1.25/ofi/gnu/9.1/
+
+devRoot=/global/homes/c/castia5/cpu-pumi-pic
+
+KOKKOS_DIR=${devRoot}/build-kokkos-login21-cpu/install/
+KOKKOS_LIB_DIR=${KOKKOS_DIR}/lib64
+
+OMEGAH_DIR=${devRoot}/build-omegah-login21-cpu/install/
+
+ENGPAR_DIR=${devRoot}/build-engpar-login21-cpu/install/
+
+PUMIPIC_DIR=${devRoot}/build-pumipic-login21-cpu/install/
+
+CABANA_DIR=${devRoot}/build-cabana-login21-cpu/install/
+
+POLYMPO_DIR=${devRoot}/buildPolyMPO-CPU/install
+
+######################################################################################
+## Dont't change the following unless you know exactly what you are doing...
+## The following was generated from the CMake generated compile and link commands in
+## a CUDA disabled build of polyMPO
+######################################################################################
+POLYMPO_LIBS=\
+-L${MPI_DIR}/lib \
+-Wl,-rpath,${NETCDF_DIR}/lib:${MPI_DIR}/lib: \
+${POLYMPO_DIR}/lib/libpolympo_fortran.a \
+${POLYMPO_DIR}/lib/libpolyMPO-core.a \
+-lm \
+${PUMIPIC_DIR}/lib/libpumipic-core.a \
+${PUMIPIC_DIR}/lib/libparticleStructs.a \
+${PUMIPIC_DIR}/lib/libsupport.a \
+${OMEGAH_DIR}/lib64/libomega_h.a \
+${KOKKOS_LIB_DIR}/libkokkoscontainers.a \
+${KOKKOS_LIB_DIR}/libkokkoscore.a \
+-ldl \
+${KOKKOS_LIB_DIR}/libkokkossimd.a \
+/usr/lib64/libz.so \
+${ENGPAR_DIR}/lib/libengpar.a \
+${ENGPAR_DIR}/lib/libdiffusive.a \
+${ENGPAR_DIR}/lib/libmultilevel.a \
+${ENGPAR_DIR}/lib/libengpar_metrics.a \
+${ENGPAR_DIR}/lib/libcoloring.a \
+${ENGPAR_DIR}/lib/libagi.a \
+${ENGPAR_DIR}/lib/libengpar_support.a \
+${ENGPAR_DIR}/lib/libpcu.a \
+${NETCDF_DIR}/lib/libnetcdf.so \
+${POLYMPO_DIR}/lib/libpolympo_fortran.a \
+${MPI_DIR}/lib/libmpifort_gnu_91.so \
+${MPI_DIR}/lib/libmpi_gnu_91.so \
+${NETCDF_DIR}/lib/libnetcdff.so \
+-lmpi_gnu_91 \
+-lstdc++ 
+
+POLYMPO_COMPILE_FLAGS=\
+-DFP64 \
+-DKOKKOS_ENABLED \
+-DLOCAL_ID_FTYPE=C_INT32_T \
+-DLOCAL_ID_TYPE=int32_t \
+-DPP_ENABLE_CAB \
+-I${devRoot}/polyMPO/src \
+-I${devRoot}/polyMPO/test \
+-I${devRoot}/buildPolyMPO-CPU/src \
+-I${PUMIPIC_DIR}/include \
+-I${KOKKOS_DIR}/include \
+-I${CABANA_DIR}/include \
+-I${OMEGAH_DIR}/include \
+-I/usr/include \
+-I${ENGPAR_DIR}/include \
+-I${MPI_DIR}/include \
+-I${NETCDF_DIR}/include \
+-I${HDF5_DIR}/include \
+-g -J${devRoot}/buildPolyMPO-CPU/mod_files
+
+testFortranInit: testFortranInit.o
+		${FC} testFortranInit.o -o testFortranInit ${POLYMPO_LIBS}
+
+testFortranInit.o: testFortranInit.f90
+		${FC} ${POLYMPO_COMPILE_FLAGS} -c testFortranInit.f90 -o testFortranInit.o

@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.19)
-project(polyMPO VERSION 0.0.1 LANGUAGES CXX Fortran)
+project(polyMPO VERSION 0.0.2 LANGUAGES CXX Fortran)
 
 include(CTest)
 enable_testing()

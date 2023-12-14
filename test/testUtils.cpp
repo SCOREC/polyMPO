@@ -72,7 +72,6 @@ void interpolateWachspressSphericalTest(MPMesh& mpMesh){
                 v3d[i-1][0] = vtxCoords(elm2VtxConn(elm,i)-1,0);
                 v3d[i-1][1] = vtxCoords(elm2VtxConn(elm,i)-1,1);
                 v3d[i-1][2] = vtxCoords(elm2VtxConn(elm,i)-1,2);
-                //printf("%d:(%f,%f,%f)\n",i-1,v3d[i-1][0],v3d[i-1][1],v3d[i-1][2]);
             }
             v3d[numVtx][0] = vtxCoords(elm2VtxConn(elm,1)-1,0);
             v3d[numVtx][1] = vtxCoords(elm2VtxConn(elm,1)-1,1);

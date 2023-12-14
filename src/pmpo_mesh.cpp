@@ -18,6 +18,10 @@ namespace polyMPO{
         PMT_ALWAYS_ASSERT(vtxCoordsMapEntry.first == MeshFType_VtxBased);
         vtxCoords_ = DoubleVec3dView(vtxCoordsMapEntry.second,numVtxs_);
 
+        auto vtxRotLatMapEntry = meshFields2TypeAndString.at(MeshF_VtxRotLat);
+        PMT_ALWAYS_ASSERT(vtxRotLatMapEntry.first == MeshFType_VtxBased);
+        vtxRotLat_ = DoubleSclrView(vtxRotLatMapEntry.second,numVtxs_);
+
         auto vtxVelMapEntry = meshFields2TypeAndString.at(MeshF_Vel);
         PMT_ALWAYS_ASSERT(vtxVelMapEntry.first == MeshFType_VtxBased);
         vtxVel_ = DoubleVec2dView(vtxVelMapEntry.second,numVtxs_);
@@ -29,6 +33,26 @@ namespace polyMPO{
         auto vtxOnSurfDispIncrMapEntry = meshFields2TypeAndString.at(MeshF_OnSurfDispIncr);
         PMT_ALWAYS_ASSERT(vtxOnSurfDispIncrMapEntry.first == MeshFType_VtxBased);
         vtxOnSurfDispIncr_ = DoubleVec2dView(vtxOnSurfDispIncrMapEntry.second,numVtxs_);
+
+        auto vtxRotLatLonIncrMapEntry = meshFields2TypeAndString.at(MeshF_RotLatLonIncr);
+        PMT_ALWAYS_ASSERT(vtxRotLatLonIncrMapEntry.first == MeshFType_VtxBased);
+        vtxRotLatLonIncr_ = DoubleVec2dView(vtxRotLatLonIncrMapEntry.second,numVtxs_);
+    }
+    
+    void Mesh::computeRotLatLonIncr(){
+        PMT_ALWAYS_ASSERT(geomType_ == geom_spherical_surf);
+       
+        auto dispIncr = getMeshField<MeshF_OnSurfDispIncr>();
+        auto rotLatLonIncr = getMeshField<MeshF_RotLatLonIncr>();
+        auto lat = getMeshField<MeshF_VtxRotLat>();
+        auto sphereRadius = getSphereRadius();
+        PMT_ALWAYS_ASSERT(sphereRadius > 0); 
+        Kokkos::parallel_for("set nEdgesPerElm", numVtxs_, KOKKOS_LAMBDA(const int iVtx){
+            // Lat [iVtx,0] = dispIncrY [iVtx,1] /R
+            // Lon [iVtx,1] = dispIncrX [iVtx,0] /(R*cos(lat))
+            rotLatLonIncr(iVtx, 0) = dispIncr(iVtx, 1)/sphereRadius;
+            rotLatLonIncr(iVtx, 1) = dispIncr(iVtx, 0)/(sphereRadius * std::cos(lat(iVtx)));
+        });
     }
 
 } // namespace polyMPO

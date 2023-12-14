@@ -5,7 +5,7 @@
 
 namespace polyMPO{
 
-void printVTP_mesh(MPMesh& mpMesh);
+void printVTP_mesh(MPMesh& mpMesh, int printVTPIndex=-1);
 
 void MPMesh::CVTTrackingEdgeCenterBased(Vec2dView dx){
     int numElms = p_mesh->getNumElements();
@@ -85,8 +85,10 @@ void MPMesh::CVTTrackingElmCenterBased(const int printVTPIndex){
     auto mpPositions = p_MPs->getData<MPF_Cur_Pos_XYZ>();
     auto mpTgtPos = p_MPs->getData<MPF_Tgt_Pos_XYZ>();
     auto MPs2Elm = p_MPs->getData<MPF_Tgt_Elm_ID>();;
- 
-    printVTP_mesh(*this);
+    
+    if(printVTPIndex>=0) {
+      printVTP_mesh(*this, printVTPIndex);
+    }
 
     Vec3dView elmCenter("elmentCenter",numElms);
     auto calcCenter = PS_LAMBDA(const int& elm, const int&, const int&){
@@ -269,7 +271,7 @@ void MPMesh::push(){
   p_MPs->updateMPElmID(); //update mpElm IDs slices
 }
 
-void printVTP_mesh(MPMesh& mpMesh){
+void printVTP_mesh(MPMesh& mpMesh, int printVTPIndex){
     auto p_mesh = mpMesh.p_mesh;
     auto vtxCoords = p_mesh->getMeshField<polyMPO::MeshF_VtxCoords>();
     auto elm2VtxConn = p_mesh->getElm2VtxConn();
@@ -278,7 +280,7 @@ void printVTP_mesh(MPMesh& mpMesh){
     auto MPsPosition = p_MPs->getPositions();
 
     char* fileOutput = (char *)malloc(sizeof(char) * 256); 
-    sprintf(fileOutput,"mesh.vtp");
+    sprintf(fileOutput,"polyMPOCVTTrackingElmCenter_mesh_%d.vtp", printVTPIndex);
     FILE * pFile = fopen(fileOutput,"w");
     free(fileOutput);
 

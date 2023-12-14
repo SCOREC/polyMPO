@@ -73,7 +73,7 @@ void MPMesh::CVTTrackingEdgeCenterBased(Vec2dView dx){
 }
 
 
-void MPMesh::CVTTrackingElmCenterBased(const int printVTP){
+void MPMesh::CVTTrackingElmCenterBased(const int printVTPIndex){
     int numVtxs = p_mesh->getNumVertices();
     int numElms = p_mesh->getNumElements();
     auto numMPs = p_MPs->getCount();
@@ -135,7 +135,7 @@ void MPMesh::CVTTrackingElmCenterBased(const int printVTP){
                     iElm = closestElm;
                 }
             }
-            if(printVTP>=0){ 
+            if(printVTPIndex>=0){ 
                 double d1 = dx[0];
                 double d2 = dx[2];
                 double d3 = dx[3];
@@ -156,7 +156,7 @@ void MPMesh::CVTTrackingElmCenterBased(const int printVTP){
     };
     p_MPs->parallel_for(CVTElmCalc,"CVTTrackingElmCenterBasedCalc");
 
-    if(printVTP>=0){
+    if(printVTPIndex>=0){
         Vec3dView::HostMirror h_history = Kokkos::create_mirror_view(history);
         Vec3dView::HostMirror h_resultLeft = Kokkos::create_mirror_view(resultLeft);
         Vec3dView::HostMirror h_resultRight = Kokkos::create_mirror_view(resultRight);

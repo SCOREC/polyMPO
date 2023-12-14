@@ -93,6 +93,6 @@ bool MaterialPoints::rebuildOngoing() { return rebuildFields.ongoing; }
 
 void MaterialPoints::setAppIDFunc(IntFunc getAppIDIn) { getAppID = getAppIDIn; }
 
-int MaterialPoints::getNextAppID() { return getAppID();}
+int MaterialPoints::getNextAppID() { return getAppID(); }
 
 }

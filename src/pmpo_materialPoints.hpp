@@ -138,7 +138,7 @@ class MaterialPoints {
     typename std::enable_if<mpSliceData::rank==2>::type
     setRebuildMPSlice(mpSliceData mpSliceIn);
 
-    void setAppIDPointer(IntFunc getAppIDIn);
+    void setAppIDFunc(IntFunc getAppIDIn);
     int getNextAppID();
 
     void rebuild() {

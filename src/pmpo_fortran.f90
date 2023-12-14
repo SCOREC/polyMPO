@@ -102,8 +102,8 @@ module polympo
   !> @param mpmesh(in/out) MPMesh object
   !> @param mpAppIDs(in) Pointer to function that returns App IDs
   !---------------------------------------------------------------------------
-  subroutine polympo_setAppIDPointer(mpMesh, getNext, appIDs) &
-    bind(C, NAME='polympo_setAppIDPointer_f')
+  subroutine polympo_setAppIDFunc(mpMesh, getNext, appIDs) &
+    bind(C, NAME='polympo_setAppIDFunc_f')
     use :: iso_c_binding
     type(c_ptr), value :: mpMesh
     type(c_funptr), value :: getNext

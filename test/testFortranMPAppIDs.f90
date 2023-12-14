@@ -71,7 +71,7 @@ program main
     isMPActive = MP_ACTIVE
     call polympo_createMPs(mpMesh, nCells, numMPs, c_loc(mpsPerElm), c_loc(mp2Elm), c_loc(isMPActive))
 
-    call polympo_setAppIDPointer(mpMesh, c_funloc(GetAppID), c_loc(queue));
+    call polympo_setAppIDFunc(mpMesh, c_funloc(GetAppID), c_loc(queue));
     call polympo_testFortranPointer(mpMesh, numMPs, c_loc(mp2Elm))
 
     ! Clean Up

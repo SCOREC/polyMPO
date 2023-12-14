@@ -169,7 +169,7 @@ void MPMesh::CVTTrackingElmCenterBased(const int printVTPIndex){
 
         //* printVTP file
         char* fileOutput = (char *)malloc(sizeof(char) * 256); 
-        sprintf(fileOutput, "polyMPOMPTracks.vtp");
+        sprintf(fileOutput, "polyMPOCVTTrackingElmCenter_MPtracks_%d.vtp", printVTPIndex);
         FILE * pFile = fopen(fileOutput,"w");
         free(fileOutput);   
         fprintf(pFile, "<VTKFile type=\"PolyData\" version=\"1.0\" byte_order=\"LittleEndian\" header_type=\"UInt64\">\n  <PolyData>\n    <Piece NumberOfPoints=\"%d\" NumberOfVerts=\"0\" NumberOfLines=\"%d\" NumberOfStrips=\"0\" NumberOfPolys=\"0\">\n      <Points>\n        <DataArray type=\"Float32\" Name=\"Points\" NumberOfComponents=\"3\" format=\"ascii\">\n",numMPs*4,numMPs*2); 

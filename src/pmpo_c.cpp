@@ -557,8 +557,8 @@ void polympo_getMeshOnSurfDispIncr_f(MPMesh_ptr p_mpmesh, const int nComps, cons
   Kokkos::deep_copy(arrayHost, vtxField);
 }
 
-typedef int (*IntVoid)(void*);
-void polympo_setAppIDFunc_f(MPMesh_ptr p_mpmesh, IntVoid getNext, void* appIDs) {
+typedef int (*IntVoidFunc)(void*);
+void polympo_setAppIDFunc_f(MPMesh_ptr p_mpmesh, IntVoidFunc getNext, void* appIDs) {
   checkMPMeshValid(p_mpmesh);
   auto p_MPs = ((polyMPO::MPMesh*)p_mpmesh)->p_MPs;
   std::function<int()> getNextAppID = [getNext, appIDs]() { return getNext(appIDs); };

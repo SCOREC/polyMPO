@@ -2,28 +2,8 @@
 #define TESTMPAPPIDS_H
 
 #include "pmpo_createTestMPMesh.hpp"
+#include "pmpo_defines.h"
 #include "pmpo_c.h"
-
-using space_t = Kokkos::DefaultExecutionSpace::memory_space;
-
-template<typename DataT>
-using kkViewHostU = Kokkos::View<
-          DataT,
-          Kokkos::LayoutLeft,
-          Kokkos::DefaultHostExecutionSpace,
-          Kokkos::MemoryTraits<Kokkos::Unmanaged>>;
-
-typedef kkViewHostU<double*> kkDblViewHostU;//TODO:put it to mesh.hpp             
-typedef kkViewHostU<double*[vec2d_nEntries]> kkVec2dViewHostU;//TODO:put it to mesh.hpp
-typedef kkViewHostU<double**> kkDbl2dViewHostU;//TODO:put it somewhere else (maybe)
-typedef kkViewHostU<int**> kkInt2dViewHostU;//TODO:put it somewhere else (maybe)
-typedef kkViewHostU<int*> kkIntViewHostU;//TODO:put it somewhere else (maybe)
-
-template <typename DataT>
-auto create_mirror_view_and_copy(DataT array, const int size){
-  kkViewHostU<DataT> temp_host(array, size);
-  return Kokkos::create_mirror_view_and_copy(space_t(), temp_host);
-}
 
 extern "C" {
   void polympo_testFortranPointer_f(MPMesh_ptr p_mpmesh, const int numMPs, const int* allMP2Elm);

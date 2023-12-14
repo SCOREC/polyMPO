@@ -2,10 +2,9 @@
 #define PMO_C_H
 
 #include <mpi.h>
+#include "pmpo_defines.h"
 
 extern "C" {
-
-typedef void* MPMesh_ptr;
 
 //initialize and finalize
 void polympo_initialize_f();
@@ -23,6 +22,7 @@ void polympo_setMPICommunicator_f(MPI_Fint fcomm);//TODO:is MPI_Fint best? or so
 void polympo_createMPs_f(MPMesh_ptr p_mpmesh, const int numElms, const int numMPs, int* mpsPerElm, const int* mp2Elm, const int* isMPActive);
 void polympo_startRebuildMPs_f(MPMesh_ptr p_mpmesh, const int numMPs, const int* allTgtMpElmIn, const int* addedMPMask);
 void polympo_finishRebuildMPs_f(MPMesh_ptr p_mpmesh);
+void polympo_setAppIDFunc_f(MPMesh_ptr p_mpmesh, IntVoidFunc getNext, void* appIDs);
 void polympo_getMPCurElmID_f(MPMesh_ptr p_mpmesh, const int numMPs, int* elmIDs);
 
 //MP slices
@@ -56,7 +56,5 @@ void polympo_getMeshOnSurfVeloIncr_f(MPMesh_ptr p_mpmesh, const int nComps, cons
 void polympo_setMeshOnSurfDispIncr_f(MPMesh_ptr p_mpmesh, const int nComps, const int nVertices, const double* array);//vec2d
 void polympo_getMeshOnSurfDispIncr_f(MPMesh_ptr p_mpmesh, const int nComps, const int nVertices, double* array);//vec2d
 
-typedef int (*IntVoidFunc)(void*);
-void polympo_setAppIDFunc_f(MPMesh_ptr p_mpmesh, IntVoidFunc getNext, void* appIDs);
 }
 #endif

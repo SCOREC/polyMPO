@@ -82,7 +82,7 @@ subroutine createMPsTest(mpMesh, nCells, numMPs, mp2Elm, isMPActive, mpPosition)
     deallocate(mpsPerElm)
 end subroutine
 
-subroutine rebuildTests(mpMesh, numMPs, mp2Elm, isMPActive, mpPosition)
+subroutine rebuildMPsTests(mpMesh, numMPs, mp2Elm, isMPActive, mpPosition)
     use :: polympo
     use iso_c_binding
     implicit none
@@ -295,7 +295,7 @@ program main
   allocate(mpPosition(nDims,numMPs))
   
   call createMPsTest(mpMesh, nCells, numMPs, mp2Elm, isMPActive, mpPosition) 
-  call rebuildTests(mpMesh, numMPs, mp2Elm, isMPActive, mpPosition)
+  call rebuildMPsTests(mpMesh, numMPs, mp2Elm, isMPActive, mpPosition)
   
   deallocate(mp2Elm)
   deallocate(isMPActive)

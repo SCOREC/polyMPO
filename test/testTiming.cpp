@@ -43,7 +43,6 @@ int main(int argc, char* argv[] ) {
             else
                 interpolateWachspress2DTest(mpMesh);
         }
-        //printVTP(mpMesh);
     } 
     Kokkos::finalize();
     MPI_Finalize();

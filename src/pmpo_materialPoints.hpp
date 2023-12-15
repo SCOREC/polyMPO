@@ -172,12 +172,10 @@ class MaterialPoints {
       maxAppID = 0;
       Kokkos::parallel_reduce("setMax" , MPs->nPtcls(),
         KOKKOS_LAMBDA(const int i, int & valueToUpdate) {
-          if ( mpAppID_m(i) > valueToUpdate ) valueToUpdate = mpAppID_m(i) ;
-          printf("I: %d, ID: %d\n", i, mpAppID_m(i));
+          if ( mpAppID_m(i) > valueToUpdate ) valueToUpdate = mpAppID_m(i);
         },
         Kokkos::Max<int>(maxAppID)
       );
-      printf("UPDATE %d\n", maxAppID);
     }
     template <MaterialPointSlice mpfIndexCur, MaterialPointSlice mpfIndexTgt>
     void updateMPSlice(){

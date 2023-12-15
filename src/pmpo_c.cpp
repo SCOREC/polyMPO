@@ -104,10 +104,8 @@ void polympo_createMPs_f(MPMesh_ptr p_mpmesh,
   std::vector<int> active_mpIDs(numMPs);
   std::vector<int> active_mp2Elm(numMPs);
   numActiveMPs = 0;
-  printf("NUMPS %d\n", numMPs);
   for(int i=0; i<numMPs; i++) {
     if(isMPActive[i] == MP_ACTIVE) {
-      printf("MPIDS: %d\n", i);
       active_mpIDs[numActiveMPs] = i; //creates unique IDs
       active_mp2Elm[numActiveMPs] = mp2Elm[i]-offset; //adjust for 1 based indexing if needed
       numActiveMPs++;
@@ -294,8 +292,6 @@ void polympo_setMPRotLatLon_f(MPMesh_ptr p_mpmesh,
   PMT_ALWAYS_ASSERT(callCount == 0);
   checkMPMeshValid(p_mpmesh);
   auto p_MPs = ((polyMPO::MPMesh*)p_mpmesh)->p_MPs;
-  printf("Numbers: %d %d %d\n", numMPs, p_MPs->getCount(), p_MPs->getMaxAppID());
-
   PMT_ALWAYS_ASSERT(numComps == vec2d_nEntries);
   PMT_ALWAYS_ASSERT(numMPs >= p_MPs->getCount());
   PMT_ALWAYS_ASSERT(numMPs >= p_MPs->getMaxAppID());

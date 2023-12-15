@@ -26,7 +26,7 @@ int main(int argc, char* argv[]) {
         IntView TgtElmCVTEdge("TgtElmCVTEdge",p_MPs->getCount());
         copyTgtElm(TgtElmCVTEdge,mpMesh);
 
-        mpMesh.CVTTrackingElmCenterBased(dx);
+        mpMesh.CVTTrackingElmCenterBased();
         IntView TgtElmCVTCenter("TgtElmCVTCenter",p_MPs->getCount());
         copyTgtElm(TgtElmCVTCenter,mpMesh);
 

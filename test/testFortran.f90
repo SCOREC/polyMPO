@@ -77,14 +77,14 @@ program main
   call polympo_getMeshOnSurfVeloIncr(mpMesh, numCompsVel, nverts, c_loc(Mesharray))
   do i = 1,numCompsVel
     do j = 1,nverts 
-        call assert((Mesharray(i,j) .eq. (i-1)*numCompsVel+j), "Assert 2d array Fail")
+        call assert((Mesharray(i,j) .eq. (i-1)*numCompsVel+j), "Assert MeshOnSurfVeloIncr Fail")
     end do
   end do
   Mesharray = 1
   call polympo_getMeshOnSurfDispIncr(mpMesh, numCompsVel, nverts, c_loc(Mesharray))
   do i = 1,numCompsVel
     do j = 1,nverts 
-        call assert((Mesharray(i,j) .eq. (i-1)*numCompsVel+j), "Assert 2d array Fail")
+        call assert((Mesharray(i,j) .eq. (i-1)*numCompsVel+j), "Assert MeshOnSurfDispIncr Fail")
     end do
   end do
 

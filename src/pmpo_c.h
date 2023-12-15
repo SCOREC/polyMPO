@@ -24,10 +24,13 @@ void polympo_startRebuildMPs_f(MPMesh_ptr p_mpmesh, const int numMPs, const int*
 void polympo_finishRebuildMPs_f(MPMesh_ptr p_mpmesh);
 void polympo_setAppIDFunc_f(MPMesh_ptr p_mpmesh, IntVoidFunc getNext, void* appIDs);
 void polympo_getMPCurElmID_f(MPMesh_ptr p_mpmesh, const int numMPs, int* elmIDs);
+void polympo_setMPLatLonRotatedFlag_f(MPMesh_ptr p_mpmesh, const int isRotateFlag);
 
 //MP slices
-void polympo_getMPPositions_f(MPMesh_ptr p_mpmesh, const int numComps, const int numMPs, double* mpPositionsIn);
 void polympo_setMPPositions_f(MPMesh_ptr p_mpmesh, const int numComps, const int numMPs, const double* mpPositionsIn);
+void polympo_getMPPositions_f(MPMesh_ptr p_mpmesh, const int numComps, const int numMPs, double* mpPositionsIn);
+void polympo_setMPRotLatLon_f(MPMesh_ptr p_mpmesh, const int numComps, const int numMPs, const double* mpRotLatLonIn);
+void polympo_getMPRotLatLon_f(MPMesh_ptr p_mpmesh, const int numComps, const int numMPs, double* mpRotLatLonHost);
 void polympo_setMPVel_f(MPMesh_ptr p_mpmesh, const int size, const double* array);
 void polympo_getMPVel_f(MPMesh_ptr p_mpmesh, const int size, double* array);
 
@@ -51,9 +54,14 @@ void polympo_setMeshElm2ElmConn_f(MPMesh_ptr p_mpmesh, const int maxEdges, const
 //Mesh fields
 void polympo_setMeshVtxCoords_f(MPMesh_ptr p_mpmesh, const int nVertices, const double* xArray, const double* yArray, const double* zArray);
 void polympo_getMeshVtxCoords_f(MPMesh_ptr p_mpmesh, const int nVertices, double* xArray, double* yArray, double* zArray);
+void polympo_setMeshVtxRotLat_f(MPMesh_ptr p_mpmesh, const int nVertices, const double* latitude);
+void polympo_getMeshVtxRotLat_f(MPMesh_ptr p_mpmesh, const int nVertices, double* latitude);
 void polympo_setMeshOnSurfVeloIncr_f(MPMesh_ptr p_mpmesh, const int nComps, const int nVertices, const double* array);//vec2d
 void polympo_getMeshOnSurfVeloIncr_f(MPMesh_ptr p_mpmesh, const int nComps, const int nVertices, double* array);//vec2d
 void polympo_setMeshOnSurfDispIncr_f(MPMesh_ptr p_mpmesh, const int nComps, const int nVertices, const double* array);//vec2d
 void polympo_getMeshOnSurfDispIncr_f(MPMesh_ptr p_mpmesh, const int nComps, const int nVertices, double* array);//vec2d
+
+// calculations
+void polympo_push_f(MPMesh_ptr p_mpmesh);
 }
 #endif

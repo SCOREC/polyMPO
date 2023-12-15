@@ -104,13 +104,14 @@ void polympo_createMPs_f(MPMesh_ptr p_mpmesh,
   std::vector<int> active_mpIDs(numMPs);
   std::vector<int> active_mp2Elm(numMPs);
   numActiveMPs = 0;
+  printf("NUMPS %d\n", numMPs);
   for(int i=0; i<numMPs; i++) {
     if(isMPActive[i] == MP_ACTIVE) {
+      printf("MPIDS: %d\n", i);
       active_mpIDs[numActiveMPs] = i; //creates unique IDs
       active_mp2Elm[numActiveMPs] = mp2Elm[i]-offset; //adjust for 1 based indexing if needed
       numActiveMPs++;
     }
-    else active_mpIDs[numActiveMPs] = -1;
   }
 
   auto mpsPerElm_d = create_mirror_view_and_copy(mpsPerElm, numElms);

@@ -15,13 +15,13 @@ int main(int argc, char** argv) {
     //test init Test Mesh and run assembly and Wachspress
     for (int testMeshOption = 1; testMeshOption <= 2; testMeshOption++){
 
-        auto mesh = initTestMesh(testMeshOption, replicateFactor);
+        auto mesh = initTestMesh(testMeshOption,replicateFactor);
         auto mpMesh = initTestMPMesh(mesh,testMPOption);
         
         //test assembly in assembly.hpp
         polyMPO::assembly<MPF_Vel,MeshF_Vel>(mpMesh,false,false);
         interpolateWachspress2DTest(mpMesh);
-        interpolateWachspress3DTest(mpMesh);
+        interpolateWachspress3DTest(mpMesh,testMeshOption);
     }
     
     Kokkos::finalize();

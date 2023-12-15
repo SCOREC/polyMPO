@@ -168,10 +168,9 @@ class MaterialPoints {
       ps::parallel_for(MPs, swap, "swap");
     }
     void updateMaxAppID() {
-      auto mpInfo = ps::createMemberViews<MaterialPointTypes>(MPs->nPtcls());
-      auto mpAppID_m = ps::getMemberView<MaterialPointTypes, MPF_MP_APP_ID>(mpInfo);
+      auto mpAppID_m = MPs->get<MPF_MP_APP_ID>();
       maxAppID = 0;
-      Kokkos::parallel_reduce("setMax" , mpAppID_m.size(),
+      Kokkos::parallel_reduce("setMax" , MPs->nPtcls(),
         KOKKOS_LAMBDA(const int i, int & valueToUpdate) {
           if ( mpAppID_m(i) > valueToUpdate ) valueToUpdate = mpAppID_m(i) ;
           printf("I: %d, ID: %d\n", i, mpAppID_m(i));

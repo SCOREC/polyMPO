@@ -292,6 +292,8 @@ void polympo_setMPRotLatLon_f(MPMesh_ptr p_mpmesh,
   PMT_ALWAYS_ASSERT(callCount == 0);
   checkMPMeshValid(p_mpmesh);
   auto p_MPs = ((polyMPO::MPMesh*)p_mpmesh)->p_MPs;
+  printf("Numbers: %d %d %d\n", numMPs, p_MPs->getCount(), p_MPs->getMaxAppID());
+
   PMT_ALWAYS_ASSERT(numComps == vec2d_nEntries);
   PMT_ALWAYS_ASSERT(numMPs >= p_MPs->getCount());
   PMT_ALWAYS_ASSERT(numMPs >= p_MPs->getMaxAppID());

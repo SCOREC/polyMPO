@@ -110,6 +110,7 @@ void polympo_createMPs_f(MPMesh_ptr p_mpmesh,
       active_mp2Elm[numActiveMPs] = mp2Elm[i]-offset; //adjust for 1 based indexing if needed
       numActiveMPs++;
     }
+    else active_mpIDs[numActiveMPs] = -1;
   }
 
   auto mpsPerElm_d = create_mirror_view_and_copy(mpsPerElm, numElms);

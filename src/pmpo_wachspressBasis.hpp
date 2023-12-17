@@ -109,6 +109,28 @@ void calcBasis(int numVtxs, double* a, double* c, double* basis){
     }
 }
 
+
+KOKKOS_INLINE_FUNCTION
+void calcSphericalBasis(int numVtxs, double* a, double* c, double* v, double* basis){
+    double w[maxVtxsPerElm];
+    double wSum = 0.0;
+    for (int i = 0; i < numVtxs; i++){
+        double aProduct = 1.0;
+        for (int j = 0; j < numVtxs - 2; j++){
+            int index1 = (j + i + 1) % numVtxs;
+            aProduct *= a[index1];
+        }
+        w[i] = c[i] * aProduct;
+        wSum += w[i] * v[i];
+    }
+
+    double wSumInv = 1.0 / wSum;
+    for (int i = 0; i < numVtxs; i++){
+        basis[i] = w[i] * wSumInv;
+    }
+}
+
+
 KOKKOS_INLINE_FUNCTION
 void getBasisByAreaGblForm(Vec2d MP, int numVtxs, Vec2d* vtxCoords, double* basis) {
     Vec2d e[maxVtxsPerElm + 1];
@@ -183,6 +205,29 @@ void getBasisByAreaGblFormSpherical2(Vec3d MP, int numVtxs, Vec3d* v,
     a[0] = sphericalTriangleArea2(v[0],v[1],MP,radius);
 
     calcBasis(numVtxs, a, c, basis);
+}
+
+
+KOKKOS_INLINE_FUNCTION
+void getBasisByAreaGblFormSpherical3(Vec3d MP, int numVtxs, Vec3d* vtxCoords, double* basis) {
+    Vec3d e[maxVtxsPerElm + 1];
+    Vec3d p[maxVtxsPerElm];
+    for (int i = 0; i < numVtxs; i++){
+        e[i + 1] = vtxCoords[i + 1] - vtxCoords[i];
+        p[i] = vtxCoords[i] - MP;
+    }
+    e[0] = e[numVtxs];
+
+    double c[maxVtxsPerElm];
+    double a[maxVtxsPerElm];
+    double v[maxVtxsPerElm]; // v_j * x
+    for (int i = 0; i < numVtxs; i++){
+        c[i] = (e[i].cross(e[i + 1])).magnitude();
+        a[i] = (p[i].cross(e[i + 1])).magnitude();
+        v[i] = vtxCoords[i].dot(MP);
+    }
+
+    calcSphericalBasis(numVtxs, a, c, v, basis);
 }
 
 

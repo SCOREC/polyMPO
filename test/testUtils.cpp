@@ -72,7 +72,11 @@ void interpolateWachspressSphericalTest(MPMesh& mpMesh){
             double basisByArea3d2[maxVtxsPerElm] = {0.0};
             initArray(basisByArea3d2,maxVtxsPerElm,0.0);
             getBasisByAreaGblFormSpherical2(position3d, numVtx, v3d, radius, basisByArea3d2);
-        
+       
+            double basisByArea3d3[maxVtxsPerElm] = {0.0};
+            initArray(basisByArea3d3,maxVtxsPerElm,0.0);
+            getBasisByAreaGblFormSpherical3(position3d, numVtx, v3d, basisByArea3d3);
+         
             Vec3d wp_coord(0.0,0.0,0.0);
             Vec3d wp_coord2(0.0,0.0,0.0);
             for(int i=0; i<numVtx; i++){

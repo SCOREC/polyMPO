@@ -87,7 +87,7 @@ void MPMesh::CVTTrackingElmCenterBased(const int printVTPIndex){
     auto MPs2Elm = p_MPs->getData<MPF_Tgt_Elm_ID>();;
     
     if(printVTPIndex>=0) {
-      printVTP_mesh(*this, printVTPIndex);
+      printVTP_mesh(printVTPIndex);
     }
 
     Vec3dView elmCenter("elmentCenter",numElms);
@@ -169,7 +169,7 @@ void MPMesh::CVTTrackingElmCenterBased(const int printVTPIndex){
         Kokkos::deep_copy(h_resultRight, resultRight);
         Kokkos::deep_copy(h_mpTgtPos, mpTgtPosArray);
 
-        //* printVTP file
+        // printVTP file
         char* fileOutput = (char *)malloc(sizeof(char) * 256); 
         sprintf(fileOutput, "polyMPOCVTTrackingElmCenter_MPtracks_%d.vtp", printVTPIndex);
         FILE * pFile = fopen(fileOutput,"w");
@@ -271,16 +271,14 @@ void MPMesh::push(){
   p_MPs->updateMPElmID(); //update mpElm IDs slices
 }
 
-void printVTP_mesh(MPMesh& mpMesh, int printVTPIndex){
-    auto p_mesh = mpMesh.p_mesh;
+void MPMesh::printVTP_mesh(int printVTPIndex){
     auto vtxCoords = p_mesh->getMeshField<polyMPO::MeshF_VtxCoords>();
     auto elm2VtxConn = p_mesh->getElm2VtxConn();
 
-    auto p_MPs = mpMesh.p_MPs;
     auto MPsPosition = p_MPs->getPositions();
 
     char* fileOutput = (char *)malloc(sizeof(char) * 256); 
-    sprintf(fileOutput,"polyMPOCVTTrackingElmCenter_mesh_%d.vtp", printVTPIndex);
+    sprintf(fileOutput,"polyMPO_MPMesh_mesh_%d.vtp", printVTPIndex);
     FILE * pFile = fopen(fileOutput,"w");
     free(fileOutput);
 

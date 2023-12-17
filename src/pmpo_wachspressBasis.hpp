@@ -178,6 +178,97 @@ void getBasisAndGradByAreaGblForm3d(Vec3d MP,
 }
 
 KOKKOS_INLINE_FUNCTION
+void getBasisAndGradByAreaGblFormSpherical(Vec3d MP,
+                                  int numVtxs,
+                                  Vec3d* vtxCoords,
+                                  double* basis,
+                                  Vec3d* gradBasis){
+    Vec3d e[maxVtxsPerElm + 1];
+    Vec3d p[maxVtxsPerElm];
+    double w[maxVtxsPerElm];
+    for (int i = 0; i < numVtxs; i++){
+        e[i + 1] = vtxCoords[i + 1] - vtxCoords[i];
+        p[i] = vtxCoords[i] - MP;
+    }
+    e[0] = e[numVtxs];
+
+    double c[maxVtxsPerElm];
+    double a[maxVtxsPerElm];
+    double v[maxVtxsPerElm];
+    for (int i = 0; i < numVtxs; i++){
+        c[i] = e[i].cross(e[i + 1]).magnitude();
+        a[i] = p[i].cross(e[i + 1]).magnitude();
+        v[i] = vtxCoords[i].dot(MP);
+    }
+    double wSum = 0.0;
+
+    double wdx[maxVtxsPerElm];
+    double wdy[maxVtxsPerElm];
+    double wdz[maxVtxsPerElm];
+    initArray(wdx, maxVtxsPerElm, 0.0);
+    initArray(wdy, maxVtxsPerElm, 0.0);
+    initArray(wdz, maxVtxsPerElm, 0.0);
+    double wdxSum = 0.0;
+    double wdySum = 0.0;
+    double wdzSum = 0.0;
+    for (int i = 0; i < numVtxs; i++){
+        double aProduct = 1.0;
+        for (int j = 0; j < numVtxs - 2; j++){
+            int index1 = (j + i + 1) % numVtxs;
+            aProduct *= a[index1];
+
+            double productX = 1.0;
+            double productY = 1.0;
+            double productZ = 1.0;
+            for (int k = 0; k < j; k++){
+                int index2 = (i + k + 1) % numVtxs;
+                productX *= a[index2];
+                productY *= a[index2];
+                productZ *= a[index2];
+            }
+
+            // when j = k, find gradient of A_k
+            double c1 = e[index1+1][0];
+            double c2 = e[index1+1][1];
+            double c3 = e[index1+1][2];
+            double f1 = c2 * (-p[index1][2]) - c3 * (-p[index1][1]);
+            double f2 = c3 * (-p[index1][0]) - c1 * (-p[index1][2]);
+            double f3 = c1 * (-p[index1][1]) - c2 * (-p[index1][0]);
+            productX *= (f2 * c3 - f3 * c2)/a[index1];
+            productY *= (f3 * c1 - f1 * c3)/a[index1];
+            productZ *= (f1 * c2 - f2 * c1)/a[index1];
+
+            for (int k = j + 1; k < numVtxs - 2; k++){
+                int index2 = (i + k + 1) % numVtxs;
+                productX *= a[index2];
+                productY *= a[index2];
+                productZ *= a[index2];
+            }
+            wdx[i] += productX;
+            wdy[i] += productY;
+            wdz[i] += productZ;
+        }
+        wdx[i] *= c[i];
+        wdy[i] *= c[i];
+        wdz[i] *= c[i];
+        w[i] = c[i] * aProduct;
+        wdxSum += wdx[i] * v[i] + w[i] * vtxCoords[i][0];
+        wdySum += wdy[i] * v[i] + w[i] * vtxCoords[i][1];
+        wdzSum += wdz[i] * v[i] + w[i] * vtxCoords[i][2];
+        wSum += w[i] * v[i];
+    }
+
+    double wSumInv = 1.0 / wSum;
+    for (int i = 0; i < numVtxs; i++){
+        basis[i] = w[i] * wSumInv;
+        gradBasis[i] = Vec3d(wdx[i] * wSumInv - w[i] * wSumInv * wSumInv * wdxSum,
+                             wdy[i] * wSumInv - w[i] * wSumInv * wSumInv * wdySum,
+                             wdz[i] * wSumInv - w[i] * wSumInv * wSumInv * wdzSum);
+    }
+}
+
+
+KOKKOS_INLINE_FUNCTION
 void calcBasis(int numVtxs, double* a, double* c, double* basis){
     double w[maxVtxsPerElm];
     double wSum = 0.0;

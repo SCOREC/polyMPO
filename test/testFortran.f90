@@ -64,10 +64,10 @@ program main
   do i = 1,numMPs 
     call assert(abs(MPPositions(3,i) - 1.1) .lt. test_epsilon, "Assert zPositions for MP array Fail")
   end do
-  call polympo_getMeshNumVertices(mpMesh, nvertsGet)
+  call polympo_getMeshNumVtxs(mpMesh, nvertsGet)
   call assert(nverts.eq.nvertsGet,"num. verts mismatch")
 
-  call polympo_getMeshNumElements(mpMesh, nElmsGet)
+  call polympo_getMeshNumElms(mpMesh, nElmsGet)
   call assert(numElms.eq.nElmsGet,"num. elms mismatch")
   do i = 1,numCompsVel
     do j = 1,nverts 

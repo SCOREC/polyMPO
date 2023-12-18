@@ -254,6 +254,17 @@ module polympo
     integer(c_int), value :: numVtxs
   end subroutine
   !---------------------------------------------------------------------------
+  !> @brief get the number of mesh vertices
+  !> @param mpMesh(in) mpMesh object
+  !> @param numVtxs(out) the number of vertices
+  !---------------------------------------------------------------------------
+  subroutine polympo_getMeshNumVtxs(mpMesh, numVtx) &
+            bind(C, NAME = 'polympo_getMeshNumVtxs_f')
+    use :: iso_c_binding
+    type(c_ptr), value :: mpMesh
+    integer(c_int), intent(inout) :: numVtx
+  end subroutine
+  !---------------------------------------------------------------------------
   !> @brief set the number of elements of the mesh
   !>        modifies mesh topology polympo_startMeshFill required
   !> @param mpMesh(in/out) mpMesh object 
@@ -264,6 +275,31 @@ module polympo
     use :: iso_c_binding
     type(c_ptr), value :: mpMesh
     integer(c_int), value :: numElms
+  end subroutine
+  !---------------------------------------------------------------------------
+  !> @brief get the number of mesh elements
+  !> @param mpMesh(in) mpMesh object
+  !> @param numVtxs(out) the number of elements
+  !---------------------------------------------------------------------------
+  subroutine polympo_getMeshNumElms(mpMesh, numElm) &
+            bind(C, NAME = 'polympo_getMeshNumElms_f')
+    use :: iso_c_binding
+    type(c_ptr), value :: mpMesh
+    integer(c_int), intent(inout) :: numElm
+  end subroutine
+  !---------------------------------------------------------------------------
+  !> @brief set the polympo mesh number of edges per element
+  !>        modifies mesh topology polympo_startMeshFill required
+  !> @param mpmesh(in/out) MPMesh object
+  !> @param nCells(in) length of array (numElms)
+  !> @param nEdgesOnCell(in) number of edges per element
+  !---------------------------------------------------------------------------
+  subroutine polympo_setMeshNumEdgesPerElm(mpMesh, nCells, nEdgesOnCell) &
+             bind(C, NAME='polympo_setMeshNumEdgesPerElm_f')
+    use :: iso_c_binding
+    type(c_ptr), value :: mpMesh
+    integer(c_int), value :: nCells
+    type(c_ptr), intent(in), value :: nEdgesOnCell
   end subroutine
   !---------------------------------------------------------------------------
   !> @brief set the polympo mesh element to vertices connectivity
@@ -292,42 +328,6 @@ module polympo
     type(c_ptr), value :: mpMesh
     integer(c_int), value :: maxEdges, nCells
     type(c_ptr), intent(in), value :: cellsOnCell
-  end subroutine
-  !---------------------------------------------------------------------------
-  !> @brief get the number of mesh elements
-  !> @param mpMesh(in) mpMesh object
-  !> @param numVtxs(out) the number of elements
-  !---------------------------------------------------------------------------
-  subroutine polympo_getMeshNumElements(mpMesh, numElm) &
-            bind(C, NAME = 'polympo_getMeshNumElements_f')
-    use :: iso_c_binding
-    type(c_ptr), value :: mpMesh
-    integer(c_int), intent(inout) :: numElm
-  end subroutine
-  !---------------------------------------------------------------------------
-  !> @brief get the number of mesh vertices
-  !> @param mpMesh(in) mpMesh object
-  !> @param numVtxs(out) the number of vertices
-  !---------------------------------------------------------------------------
-  subroutine polympo_getMeshNumVertices(mpMesh, numVtx) &
-            bind(C, NAME = 'polympo_getMeshNumVertices_f')
-    use :: iso_c_binding
-    type(c_ptr), value :: mpMesh
-    integer(c_int), intent(inout) :: numVtx
-  end subroutine
-  !---------------------------------------------------------------------------
-  !> @brief set the polympo mesh number of edges per element
-  !>        modifies mesh topology polympo_startMeshFill required
-  !> @param mpmesh(in/out) MPMesh object
-  !> @param nCells(in) length of array (numElms)
-  !> @param nEdgesOnCell(in) number of edges per element
-  !---------------------------------------------------------------------------
-  subroutine polympo_setMeshNumEdgesPerElm(mpMesh, nCells, nEdgesOnCell) &
-             bind(C, NAME='polympo_setMeshNumEdgesPerElm_f')
-    use :: iso_c_binding
-    type(c_ptr), value :: mpMesh
-    integer(c_int), value :: nCells
-    type(c_ptr), intent(in), value :: nEdgesOnCell
   end subroutine
   !---------------------------------------------------------------------------
   !> @brief set the polympo mesh vertices coordinates

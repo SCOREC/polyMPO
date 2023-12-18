@@ -290,7 +290,7 @@ void calcBasis(int numVtxs, double* a, double* c, double* basis){
 
 
 KOKKOS_INLINE_FUNCTION
-void calcSphericalBasis(int numVtxs, double* a, double* c, double* v, double* basis){
+void calcSphericalBasis(int numVtxs, double* a, double* c, double* vtxDotMP, double* basis){
     double w[maxVtxsPerElm];
     double wSum = 0.0;
     for (int i = 0; i < numVtxs; i++){
@@ -300,7 +300,7 @@ void calcSphericalBasis(int numVtxs, double* a, double* c, double* v, double* ba
             aProduct *= a[index1];
         }
         w[i] = c[i] * aProduct;
-        wSum += w[i] * v[i];
+        wSum += w[i] * vtxDotMP[i];
     }
 
     double wSumInv = 1.0 / wSum;
@@ -398,14 +398,14 @@ void getBasisByAreaGblFormSpherical3(Vec3d MP, int numVtxs, Vec3d* vtxCoords, do
 
     double c[maxVtxsPerElm];
     double a[maxVtxsPerElm];
-    double v[maxVtxsPerElm]; // v_j * x
+    double vDotMP[maxVtxsPerElm]; // v_j * x
     for (int i = 0; i < numVtxs; i++){
         c[i] = (e[i].cross(e[i + 1])).magnitude();
         a[i] = (p[i].cross(e[i + 1])).magnitude();
-        v[i] = vtxCoords[i].dot(MP);
+        vDotMP[i] = vtxCoords[i].dot(MP);
     }
 
-    calcSphericalBasis(numVtxs, a, c, v, basis);
+    calcSphericalBasis(numVtxs, a, c, vDotMP, basis);
 }
 
 // spherical interpolation of values from mesh vertices to MPsi

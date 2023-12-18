@@ -43,7 +43,7 @@ int main(int argc, char** argv) {
     const int replicateFactor = 100;
     const int testMPOption = 1;
     test_planar(replicateFactor, testMPOption);
-    //test_spherical(); 
+    test_spherical(); 
     Kokkos::finalize();
     MPI_Finalize();
     return 0;

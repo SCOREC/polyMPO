@@ -20,18 +20,20 @@ void test_planar(const int replicateFactor, const int testMPOption) {
     }
 }
 
-void test_spherical(const int replicateFactor, const int testMPOption) {
-    //test init Test Mesh and run assembly and Wachspress
-    for (int testMeshOption = 1; testMeshOption <= 2; testMeshOption++){
+void test_spherical() {
+    //test init Test Mesh and run assembly and Wachspress on spherical surface
+    void* meshP;
+    char* filename = (char *)malloc(sizeof(char) * 256); 
+    sprintf(filename,"/gpfs/u/home/MPMS/MPMSsngj/scratch/polyDev/polyMPO/test/sample_mpas_meshes/spherical_cvt_642elms.nc"); // ./sample_mpas_meshes/spherical_cvt_642elms.nc"
+    
+    //std::string filename("sample_mpas_meshes/spherical_cvt_642elms.nc");
+    setWithMPASMeshByFortran(&meshP, filename, (int)strlen(filename));
+    auto mpMesh = (MPMesh&)meshP;
+    //auto mesh = mpMesh->p_mesh;
         
-        // TODO: initialize spherical mesh, instead of planar
-        auto mesh = initTestMesh(testMeshOption,replicateFactor);
-        auto mpMesh = initTestMPMesh(mesh,testMPOption);
-        
-        //test assembly in assembly.hpp
-        polyMPO::assembly<MPF_Vel,MeshF_Vel>(mpMesh,false,false);
-        interpolateSphericalTest(mpMesh);
-    }
+    //test assembly in assembly.hpp
+    //polyMPO::assembly<MPF_Vel,MeshF_Vel>(mpMesh,false,false);
+    interpolateWachspressSphericalTest(mpMesh);
 }
 
 int main(int argc, char** argv) {
@@ -41,7 +43,7 @@ int main(int argc, char** argv) {
     const int replicateFactor = 100;
     const int testMPOption = 1;
     test_planar(replicateFactor, testMPOption);
-    
+    //test_spherical(); 
     Kokkos::finalize();
     MPI_Finalize();
     return 0;

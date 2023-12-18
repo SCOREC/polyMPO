@@ -58,7 +58,6 @@ void interpolateWachspressSphericalTest(MPMesh& mpMesh){
     auto p_mesh = mpMesh.p_mesh;
     auto vtxCoords = p_mesh->getMeshField<polyMPO::MeshF_VtxCoords>();
     auto elm2VtxConn = p_mesh->getElm2VtxConn();
-
     auto p_MPs = mpMesh.p_MPs;
     auto MPsPosition = p_MPs->getPositions();
     double radius = p_mesh->getSphereRadius();

@@ -29,7 +29,7 @@ void interpolateWachspress2DTest(MPMesh& mpMesh){
             Vec2d gradBasisByArea[maxVtxsPerElm];
             Vec2d position(MPsPosition(mp,0),MPsPosition(mp,1));
             getBasisAndGradByAreaGblForm2d(position, numVtx, v, basisByArea, gradBasisByArea);
-            getBasisByAreaGblForm(position, numVtx, v, basisByArea2);
+            getBasisByAreaGblForm2d(position, numVtx, v, basisByArea2);
 
             double af = 10.1;
             double bf = 1.34;

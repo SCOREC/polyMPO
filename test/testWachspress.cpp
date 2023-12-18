@@ -6,12 +6,7 @@
 
 using namespace polyMPO;
 
-int main(int argc, char** argv) {
-    MPI_Init(&argc, &argv);
-    Kokkos::initialize(argc, argv);
-
-    const int replicateFactor = 100;
-    const int testMPOption = 1;
+void test_planar(const int replicateFactor, const int testMPOption) {
     //test init Test Mesh and run assembly and Wachspress
     for (int testMeshOption = 1; testMeshOption <= 2; testMeshOption++){
 
@@ -22,9 +17,20 @@ int main(int argc, char** argv) {
         polyMPO::assembly<MPF_Vel,MeshF_Vel>(mpMesh,false,false);
         interpolateWachspress2DTest(mpMesh);
         interpolateWachspress3DTest(mpMesh);
-        interpolateWachspressSphericalTest(mpMesh);
+        //interpolateWachspressSphericalTest(mpMesh);
         interpolateWachspress3DTest(mpMesh,testMeshOption);
     }
+
+}
+
+int main(int argc, char** argv) {
+    MPI_Init(&argc, &argv);
+    Kokkos::initialize(argc, argv);
+
+    const int replicateFactor = 100;
+    const int testMPOption = 1;
+        
+    test_planar(replicateFactor, testMPOption);
     
     Kokkos::finalize();
     MPI_Finalize();

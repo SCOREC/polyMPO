@@ -311,7 +311,7 @@ void calcSphericalBasis(int numVtxs, double* a, double* c, double* v, double* ba
 
 
 KOKKOS_INLINE_FUNCTION
-void getBasisByAreaGblForm(Vec2d MP, int numVtxs, Vec2d* vtxCoords, double* basis) {
+void getBasisByAreaGblForm2d(Vec2d MP, int numVtxs, Vec2d* vtxCoords, double* basis) {
     Vec2d e[maxVtxsPerElm + 1];
     Vec2d p[maxVtxsPerElm];
     for (int i = 0; i < numVtxs; i++){
@@ -407,37 +407,6 @@ void getBasisByAreaGblFormSpherical3(Vec3d MP, int numVtxs, Vec3d* vtxCoords, do
 
     calcSphericalBasis(numVtxs, a, c, v, basis);
 }
-
-
-/*
-KOKKOS_INLINE_FUNCTION
-void getBasisByAreaGblForm_1(Vec2d MP, int numVtxs, Vec2d* vtxCoords, double* basis) {
-    double denominator, product;
-    Vec2d v1, v2;
-
-    denominator = 0.0;
-    for (int i = 1; i <= numVtxs; i++) {
-        v1 = vtxCoords[i] - vtxCoords[i-1];
-        v2 = vtxCoords[i+1] - vtxCoords[i];
-        product = 0.5 * v1.cross(v2);
-        for (int k = 1; k <= i-2; k++) {
-            v1 = vtxCoords[k] - MP;
-            v2 = vtxCoords[k+1] - MP;
-            product *= 0.5 * v1.cross(v2);
-        }
-        for (int k = i+1; k <= std::min(i-2,1) + numVtxs; k++) {
-            v1 = vtxCoords[k] - MP;
-            v2 = vtxCoords[k+1] - MP;
-            product *= 0.5 * v1.cross(v2);
-        }
-        basis[i-1] = product;
-        denominator += product;
-    }
-    for (int i = 0; i < numVtxs; i++) {
-        basis[i] /= denominator;
-    }
-} 
-*/
 
 // spherical interpolation of values from mesh vertices to MPsi
 template <MeshFieldIndex mfIndex, MaterialPointSlice mpfIndex>

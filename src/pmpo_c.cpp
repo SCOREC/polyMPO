@@ -3,7 +3,6 @@
 #include "pmpo_c.h"
 #include <stdio.h>
 
-
 namespace{
   std::vector<MPMesh_ptr> p_mpmeshes;////store the p_mpmeshes that is legal
     
@@ -195,7 +194,7 @@ void polympo_finishRebuildMPs_f(MPMesh_ptr p_mpmesh)
 void polympo_setAppIDFunc_f(MPMesh_ptr p_mpmesh, IntVoidFunc getNext, void* appIDs) {
   checkMPMeshValid(p_mpmesh);
   auto p_MPs = ((polyMPO::MPMesh*)p_mpmesh)->p_MPs;
-  std::function<int()> getNextAppID = [getNext, appIDs]() { return getNext(appIDs); };
+  polyMPO::IntFunc getNextAppID = [getNext, appIDs]() { return getNext(appIDs); };
   p_MPs->setAppIDFunc(getNextAppID);
 }
 

@@ -26,20 +26,13 @@ void testAppIDPointer(MPMesh_ptr p_mpmesh,
   Kokkos::parallel_for("set addedMP2Elm", numAddedMPs, KOKKOS_LAMBDA (const int i) {
     added_mp2Elm_d(i) = i;
   });
-  
-  Kokkos::View<int*> addedMPMask_d("addedMPMask_d", numMPs + numAddedMPs);
-  Kokkos::parallel_for("set addedMPMask", numMPs + numAddedMPs, KOKKOS_LAMBDA (const int i) {
-    if (i >= numMPs) addedMPMask_d(i) = 1;
-    else addedMPMask_d(i) = 0;
-  });
 
   std::vector<int> added_mpIDs(numAddedMPs);
   for(int i=0; i<numAddedMPs; i++)
     added_mpIDs[i] = p_MPs->getNextAppID();
   auto added_mpIDs_d = create_mirror_view_and_copy(added_mpIDs.data(), numAddedMPs);
 
-  p_MPs->startRebuild(mp2Elm_d, numAddedMPs, added_mp2Elm_d, added_mpIDs_d, addedMPMask_d);
-  p_MPs->finishRebuild();
+  p_MPs->rebuild(mp2Elm_d, added_mp2Elm_d, added_mpIDs_d);
 
   auto newAppID = p_MPs->getData<polyMPO::MPF_MP_APP_ID>();
   Kokkos::parallel_for("print APP ID", numAddedMPs, KOKKOS_LAMBDA (const int i) {

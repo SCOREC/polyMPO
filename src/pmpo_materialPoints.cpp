@@ -68,6 +68,11 @@ MaterialPoints::~MaterialPoints() {
     delete MPs;
 }
 
+void MaterialPoints::rebuild(IntView tgtElm, IntView addedMP2elm, IntView addedMPAppID) {
+  auto addedSlices = createInternalMemberViews(addedMP2elm.size(), addedMP2elm, addedMPAppID);
+  MPs->rebuild(tgtElm, addedMP2elm, addedSlices);
+}
+
 void MaterialPoints::startRebuild(IntView tgtElm, int addedNumMPs, IntView addedMP2elm, IntView addedMPAppID, Kokkos::View<const int*> addedMPMask) {
   rebuildFields.ongoing = true;
   rebuildFields.addedNumMPs = addedNumMPs;

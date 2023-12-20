@@ -31,7 +31,7 @@ type(QUEUE_STRUCT), pointer        :: queue
 integer                            :: capacity
 
 allocate( queue )
-allocate( queue%data(capacity) )
+allocate( queue%data(0:capacity) )
 
 queue%full  = .false.
 queue%start = 1
@@ -74,13 +74,15 @@ end function queue_empty
 ! Result:
 !     Data stored at the top, afterwards
 !     removed
-! Note:
-!     With an empty queue, random data
-!     are returned!
 !
 function queue_retrieve_data( queue ) result(data)
 type(QUEUE_STRUCT)             :: queue
 integer                        :: data
+
+if (queue_empty(queue)) then
+    print *, "ERROR: Queue is empty"
+    call exit
+endif
 
 data = queue%data(queue%start)
 

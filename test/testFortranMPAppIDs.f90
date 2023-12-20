@@ -70,8 +70,11 @@ program main
     mp2Elm = 1
     isMPActive = MP_ACTIVE
     call polympo_createMPs(mpMesh, nCells, numMPs, c_loc(mpsPerElm), c_loc(mp2Elm), c_loc(isMPActive))
-
+    
+    ! Set function and opaque data structure(list/queue) used to retrieve appIDS
     call polympo_setAppIDFunc(mpMesh, c_funloc(GetAppID), c_loc(queue));
+    
+    ! Test to emulate using AppID function during migration
     call testAppIDPointer(mpMesh, numMPs, c_loc(mp2Elm))
 
     ! Clean Up

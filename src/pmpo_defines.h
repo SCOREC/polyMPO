@@ -4,6 +4,7 @@
 #define MP_DELETE -1
 
 typedef void* MPMesh_ptr;
+//Function that receives void* and returns an int
 typedef int (*IntVoidFunc)(void*);
 
 using space_t = Kokkos::DefaultExecutionSpace::memory_space;

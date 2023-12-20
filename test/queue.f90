@@ -1,3 +1,5 @@
+! Adapted from : https://github.com/mapmeld/fortran-machine/blob/5e5e6bbdab353149047971a3f872238a2a4b716e/flibs-0.9/flibs/src/datastructures/queues.f90
+
 ! queues.f90 --
 !     Include file for defining queues with a fixed capacity
 !
@@ -41,7 +43,7 @@ type(QUEUE_STRUCT), pointer        :: queue
 integer                            :: capacity
 
 allocate( queue )
-allocate( queue%data(1:capacity) )
+allocate( queue%data(capacity) )
 
 queue%full  = .false.
 queue%start = 1
@@ -93,25 +95,6 @@ type(QUEUE_STRUCT), intent(in)  :: queue
 queue_full = queue%full
 
 end function queue_full
-
-! queue_start_data
-!     Return the data stored at the start,
-!     but leave them in
-! Arguments:
-!     queue      Queue to be examined
-! Result:
-!     Data stored at the start
-! Note:
-!     With an empty queue, random data
-!     are returned!
-!
-function queue_start_data( queue ) result(data)
-type(QUEUE_STRUCT), intent(in) :: queue
-integer                        :: data
-
-data = queue%data(queue%start)
-
-end function queue_start_data
 
 ! queue_retrieve_data
 !     Return the data stored at the top,

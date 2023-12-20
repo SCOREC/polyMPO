@@ -31,7 +31,7 @@ program main
 
     interface
         subroutine testAppIDPointer(mpMesh, numMPs, mp2Elm) &
-        bind(C, NAME='testAppIDPointer_f')
+        bind(C, NAME='testAppIDPointer')
             use :: iso_c_binding
             type(c_ptr), value :: mpMesh
             integer(c_int), value :: numMPs

@@ -74,7 +74,7 @@ program main
     ! Set function and opaque data structure(list/queue) used to retrieve appIDS
     call polympo_setAppIDFunc(mpMesh, c_funloc(GetAppID), c_loc(queue));
     
-    ! Test to emulate using AppID function during migration
+    ! Test to emulate using appID function during migration
     call testAppIDPointer(mpMesh, numMPs, c_loc(mp2Elm))
 
     ! Clean Up

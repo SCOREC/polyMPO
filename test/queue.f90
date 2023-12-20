@@ -66,21 +66,6 @@ queue_empty = .not. queue%full .and. &
 
 end function queue_empty
 
-! queue_full --
-!     Check if the queue is full
-! Arguments:
-!     queue       Pointer to the queue
-! Result:
-!     logical indicating if the queue is
-!     full or not
-!
-logical function queue_full( queue )
-type(QUEUE_STRUCT), intent(in)  :: queue
-
-queue_full = queue%full
-
-end function queue_full
-
 ! queue_retrieve_data
 !     Return the data stored at the top,
 !     and remove them from the queue
@@ -121,7 +106,7 @@ type(QUEUE_STRUCT)           :: queue
 integer, intent(in) :: data
 logical, intent(out)         :: success
 
-success = .not. queue_full( queue )
+success = .not. queue%full
 if ( success ) then
     queue%end = queue%end + 1
     if ( queue%end .gt. size(queue%data) ) then

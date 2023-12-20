@@ -2,14 +2,9 @@
 
 ! queues.f90 --
 !     Include file for defining queues with a fixed capacity
-!
-!     See the example/test program for the way to use this
-!
 !     Queues as implemented here are simply arrays where
 !     data are inserted at the end and retrieved from the
 !     top.
-!
-!     $Id: queues.f90,v 1.2 2006/03/26 19:03:53 arjenmarkus Exp $
 !
 type QUEUE_STRUCT
 logical                                 :: full
@@ -29,13 +24,6 @@ contains
 !     queue      Pointer to new queue
 !     capacity   The number of data that can be stored
 ! Note:
-!     This version assumes a shallow copy is enough
-!     (that is, there are no pointers within the data
-!     to be stored)
-!     It also assumes the argument queue does not already
-!     refer to a queue. Use queue_destroy first to
-!     destroy an old queue.
-!
 !     There is no check that the capacity is positive!
 !
 subroutine queue_create( queue, capacity )
@@ -54,9 +42,6 @@ end subroutine queue_create
 !     Destroy a queue
 ! Arguments:
 !     queue       Pointer to the queue to be destroyed
-! Note:
-!     This version assumes that there are no
-!     pointers within the data that need deallocation
 !
 subroutine queue_destroy( queue )
 type(QUEUE_STRUCT), pointer  :: queue

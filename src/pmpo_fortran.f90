@@ -97,11 +97,10 @@ module polympo
     type(c_ptr), value :: mpMesh
   end subroutine
   !---------------------------------------------------------------------------
-  !> @brief needs to be called once when initializing for migration
-  !> @brief called after initializing MP fields
+  !> @brief Stores pointer to appID data structure and a function to retrieve them used in migration
   !> @param mpmesh(in/out) MPMesh object
   !> @param getNext(in) Pointer to function that returns next App IDs
-  !> @param appIDs(in) Pointer that contains all App IDs
+  !> @param appIDs(in) Pointer to opaque data application data structure (that may contain all available app IDs)
   !---------------------------------------------------------------------------
   subroutine polympo_setAppIDFunc(mpMesh, getNext, appIDs) &
     bind(C, NAME='polympo_setAppIDFunc_f')

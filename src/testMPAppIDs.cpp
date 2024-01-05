@@ -6,12 +6,10 @@
 #include "pmpo_c.h"
 
 extern "C" {
-  void testAppIDPointer(MPMesh_ptr p_mpmesh, const int numMPs, const int* allMP2Elm);
+  void testAppIDPointer(MPMesh_ptr p_mpmesh, const int numMPs);
 }
 
-void testAppIDPointer(MPMesh_ptr p_mpmesh, 
-                              const int numMPs, // total number of MPs which is GREATER than or equal to number of active MPs
-                              const int* allMP2Elm) {
+void testAppIDPointer(MPMesh_ptr p_mpmesh, const int numMPs) {
   auto p_MPs = ((polyMPO::MPMesh*)p_mpmesh)->p_MPs;
   PMT_ALWAYS_ASSERT(numMPs >= p_MPs->getCount());
   PMT_ALWAYS_ASSERT(numMPs >= p_MPs->getMaxAppID());

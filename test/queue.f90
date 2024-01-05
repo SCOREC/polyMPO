@@ -99,28 +99,29 @@ end function queue_retrieve_data
 ! queue_append_data
 !     Append data to the end of the queue
 ! Arguments:
-!     queue      Queueu to which to add the data
+!     queue      Queue to which to add the data
 !     data       The data to be added
-!     success    Indicates success or not
 !
-subroutine queue_append_data( queue, data, success )
+subroutine queue_append_data( queue, data)
 type(QUEUE_STRUCT)           :: queue
 integer, intent(in) :: data
-logical, intent(out)         :: success
 
-success = .not. queue%full
-if ( success ) then
-    queue%end = queue%end + 1
-    if ( queue%end .gt. size(queue%data) ) then
-        queue%end = 1
-    endif
-    if ( queue%start .eq. queue%end+1 ) then
-        queue%full = .true.
-    endif
-    if ( queue%end   .eq. size(queue%data) .and. &
-         queue%start .eq. 1 ) then
-        queue%full = .true.
-    endif
-    queue%data(queue%end) = data
+if (queue%full) then
+    print *, "ERROR: Queue is full"
+    call exit
 endif
+
+queue%end = queue%end + 1
+if ( queue%end .gt. size(queue%data) ) then
+    queue%end = 1
+endif
+if ( queue%start .eq. queue%end+1 ) then
+    queue%full = .true.
+endif
+if ( queue%end   .eq. size(queue%data) .and. &
+        queue%start .eq. 1 ) then
+    queue%full = .true.
+endif
+queue%data(queue%end) = data
+
 end subroutine queue_append_data

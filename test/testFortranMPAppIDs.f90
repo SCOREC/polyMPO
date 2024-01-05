@@ -3,14 +3,13 @@ module MYDATA_QUEUE
 
     subroutine create_app_ids(queue)
         type (QUEUE_STRUCT), pointer :: queue
-        logical :: success
 
         call queue_create(queue, 5)
-        call queue_append_data( queue, 122, success )
-        call queue_append_data( queue, 233, success )
-        call queue_append_data( queue, 344, success )
-        call queue_append_data( queue, 455, success )
-        call queue_append_data( queue, 566, success )
+        call queue_append_data( queue, 122)
+        call queue_append_data( queue, 233)
+        call queue_append_data( queue, 344)
+        call queue_append_data( queue, 455)
+        call queue_append_data( queue, 566)
     end subroutine
 
     integer function GetAppID(queueIn) result(id)

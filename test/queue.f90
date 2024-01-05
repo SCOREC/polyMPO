@@ -61,7 +61,7 @@ end subroutine queue_destroy
 logical function queue_empty( queue )
 type(QUEUE_STRUCT), intent(in)  :: queue
 
-queue_empty = .not. queue%full .and. &
+queue_empty = (.not. queue%full) .and. &
     queue%end .eq. queue%start - 1
 
 end function queue_empty

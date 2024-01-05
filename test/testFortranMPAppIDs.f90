@@ -29,11 +29,10 @@ program main
     include 'mpif.h'
 
     interface
-        subroutine testAppIDPointer(mpMesh, numMPs) &
+        subroutine testAppIDPointer(mpMesh) &
         bind(C, NAME='testAppIDPointer')
             use :: iso_c_binding
             type(c_ptr), value :: mpMesh
-            integer(c_int), value :: numMPs
         end subroutine
     end interface
 
@@ -73,7 +72,7 @@ program main
     call polympo_setAppIDFunc(mpMesh, c_funloc(GetAppID), c_loc(queue));
     
     ! Test to emulate using appID function during migration
-    call testAppIDPointer(mpMesh, numMPs)
+    call testAppIDPointer(mpMesh)
 
     ! Clean Up
     call polympo_deleteMPMesh(mpMesh)

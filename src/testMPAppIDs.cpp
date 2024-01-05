@@ -6,13 +6,11 @@
 #include "pmpo_c.h"
 
 extern "C" {
-  void testAppIDPointer(MPMesh_ptr p_mpmesh, const int numMPs);
+  void testAppIDPointer(MPMesh_ptr p_mpmesh);
 }
 
-void testAppIDPointer(MPMesh_ptr p_mpmesh, const int numMPs) {
+void testAppIDPointer(MPMesh_ptr p_mpmesh) {
   auto p_MPs = ((polyMPO::MPMesh*)p_mpmesh)->p_MPs;
-  PMT_ALWAYS_ASSERT(numMPs >= p_MPs->getCount());
-  PMT_ALWAYS_ASSERT(numMPs >= p_MPs->getMaxAppID());
 
   int numAddedMPs = 2;
   Kokkos::View<int*> added_mp2Elm_d("added_mp2Elm_d", numAddedMPs);
@@ -24,13 +22,14 @@ void testAppIDPointer(MPMesh_ptr p_mpmesh, const int numMPs) {
   for(int i=0; i<numAddedMPs; i++)
     added_mpIDs[i] = p_MPs->getNextAppID();
   auto added_mpIDs_d = create_mirror_view_and_copy(added_mpIDs.data(), numAddedMPs);
+  int prevNumMPs = p_MPs->getCount();
 
   p_MPs->rebuild(added_mp2Elm_d, added_mpIDs_d);
 
   auto newAppID = p_MPs->getData<polyMPO::MPF_MP_APP_ID>();
   Kokkos::parallel_for("print APP ID", numAddedMPs, KOKKOS_LAMBDA (const int i) {
-    printf(" Added %d\n", newAppID(numMPs+i));
-    assert(added_mpIDs_d[i] == newAppID(numMPs+i));
+    printf(" Added %d\n", newAppID(prevNumMPs+i));
+    assert(added_mpIDs_d[i] == newAppID(prevNumMPs+i));
   });
 }
 

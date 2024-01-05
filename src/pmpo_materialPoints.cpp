@@ -68,9 +68,16 @@ MaterialPoints::~MaterialPoints() {
     delete MPs;
 }
 
-void MaterialPoints::rebuild(IntView tgtElm, IntView addedMP2elm, IntView addedMPAppID) {
+void MaterialPoints::rebuild(IntView addedMP2elm, IntView addedMPAppID) {
   auto addedSlices = createInternalMemberViews(addedMP2elm.size(), addedMP2elm, addedMPAppID);
-  MPs->rebuild(tgtElm, addedMP2elm, addedSlices);
+  IntView curr_elem("curr_elem", MPs->capacity());
+  auto setElem = PS_LAMBDA(const int& e, const int& mp, const int& mask){
+    if(mask) curr_elem(mp) = e;
+    else curr_elem(mp) = -1;
+  };
+  parallel_for(setElem, "setElem");
+
+  MPs->rebuild(curr_elem, addedMP2elm, addedSlices);
 }
 
 void MaterialPoints::startRebuild(IntView tgtElm, int addedNumMPs, IntView addedMP2elm, IntView addedMPAppID, Kokkos::View<const int*> addedMPMask) {

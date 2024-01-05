@@ -16,11 +16,6 @@ void testAppIDPointer(MPMesh_ptr p_mpmesh,
   PMT_ALWAYS_ASSERT(numMPs >= p_MPs->getCount());
   PMT_ALWAYS_ASSERT(numMPs >= p_MPs->getMaxAppID());
 
-  int internalMPCapacity = p_MPs->getCapacity(); // pumipic expects full capacity to rebuild
-  auto mp2Elm = create_mirror_view_and_copy(allMP2Elm, internalMPCapacity);
-  Kokkos::View<int*> mp2Elm_d("mp2Elm_d", internalMPCapacity);
-  Kokkos::deep_copy(mp2Elm_d, mp2Elm);
-
   int numAddedMPs = 2;
   Kokkos::View<int*> added_mp2Elm_d("added_mp2Elm_d", numAddedMPs);
   Kokkos::parallel_for("set addedMP2Elm", numAddedMPs, KOKKOS_LAMBDA (const int i) {
@@ -32,7 +27,7 @@ void testAppIDPointer(MPMesh_ptr p_mpmesh,
     added_mpIDs[i] = p_MPs->getNextAppID();
   auto added_mpIDs_d = create_mirror_view_and_copy(added_mpIDs.data(), numAddedMPs);
 
-  p_MPs->rebuild(mp2Elm_d, added_mp2Elm_d, added_mpIDs_d);
+  p_MPs->rebuild(added_mp2Elm_d, added_mpIDs_d);
 
   auto newAppID = p_MPs->getData<polyMPO::MPF_MP_APP_ID>();
   Kokkos::parallel_for("print APP ID", numAddedMPs, KOKKOS_LAMBDA (const int i) {

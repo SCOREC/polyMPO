@@ -72,8 +72,10 @@ program main
   nCompsDisp = 2
   allocate(dispIncr(nCompsDisp,nVertices))
   !createMPs
-  numMPs = nCells
-  allocate(mpsPerElm(nCells))
+  !numMPs = nCells
+  numMPs = 315 !any numMPs less than 316 will cause a assert fail:
+               ! numMPs >= p_MPs->getMaxAppID() failed at pmpo_c.cpp + 316
+  allocate(mpsPerElm(numMPs))
   allocate(mp2Elm(numMPs))
   allocate(isMPActive(numMPs))
   allocate(mpPosition(3,numMPs))
@@ -147,6 +149,11 @@ program main
       minlon = lonVertex(j)
     endif
   end do
+  write(*,*) "numMPs:", numMPs
+  write(*,*) "mpsPerElm:", mpsPerElm
+  write(*,*) "mp2Elm:", mp2Elm
+  write(*,*) "isMPActive:", isMPActive
+  write(*,*) "mpLatLon:", mpLatLon
   call polympo_createMPs(mpMesh,nCells,numMPs,c_loc(mpsPerElm),c_loc(mp2Elm),c_loc(isMPActive))
   call polympo_setMPRotLatLon(mpMesh,2,numMPs,c_loc(mpLatLon))
   call polympo_setMPPositions(mpMesh,3,numMPs,c_loc(mpPosition))

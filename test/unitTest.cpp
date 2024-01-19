@@ -143,10 +143,7 @@ int main(int argc, char** argv) {
         PMT_ALWAYS_ASSERT(p_mesh->getNumElements() == 10);
 
         //run non-physical assembly (mp -to- mesh vertex) kernel
-        // polyMPO::assembly<MPF_Vel,MeshF_Vel>(mpMesh,false,false);//TODO: two flags not supported yet
-        polyMPO::MLSassembly<MPF_Vel,MeshF_Vel>(mpMesh);
-        //polyMPO::wtScaAssembly<MPF_Vel>(mpMesh);
-        //polyMPO::wtVec2Assembly<MPF_Vel>(mpMesh);
+        polyMPO::assembly<MPF_Vel,MeshF_Vel>(mpMesh,false,false);//TODO: two flags not supported yet
 
         auto vtxField = p_mesh->getMeshField<MeshF_Vel>();
         //interpolateWachspress(mpMesh);

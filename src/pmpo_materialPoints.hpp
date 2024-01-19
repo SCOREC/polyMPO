@@ -239,6 +239,7 @@ class MaterialPoints {
     }
     int getCapacity() { return MPs->capacity(); }
     int getCount() { return MPs->nPtcls(); }
+    int getNumElems() { return MPs->nElems(); }
     auto getPositions() { return getData<MPF_Cur_Pos_XYZ>(); }
 
     Operating_Mode getOpMode() { return operating_mode; }

@@ -13,6 +13,7 @@ void testAppIDPointer(MPMesh_ptr p_mpmesh) {
   auto p_MPs = ((polyMPO::MPMesh*)p_mpmesh)->p_MPs;
 
   int numAddedMPs = 2;
+  assert(p_MPs->getNumElems() >= numAddedMPs);
   Kokkos::View<int*> added_mp2Elm_d("added_mp2Elm_d", numAddedMPs);
   Kokkos::parallel_for("set addedMP2Elm", numAddedMPs, KOKKOS_LAMBDA (const int i) {
     added_mp2Elm_d(i) = i;

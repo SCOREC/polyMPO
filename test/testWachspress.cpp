@@ -31,9 +31,9 @@ void test_spherical(const int testMPOption) {
     setWithMPASMeshByFortran(&meshP, filename, (int)strlen(filename));
     auto mpmesh = (MPMesh*)meshP;
     auto mesh = mpmesh->p_mesh;
-    auto mpMesh = initTestMPMesh(mesh, testMPOption);    
+    mpmesh->p_MPs = initTestMPs(mesh, testMPOption); 
    
-    interpolateWachspressSphericalTest(mpMesh);
+    interpolateWachspressSphericalTest(*mpmesh);
 }
 
 int main(int argc, char** argv) {

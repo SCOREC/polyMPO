@@ -258,7 +258,11 @@ void getBasisAndGradByAreaGblFormSpherical(Vec3d MP,
         wSum += w[i] * v[i];
     }
 
+    //printf("spherical wSum: %.20f", wSum);
     double wSumInv = 1.0 / wSum;
+
+    printf("wSumInv: %.20f \n", wSumInv);
+    printf("test: %.20f, %.20f, %.20f \n", wSumInv, wdxSum, wSumInv * wSumInv * wdxSum);
     for (int i = 0; i < numVtxs; i++){
         basis[i] = w[i] * wSumInv;
         gradBasis[i] = Vec3d(wdx[i] * wSumInv - w[i] * wSumInv * wSumInv * wdxSum,
@@ -301,11 +305,25 @@ void calcSphericalBasis(int numVtxs, double* a, double* c, double* vtxDotMP, dou
         }
         w[i] = c[i] * aProduct;
         wSum += w[i] * vtxDotMP[i];
+       
+        printf("aProduct: %.16e \n",aProduct);  
+        printf("wSum: %.16e \n", wSum);
+        printf("a[%d]: %.16e \n", i,a[i]);
+        printf("c[%d]: %.16e \n", i,c[i]);
+        printf("vtxDotMP[%d]: %.16e \n",i, vtxDotMP[i]); 
+    }
+   
+    printf("wSum final: %.16e \n", wSum); 
+    for (int i = 0; i < numVtxs; i++){
+        printf("w[%d]: %.16e \n",i,w[i]);
+        //printf(w[i] * vtxDotMP[i];
     }
 
     double wSumInv = 1.0 / wSum;
     for (int i = 0; i < numVtxs; i++){
         basis[i] = w[i] * wSumInv;
+        //basis[i] = w[i] / wSum;
+        printf("basis[%d]: %.16e \n", i,basis[i]);
     }
 }
 
@@ -403,8 +421,15 @@ void getBasisByAreaGblFormSpherical3(Vec3d MP, int numVtxs, Vec3d* vtxCoords, do
         c[i] = (e[i].cross(e[i + 1])).magnitude();
         a[i] = (p[i].cross(e[i + 1])).magnitude();
         vDotMP[i] = vtxCoords[i].dot(MP);
+        printf("dot: %.20f, vtx: %.20f %.20f %.20f, MP: %.20f %.20f %.20f", vDotMP[i],vtxCoords[i][0],vtxCoords[i][1],vtxCoords[i][2],MP[0],MP[1],MP[2]);
     }
-
+    /*
+    double eRefLengthSquared = (e[0].magnitude()) * (e[0].magnitude());
+    for (int i = 0; i < numVtxs; i++) {
+        a[i] = a[i] / eRefLengthSquared;
+        c[i] = c[i] / eRefLengthSquared;
+    }
+    */
     calcSphericalBasis(numVtxs, a, c, vDotMP, basis);
 }
 

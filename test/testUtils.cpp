@@ -61,20 +61,28 @@ void interpolateWachspressSphericalTest(MPMesh& mpMesh){
     auto p_MPs = mpMesh.p_MPs;
     auto MPsPosition = p_MPs->getPositions();
     double radius = p_mesh->getSphereRadius();
+    printf("radius: %f \n", radius);
     PMT_ALWAYS_ASSERT(radius >0);
     auto eval = PS_LAMBDA(const int& elm, const int& mp, const int mask){
-        if (mask) {
-            Vec3d position3d(MPsPosition(mp,0),MPsPosition(mp,1),MPsPosition(mp,2));
+        if (mask && mp == 1) {
+            //Vec3d position3d(MPsPosition(mp,0),MPsPosition(mp,1),MPsPosition(mp,2));
+            Vec3d position3d(vtxCoords(elm2VtxConn(elm,1)-1,0),vtxCoords(elm2VtxConn(elm,1)-1,1),vtxCoords(elm2VtxConn(elm,1)-1,2));
             Vec3d v3d[maxVtxsPerElm+1];
             int numVtx = elm2VtxConn(elm,0);
+
             for(int i = 1; i<=numVtx; i++){
                 v3d[i-1][0] = vtxCoords(elm2VtxConn(elm,i)-1,0);
                 v3d[i-1][1] = vtxCoords(elm2VtxConn(elm,i)-1,1);
                 v3d[i-1][2] = vtxCoords(elm2VtxConn(elm,i)-1,2);
+                printf("vertex: (%f, %f, %f)\n", vtxCoords(elm2VtxConn(elm,i)-1,0),vtxCoords(elm2VtxConn(elm,i)-1,1),vtxCoords(elm2VtxConn(elm,i)-1,2));
+                //printf("vertex position norm square: (%f)\n", vtxCoords(elm2VtxConn(elm,i)-1,0)*vtxCoords(elm2VtxConn(elm,i)-1,0)+vtxCoords(elm2VtxConn(elm,i)-1,1)*vtxCoords(elm2VtxConn(elm,i)-1,1)+vtxCoords(elm2VtxConn(elm,i)-1,2)*vtxCoords(elm2VtxConn(elm,i)-1,2));
             }
+
+            printf("MP norm square: (%f)\n", MPsPosition(mp,0)*MPsPosition(mp,0)+MPsPosition(mp,1)*MPsPosition(mp,1)+MPsPosition(mp,2)*MPsPosition(mp,2));
             v3d[numVtx][0] = vtxCoords(elm2VtxConn(elm,1)-1,0);
             v3d[numVtx][1] = vtxCoords(elm2VtxConn(elm,1)-1,1);
             v3d[numVtx][2] = vtxCoords(elm2VtxConn(elm,1)-1,2);
+        
 
             double basisByArea3d[maxVtxsPerElm] = {0.0};
             initArray(basisByArea3d,maxVtxsPerElm,0.0);
@@ -103,7 +111,8 @@ void interpolateWachspressSphericalTest(MPMesh& mpMesh){
                 wp_coord = wp_coord + v3d[i]*basisByArea3d[i];
                 wp_coord2 = wp_coord2 + v3d[i]*basisByArea3d2[i];
                 wp_coord3 = wp_coord3 + v3d[i]*basisByArea3d3[i];
-                
+               
+                printf("basisByArea3d3[%d]: %.16e \n", i, basisByArea3d3[i]);  
                 double fi = af * v3d[i][0] + bf * v3d[i][1] + cf * v3d[i][2] + kf;
                 wp_grad = wp_grad + gradBasisByArea[i] * fi;
             } 
@@ -112,11 +121,11 @@ void interpolateWachspressSphericalTest(MPMesh& mpMesh){
                                               wp_coord3[0],
                                               wp_coord3[1],
                                               wp_coord3[2],
-                                              MPsPosition(mp,0),
-                                              MPsPosition(mp,1),
-                                              MPsPosition(mp,2));
+                                              position3d[0],
+                                              position3d[1],
+                                              position3d[2]);
             
-            /*
+            
             printf("WP gradient:(%.16e %.16e %.16e)\nexpected gradient:(%.16e %.16e %.16e)\n",
                                               wp_grad[0],
                                               wp_grad[1],
@@ -124,7 +133,7 @@ void interpolateWachspressSphericalTest(MPMesh& mpMesh){
                                               af,
                                               bf,
                                               cf);
-            */
+            
     
             //printf("wp[0]: %f, MP[0]: %f, wp[1]: %f, MP[1]: %f, wp[2]: %f, MP[2]: %f \n",wp_coord3[0],MPsPosition(mp,0),wp_coord3[1],MPsPosition(mp,1),wp_coord3[2],MPsPosition(mp,2));
             //assert(abs(wp_coord3[0] - MPsPosition(mp,0)) < TEST_EPSILON);

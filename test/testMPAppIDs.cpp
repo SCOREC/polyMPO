@@ -29,7 +29,6 @@ void testAppIDPointer(MPMesh_ptr p_mpmesh) {
   //Assert rebuild worked
   auto newAppID = p_MPs->getData<polyMPO::MPF_MP_APP_ID>();
   Kokkos::parallel_for("print APP ID", numAddedMPs, KOKKOS_LAMBDA (const int i) {
-    printf(" Added %d\n", newAppID(prevNumMPs+i));
     assert(added_mpIDs_d[i] == newAppID(prevNumMPs+i));
   });
 }

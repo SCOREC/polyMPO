@@ -23,15 +23,30 @@ void testAppIDPointer(MPMesh_ptr p_mpmesh) {
   for(int i=0; i<numAddedMPs; i++)
     added_mpIDs[i] = p_MPs->getNextAppID();
   auto added_mpIDs_d = create_mirror_view_and_copy(added_mpIDs.data(), numAddedMPs);
-  int prevNumMPs = p_MPs->getCount();
+
+  Kokkos::UnorderedMap<int, int> added_MPs_data(100);
+  Kokkos::parallel_for("set added_MPs_data", numAddedMPs, KOKKOS_LAMBDA (const int i) {
+    added_MPs_data.insert(added_mpIDs_d(i), i);
+  });
 
   p_MPs->rebuild(added_mp2Elm_d, added_mpIDs_d);
 
   //Assert rebuild worked
   auto newAppID = p_MPs->getData<polyMPO::MPF_MP_APP_ID>();
-  Kokkos::parallel_for("print APP ID", numAddedMPs, KOKKOS_LAMBDA (const int i) {
-    assert(added_mpIDs_d[i] == newAppID(prevNumMPs+i));
-  });
+  Kokkos::View<int*> numAddedMPsAfter("numAddedMPsAfter", 1);
+  auto checkAddedMPs = PS_LAMBDA(const int& e, const int& mp, const int& mask) {
+    if(mask) {
+      if (added_MPs_data.exists(newAppID(mp))) {
+        int index = added_MPs_data.find(newAppID(mp));
+        Kokkos::atomic_increment(&numAddedMPsAfter(0));
+        assert(e == added_MPs_data.value_at(index));
+      }
+    }
+  };
+  p_MPs->parallel_for(checkAddedMPs, "checkAddedMPs");
+
+  int numAddedMPsAfter_h = pumipic::getLastValue(numAddedMPsAfter);
+  PMT_ALWAYS_ASSERT(numAddedMPsAfter_h == numAddedMPs);
 }
 
 #endif

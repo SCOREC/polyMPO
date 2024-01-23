@@ -29,6 +29,14 @@ void testAppIDPointer(MPMesh_ptr p_mpmesh) {
     added_MPs_data.insert(added_mpIDs_d(i), i);
   });
 
+  Kokkos::UnorderedMap<int, int> old_MPs_data(100);
+  auto oldAppIDs = p_MPs->getData<polyMPO::MPF_MP_APP_ID>();
+  auto setOldAppIDs = PS_LAMBDA(const int& e, const int& mp, const int& mask) {
+    if(mask)
+      old_MPs_data.insert(oldAppIDs(mp), e);
+  };
+  p_MPs->parallel_for(setOldAppIDs, "setOldAppIDs");
+
   p_MPs->rebuild(added_mp2Elm_d, added_mpIDs_d);
 
   //Assert rebuild worked
@@ -40,7 +48,14 @@ void testAppIDPointer(MPMesh_ptr p_mpmesh) {
         int index = added_MPs_data.find(newAppID(mp));
         Kokkos::atomic_increment(&numAddedMPsAfter(0));
         assert(e == added_MPs_data.value_at(index));
+        added_MPs_data.insert(newAppID(mp), -1);//reset
       }
+      else if (old_MPs_data.exists(newAppID(mp))) {
+        int index = old_MPs_data.find(newAppID(mp));
+        assert(e == old_MPs_data.value_at(index));
+        old_MPs_data.insert(newAppID(mp), -1);//reset
+      }
+      else Kokkos::abort("Material Point in wrong place!\n");
     }
   };
   p_MPs->parallel_for(checkAddedMPs, "checkAddedMPs");

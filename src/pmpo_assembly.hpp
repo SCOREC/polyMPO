@@ -55,7 +55,7 @@ void assembly(MPMesh& mpMesh, bool basisWeightFlag, bool massWeightFlag){
     PMT_ALWAYS_ASSERT(meshFieldIndex == mfIndex);
     PMT_ALWAYS_ASSERT(meshFields2TypeAndString.at(mfIndex).first == MeshFType_VtxBased);
     const int numVtxs = p_mesh->getNumVertices();
-    Kokkos::View<double*> weightField("weights", numVtxs);
+    DoubleView weightField("weightField", numVtxs);
     auto meshField = p_mesh->getMeshField<mfIndex>();  
     //auto meshField = p_mesh->getMeshField<Mesh_Field_Cur_Pos_XYZ>(); 
     auto assemble = PS_LAMBDA(const int& elm, const int& mp, const int& mask) {
@@ -75,6 +75,18 @@ void assembly(MPMesh& mpMesh, bool basisWeightFlag, bool massWeightFlag){
         }
     };
     p_MPs->parallel_for(assemble, "assembly");
+    auto weight = PS_LAMBDA(const int& elm, const int& mp, const int& mask) {
+        if(mask) { //if material point is 'active'/'enabled'
+            int nVtxE = elm2VtxConn(elm,0);
+            for(int i=0; i<nVtxE; i++){
+                int vID = elm2VtxConn(elm,i+1)-1; //vID = vertex id
+                for(int j=0;j<numEntries;j++){
+                    meshField(vID,j) /= weightField(vID);
+                }
+            }
+        }
+    };
+    p_MPs->parallel_for(weight, "weight");
 }
 
 // (HDT) weighted assembly of scalar field

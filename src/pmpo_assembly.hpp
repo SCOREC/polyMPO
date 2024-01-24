@@ -75,18 +75,12 @@ void assembly(MPMesh& mpMesh, bool basisWeightFlag, bool massWeightFlag){
         }
     };
     p_MPs->parallel_for(assemble, "assembly");
-    auto weight = PS_LAMBDA(const int& elm, const int& mp, const int& mask) {
-        if(mask) { //if material point is 'active'/'enabled'
-            int nVtxE = elm2VtxConn(elm,0);
-            for(int i=0; i<nVtxE; i++){
-                int vID = elm2VtxConn(elm,i+1)-1; //vID = vertex id
-                for(int j=0;j<numEntries;j++){
-                    meshField(vID,j) /= weightField(vID);
-                }
-            }
+    auto weight = KOKKOS_LAMBDA(const int vID) {
+        for (int j=0; j<numEntries; j++) {
+            meshField(vID, j) /= weightField(vID);
         }
     };
-    p_MPs->parallel_for(weight, "weight");
+    Kokkos::parallel_for(numVtxs, weight);
 }
 
 // (HDT) weighted assembly of scalar field

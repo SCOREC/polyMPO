@@ -24,12 +24,12 @@ void testAppIDPointer(MPMesh_ptr p_mpmesh) {
     added_mpIDs[i] = p_MPs->getNextAppID();
   auto added_mpIDs_d = create_mirror_view_and_copy(added_mpIDs.data(), numAddedMPs);
 
-  Kokkos::UnorderedMap<int, int> added_MPs_data(100);
+  Kokkos::UnorderedMap<int, int> added_MPs_data(numAddedMPs+1);
   Kokkos::parallel_for("set added_MPs_data", numAddedMPs, KOKKOS_LAMBDA (const int i) {
-    added_MPs_data.insert(added_mpIDs_d(i), i);
+    added_MPs_data.insert(added_mpIDs_d(i), added_mp2Elm_d(i));
   });
 
-  Kokkos::UnorderedMap<int, int> old_MPs_data(100);
+  Kokkos::UnorderedMap<int, int> old_MPs_data(numAddedMPs+1);
   auto oldAppIDs = p_MPs->getData<polyMPO::MPF_MP_APP_ID>();
   auto setOldAppIDs = PS_LAMBDA(const int& e, const int& mp, const int& mask) {
     if(mask)

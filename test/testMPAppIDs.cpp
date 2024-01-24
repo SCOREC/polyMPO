@@ -49,12 +49,12 @@ void testAppIDPointer(MPMesh_ptr p_mpmesh) {
         int index = added_MPs_data.find(newAppID(mp));
         Kokkos::atomic_increment(&numAddedMPsAfter(0));
         assert(e == added_MPs_data.value_at(index));
-        added_MPs_data.insert(newAppID(mp), -1);//reset
+        added_MPs_data.insert(newAppID(mp), -1); //reset
       }
       else if (old_MPs_data.exists(newAppID(mp))) {
         int index = old_MPs_data.find(newAppID(mp));
         assert(e == old_MPs_data.value_at(index));
-        old_MPs_data.insert(newAppID(mp), -1);//reset
+        old_MPs_data.insert(newAppID(mp), -1); //reset
       }
       else Kokkos::abort("Material point in wrong place!\n");
     }

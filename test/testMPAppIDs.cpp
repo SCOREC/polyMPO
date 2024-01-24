@@ -24,6 +24,7 @@ void testAppIDPointer(MPMesh_ptr p_mpmesh) {
     added_mpIDs[i] = p_MPs->getNextAppID();
   auto added_mpIDs_d = create_mirror_view_and_copy(added_mpIDs.data(), numAddedMPs);
 
+  //Maps used to check values after rebuild
   Kokkos::UnorderedMap<int, int> added_MPs_data(numAddedMPs+1);
   Kokkos::parallel_for("set added_MPs_data", numAddedMPs, KOKKOS_LAMBDA (const int i) {
     added_MPs_data.insert(added_mpIDs_d(i), added_mp2Elm_d(i));
@@ -55,7 +56,7 @@ void testAppIDPointer(MPMesh_ptr p_mpmesh) {
         assert(e == old_MPs_data.value_at(index));
         old_MPs_data.insert(newAppID(mp), -1);//reset
       }
-      else Kokkos::abort("Material Point in wrong place!\n");
+      else Kokkos::abort("Material point in wrong place!\n");
     }
   };
   p_MPs->parallel_for(checkAddedMPs, "checkAddedMPs");

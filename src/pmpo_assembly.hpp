@@ -53,6 +53,9 @@ void assembly(MPMesh& mpMesh, bool basisWeightFlag, bool massWeightFlag){
     const int numEntries = mpSlice2MeshFieldIndex.at(mpfIndex).first;
     const MeshFieldIndex meshFieldIndex = mpSlice2MeshFieldIndex.at(mpfIndex).second;
     PMT_ALWAYS_ASSERT(meshFieldIndex == mfIndex);
+    PMT_ALWAYS_ASSERT(meshFields2TypeAndString.at(mfIndex).first == MeshFType_VtxBased);
+    const int numVtxs = p_mesh->getNumVertices();
+    Kokkos::View<double*> weightField("weights", numVtxs);
     auto meshField = p_mesh->getMeshField<mfIndex>(); 
     //auto meshField = p_mesh->getMeshField<Mesh_Field_Cur_Pos_XYZ>(); 
     auto assemble = PS_LAMBDA(const int& elm, const int& mp, const int& mask) {
@@ -62,10 +65,12 @@ void assembly(MPMesh& mpMesh, bool basisWeightFlag, bool massWeightFlag){
             for(int i=0; i<nVtxE; i++){
                 int vID = elm2VtxConn(elm,i+1)-1; //vID = vertex id
                 double fieldComponentVal;
+                double weightComponent = basis(mp,i)*mpMass;
                 for(int j=0;j<numEntries;j++){
-                    fieldComponentVal = mpData(mp,j)*basis(mp,i)*mpMass;
+                    fieldComponentVal = mpData(mp,j)*weightComponent;;
                     Kokkos::atomic_add(&meshField(vID,j),fieldComponentVal);
                 }
+                Kokkos::atomic_add(&weightField(vID),weightComponent);
             }
         }
     };

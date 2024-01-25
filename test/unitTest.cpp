@@ -127,6 +127,8 @@ int main(int argc, char** argv) {
         auto p_MPs = mpMesh.p_MPs;
         p_MPs->fillData<MPF_Mass>(1.0); //set MPF_Mass to 1.0
         p_MPs->fillData<MPF_Basis_Vals>(1.0);//TODO: change this to real basis value based on the basis computation routine
+        
+        getBasisByAreaGblForm(testMesh,testMesh,testMesh,testMesh);
         //TODO: write PS_LAMBDA to assign 2 velocity component to be position[0] and [1]
         auto mpVel = p_MPs->getData<MPF_Vel>();
         auto mpCurPosXYZ = p_MPs->getData<MPF_Cur_Pos_XYZ>();

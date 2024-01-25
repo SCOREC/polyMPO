@@ -261,6 +261,7 @@ class MaterialPoints {
 
     // MUTATOR  
     template <MaterialPointSlice index> void fillData(double value);//use PS_LAMBDA fill up to 1
+    template <MaterialPointSlice index> void findBasis();
 };// End MaterialPoints
 
 template <MaterialPointSlice index>
@@ -275,6 +276,53 @@ void MaterialPoints::fillData(double value){
     }
   };
   parallel_for(setValue, "setValue");
+}
+
+template <MaterialPointSlice index>
+void MaterialPoints::findBasis(){  
+  auto p_mesh = mpMesh.p_mesh;
+  auto vtxCoords = p_mesh->getMeshField<polyMPO::MeshF_VtxCoords>();
+  auto mpData = getData<index>();
+  auto elm2VtxConn = p_mesh->getElm2VtxConn();
+  auto p_MPs = mpMesh.p_MPs;
+  const int numEntries = mpSlice2MeshFieldIndex.at(index).first;
+  auto mpPositions = p_MPs->getData<MPF_Cur_Pos_XYZ>();
+  auto assemble = PS_LAMBDA(const int& elm, const int& mp, const int& mask) {
+      if (mask) {
+        /* get the coordinates of all the vertices of elm */
+        int nElmVtxs = elm2VtxConn(elm,0);      // number of vertices bounding the element
+        Vec2d eVtxCoords[maxVtxsPerElm + 1];
+        for (int i = 1; i <= nElmVtxs; i++) {
+          // elm2VtxConn(elm,i) is the vertex ID (1-based index) of vertex #i of elm
+          eVtxCoords[i-1][0] = vtxCoords(elm2VtxConn(elm,i)-1,0);    
+          eVtxCoords[i-1][1] = vtxCoords(elm2VtxConn(elm,i)-1,1);
+        }
+        // last component of eVtxCoords stores the firs vertex (to avoid if-condition in the Wachspress computation)
+        eVtxCoords[nElmVtxs][0] = vtxCoords(elm2VtxConn(elm,1)-1,0);
+        eVtxCoords[nElmVtxs][1] = vtxCoords(elm2VtxConn(elm,1)-1,1);
+        
+        /* compute the values of basis functions at mp position */
+        double basisByArea[maxElmsPerVtx];
+        Vec2d mpCoord(mpPositions(mp,0), mpPositions(mp,1));
+        getBasisByAreaGblForm(mpCoord, nElmVtxs, eVtxCoords, basisByArea);
+
+        /* get the mp's property that is assebled to vertices */
+        //double assValue = mpData(mp, 0); // ??? for scalar mp data, is index 0 always?
+        
+        /* accumulate the mp's property to vertices */
+        /*
+        for (int i = 0; i < nElmVtxs; i++) {
+          int vID = elm2VtxConn(elm,i+1)-1;
+          Kokkos::atomic_add(&vField(vID), assValue * basisByArea[i]);
+        }
+        */
+        //const int numEntries = mpSlice2MeshFieldIndex.at(index).first;
+        for (int i = 0; i < numEntries; i++) {
+          mpData(mp,i) = basisByArea[i];
+        }
+      }
+    };
+    p_MPs->parallel_for(assemble, "assembly");
 }
 
 template<int mpSliceIndex, typename mpSliceData>

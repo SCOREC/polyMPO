@@ -42,7 +42,7 @@ void testAppIDPointer(MPMesh_ptr p_mpmesh) {
   p_MPs->rebuild(added_mp2Elm_d, added_mpIDs_d);
 
   //Assert rebuild worked
-  int elm_invalid= -1;
+  const int elm_invalid = -1;
   auto newAppID = p_MPs->getData<polyMPO::MPF_MP_APP_ID>();
   Kokkos::View<int*> numAddedMPsAfter("numAddedMPsAfter", 1);
   auto checkAddedMPs = PS_LAMBDA(const int& e, const int& mp, const int& mask) {

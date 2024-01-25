@@ -16,6 +16,7 @@ set(SOURCES
   pmpo_MPMesh.cpp
   pmpo_c.cpp
   pmpo_createTestMPMesh.cpp
+  ../test/testMPAppIDs.cpp
 )
 
 add_library(polyMPO-core ${SOURCES})

@@ -97,6 +97,19 @@ module polympo
     type(c_ptr), value :: mpMesh
   end subroutine
   !---------------------------------------------------------------------------
+  !> @brief Stores pointer to appID data structure and a function to retrieve them used in migration
+  !> @param mpmesh(in/out) MPMesh object
+  !> @param getNext(in) Pointer to function that returns next App IDs
+  !> @param appIDs(in) Pointer to opaque data application data structure (that may contain all available app IDs)
+  !---------------------------------------------------------------------------
+  subroutine polympo_setAppIDFunc(mpMesh, getNext, appIDs) &
+    bind(C, NAME='polympo_setAppIDFunc_f')
+    use :: iso_c_binding
+    type(c_ptr), value :: mpMesh
+    type(c_funptr), value :: getNext
+    type(c_ptr), value :: appIDs
+  end subroutine
+  !---------------------------------------------------------------------------
   !> @brief get the current element ID MP array from a polympo array
   !> @param mpmesh(in/out) MPMesh object
   !> @param numMPs(in) length of array, number of the MPs

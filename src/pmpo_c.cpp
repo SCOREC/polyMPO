@@ -3,8 +3,6 @@
 #include "pmpo_c.h"
 #include <stdio.h>
 
-using space_t = Kokkos::DefaultExecutionSpace::memory_space;
-
 namespace{
   std::vector<MPMesh_ptr> p_mpmeshes;////store the p_mpmeshes that is legal
     
@@ -57,31 +55,6 @@ void polympo_setMPICommunicator_f(MPI_Fint fcomm){
     MPI_Comm comm = MPI_Comm_f2c(fcomm);
     int commSize;
     MPI_Comm_size(comm,&commSize);
-}
-
-/**
- * Attention: this typedef is LayoutLeft, meaning that the first
- * index is the contiguous one. This matches the Fortran and GPU conventions for
- * allocations.
- */
-//TODO: order of these typedefs to be done later
-template<typename DataT>
-using kkViewHostU = Kokkos::View<
-          DataT,
-          Kokkos::LayoutLeft,
-          Kokkos::DefaultHostExecutionSpace,
-          Kokkos::MemoryTraits<Kokkos::Unmanaged>>;
-
-typedef kkViewHostU<double*> kkDblViewHostU;//TODO:put it to mesh.hpp             
-typedef kkViewHostU<double*[vec2d_nEntries]> kkVec2dViewHostU;//TODO:put it to mesh.hpp
-typedef kkViewHostU<double**> kkDbl2dViewHostU;//TODO:put it somewhere else (maybe)
-typedef kkViewHostU<int**> kkInt2dViewHostU;//TODO:put it somewhere else (maybe)
-typedef kkViewHostU<int*> kkIntViewHostU;//TODO:put it somewhere else (maybe)
-
-template <typename DataT>
-auto create_mirror_view_and_copy(DataT array, const int size){
-  kkViewHostU<DataT> temp_host(array, size);
-  return Kokkos::create_mirror_view_and_copy(space_t(), temp_host);
 }
 
 void polympo_createMPs_f(MPMesh_ptr p_mpmesh,
@@ -216,6 +189,13 @@ void polympo_finishRebuildMPs_f(MPMesh_ptr p_mpmesh)
   checkMPMeshValid(p_mpmesh);
   auto p_MPs = ((polyMPO::MPMesh*)p_mpmesh)->p_MPs;
   p_MPs->finishRebuild();
+}
+
+void polympo_setAppIDFunc_f(MPMesh_ptr p_mpmesh, IntVoidFunc getNext, void* appIDs) {
+  checkMPMeshValid(p_mpmesh);
+  auto p_MPs = ((polyMPO::MPMesh*)p_mpmesh)->p_MPs;
+  polyMPO::IntFunc getNextAppID = [getNext, appIDs]() { return getNext(appIDs); };
+  p_MPs->setAppIDFunc(getNextAppID);
 }
 
 void polympo_getMPCurElmID_f(MPMesh_ptr p_mpmesh,

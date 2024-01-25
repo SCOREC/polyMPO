@@ -52,6 +52,7 @@ pmpo_add_fortran_exe(testFortranInit testFortranInit.f90)
 pmpo_add_fortran_exe(testFortran testFortran.f90)
 pmpo_add_fortran_exe(testFortranReadMPAS testFortranReadMPAS.f90)
 pmpo_add_fortran_exe(testFortranMPMeshModule testFortranMPMeshModule.f90)
+pmpo_add_fortran_exe(testFortranMPAppIDs testFortranMPAppIDs.f90)
 pmpo_add_fortran_exe(testFortranMPAdvection testFortranMPAdvection.f90)
 pmpo_add_fortran_exe(testFortranCreateRebuildMPs testFortranCreateRebuildMPs.f90)
 
@@ -75,6 +76,7 @@ pmpo_add_test(test_rebuild ./testRebuild)
 pmpo_add_test(testFortranInit ./testFortranInit)
 pmpo_add_test(testFortran ./testFortran)
 pmpo_add_test(testFortranMPMeshModule ./testFortranMPMeshModule)
+pmpo_add_test(testFortranMPAppIDs ./testFortranMPAppIDs)
 
 #set NC file for test
 set(TEST_NC_FILE_PLANAR "${CMAKE_SOURCE_DIR}/test/sample_mpas_meshes/planar_nonuniform_cvt_for_square_673elms.nc")

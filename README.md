@@ -110,7 +110,7 @@ cmake --build ${oh%%install} -j 24 --target install
 
 #cabana
 mkdir -p $cab
-git clone -b 0.5.0 https://github.com/ECP-copa/Cabana.git cabana
+git clone -b 0.6.1 https://github.com/ECP-copa/Cabana.git cabana
 cmake -S cabana -B ${cab%%install} \
   -DCMAKE_INSTALL_PREFIX=$cab \
   -DCMAKE_BUILD_TYPE="Release" \
@@ -121,7 +121,7 @@ cmake --build ${cab%%install} -j 24 --target install
 
 #pumipic
 mkdir -p $pumipic
-git clone --recursive https://github.com/SCOREC/pumi-pic.git
+git clone -b 2.0.3 --recursive https://github.com/SCOREC/pumi-pic.git
 cmake -S pumi-pic -B ${pumipic%%install} \
   -DCMAKE_INSTALL_PREFIX=$pumipic \
   -DCMAKE_BUILD_TYPE="Debug" \
@@ -327,7 +327,7 @@ cmake --build ${oh%%install} -j 24 --target install
 
 #cabana
 mkdir -p $cab
-git clone -b 0.5.0 https://github.com/ECP-copa/Cabana.git cabana
+git clone -b 0.6.1 https://github.com/ECP-copa/Cabana.git cabana
 cmake -S cabana -B ${cab%%install} \
   -DCMAKE_INSTALL_PREFIX=$cab \
   -DCMAKE_BUILD_TYPE="Release" \
@@ -338,7 +338,7 @@ cmake --build ${cab%%install} -j 24 --target install
 
 #pumipic
 mkdir -p $pumipic
-git clone --recursive -b ac/cuda-off https://github.com/SCOREC/pumi-pic.git
+git clone -b 2.0.3 --recursive https://github.com/SCOREC/pumi-pic.git
 cmake -S pumi-pic -B ${pumipic%%install} \
   -DCMAKE_INSTALL_PREFIX=$pumipic \
   -DCMAKE_BUILD_TYPE="Debug" \
@@ -469,7 +469,7 @@ cmake --build ${oh%%install} -j 24 --target install
 
 #cabana
 mkdir -p $cab
-git clone -b 0.5.0 https://github.com/ECP-copa/Cabana.git cabana
+git clone -b 0.6.1 https://github.com/ECP-copa/Cabana.git cabana
 cd cabana
 git checkout d3503a6f
 cd ..
@@ -483,7 +483,7 @@ cmake --build ${cab%%install} -j 24 --target install
 
 #pumipic
 mkdir -p $pumipic
-git clone --recursive https://github.com/SCOREC/pumi-pic.git
+git clone -b 2.0.3 --recursive https://github.com/SCOREC/pumi-pic.git
 cd pumi-pic
 git checkout bd930e1
 cd ..
@@ -618,7 +618,7 @@ cmake --build ${oh%%install} -j 24 --target install
 
 #cabana
 mkdir -p $cab
-git clone -b 0.5.0 https://github.com/ECP-copa/Cabana.git cabana
+git clone -b 0.6.1 https://github.com/ECP-copa/Cabana.git cabana
 cmake -S cabana -B ${cab%%install} \
   -DCMAKE_INSTALL_PREFIX=$cab \
   -DCMAKE_BUILD_TYPE="Release" \
@@ -629,7 +629,7 @@ cmake --build ${cab%%install} -j 24 --target install
 
 #pumipic
 mkdir -p $pumipic
-git clone --recursive -b ac/cuda-off https://github.com/SCOREC/pumi-pic.git
+git clone -b 2.0.3 --recursive https://github.com/SCOREC/pumi-pic.git
 cmake -S pumi-pic -B ${pumipic%%install} \
   -DCMAKE_INSTALL_PREFIX=$pumipic \
   -DCMAKE_BUILD_TYPE="Debug" \

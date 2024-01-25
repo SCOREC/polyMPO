@@ -62,7 +62,7 @@ program main
     allocate(mpsPerElm(nCells))
     allocate(mp2Elm(numMPs))
     allocate(isMPActive(numMPs))
-    nCells = polympo_getMeshNumElms(mpMesh)
+    call polympo_getMeshNumElms(mpMesh, nCells)
     mpsPerElm = 1
     mp2Elm = 1
     isMPActive = MP_ACTIVE

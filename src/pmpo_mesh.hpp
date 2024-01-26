@@ -70,14 +70,8 @@ class Mesh {
     // TODO: Migration fields
 
     // int config_num_halos (is this equal to the number of mpi ranks?)
-
     // IntView nCellsArray
-    // IntView nVerticesArray
-    // IntView nEdgesArray
-
     // IntView indexToCellID
-    // IntView indexToVertexID
-    // IntView indexToEdgeID
 
   
     //start of meshFields
@@ -118,8 +112,6 @@ class Mesh {
 
     // TODO: Migration Functions
     // int getCellHaloLayer(int index);
-    // int getVtxsHaloLayer(int index);
-    // int getEdgeHaloLayer(int index);
 
     mesh_type getMeshType() { return meshType_; }
     geom_type getGeomType() { return geomType_; }

@@ -161,9 +161,6 @@ void MPMesh::CVTTrackingElmCenterBased(const int printVTPIndex){
     };
     p_MPs->parallel_for(CVTElmCalc,"CVTTrackingElmCenterBasedCalc");
 
-    // TODO: Migration
-    // p_MPs->migrate(MPs2Elm, MPs2Process);
-
     if(printVTPIndex>=0){
         Vec3dView::HostMirror h_history = Kokkos::create_mirror_view(history);
         Vec3dView::HostMirror h_resultLeft = Kokkos::create_mirror_view(resultLeft);
@@ -270,6 +267,10 @@ void MPMesh::push(){
   p_MPs->updateRotLatLonAndXYZ2Tgt(p_mesh->getSphereRadius()); // set Tgt_XYZ
 
   CVTTrackingElmCenterBased(); // move to Tgt_XYZ
+
+  // TODO: Migration
+  // Needs a while() to keep migrating until all of the processes are done
+  // p_MPs->migrate(MPs2Elm, MPs2Process);
 
   p_MPs->updateMPSlice<MPF_Cur_Pos_XYZ, MPF_Tgt_Pos_XYZ>(); // Tgt_XYZ becomes Cur_XYZ
   p_MPs->updateMPSlice<MPF_Cur_Pos_Rot_Lat_Lon, MPF_Tgt_Pos_Rot_Lat_Lon>(); // Tgt becomes Cur

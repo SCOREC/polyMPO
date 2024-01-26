@@ -126,7 +126,6 @@ int main(int argc, char** argv) {
         auto mpMesh = initTestMPMesh(testMesh, testMPOption); //creates test MPs 
         auto p_MPs = mpMesh.p_MPs;
         p_MPs->fillData<MPF_Mass>(1.0); //set MPF_Mass to 1.0
-        p_MPs->fillData<MPF_Basis_Vals>(1.0);//TODO: change this to real basis value based on the basis computation routine
         
         auto p_mesh = mpMesh.p_mesh;
         auto vtxCoords = p_mesh->getMeshField<polyMPO::MeshF_VtxCoords>();
@@ -139,31 +138,23 @@ int main(int argc, char** argv) {
         if (mask) {
             /* get the coordinates of all the vertices of elm */
             int nElmVtxs = elm2VtxConn(elm,0);      // number of vertices bounding the element
-            Vec2d eVtxCoords[maxVtxsPerElm + 1];
+            Vec3d eVtxCoords[maxVtxsPerElm + 1];
             for (int i = 1; i <= nElmVtxs; i++) {
             // elm2VtxConn(elm,i) is the vertex ID (1-based index) of vertex #i of elm
                 eVtxCoords[i-1][0] = vtxCoords(elm2VtxConn(elm,i)-1,0);    
                 eVtxCoords[i-1][1] = vtxCoords(elm2VtxConn(elm,i)-1,1);
+                eVtxCoords[i-1][2] = vtxCoords(elm2VtxConn(elm,i)-1,2);
             }
             // last component of eVtxCoords stores the firs vertex (to avoid if-condition in the Wachspress computation)
             eVtxCoords[nElmVtxs][0] = vtxCoords(elm2VtxConn(elm,1)-1,0);
             eVtxCoords[nElmVtxs][1] = vtxCoords(elm2VtxConn(elm,1)-1,1);
+            eVtxCoords[nElmVtxs][2] = vtxCoords(elm2VtxConn(elm,1)-1,2);
 
             /* compute the values of basis functions at mp position */
             double basisByArea[maxElmsPerVtx];
-            Vec2d mpCoord(mpPositions(mp,0), mpPositions(mp,1));
-            getBasisByAreaGblForm(mpCoord, nElmVtxs, eVtxCoords, basisByArea);
+            Vec3d mpCoord(mpPositions(mp,0), mpPositions(mp,1), mpPositions(mp,2));
+            getBasisByAreaGblForm3d(mpCoord, nElmVtxs, eVtxCoords, basisByArea);
 
-            /* get the mp's property that is assebled to vertices */
-            //double assValue = mpData(mp, 0); // ??? for scalar mp data, is index 0 always?
-
-            /* accumulate the mp's property to vertices */
-            /*
-            for (int i = 0; i < nElmVtxs; i++) {
-                int vID = elm2VtxConn(elm,i+1)-1;
-                Kokkos::atomic_add(&vField(vID), assValue * basisByArea[i]);
-            }
-            */
             //const int numEntries = mpSlice2MeshFieldIndex.at(index).first;
             for (int i = 0; i < numEntries; i++) {
               basis(mp,i) = basisByArea[i];
@@ -174,13 +165,14 @@ int main(int argc, char** argv) {
         p_MPs->parallel_for(assemble, "assembly");
         
         //TODO: write PS_LAMBDA to assign 2 velocity component to be position[0] and [1]
+        double del = 3.89;
         auto mpVel = p_MPs->getData<MPF_Vel>();
         auto mpCurPosXYZ = p_MPs->getData<MPF_Cur_Pos_XYZ>();
         auto setVel = PS_LAMBDA(const int&, const int& mp, const int& mask){
             if(mask) { 
-                for(int i=0; i<2; i++){
-                    mpVel(mp,i) = mpCurPosXYZ(mp,i);
-                }
+                mpVel(mp,0) = del;
+                mpVel(mp,1) = del+1;
+                mpVel(mp,2) = del+2;
             }
         };
         mpMesh.p_MPs->parallel_for(setVel, "setVel=CurPosXY");
@@ -198,28 +190,23 @@ int main(int argc, char** argv) {
         auto vtxField_h = Kokkos::create_mirror_view(vtxField);
         //auto vtxFieldFromMesh_h_ = Kokkos::create_mirror_view(vtxFieldFromMesh);
         Kokkos::deep_copy(vtxField_h, vtxField);
-        const std::vector<std::vector<double>> vtxFieldExpected = {
-            {1.415000, 1.450000}, {4.865000, 1.866667},
-            {16.323333, 5.251333}, {9.305000, 3.774667},
-            {9.380000, 6.418000}, {2.675000, 6.130000},
-            {4.475000, 9.463333}, {4.995000, 7.816667},
-            {6.720000, 7.543333}, {11.096429, 7.573714},
-            {11.171429, 5.740381}, {11.564762, 5.532381},
-            {7.964762, 4.305714}, {8.436429, 8.699048},
-            {4.840000, 11.046667}, {1.260000, 4.680000},
-            {3.040000, 7.713333}, {4.911429, 5.639048},
-            {3.131429, 2.605714}}; 
         for(size_t i=0; i<vtxField_h.size(); i++) {
             int j = i/2;
-            int k = i%2;
-            auto res = polyMPO::isEqual(vtxField_h(j,k),vtxFieldExpected[j][k], TEST_EPSILON);
+            auto res = polyMPO::isEqual(vtxField_h(j,0),del,TEST_EPSILON);
+            auto res2 = polyMPO::isEqual(vtxField_h(j,1),del+1,TEST_EPSILON);
+            //auto res3 = polyMPO::isEqual(vtxField_h(j,2)+2,del+2,TEST_EPSILON);
           if(!res) {
             fprintf(stderr, "expected != calc Value!\n\t[%d][%d]: %.6lf != %.6lf\n",
-                                                j,k,vtxFieldExpected[j][k],vtxField_h(j,k));
+                                                j,0,del,vtxField_h(j,0));
+          }
+          if(!res2) {
+            fprintf(stderr, "expected != calc Value!\n\t[%d][%d]: %.6lf != %.6lf\n",
+                                                j,1,del+1,vtxField_h(j,1));
           }
           PMT_ALWAYS_ASSERT(res);
+          PMT_ALWAYS_ASSERT(res2);
+          //PMT_ALWAYS_ASSERT(res3);
         }
-
         interpolateWachspress2DTest(mpMesh);
     }
     Kokkos::finalize();

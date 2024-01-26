@@ -63,9 +63,11 @@ void assembly(MPMesh& mpMesh, bool basisWeightFlag, bool massWeightFlag){
             int nVtxE = elm2VtxConn(elm,0); //number of vertices bounding the element
             double mpMass = massWeight(mp,0);
             for(int i=0; i<nVtxE; i++){
+                //printf("basis %d %d: %f \n",mp,i,basis(mp,i));
                 int vID = elm2VtxConn(elm,i+1)-1; //vID = vertex id
                 double fieldComponentVal;
                 double weightComponent = basis(mp,i)*mpMass;
+                //printf("weight %d %d %f \n",mp,i,weightComponent); 
                 for(int j=0;j<numEntries;j++){
                     fieldComponentVal = mpData(mp,j)*weightComponent;
                     Kokkos::atomic_add(&meshField(vID,j),fieldComponentVal);

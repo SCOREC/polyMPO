@@ -128,7 +128,51 @@ int main(int argc, char** argv) {
         p_MPs->fillData<MPF_Mass>(1.0); //set MPF_Mass to 1.0
         p_MPs->fillData<MPF_Basis_Vals>(1.0);//TODO: change this to real basis value based on the basis computation routine
         
-        getBasisByAreaGblForm(testMesh,testMesh,testMesh,testMesh);
+        auto p_mesh = mpMesh.p_mesh;
+        auto vtxCoords = p_mesh->getMeshField<polyMPO::MeshF_VtxCoords>();
+        auto basis = p_MPs->getData<MPF_Basis_Vals>();
+        auto elm2VtxConn = p_mesh->getElm2VtxConn();
+        //auto p_MPs = mpMesh.p_MPs;
+        const int numEntries = mpSlice2MeshFieldIndex.at(MPF_Basis_Vals).first;
+        auto mpPositions = p_MPs->getData<MPF_Cur_Pos_XYZ>();
+        auto assemble = PS_LAMBDA(const int& elm, const int& mp, const int& mask) {
+        if (mask) {
+            /* get the coordinates of all the vertices of elm */
+            int nElmVtxs = elm2VtxConn(elm,0);      // number of vertices bounding the element
+            Vec2d eVtxCoords[maxVtxsPerElm + 1];
+            for (int i = 1; i <= nElmVtxs; i++) {
+            // elm2VtxConn(elm,i) is the vertex ID (1-based index) of vertex #i of elm
+                eVtxCoords[i-1][0] = vtxCoords(elm2VtxConn(elm,i)-1,0);    
+                eVtxCoords[i-1][1] = vtxCoords(elm2VtxConn(elm,i)-1,1);
+            }
+            // last component of eVtxCoords stores the firs vertex (to avoid if-condition in the Wachspress computation)
+            eVtxCoords[nElmVtxs][0] = vtxCoords(elm2VtxConn(elm,1)-1,0);
+            eVtxCoords[nElmVtxs][1] = vtxCoords(elm2VtxConn(elm,1)-1,1);
+
+            /* compute the values of basis functions at mp position */
+            double basisByArea[maxElmsPerVtx];
+            Vec2d mpCoord(mpPositions(mp,0), mpPositions(mp,1));
+            getBasisByAreaGblForm(mpCoord, nElmVtxs, eVtxCoords, basisByArea);
+
+            /* get the mp's property that is assebled to vertices */
+            //double assValue = mpData(mp, 0); // ??? for scalar mp data, is index 0 always?
+
+            /* accumulate the mp's property to vertices */
+            /*
+            for (int i = 0; i < nElmVtxs; i++) {
+                int vID = elm2VtxConn(elm,i+1)-1;
+                Kokkos::atomic_add(&vField(vID), assValue * basisByArea[i]);
+            }
+            */
+            //const int numEntries = mpSlice2MeshFieldIndex.at(index).first;
+            for (int i = 0; i < numEntries; i++) {
+              basis(mp,i) = basisByArea[i];
+              //printf("%d %d: %f \n", mp, i, mpData(mp,i));
+            }
+          }
+        };
+        p_MPs->parallel_for(assemble, "assembly");
+        
         //TODO: write PS_LAMBDA to assign 2 velocity component to be position[0] and [1]
         auto mpVel = p_MPs->getData<MPF_Vel>();
         auto mpCurPosXYZ = p_MPs->getData<MPF_Cur_Pos_XYZ>();
@@ -140,7 +184,7 @@ int main(int argc, char** argv) {
             }
         };
         mpMesh.p_MPs->parallel_for(setVel, "setVel=CurPosXY");
-        auto p_mesh = mpMesh.p_mesh;
+        //auto p_mesh = mpMesh.p_mesh;
         PMT_ALWAYS_ASSERT(p_mesh->getNumVertices() == 19);
         PMT_ALWAYS_ASSERT(p_mesh->getNumElements() == 10);
 

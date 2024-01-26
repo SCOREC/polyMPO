@@ -66,6 +66,19 @@ class Mesh {
     //IntView nEdgesPerElm_;
     IntVtx2ElmView elm2VtxConn_;
     IntElm2ElmView elm2ElmConn_;
+
+    // TODO: Migration fields
+
+    // int config_num_halos (is this equal to the number of mpi ranks?)
+
+    // IntView nCellsArray
+    // IntView nVerticesArray
+    // IntView nEdgesArray
+
+    // IntView indexToCellID
+    // IntView indexToVertexID
+    // IntView indexToEdgeID
+
   
     //start of meshFields
     DoubleVec3dView vtxCoords_;
@@ -102,6 +115,11 @@ class Mesh {
     bool meshEditable(){ return meshEdit_; }
     bool checkMeshType(int meshType);
     bool checkGeomType(int geomType);
+
+    // TODO: Migration Functions
+    // int getCellHaloLayer(int index);
+    // int getVtxsHaloLayer(int index);
+    // int getEdgeHaloLayer(int index);
 
     mesh_type getMeshType() { return meshType_; }
     geom_type getGeomType() { return geomType_; }

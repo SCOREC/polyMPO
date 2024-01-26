@@ -132,6 +132,9 @@ void MPMesh::CVTTrackingElmCenterBased(const int printVTPIndex){
                 }
                 if(closestElm<0){
                     MPs2Elm(mp) = iElm;
+                    // TODO: Find which process the mp is in
+                    // int newProcess = p_mesh.getCellHaloLayer(iElm);
+                    // MPs2Process(mp) = newProcess;
                     break;
                 }else{
                     iElm = closestElm;
@@ -157,6 +160,9 @@ void MPMesh::CVTTrackingElmCenterBased(const int printVTPIndex){
         }
     };
     p_MPs->parallel_for(CVTElmCalc,"CVTTrackingElmCenterBasedCalc");
+
+    // TODO: Migration
+    // p_MPs->migrate(MPs2Elm, MPs2Process);
 
     if(printVTPIndex>=0){
         Vec3dView::HostMirror h_history = Kokkos::create_mirror_view(history);

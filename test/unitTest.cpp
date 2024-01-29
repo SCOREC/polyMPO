@@ -172,7 +172,6 @@ int main(int argc, char** argv) {
             if(mask) { 
                 mpVel(mp,0) = del;
                 mpVel(mp,1) = del+1;
-                mpVel(mp,2) = 0.0;
             }
         };
         mpMesh.p_MPs->parallel_for(setVel, "setVel=CurPosXY");

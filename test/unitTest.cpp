@@ -172,7 +172,7 @@ int main(int argc, char** argv) {
             if(mask) { 
                 mpVel(mp,0) = del;
                 mpVel(mp,1) = del+1;
-                mpVel(mp,2) = del+2;
+                mpVel(mp,2) = 0.0;
             }
         };
         mpMesh.p_MPs->parallel_for(setVel, "setVel=CurPosXY");
@@ -194,7 +194,6 @@ int main(int argc, char** argv) {
             int j = i/2;
             auto res = polyMPO::isEqual(vtxField_h(j,0),del,TEST_EPSILON);
             auto res2 = polyMPO::isEqual(vtxField_h(j,1),del+1,TEST_EPSILON);
-            //auto res3 = polyMPO::isEqual(vtxField_h(j,2)+2,del+2,TEST_EPSILON);
           if(!res) {
             fprintf(stderr, "expected != calc Value!\n\t[%d][%d]: %.6lf != %.6lf\n",
                                                 j,0,del,vtxField_h(j,0));
@@ -205,7 +204,6 @@ int main(int argc, char** argv) {
           }
           PMT_ALWAYS_ASSERT(res);
           PMT_ALWAYS_ASSERT(res2);
-          //PMT_ALWAYS_ASSERT(res3);
         }
         interpolateWachspress2DTest(mpMesh);
     }

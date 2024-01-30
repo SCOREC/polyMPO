@@ -549,8 +549,8 @@ build scripts needed for building on the CPU.
 ```
 export root=$PWD
 module load cmake/3.22.0
-module load cray-hdf5/1.12.2.7
-module load cray-netcdf/4.9.0.3
+module load cray-hdf5/1.12.2.9
+module load cray-netcdf/4.9.0.9
 
 function getname() {
   name=$1

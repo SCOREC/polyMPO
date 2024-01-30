@@ -158,7 +158,6 @@ int main(int argc, char** argv) {
             //const int numEntries = mpSlice2MeshFieldIndex.at(index).first;
             for (int i = 0; i < numEntries; i++) {
               basis(mp,i) = basisByArea[i];
-              //printf("%d %d: %f \n", mp, i, mpData(mp,i));
             }
           }
         };
@@ -175,7 +174,6 @@ int main(int argc, char** argv) {
             }
         };
         mpMesh.p_MPs->parallel_for(setVel, "setVel=CurPosXY");
-        //auto p_mesh = mpMesh.p_mesh;
         PMT_ALWAYS_ASSERT(p_mesh->getNumVertices() == 19);
         PMT_ALWAYS_ASSERT(p_mesh->getNumElements() == 10);
 
@@ -205,6 +203,112 @@ int main(int argc, char** argv) {
           PMT_ALWAYS_ASSERT(res2);
         }
         interpolateWachspress2DTest(mpMesh);
+    }
+
+    //spherical test
+    //this test is only designed to work with the following option values:
+    const int testMeshOption2 = 1;
+    const int replicateFactor2 = 1;
+    //run assembly and test spherical Wachspress
+    {
+        void* meshP;
+        char* filename = (char *)malloc(sizeof(char) * 256);
+
+        // TODO: add relative path
+        sprintf(filename,"/gpfs/u/home/MPMS/MPMSsngj/scratch/polyDev/polyMPO/test/sample_mpas_meshes/spherical_cvt_642elms.nc");
+        setWithMPASMeshByFortran(&meshP, filename, (int)strlen(filename));
+        auto mpMeshPtr = (MPMesh*)meshP;
+        auto mpMesh = *mpMeshPtr;
+        auto p_mesh = mpMesh.p_mesh;
+        mpMesh.p_MPs = initTestMPs(p_mesh, testMPOption); 
+        auto p_MPs = mpMesh.p_MPs;
+
+        auto testMesh = initTestMesh(testMeshOption2,replicateFactor2);
+        PMT_ALWAYS_ASSERT(testMesh->getMeshType() == mesh_general_polygonal);
+        PMT_ALWAYS_ASSERT(testMesh->getGeomType() == geom_planar_surf);
+        //PMT_ALWAYS_ASSERT(testMesh->getGeomType() == geom_spherical_surf);
+        //auto mpMesh = initTestMPMesh(testMesh, testMPOption2); //creates test MPs
+        //auto p_MPs = mpMesh.p_MPs;
+        p_MPs->fillData<MPF_Mass>(1.0); //set MPF_Mass to 1.0
+
+        //auto p_mesh = mpMesh.p_mesh;
+        auto vtxCoords = p_mesh->getMeshField<polyMPO::MeshF_VtxCoords>();
+        auto basis = p_MPs->getData<MPF_Basis_Vals>();
+        auto elm2VtxConn = p_mesh->getElm2VtxConn();
+        double radius = p_mesh->getSphereRadius();
+        PMT_ALWAYS_ASSERT(radius > 0);
+        
+        const int numEntries = mpSlice2MeshFieldIndex.at(MPF_Basis_Vals).first;
+        auto mpPositions = p_MPs->getData<MPF_Cur_Pos_XYZ>();
+        auto assemble = PS_LAMBDA(const int& elm, const int& mp, const int& mask) {
+        if (mask) {
+            /* get the coordinates of all the vertices of elm */
+            int nElmVtxs = elm2VtxConn(elm,0);      // number of vertices bounding the element
+            Vec3d eVtxCoords[maxVtxsPerElm + 1];
+            for (int i = 1; i <= nElmVtxs; i++) {
+            // elm2VtxConn(elm,i) is the vertex ID (1-based index) of vertex #i of elm
+                eVtxCoords[i-1][0] = vtxCoords(elm2VtxConn(elm,i)-1,0);
+                eVtxCoords[i-1][1] = vtxCoords(elm2VtxConn(elm,i)-1,1);
+                eVtxCoords[i-1][2] = vtxCoords(elm2VtxConn(elm,i)-1,2);
+            }
+            // last component of eVtxCoords stores the firs vertex (to avoid if-condition in the Wachspress computation)
+            eVtxCoords[nElmVtxs][0] = vtxCoords(elm2VtxConn(elm,1)-1,0);
+            eVtxCoords[nElmVtxs][1] = vtxCoords(elm2VtxConn(elm,1)-1,1);
+            eVtxCoords[nElmVtxs][2] = vtxCoords(elm2VtxConn(elm,1)-1,2);
+
+            /* compute the values of basis functions at mp position */
+            double basisByAreaSpherical[maxElmsPerVtx];
+            Vec3d mpCoord(mpPositions(mp,0), mpPositions(mp,1), mpPositions(mp,2));
+            getBasisByAreaGblFormSpherical(mpCoord, nElmVtxs, eVtxCoords, radius, basisByAreaSpherical);
+            //const int numEntries = mpSlice2MeshFieldIndex.at(index).first;
+            for (int i = 0; i < numEntries; i++) {
+              basis(mp,i) = basisByAreaSpherical[i];
+            }
+          }
+        };
+        p_MPs->parallel_for(assemble, "assembly");
+
+        double del = 3.89;
+        auto mpVel = p_MPs->getData<MPF_Vel>();
+        auto mpCurPosXYZ = p_MPs->getData<MPF_Cur_Pos_XYZ>();
+        auto setVel = PS_LAMBDA(const int&, const int& mp, const int& mask){
+            if(mask) {
+                mpVel(mp,0) = del;
+                mpVel(mp,1) = del+1;
+            }
+        };
+        //mpMesh.p_MPs->parallel_for(setVel, "setVel=CurPosXY");
+        mpMesh.p_MPs->parallel_for(setVel, "setVel=CurPosXY");
+       
+        PMT_ALWAYS_ASSERT(p_mesh->getNumVertices() == 1280);
+        PMT_ALWAYS_ASSERT(p_mesh->getNumElements() == 642);
+
+        //run non-physical assembly (mp -to- mesh vertex) kernel
+        polyMPO::assembly<MPF_Vel,MeshF_Vel>(mpMesh,false,false);//TODO: two flags not supported yet
+
+        auto vtxField = p_mesh->getMeshField<MeshF_Vel>();
+        //interpolateWachspress(mpMesh);
+        //auto vtxFieldBasis = polyMPO::assemblyNew<MP_Cur_Pos_XYZ>(mpMesh,true);
+        //check the result
+        auto vtxField_h = Kokkos::create_mirror_view(vtxField);
+        //auto vtxFieldFromMesh_h_ = Kokkos::create_mirror_view(vtxFieldFromMesh);
+        Kokkos::deep_copy(vtxField_h, vtxField);
+        for(size_t i=0; i<vtxField_h.size(); i++) {
+            int j = i/2;
+            auto res = polyMPO::isEqual(vtxField_h(j,0),del,TEST_EPSILON);
+            auto res2 = polyMPO::isEqual(vtxField_h(j,1),del+1,TEST_EPSILON);
+          if(!res) {
+            fprintf(stderr, "expected != calc Value!\n\t[%d][%d]: %.6lf != %.6lf\n",
+                                                j,0,del,vtxField_h(j,0));
+          }
+          if(!res2) {
+            fprintf(stderr, "expected != calc Value!\n\t[%d][%d]: %.6lf != %.6lf\n",
+                                                j,1,del+1,vtxField_h(j,1));
+          }
+          PMT_ALWAYS_ASSERT(res);
+          PMT_ALWAYS_ASSERT(res2);
+        }
+        interpolateWachspressSphericalTest(mpMesh);
     }
     Kokkos::finalize();
     MPI_Finalize();

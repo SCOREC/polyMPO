@@ -67,12 +67,9 @@ class Mesh {
     IntVtx2ElmView elm2VtxConn_;
     IntElm2ElmView elm2ElmConn_;
 
-    // TODO: Migration fields
-
-    // int config_num_halos (is this equal to the number of mpi ranks?)
-    // IntView nCellsArray
-    // IntView indexToCellID
-
+    int numHalos_;
+    IntView nCellsArray_;
+    IntView indexToCellID_;
   
     //start of meshFields
     DoubleVec3dView vtxCoords_;
@@ -120,6 +117,7 @@ class Mesh {
     int getNumElements() { return numElms_; }
     IntVtx2ElmView getElm2VtxConn() { return elm2VtxConn_; }
     IntElm2ElmView getElm2ElmConn() { return elm2ElmConn_; }
+    int getNumHalos() { return numHalos_; }
     template<MeshFieldIndex index> auto getMeshField();
     void setMeshVtxBasedFieldSize();
 
@@ -139,6 +137,13 @@ class Mesh {
                                                      elm2VtxConn_ = elm2VtxConn; }
     void setElm2ElmConn(IntElm2ElmView elm2ElmConn) {PMT_ALWAYS_ASSERT(meshEdit_);
                                                      elm2ElmConn_ = elm2ElmConn; }
+
+    void setNumHalos(int numHalos) {PMT_ALWAYS_ASSERT(meshEdit_); 
+                                    numHalos_ = numHalos; }
+    void setNCellsArray(IntView nCellsArray) {PMT_ALWAYS_ASSERT(meshEdit_); 
+                                              nCellsArray_ = nCellsArray; }
+    void setIndexToCellID(IntView indexToCellID) {PMT_ALWAYS_ASSERT(meshEdit_); 
+                                                  indexToCellID_ = indexToCellID; }
     
     void computeRotLatLonIncr();
 };

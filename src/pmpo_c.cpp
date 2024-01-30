@@ -642,3 +642,36 @@ void polympo_push_f(MPMesh_ptr p_mpmesh){
   checkMPMeshValid(p_mpmesh);
   ((polyMPO::MPMesh*)p_mpmesh) ->push();
 }
+
+void polympo_setConfigNumHalos_f(MPMesh_ptr p_mpmesh, const int numHalos){
+  checkMPMeshValid(p_mpmesh);
+  auto p_mesh = ((polyMPO::MPMesh*)p_mpmesh)->p_mesh;
+  PMT_ALWAYS_ASSERT(numHalos >= 0);
+  p_mesh->setNumHalos(numHalos);
+}
+
+void polympo_setNCellsArray_f(MPMesh_ptr p_mpmesh, const int nCells, const int* array){
+  checkMPMeshValid(p_mpmesh);
+  auto p_mesh = ((polyMPO::MPMesh*)p_mpmesh)->p_mesh; 
+  PMT_ALWAYS_ASSERT(p_mesh->meshEditable());
+  kkViewHostU<const int*> arrayHost(array,nCells); 
+
+  //check the size
+  PMT_ALWAYS_ASSERT(nCells == p_mesh->getNumHalos()+1);
+  
+  Kokkos::View<int*> nCellsArray("nCellsArray",nCells);
+  Kokkos::deep_copy(nCellsArray, arrayHost);
+  p_mesh->setNCellsArray(nCellsArray);
+}
+
+void polympo_setIndexToCellID_f(MPMesh_ptr p_mpmesh, const int nCells, const int* array){
+  checkMPMeshValid(p_mpmesh);
+  auto p_mesh = ((polyMPO::MPMesh*)p_mpmesh)->p_mesh; 
+  PMT_ALWAYS_ASSERT(p_mesh->meshEditable());
+  PMT_ALWAYS_ASSERT(nCells == p_mesh->getNumHalos()+1);
+  
+  kkViewHostU<const int*> arrayHost(array,nCells); 
+  Kokkos::View<int*> IndexToCellIDArray("IndexToCellIDArray",nCells);
+  Kokkos::deep_copy(IndexToCellIDArray, arrayHost);
+  p_mesh->setIndexToCellID(IndexToCellIDArray);
+}

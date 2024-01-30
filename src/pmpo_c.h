@@ -51,9 +51,9 @@ void polympo_setMeshNumEdgesPerElm_f(MPMesh_ptr p_mpmesh, const int nCells, cons
 void polympo_setMeshElm2VtxConn_f(MPMesh_ptr p_mpmesh, const int maxEdges, const int nCells, const int* array);
 void polympo_setMeshElm2ElmConn_f(MPMesh_ptr p_mpmesh, const int maxEdges, const int nCells, const int* array);
 
-// void polympo_setConfigNumHalos_f() (is this equal to the number of mpi ranks?)
-// void polympo_setNCellsArray_f()
-// void polympo_IndexToCellID_f()
+void polympo_setConfigNumHalos_f(MPMesh_ptr p_mpmesh, const int numHalos);
+void polympo_setNCellsArray_f(MPMesh_ptr p_mpmesh, const int nCells, const int* array);
+void polympo_setIndexToCellID_f(MPMesh_ptr p_mpmesh, const int nCells, const int* array);
 
 //Mesh fields
 void polympo_setMeshVtxCoords_f(MPMesh_ptr p_mpmesh, const int nVertices, const double* xArray, const double* yArray, const double* zArray);

@@ -507,6 +507,42 @@ module polympo
     type(c_ptr), value :: array
   end subroutine
   !---------------------------------------------------------------------------
+  !> @brief set the number of halos used
+  !> @param mpmesh(in/out) MPMesh object
+  !> @param numHalos(in) number of halos
+  !---------------------------------------------------------------------------
+  subroutine polympo_setConfigNumHalos(mpMesh, numHalos) &
+    bind(C, NAME='polympo_setConfigNumHalos_f')
+    use :: iso_c_binding
+    integer(c_int), value :: numHalos
+  end subroutine
+  !---------------------------------------------------------------------------
+  !> @brief set the number of cells array from a host array
+  !> @param mpmesh(in/out) MPMesh object
+  !> @param nCells(in) number of cells
+  !> @param array(in) input mesh cells array
+  !---------------------------------------------------------------------------
+  subroutine polympo_setNCellsArray(mpMesh, nCells, array) &
+    bind(C, NAME='polympo_setNCellsArray_f')
+    use :: iso_c_binding
+    type(c_ptr), value :: mpMesh
+    integer(c_int), value :: nCells
+    type(c_ptr), intent(in), value :: array
+  end subroutine
+  !---------------------------------------------------------------------------
+  !> @brief set the index to cell id array from a host array
+  !> @param mpmesh(in/out) MPMesh object
+  !> @param nCells(in) number of cells
+  !> @param array(in) input mesh index to cell id array
+  !---------------------------------------------------------------------------
+  subroutine polympo_setIndexToCellID(mpMesh, nCells, array) &
+    bind(C, NAME='polympo_setIndexToCellID_f')
+    use :: iso_c_binding
+    type(c_ptr), value :: mpMesh
+    integer(c_int), value :: nCells
+    type(c_ptr), intent(in), value :: array
+  end subroutine
+  !---------------------------------------------------------------------------
   !> @brief calculate the MPs from given mesh vertices rotational latitude
   !>        longitude, update the MP slices
   !>        MPs MUST have rotated flag set to True(>0)

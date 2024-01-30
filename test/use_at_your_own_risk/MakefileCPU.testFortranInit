@@ -23,16 +23,16 @@ MPI_DIR=/opt/cray/pe/mpich/8.1.25/ofi/gnu/9.1/
 
 devRoot=/global/homes/c/castia5/cpu-pumi-pic
 
-KOKKOS_DIR=${devRoot}/build-kokkos-login21-cpu/install/
+KOKKOS_DIR=${devRoot}/build-kokkos-perlmutter-cpu/install/
 KOKKOS_LIB_DIR=${KOKKOS_DIR}/lib64
 
-OMEGAH_DIR=${devRoot}/build-omegah-login21-cpu/install/
+OMEGAH_DIR=${devRoot}/build-omegah-perlmutter-cpu/install/
 
-ENGPAR_DIR=${devRoot}/build-engpar-login21-cpu/install/
+ENGPAR_DIR=${devRoot}/build-engpar-perlmutter-cpu/install/
 
-PUMIPIC_DIR=${devRoot}/build-pumipic-login21-cpu/install/
+PUMIPIC_DIR=${devRoot}/build-pumipic-perlmutter-cpu/install/
 
-CABANA_DIR=${devRoot}/build-cabana-login21-cpu/install/
+CABANA_DIR=${devRoot}/build-cabana-perlmutter-cpu/install/
 
 POLYMPO_DIR=${devRoot}/buildPolyMPO-CPU/install
 

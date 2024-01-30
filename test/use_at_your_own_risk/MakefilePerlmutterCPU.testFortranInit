@@ -20,6 +20,7 @@ FC=/usr/bin/gfortran
 NETCDF_DIR=/opt/cray/pe/netcdf/4.9.0.9/gnu/12.3/
 HDF5_DIR=/opt/cray/pe/hdf5/1.12.2.9/gnu/12.3/
 MPI_DIR=/opt/cray/pe/mpich/8.1.28/ofi/gnu/12.3/
+CUDA_DIR=/opt/nvidia/hpc_sdk/Linux_x86_64/23.9/cuda/12.2/targets/x86_64-linux/lib
 
 devRoot=/global/homes/c/castia5/cpu-pumi-pic
 
@@ -43,8 +44,8 @@ POLYMPO_DIR=${devRoot}/buildPolyMPO-CPU/install
 ######################################################################################
 POLYMPO_LIBS=\
 -L${MPI_DIR}/lib \
--L/opt/nvidia/hpc_sdk/Linux_x86_64/23.9/cuda/12.2/targets/x86_64-linux/lib/stubs \
--L/opt/nvidia/hpc_sdk/Linux_x86_64/23.9/cuda/12.2/targets/x86_64-linux/lib \
+-L${CUDA_DIR}/stubs \
+-L${CUDA_DIR} \
 -Wl,-rpath,${NETCDF_DIR}/lib:${MPI_DIR}/lib: \
 ${POLYMPO_DIR}/lib/libpolympo_fortran.a \
 ${POLYMPO_DIR}/lib/libpolyMPO-core.a \
@@ -71,7 +72,13 @@ ${POLYMPO_DIR}/lib/libpolympo_fortran.a \
 ${MPI_DIR}/lib/libmpifort_gnu_123.so \
 ${MPI_DIR}/lib/libmpi_gnu_123.so \
 ${NETCDF_DIR}/lib/libnetcdff.so \
--lmpi_gnu_123 -lcudadevrt -lcudart_static -lrt -lpthread -ldl -lstdc++ 
+-lmpi_gnu_123 \
+-lcudadevrt \
+-lcudart_static \
+-lrt \
+-lpthread \
+-ldl \
+-lstdc++ 
 
 POLYMPO_COMPILE_FLAGS=\
 -DFP64 \

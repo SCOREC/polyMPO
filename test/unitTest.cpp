@@ -113,7 +113,7 @@ int main(int argc, char** argv) {
     auto area3_2 = polyMPO::sphericalTriangleArea2(a3,b3,c3,radius);
     PMT_ALWAYS_ASSERT(Kokkos::fabs(area3_1 - areaRef) < TEST_EPSILON); 
     PMT_ALWAYS_ASSERT(Kokkos::fabs(area3_2 - areaRef) < TEST_EPSILON); 
-    
+ 
     //this test is only designed to work with the following option values:
     const int testMeshOption = 1;
     const int replicateFactor = 1;
@@ -130,8 +130,8 @@ int main(int argc, char** argv) {
         auto p_mesh = mpMesh.p_mesh;
         auto vtxCoords = p_mesh->getMeshField<polyMPO::MeshF_VtxCoords>();
         auto basis = p_MPs->getData<MPF_Basis_Vals>();
+        
         auto elm2VtxConn = p_mesh->getElm2VtxConn();
-        //auto p_MPs = mpMesh.p_MPs;
         const int numEntries = mpSlice2MeshFieldIndex.at(MPF_Basis_Vals).first;
         auto mpPositions = p_MPs->getData<MPF_Cur_Pos_XYZ>();
         auto assemble = PS_LAMBDA(const int& elm, const int& mp, const int& mask) {
@@ -155,7 +155,6 @@ int main(int argc, char** argv) {
             Vec3d mpCoord(mpPositions(mp,0), mpPositions(mp,1), mpPositions(mp,2));
             getBasisByAreaGblForm3d(mpCoord, nElmVtxs, eVtxCoords, basisByArea);
 
-            //const int numEntries = mpSlice2MeshFieldIndex.at(index).first;
             for (int i = 0; i < numEntries; i++) {
               basis(mp,i) = basisByArea[i];
             }
@@ -211,12 +210,8 @@ int main(int argc, char** argv) {
     const int replicateFactor2 = 1;
     //run assembly and test spherical Wachspress
     {
-        void* meshP;
-        char* filename = (char *)malloc(sizeof(char) * 256);
-
-        // TODO: add relative path
-        sprintf(filename,"/gpfs/u/home/MPMS/MPMSsngj/scratch/polyDev/polyMPO/test/sample_mpas_meshes/spherical_cvt_642elms.nc");
-        setWithMPASMeshByFortran(&meshP, filename, (int)strlen(filename));
+        void* meshP; 
+        setWithMPASMeshByFortran(&meshP, argv[1], (int)strlen(argv[1]));
         auto mpMeshPtr = (MPMesh*)meshP;
         auto mpMesh = *mpMeshPtr;
         auto p_mesh = mpMesh.p_mesh;
@@ -226,12 +221,8 @@ int main(int argc, char** argv) {
         auto testMesh = initTestMesh(testMeshOption2,replicateFactor2);
         PMT_ALWAYS_ASSERT(testMesh->getMeshType() == mesh_general_polygonal);
         PMT_ALWAYS_ASSERT(testMesh->getGeomType() == geom_planar_surf);
-        //PMT_ALWAYS_ASSERT(testMesh->getGeomType() == geom_spherical_surf);
-        //auto mpMesh = initTestMPMesh(testMesh, testMPOption2); //creates test MPs
-        //auto p_MPs = mpMesh.p_MPs;
         p_MPs->fillData<MPF_Mass>(1.0); //set MPF_Mass to 1.0
 
-        //auto p_mesh = mpMesh.p_mesh;
         auto vtxCoords = p_mesh->getMeshField<polyMPO::MeshF_VtxCoords>();
         auto basis = p_MPs->getData<MPF_Basis_Vals>();
         auto elm2VtxConn = p_mesh->getElm2VtxConn();
@@ -259,7 +250,7 @@ int main(int argc, char** argv) {
             /* compute the values of basis functions at mp position */
             double basisByAreaSpherical[maxElmsPerVtx];
             Vec3d mpCoord(mpPositions(mp,0), mpPositions(mp,1), mpPositions(mp,2));
-            getBasisByAreaGblFormSpherical(mpCoord, nElmVtxs, eVtxCoords, radius, basisByAreaSpherical);
+            getBasisByAreaGblForm3d(mpCoord, nElmVtxs, eVtxCoords, basisByAreaSpherical);
             //const int numEntries = mpSlice2MeshFieldIndex.at(index).first;
             for (int i = 0; i < numEntries; i++) {
               basis(mp,i) = basisByAreaSpherical[i];

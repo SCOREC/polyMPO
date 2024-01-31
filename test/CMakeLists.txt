@@ -67,15 +67,6 @@ function(pmpo_add_test testname command)
   endif()
 endfunction()
 
-pmpo_add_test(unit_test ./unitTest)
-pmpo_add_test(mp_unit_test ./mpUnitTest)
-pmpo_add_test(test_reconstruction ./testReconstruction)
-pmpo_add_test(test_tracking ./testTracking)
-pmpo_add_test(test_rebuild ./testRebuild)
-pmpo_add_test(testFortranInit ./testFortranInit)
-pmpo_add_test(testFortran ./testFortran)
-pmpo_add_test(testFortranMPMeshModule ./testFortranMPMeshModule)
-
 #set NC file for test
 set(TEST_NC_FILE_PLANAR "${CMAKE_SOURCE_DIR}/test/sample_mpas_meshes/planar_nonuniform_cvt_for_square_673elms.nc")
 set(TEST_NC_FILE_SPHERICAL
@@ -88,6 +79,16 @@ if(EXISTS ${TEST_NC_FILE_SPHERICAL})
 else()
     set(TEST_NC_FILE ${TEST_NC_FILE_PLANAR})
 endif()
+
+pmpo_add_test(unit_test ./unitTest ${TEST_NC_FILE})
+pmpo_add_test(mp_unit_test ./mpUnitTest)
+pmpo_add_test(test_reconstruction ./testReconstruction)
+pmpo_add_test(test_tracking ./testTracking)
+pmpo_add_test(test_rebuild ./testRebuild)
+pmpo_add_test(testFortranInit ./testFortranInit)
+pmpo_add_test(testFortran ./testFortran)
+pmpo_add_test(testFortranMPMeshModule ./testFortranMPMeshModule)
+
 pmpo_add_test(testFortranReadMPAS ./testFortranReadMPAS ${TEST_NC_FILE})
 pmpo_add_test(testFortranCreateRebuildMPs ./testFortranCreateRebuildMPs ${TEST_NC_FILE})
 

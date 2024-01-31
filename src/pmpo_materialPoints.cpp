@@ -101,6 +101,10 @@ void MaterialPoints::finishRebuild() {
   rebuildFields.ongoing = false;
 }
 
+void MaterialPoints::migrate(IntView MPs2Elm, IntView MPs2Proc) {
+  MPs->migrate(MPs2Elm, MPs2Proc);  
+}
+
 bool MaterialPoints::rebuildOngoing() { return rebuildFields.ongoing; }
 
 void MaterialPoints::setAppIDFunc(IntFunc getAppIDIn) { getAppID = getAppIDIn; }

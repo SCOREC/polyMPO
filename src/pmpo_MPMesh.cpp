@@ -84,7 +84,8 @@ void MPMesh::CVTTrackingElmCenterBased(const int printVTPIndex){
 
     auto mpPositions = p_MPs->getData<MPF_Cur_Pos_XYZ>();
     auto mpTgtPos = p_MPs->getData<MPF_Tgt_Pos_XYZ>();
-    auto MPs2Elm = p_MPs->getData<MPF_Tgt_Elm_ID>();;
+    auto MPs2Elm = p_MPs->getData<MPF_Tgt_Elm_ID>();
+    auto MPs2Proc = p_MPs->getData<MPF_Tgt_Proc_ID>();
     
     if(printVTPIndex>=0) {
       printVTP_mesh(printVTPIndex);
@@ -132,9 +133,7 @@ void MPMesh::CVTTrackingElmCenterBased(const int printVTPIndex){
                 }
                 if(closestElm<0){
                     MPs2Elm(mp) = iElm;
-                    // TODO: Find which process the mp is in
-                    // int newProcess = p_mesh.getCellHaloLayer(iElm);
-                    // MPs2Process(mp) = newProcess;
+                    // MPs2Proc(mp) = p_mesh->getCellHaloLayer(iElm);
                     break;
                 }else{
                     iElm = closestElm;
@@ -270,8 +269,9 @@ void MPMesh::push(){
     CVTTrackingElmCenterBased(); // move to Tgt_XYZ
     p_MPs->updateMPSlice<MPF_Cur_Pos_XYZ, MPF_Tgt_Pos_XYZ>(); // Tgt_XYZ becomes Cur_XYZ
     p_MPs->updateMPSlice<MPF_Cur_Pos_Rot_Lat_Lon, MPF_Tgt_Pos_Rot_Lat_Lon>(); // Tgt becomes Cur
-    // TODO: Replace rebuild with migration
-    // p_MPs->migrate(MPs2Elm, MPs2Process);
+    auto MPs2Elm = p_MPs->getData<MPF_Tgt_Elm_ID>();
+    auto MPs2Proc = p_MPs->getData<MPF_Tgt_Proc_ID>();
+    // p_MPs->migrate(MPs2Elm, MPs2Proc);
     p_MPs->rebuild(); //rebuild pumi-pic
     p_MPs->updateMPElmID(); //update mpElm IDs slices
     if (true) break; //TODO: check if migration happened on any process

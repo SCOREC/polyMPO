@@ -107,8 +107,7 @@ class Mesh {
     bool checkMeshType(int meshType);
     bool checkGeomType(int geomType);
 
-    // TODO: Migration Functions
-    // int getCellHaloLayer(int index);
+    int getCellHaloLayer(int index);
 
     mesh_type getMeshType() { return meshType_; }
     geom_type getGeomType() { return geomType_; }

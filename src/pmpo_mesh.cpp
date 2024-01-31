@@ -55,4 +55,9 @@ namespace polyMPO{
         });
     }
 
+    // TODO: Implement function
+    int getCellHaloLayer(int index) {
+        return 0;
+    }
+
 } // namespace polyMPO

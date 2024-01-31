@@ -266,16 +266,16 @@ void MPMesh::push(){
   sphericalInterpolation<MeshF_RotLatLonIncr, MPF_Rot_Lat_Lon_Incr>(*this);
   p_MPs->updateRotLatLonAndXYZ2Tgt(p_mesh->getSphereRadius()); // set Tgt_XYZ
 
-  CVTTrackingElmCenterBased(); // move to Tgt_XYZ
-
-  // TODO: Migration
-  // Needs a while() to keep migrating until all of the processes are done
-  // p_MPs->migrate(MPs2Elm, MPs2Process);
-
-  p_MPs->updateMPSlice<MPF_Cur_Pos_XYZ, MPF_Tgt_Pos_XYZ>(); // Tgt_XYZ becomes Cur_XYZ
-  p_MPs->updateMPSlice<MPF_Cur_Pos_Rot_Lat_Lon, MPF_Tgt_Pos_Rot_Lat_Lon>(); // Tgt becomes Cur
-  p_MPs->rebuild(); //rebuild pumi-pic
-  p_MPs->updateMPElmID(); //update mpElm IDs slices
+  while(true) {
+    CVTTrackingElmCenterBased(); // move to Tgt_XYZ
+    p_MPs->updateMPSlice<MPF_Cur_Pos_XYZ, MPF_Tgt_Pos_XYZ>(); // Tgt_XYZ becomes Cur_XYZ
+    p_MPs->updateMPSlice<MPF_Cur_Pos_Rot_Lat_Lon, MPF_Tgt_Pos_Rot_Lat_Lon>(); // Tgt becomes Cur
+    // TODO: Replace rebuild with migration
+    // p_MPs->migrate(MPs2Elm, MPs2Process);
+    p_MPs->rebuild(); //rebuild pumi-pic
+    p_MPs->updateMPElmID(); //update mpElm IDs slices
+    if (true) break; //TODO: check if migration happened on any process
+  }
 }
 
 void MPMesh::printVTP_mesh(int printVTPIndex){

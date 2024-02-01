@@ -139,7 +139,7 @@ class MaterialPoints {
     void finishRebuild();
     bool rebuildOngoing();
 
-    void migrate(IntView MPs2Elm, IntView MPs2Proc);
+    bool migrate();
     
     template<int mpSliceIndex, typename mpSliceData>
     typename std::enable_if<mpSliceData::rank==1>::type

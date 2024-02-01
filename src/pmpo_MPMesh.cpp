@@ -269,10 +269,7 @@ void MPMesh::push(){
     CVTTrackingElmCenterBased(); // move to Tgt_XYZ
     p_MPs->updateMPSlice<MPF_Cur_Pos_XYZ, MPF_Tgt_Pos_XYZ>(); // Tgt_XYZ becomes Cur_XYZ
     p_MPs->updateMPSlice<MPF_Cur_Pos_Rot_Lat_Lon, MPF_Tgt_Pos_Rot_Lat_Lon>(); // Tgt becomes Cur
-    auto MPs2Elm = p_MPs->getData<MPF_Tgt_Elm_ID>();
-    auto MPs2Proc = p_MPs->getData<MPF_Tgt_Proc_ID>();
-    // p_MPs->migrate(MPs2Elm, MPs2Proc);
-    p_MPs->rebuild(); //rebuild pumi-pic
+    bool isMigrating = p_MPs->migrate();
     p_MPs->updateMPElmID(); //update mpElm IDs slices
     if (true) break; //TODO: check if migration happened on any process
   }

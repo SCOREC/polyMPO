@@ -260,6 +260,21 @@ void MPMesh::T2LTracking(Vec2dView dx){
     p_MPs->parallel_for(T2LCalc,"T2lTrackingCalc");
 }
 
+bool getAnyIsMigrating(bool isMigrating) {
+  int comm_rank;
+  MPI_Comm_rank(MPI_COMM_WORLD, &comm_rank);
+  int comm_size;
+  MPI_Comm_size(MPI_COMM_WORLD, &comm_size);
+
+  bool anyIsMigrating = isMigrating;
+  for (int i=0; i < comm_size; i++) {
+    if (i == comm_rank) MPI_Bcast(&anyIsMigrating, 1, MPI_C_BOOL, i, MPI_COMM_WORLD);
+    else MPI_Bcast(&isMigrating, 1, MPI_C_BOOL, i, MPI_COMM_WORLD);
+    anyIsMigrating |= isMigrating;
+  }
+  return anyIsMigrating;
+}
+
 void MPMesh::push(){
   p_mesh->computeRotLatLonIncr();
   sphericalInterpolation<MeshF_RotLatLonIncr, MPF_Rot_Lat_Lon_Incr>(*this);
@@ -270,8 +285,9 @@ void MPMesh::push(){
     p_MPs->updateMPSlice<MPF_Cur_Pos_XYZ, MPF_Tgt_Pos_XYZ>(); // Tgt_XYZ becomes Cur_XYZ
     p_MPs->updateMPSlice<MPF_Cur_Pos_Rot_Lat_Lon, MPF_Tgt_Pos_Rot_Lat_Lon>(); // Tgt becomes Cur
     bool isMigrating = p_MPs->migrate();
+    bool anyIsMigrating = getAnyIsMigrating(isMigrating);
     p_MPs->updateMPElmID(); //update mpElm IDs slices
-    if (true) break; //TODO: check if migration happened on any process
+    if (!anyIsMigrating) break;
   }
 }
 

@@ -2,6 +2,7 @@
 #define POLYMPO_MESH_H
 
 #include "pmpo_utils.hpp"
+#include <particle_structs.hpp>
 
 namespace polyMPO{
 
@@ -67,7 +68,7 @@ class Mesh {
     IntVtx2ElmView elm2VtxConn_;
     IntElm2ElmView elm2ElmConn_;
 
-    int numHalos_;
+    int numHalos_ = -1;
     IntView nCellsArray_;
     IntView indexToCellID_;
   
@@ -107,7 +108,7 @@ class Mesh {
     bool checkMeshType(int meshType);
     bool checkGeomType(int geomType);
 
-    int getCellHaloLayer(int index);
+    IntView getElm2Process();
 
     mesh_type getMeshType() { return meshType_; }
     geom_type getGeomType() { return geomType_; }

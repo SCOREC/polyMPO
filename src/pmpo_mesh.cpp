@@ -55,9 +55,18 @@ namespace polyMPO{
         });
     }
 
-    // TODO: Implement function
-    int getCellHaloLayer(int index) {
-        return 0;
+    IntView Mesh::getElm2Process() {
+        IntView elm2Process("elm2Process", numElms_); //Is num Elems == num Cells?
+        if (numHalos_ == -1) return elm2Process;
+        int size = pumipic::getLastValue(nCellsArray_);
+        auto range = Kokkos::MDRangePolicy<Kokkos::Rank<2>>({0,0}, {size, numHalos_});
+        Kokkos::parallel_for(range, KOKKOS_CLASS_LAMBDA(const int& index, const int& halo) {
+            if (index > nCellsArray_(halo) && index <= nCellsArray_(halo+1)) {
+                int cell = indexToCellID_(index);
+                elm2Process(cell) = halo; //TODO: Convert halo to process
+            }
+        });
+        return elm2Process;
     }
 
 } // namespace polyMPO

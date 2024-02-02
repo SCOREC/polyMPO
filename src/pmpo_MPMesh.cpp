@@ -86,7 +86,8 @@ void MPMesh::CVTTrackingElmCenterBased(const int printVTPIndex){
     auto mpTgtPos = p_MPs->getData<MPF_Tgt_Pos_XYZ>();
     auto MPs2Elm = p_MPs->getData<MPF_Tgt_Elm_ID>();
     auto MPs2Proc = p_MPs->getData<MPF_Tgt_Proc_ID>();
-    
+    auto elm2Process = p_mesh->getElm2Process();
+
     if(printVTPIndex>=0) {
       printVTP_mesh(printVTPIndex);
     }
@@ -133,7 +134,7 @@ void MPMesh::CVTTrackingElmCenterBased(const int printVTPIndex){
                 }
                 if(closestElm<0){
                     MPs2Elm(mp) = iElm;
-                    // MPs2Proc(mp) = p_mesh->getCellHaloLayer(iElm);
+                    MPs2Proc(mp) = elm2Process(iElm);
                     break;
                 }else{
                     iElm = closestElm;

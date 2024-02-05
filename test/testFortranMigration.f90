@@ -28,6 +28,20 @@ program main
     setMPOption = 0   !create an empty set of MPs
     mpMesh = polympo_createMPMesh(setMeshOption, setMPOption)
 
+    nCells = 0
+    nVertices = 0
+    maxEdges = 0
+    vertexDegree = 0
+    sphereRadius = 0
+
+    allocate(xVertex(nVertices))
+    allocate(yVertex(nVertices))
+    allocate(zVertex(nVertices))
+    allocate(latVertex(nVertices))
+    allocate(nEdgesOnCell(nCells))
+    allocate(cellsOnCell(maxEdges, nCells))
+    allocate(verticesOnCell(maxEdges, nCells))
+
     ! call loadMPASMeshInPolyMPO(mpMesh, maxEdges, vertexDegree, &
     !                     nCells, nVertices, nEdgesOnCell, &
     !                     onSphere, sphereRadius, &
@@ -41,8 +55,9 @@ program main
     deallocate(xVertex)
     deallocate(yVertex)
     deallocate(zVertex)
-    deallocate(verticesOnCell)
+    deallocate(latVertex)
     deallocate(cellsOnCell)
+    deallocate(verticesOnCell)
 
     call polympo_deleteMPMesh(mpMesh)
     call polympo_finalize()

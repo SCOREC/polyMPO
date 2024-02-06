@@ -16,6 +16,9 @@ program main
     real(kind=MPAS_RKIND), dimension(:), pointer :: xVertex, yVertex, zVertex
     real(kind=MPAS_RKIND), dimension(:), pointer :: latVertex
     integer, dimension(:,:), pointer :: verticesOnCell, cellsOnCell
+    integer, dimension(:), pointer :: mpsPerElm, mp2Elm, isMPActive
+    integer, parameter :: MP_ACTIVE = 1
+    integer :: numMPs
 
     ! Initialize
     call mpi_init(ierr)
@@ -28,7 +31,7 @@ program main
     setMPOption = 0   !create an empty set of MPs
     mpMesh = polympo_createMPMesh(setMeshOption, setMPOption)
 
-    nCells = 0
+    nCells = 1
     nVertices = 0
     maxEdges = 0
     vertexDegree = 0
@@ -48,6 +51,16 @@ program main
     !                     xVertex, yVertex, zVertex, &
     !                     latVertex, &
     !                     verticesOnCell, cellsOnCell)
+
+
+    numMPs = 1
+    allocate(mpsPerElm(nCells))
+    allocate(mp2Elm(numMPs))
+    allocate(isMPActive(numMPs))
+    mpsPerElm = 1
+    mp2Elm = 1
+    isMPActive = MP_ACTIVE
+    ! call polympo_createMPs(mpMesh, nCells, numMPs, c_loc(mpsPerElm), c_loc(mp2Elm), c_loc(isMPActive))
 
 
     ! Clean Up

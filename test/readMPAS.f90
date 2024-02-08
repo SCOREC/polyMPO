@@ -26,7 +26,7 @@ subroutine loadMPASMeshInPolyMPO(mpMesh, maxEdges, vertexDegree, &
                         onSphere, sphereRadius, &
                         xVertex, yVertex, zVertex, &
                         latVertex, &
-                        cellsOnVertex, verticesOnCell, cellsOnCell)
+                        verticesOnCell, cellsOnCell)
     use :: netcdf
     use :: iso_c_binding
     implicit none
@@ -39,7 +39,7 @@ subroutine loadMPASMeshInPolyMPO(mpMesh, maxEdges, vertexDegree, &
     integer, dimension(:), pointer :: nEdgesOnCell
     real(kind=MPAS_RKIND), dimension(:), pointer :: xVertex, yVertex, zVertex
     real(kind=MPAS_RKIND), dimension(:), pointer :: latVertex, lonVertex
-    integer, dimension(:,:), pointer :: cellsOnVertex, verticesOnCell, cellsOnCell
+    integer, dimension(:,:), pointer :: verticesOnCell, cellsOnCell
 
     call polympo_checkPrecisionForRealKind(MPAS_RKIND)
     !check on maxEdges and vertexDegree
@@ -77,7 +77,7 @@ subroutine readMPASMeshFromNCFile(filename, maxEdges, vertexDegree, &
                         onSphere, sphereRadius, &
                         xVertex, yVertex, zVertex, &
                         latVertex, lonVertex, &
-                        cellsOnVertex, verticesOnCell, cellsOnCell)
+                        verticesOnCell, cellsOnCell)
     use :: netcdf
     use :: iso_c_binding
     implicit none
@@ -91,7 +91,7 @@ subroutine readMPASMeshFromNCFile(filename, maxEdges, vertexDegree, &
     integer, dimension(:), pointer :: nEdgesOnCell
     real(kind=MPAS_RKIND), dimension(:), pointer :: xVertex, yVertex, zVertex
     real(kind=MPAS_RKIND), dimension(:), pointer :: latVertex, lonVertex
-    integer, dimension(:,:), pointer :: cellsOnVertex, verticesOnCell, cellsOnCell
+    integer, dimension(:,:), pointer :: verticesOnCell, cellsOnCell
 
     integer :: ncid, status, nCellsID, nVerticesID, maxEdgesID, vertexDegreeID, &
                nEdgesOnCellID, xVertexID, yVertexID, zVertexID, &
@@ -167,7 +167,7 @@ subroutine readMPASMeshFromNCFile(filename, maxEdges, vertexDegree, &
     allocate(latVertex(nVertices))
     allocate(lonVertex(nVertices))
     allocate(nEdgesOnCell(nCells))
-    allocate(cellsOnVertex(maxEdges, nCells))
+    !allocate(cellsOnVertex(maxEdges, nCells))
     allocate(verticesOnCell(maxEdges, nCells))
     allocate(cellsOnCell(maxEdges, nCells))
    
@@ -314,8 +314,10 @@ subroutine setWithMPASMeshByFortran(mpMesh, fileName, n) bind(C, name="setWithMP
     character (len=64) :: onSphere, stringYes = "YES"
     real(kind=MPAS_RKIND) :: sphereRadius
     integer, dimension(:), pointer :: nEdgesOnCell
-    integer, dimension(:,:), pointer :: cellsOnVertex, verticesOnCell, cellsOnCell
- 
+    real(kind=MPAS_RKIND), dimension(:), pointer :: xVertex, yVertex, zVertex
+    real(kind=MPAS_RKIND), dimension(:), pointer :: latVertex, lonVertex
+    integer, dimension(:,:), pointer :: verticesOnCell, cellsOnCell
+
     fileNameFortran = transfer(fileName(1:n), fileNameFortran) 
     mpMesh = polympo_createMPMesh(0, 0)
 
@@ -324,19 +326,19 @@ subroutine setWithMPASMeshByFortran(mpMesh, fileName, n) bind(C, name="setWithMP
                         onSphere, sphereRadius, &
                         xVertex, yVertex, zVertex, &
                         latVertex, lonVertex, &
-                        cellsOnVertex, verticesOnCell, cellsOnCell)
+                        verticesOnCell, cellsOnCell)
     call loadMPASMeshInPolyMPO(mpMesh, maxEdges, vertexDegree, &
                         nCells, nVertices, nEdgesOnCell, &
                         onSphere, sphereRadius, &
                         xVertex, yVertex, zVertex, &
                         latVertex, &
-                        cellsOnVertex, verticesOnCell, cellsOnCell)
+                        verticesOnCell, cellsOnCell)
     
     deallocate(nEdgesOnCell)
     deallocate(xVertex)
     deallocate(yVertex)
     deallocate(zVertex)
-    deallocate(cellsOnVertex)
+    ! deallocate(cellsOnVertex)
     deallocate(verticesOnCell)
     deallocate(cellsOnCell)
 end subroutine

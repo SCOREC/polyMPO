@@ -35,7 +35,7 @@ DoubleView assemblyV0(MPMesh& mpMesh){
 template <MaterialPointSlice mpfIndex, MeshFieldIndex mfIndex>
 void assembly(MPMesh& mpMesh, bool basisWeightFlag, bool massWeightFlag){
     //cellsOnVertices[0][0];
-    const int numVtxs = 10; //p_mesh->getNumVertices();
+    /*const int numVtxs = 10; //p_mesh->getNumVertices();
     int nCellsPerVertex[numVtxs]; 
     for (int i = 0; i < numEntries; i++) {
         int elementCounter = 0;
@@ -46,6 +46,7 @@ void assembly(MPMesh& mpMesh, bool basisWeightFlag, bool massWeightFlag){
         }
         nCellsPerVertex[i] = elementCounter;
     }
+    */
 
     if(basisWeightFlag || massWeightFlag) {
       std::cerr << "WARNING: basis and mass weight flags ignored\n";

@@ -259,7 +259,8 @@ int main(int argc, char** argv) {
         };
         p_MPs->parallel_for(assemble, "assembly");
 
-        double del = 3.89;
+        //double del = 3.89;
+        double del = 123.129418248;
         auto mpVel = p_MPs->getData<MPF_Vel>();
         auto mpCurPosXYZ = p_MPs->getData<MPF_Cur_Pos_XYZ>();
         auto setVel = PS_LAMBDA(const int&, const int& mp, const int& mask){
@@ -296,6 +297,7 @@ int main(int argc, char** argv) {
             fprintf(stderr, "expected != calc Value!\n\t[%d][%d]: %.6lf != %.6lf\n",
                                                 j,1,del+1,vtxField_h(j,1));
           }
+          printf("%d: (%.16e, %.16e) \n", i, vtxField_h(j,0), vtxField_h(j,1));
           PMT_ALWAYS_ASSERT(res);
           PMT_ALWAYS_ASSERT(res2);
         }

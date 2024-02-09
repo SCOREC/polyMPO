@@ -8,14 +8,28 @@ int main(int argc, char* argv[] ) {
     Kokkos::initialize(argc,argv);
 
     {
-        Mesh* mesh = NULL;
         MPMesh* mpmesh = NULL;
         void* p;
         setWithMPASMeshByFortran(&p, argv[1], (int)strlen(argv[1]));
         mpmesh = (MPMesh*)p;
-        mesh = mpmesh->p_mesh;
-
+        Mesh* mesh = mpmesh->p_mesh;
         int numElms = mesh->getNumElements();
+        int numMPs = numElms;
+
+        IntView mpsPerElm("mpsPerElm", numElms);
+        IntView activeMP2Elm("activeMP2Elm", numMPs);
+        IntView activeMPIDs("activeMPIDs", numMPs);
+
+        Kokkos::parallel_for("setMPsPerElm", numElms, KOKKOS_LAMBDA(const int elm){
+            mpsPerElm(elm) = 1;
+        });
+        Kokkos::parallel_for("setMPs", numMPs, KOKKOS_LAMBDA(const int mp){
+            activeMP2Elm(mp) = 1;
+            activeMPIDs(mp) = mp;
+        });
+
+        MaterialPoints p_MPs(numElms, numMPs, mpsPerElm, activeMP2Elm, activeMPIDs);
+
         auto elm2VtxConn = mesh->getElm2VtxConn();
         auto vtxCoords = mesh->getMeshField<polyMPO::MeshF_VtxCoords>(); 
         

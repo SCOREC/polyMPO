@@ -48,6 +48,7 @@ pmpo_add_exe(testReconstruction testReconstruction.cpp)
 pmpo_add_exe(testTracking testTracking.cpp)
 pmpo_add_exe(testRebuild testRebuild.cpp)
 pmpo_add_exe(timeAssmblyWachspress testTiming.cpp)
+pmpo_add_exe(testMigration testMigration.cpp)
 pmpo_add_fortran_exe(testFortranInit testFortranInit.f90)
 pmpo_add_fortran_exe(testFortran testFortran.f90)
 pmpo_add_fortran_exe(testFortranReadMPAS testFortranReadMPAS.f90)
@@ -95,3 +96,4 @@ pmpo_add_test(testFortranCreateRebuildMPs ./testFortranCreateRebuildMPs ${TEST_N
 
 pmpo_add_test(test_timing ./timeAssmblyWachspress 1 ${TEST_NC_FILE})
 pmpo_add_test(test_wachspress ./testWachspress ${TEST_NC_FILE})
+pmpo_add_test(test_migration ./testMigration ${TEST_NC_FILE})

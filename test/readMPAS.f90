@@ -77,7 +77,7 @@ subroutine readMPASMeshFromNCFile(filename, maxEdges, vertexDegree, &
                         onSphere, sphereRadius, &
                         xVertex, yVertex, zVertex, &
                         latVertex, lonVertex, &
-                        verticesOnCell, cellsOnCell)
+                        verticesOnCell, cellsOnCell, cellsOnVertex)
     use :: netcdf
     use :: iso_c_binding
     implicit none
@@ -92,11 +92,12 @@ subroutine readMPASMeshFromNCFile(filename, maxEdges, vertexDegree, &
     real(kind=MPAS_RKIND), dimension(:), pointer :: xVertex, yVertex, zVertex
     real(kind=MPAS_RKIND), dimension(:), pointer :: latVertex, lonVertex
     integer, dimension(:,:), pointer :: verticesOnCell, cellsOnCell
+    integer, dimension(:,:), pointer :: cellsOnVertex
 
     integer :: ncid, status, nCellsID, nVerticesID, maxEdgesID, vertexDegreeID, &
                nEdgesOnCellID, xVertexID, yVertexID, zVertexID, &
                latVertexID, lonVertexID, &
-               verticesOnCellID, cellsOnCellID
+               verticesOnCellID, cellsOnCellID, cellsOnVertex
     
     status = nf90_open(path=trim(filename), mode=nf90_nowrite, ncid=ncid)
     if (status /= nf90_noerr) then
@@ -317,6 +318,7 @@ subroutine setWithMPASMeshByFortran(mpMesh, fileName, n) bind(C, name="setWithMP
     real(kind=MPAS_RKIND), dimension(:), pointer :: xVertex, yVertex, zVertex
     real(kind=MPAS_RKIND), dimension(:), pointer :: latVertex, lonVertex
     integer, dimension(:,:), pointer :: verticesOnCell, cellsOnCell
+    integer, dimension(:,:), pointer :: cellsOnVertex
 
     fileNameFortran = transfer(fileName(1:n), fileNameFortran) 
     mpMesh = polympo_createMPMesh(0, 0)
@@ -338,7 +340,7 @@ subroutine setWithMPASMeshByFortran(mpMesh, fileName, n) bind(C, name="setWithMP
     deallocate(xVertex)
     deallocate(yVertex)
     deallocate(zVertex)
-    ! deallocate(cellsOnVertex)
+    !deallocate(cellsOnVertex)
     deallocate(verticesOnCell)
     deallocate(cellsOnCell)
 end subroutine

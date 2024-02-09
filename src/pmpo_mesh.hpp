@@ -11,7 +11,7 @@ namespace polyMPO{
 using IntVtx2ElmView = Kokkos::View<int*[maxVtxsPerElm+1]>;
 using IntElm2VtxView = Kokkos::View<int*[maxElmsPerVtx+1]>;
 using IntElm2ElmView = Kokkos::View<int*[maxVtxsPerElm+1]>;
-using CellsOnVtxView = Kokkos::View<int[maxVtxsPerElm+1]>;
+using CellsOnVtxView = Kokkos::View<int*[maxVtxsPerElm+1]>;
 
 using DoubleSclrView = Kokkos::View<double*>;
 using DoubleVec2dView = Kokkos::View<double*[vec2d_nEntries]>;

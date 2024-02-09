@@ -103,6 +103,8 @@ class Mesh {
     bool checkMeshType(int meshType);
     bool checkGeomType(int geomType);
 
+    IntView getElm2Process();
+
     mesh_type getMeshType() { return meshType_; }
     geom_type getGeomType() { return geomType_; }
     double getSphereRadius() { return sphereRadius_; }

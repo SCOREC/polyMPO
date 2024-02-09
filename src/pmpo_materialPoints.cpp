@@ -101,6 +101,25 @@ void MaterialPoints::finishRebuild() {
   rebuildFields.ongoing = false;
 }
 
+bool MaterialPoints::migrate() {
+  auto MPs2Elm = getData<MPF_Tgt_Elm_ID>();
+  auto MPs2Proc = getData<MPF_Tgt_Proc_ID>();
+
+  IntView new_elem("new_elem", MPs->capacity());
+  IntView new_process("new_process", MPs->capacity());
+  IntView isMigrating("isMigrating", 1);
+
+  int rank;
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  Kokkos::parallel_for("setMigrateFields", MPs->capacity(), KOKKOS_LAMBDA(int i) {
+    new_elem(i) = MPs2Elm(i);
+    new_process(i) = MPs2Proc(i);
+    if (new_process(i) != rank) isMigrating(0) = 1;
+  });
+  MPs->migrate(new_elem, new_process);
+  return pumipic::getLastValue(isMigrating) > 0;
+}
+
 bool MaterialPoints::rebuildOngoing() { return rebuildFields.ongoing; }
 
 void MaterialPoints::setAppIDFunc(IntFunc getAppIDIn) { getAppID = getAppIDIn; }

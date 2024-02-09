@@ -84,7 +84,9 @@ void MPMesh::CVTTrackingElmCenterBased(const int printVTPIndex){
 
     auto mpPositions = p_MPs->getData<MPF_Cur_Pos_XYZ>();
     auto mpTgtPos = p_MPs->getData<MPF_Tgt_Pos_XYZ>();
-    auto MPs2Elm = p_MPs->getData<MPF_Tgt_Elm_ID>();;
+    auto MPs2Elm = p_MPs->getData<MPF_Tgt_Elm_ID>();
+    auto MPs2Proc = p_MPs->getData<MPF_Tgt_Proc_ID>();
+    auto elm2Process = p_mesh->getElm2Process();
     
     if(printVTPIndex>=0) {
       printVTP_mesh(printVTPIndex);
@@ -132,6 +134,7 @@ void MPMesh::CVTTrackingElmCenterBased(const int printVTPIndex){
                 }
                 if(closestElm<0){
                     MPs2Elm(mp) = iElm;
+                    MPs2Proc(mp) = elm2Process(iElm);
                     break;
                 }else{
                     iElm = closestElm;
@@ -258,17 +261,35 @@ void MPMesh::T2LTracking(Vec2dView dx){
     p_MPs->parallel_for(T2LCalc,"T2lTrackingCalc");
 }
 
+bool getAnyIsMigrating(bool isMigrating) {
+  int comm_rank;
+  MPI_Comm_rank(MPI_COMM_WORLD, &comm_rank);
+  int comm_size;
+  MPI_Comm_size(MPI_COMM_WORLD, &comm_size);
+
+  bool anyIsMigrating = isMigrating;
+  for (int i=0; i < comm_size; i++) {
+    if (i == comm_rank) MPI_Bcast(&anyIsMigrating, 1, MPI_C_BOOL, i, MPI_COMM_WORLD);
+    else MPI_Bcast(&isMigrating, 1, MPI_C_BOOL, i, MPI_COMM_WORLD);
+    anyIsMigrating |= isMigrating;
+  }
+  return anyIsMigrating;
+}
+
 void MPMesh::push(){
   p_mesh->computeRotLatLonIncr();
   sphericalInterpolation<MeshF_RotLatLonIncr, MPF_Rot_Lat_Lon_Incr>(*this);
   p_MPs->updateRotLatLonAndXYZ2Tgt(p_mesh->getSphereRadius()); // set Tgt_XYZ
 
-  CVTTrackingElmCenterBased(); // move to Tgt_XYZ
-
-  p_MPs->updateMPSlice<MPF_Cur_Pos_XYZ, MPF_Tgt_Pos_XYZ>(); // Tgt_XYZ becomes Cur_XYZ
-  p_MPs->updateMPSlice<MPF_Cur_Pos_Rot_Lat_Lon, MPF_Tgt_Pos_Rot_Lat_Lon>(); // Tgt becomes Cur
-  p_MPs->rebuild(); //rebuild pumi-pic
-  p_MPs->updateMPElmID(); //update mpElm IDs slices
+  while(true) {
+    CVTTrackingElmCenterBased(); // move to Tgt_XYZ
+    p_MPs->updateMPSlice<MPF_Cur_Pos_XYZ, MPF_Tgt_Pos_XYZ>(); // Tgt_XYZ becomes Cur_XYZ
+    p_MPs->updateMPSlice<MPF_Cur_Pos_Rot_Lat_Lon, MPF_Tgt_Pos_Rot_Lat_Lon>(); // Tgt becomes Cur
+    bool isMigrating = p_MPs->migrate();
+    bool anyIsMigrating = getAnyIsMigrating(isMigrating);
+    p_MPs->updateMPElmID(); //update mpElm IDs slices
+    if (!anyIsMigrating) break;
+  }
 }
 
 void MPMesh::printVTP_mesh(int printVTPIndex){

@@ -21,6 +21,7 @@ using defaultSpace = Kokkos::DefaultExecutionSpace::memory_space;
 typedef int mp_flag_t;
 typedef int mp_id_t;
 typedef int  mp_elm_id_t;
+typedef int mp_proc_id_t;
 typedef double mp_sclr_t[1];//TODO
 typedef vec2d_t mp_vec2d_t;
 typedef double mp_vec3d_t[3];//TODO
@@ -49,7 +50,8 @@ enum MaterialPointSlice {
   MPF_Stress_Div,
   MPF_Shear_Traction,
   MPF_Constv_Mdl_Param,
-  MPF_MP_APP_ID
+  MPF_MP_APP_ID,
+  MPF_Tgt_Proc_ID
 };
 
 enum Operating_Mode{
@@ -76,7 +78,8 @@ const static std::map<MaterialPointSlice, std::pair<int,MeshFieldIndex>>
                            {MPF_Stress_Div,      {3,MeshF_Unsupported}},
                            {MPF_Shear_Traction,  {3,MeshF_Unsupported}},
                            {MPF_Constv_Mdl_Param,{12,MeshF_Unsupported}},
-                           {MPF_MP_APP_ID,       {1,MeshF_Invalid}}};
+                           {MPF_MP_APP_ID,       {1,MeshF_Invalid}},
+                           {MPF_Tgt_Proc_ID,     {0,MeshF_Invalid}}}; //TODO: What does this integer mean?
 
 const static std::vector<std::pair<MaterialPointSlice, MaterialPointSlice>>
         mpSliceSwap = {{MPF_Cur_Elm_ID, MPF_Tgt_Elm_ID},
@@ -101,7 +104,8 @@ typedef MemberTypes<mp_flag_t,              //MP_Status
                     mp_vec3d_t,             //MP_Stress_Div
                     mp_vec3d_t,             //MP_Shear_Traction
                     mp_constv_mdl_param_t,  //MP_Constv_Mdl_Param
-                    mp_id_t                 //MP_APP_ID
+                    mp_id_t,                //MP_APP_ID
+                    mp_proc_id_t            //MPF_Tgt_Proc_ID
                     >MaterialPointTypes;
 typedef ps::ParticleStructure<MaterialPointTypes> PS;
 
@@ -134,7 +138,9 @@ class MaterialPoints {
     void startRebuild(IntView tgtElm, int addedNumMPs, IntView addedMP2elm, IntView addedMPAppID, Kokkos::View<const int*> addedMPMask);
     void finishRebuild();
     bool rebuildOngoing();
-    
+
+    bool migrate();
+
     template<int mpSliceIndex, typename mpSliceData>
     typename std::enable_if<mpSliceData::rank==1>::type
     setRebuildMPSlice(mpSliceData mpSliceIn);

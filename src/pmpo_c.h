@@ -50,6 +50,7 @@ void polympo_getMeshNumElms_f(MPMesh_ptr p_mpmesh, int & numElms);
 void polympo_setMeshNumEdgesPerElm_f(MPMesh_ptr p_mpmesh, const int nCells, const int* array);
 void polympo_setMeshElm2VtxConn_f(MPMesh_ptr p_mpmesh, const int maxEdges, const int nCells, const int* array);
 void polympo_setMeshElm2ElmConn_f(MPMesh_ptr p_mpmesh, const int maxEdges, const int nCells, const int* array);
+void polympo_setOwningProc_f(MPMesh_ptr p_mpmesh, const int nCells, const int* array);
 
 //Mesh fields
 void polympo_setMeshVtxCoords_f(MPMesh_ptr p_mpmesh, const int nVertices, const double* xArray, const double* yArray, const double* zArray);

@@ -66,7 +66,9 @@ class Mesh {
     //IntView nEdgesPerElm_;
     IntVtx2ElmView elm2VtxConn_;
     IntElm2ElmView elm2ElmConn_;
-  
+
+    IntView owningProc_;
+
     //start of meshFields
     DoubleVec3dView vtxCoords_;
     DoubleSclrView vtxRotLat_;
@@ -112,6 +114,7 @@ class Mesh {
     int getNumElements() { return numElms_; }
     IntVtx2ElmView getElm2VtxConn() { return elm2VtxConn_; }
     IntElm2ElmView getElm2ElmConn() { return elm2ElmConn_; }
+    IntView getOnwningProc() { return owningProc_; }
     template<MeshFieldIndex index> auto getMeshField();
     void setMeshVtxBasedFieldSize();
 
@@ -131,6 +134,8 @@ class Mesh {
                                                      elm2VtxConn_ = elm2VtxConn; }
     void setElm2ElmConn(IntElm2ElmView elm2ElmConn) {PMT_ALWAYS_ASSERT(meshEdit_);
                                                      elm2ElmConn_ = elm2ElmConn; }
+    void setOwningProc(IntView owningProc) {PMT_ALWAYS_ASSERT(meshEdit_);
+                                            owningProc_ = owningProc; }
     
     void computeRotLatLonIncr();
 };

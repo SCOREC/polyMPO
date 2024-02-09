@@ -507,6 +507,19 @@ module polympo
     type(c_ptr), value :: array
   end subroutine
   !---------------------------------------------------------------------------
+  !> @brief set the index to cell id array from a host array
+  !> @param mpmesh(in/out) MPMesh object
+  !> @param nCells(in) number of cells
+  !> @param array(in) input mesh cell to process array
+  !---------------------------------------------------------------------------
+  subroutine polympo_setOwningProc(mpMesh, nCells, array) &
+    bind(C, NAME='polympo_setOwningProc_f')
+    use :: iso_c_binding
+    type(c_ptr), value :: mpMesh
+    integer(c_int), value :: nCells
+    type(c_ptr), intent(in), value :: array
+  end subroutine
+  !---------------------------------------------------------------------------
   !> @brief calculate the MPs from given mesh vertices rotational latitude
   !>        longitude, update the MP slices
   !>        MPs MUST have rotated flag set to True(>0)

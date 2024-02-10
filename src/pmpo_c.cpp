@@ -334,20 +334,46 @@ void polympo_getMPRotLatLon_f(MPMesh_ptr p_mpmesh,
   Kokkos::deep_copy(arrayHost, mpRotLatLonCopy);
 }
 
-void polympo_setMPVel_f(MPMesh_ptr p_mpmesh, const int size, const double* array) {
-  fprintf(stderr,"%s is no longer supported\n", __func__);
-  PMT_ALWAYS_ASSERT(false);
-  (void)p_mpmesh;// to silence the unused param warning
-  (void)size;
-  (void)array;
+void polympo_setMPVel_f(MPMesh_ptr p_mpmesh, const int numComps, const int numMPs, const double* mpVelIn) {
+  checkMPMeshValid(p_mpmesh);
+  auto p_MPs = ((polyMPO::MPMesh*)p_mpmesh)->p_MPs;
+  PMT_ALWAYS_ASSERT(numComps == vec2d_nEntries);
+  PMT_ALWAYS_ASSERT(numMPs >= p_MPs->getCount());
+  PMT_ALWAYS_ASSERT(numMPs >= p_MPs->getMaxAppID());
+
+  auto mpVel = p_MPs->getData<polyMPO::MPF_Vel>();
+  auto mpAppID = p_MPs->getData<polyMPO::MPF_MP_APP_ID>();
+  kkViewHostU<const double**> mpVelIn_h(mpVelIn,numComps,numMPs);
+  Kokkos::View<double**> mpVelIn_d("mpVelDevice",vec2d_nEntries,numMPs);
+  Kokkos::deep_copy(mpVelIn_d, mpVelIn_h);
+  auto setPos = PS_LAMBDA(const int& elm, const int& mp, const int& mask){
+    if(mask){
+      mpVel(mp,0) = mpVelIn_d(0, mpAppID(mp));
+      mpVel(mp,1) = mpVelIn_d(1, mpAppID(mp));
+    }
+  };
+  p_MPs->parallel_for(setPos, "setMPVel");
 }
 
-void polympo_getMPVel_f(MPMesh_ptr p_mpmesh, const int size, const double* array) {
-  fprintf(stderr,"%s is no longer supported\n", __func__);
-  PMT_ALWAYS_ASSERT(false);
-  (void)p_mpmesh;// to silence the unused param warning
-  (void)size;
-  (void)array;
+void polympo_getMPVel_f(MPMesh_ptr p_mpmesh, const int numComps, const int numMPs, double* mpVelHost) {
+  checkMPMeshValid(p_mpmesh);
+  auto p_MPs = ((polyMPO::MPMesh*)p_mpmesh)->p_MPs;
+  PMT_ALWAYS_ASSERT(numComps == vec2d_nEntries);
+  PMT_ALWAYS_ASSERT(numMPs >= p_MPs->getCount());
+  PMT_ALWAYS_ASSERT(numMPs >= p_MPs->getMaxAppID());
+
+  auto mpVel = p_MPs->getData<polyMPO::MPF_Vel>();
+  auto mpAppID = p_MPs->getData<polyMPO::MPF_MP_APP_ID>();
+  Kokkos::View<double**> mpVelCopy("mpVelCopy",vec2d_nEntries,numMPs);
+  auto getPos = PS_LAMBDA(const int& elm, const int& mp, const int& mask){
+    if(mask){
+      mpVelCopy(0,mpAppID(mp)) = mpVel(mp,0);
+      mpVelCopy(1,mpAppID(mp)) = mpVel(mp,1);
+    }
+  };
+  p_MPs->parallel_for(getPos, "getMPVel");
+  kkDbl2dViewHostU arrayHost(mpVelHost,numComps,numMPs);
+  Kokkos::deep_copy(arrayHost, mpVelCopy);
 }
 
 void polympo_startMeshFill_f(MPMesh_ptr p_mpmesh){

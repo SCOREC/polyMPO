@@ -199,11 +199,11 @@ module polympo
   !> @param n(in) half length of array
   !> @param array(in) input MP velocity 1D array (numMPs*2)
   !---------------------------------------------------------------------------
-  subroutine polympo_setMPVel(mpMesh, n, array) &
+  subroutine polympo_setMPVel(mpMesh, nComps, numMPs, array) &
              bind(C, NAME='polympo_setMPVel_f')
     use :: iso_c_binding
     type(c_ptr), value :: mpMesh
-    integer(c_int), value :: n
+    integer(c_int), value :: nComps, numMPs
     type(c_ptr), intent(in), value :: array
   end subroutine
   !---------------------------------------------------------------------------
@@ -213,11 +213,11 @@ module polympo
   !> @param n(in) half length of array
   !> @param array(in/out) output MP velocity 1D array (numMPs*2), allocated by user
   !---------------------------------------------------------------------------
-  subroutine polympo_getMPVel(mpMesh, n, array) &
+  subroutine polympo_getMPVel(mpMesh, nComps, numMPs, array) &
              bind(C, NAME='polympo_getMPVel_f')
     use :: iso_c_binding
     type(c_ptr), value :: mpMesh
-    integer(c_int), value :: n
+    integer(c_int), value :: nComps, numMPs
     type(c_ptr), value :: array
   end subroutine
   !---------------------------------------------------------------------------

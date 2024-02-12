@@ -445,6 +445,35 @@ module polympo
     type(c_ptr), value :: latitude
   end subroutine
   !---------------------------------------------------------------------------
+  !> @brief set the vertices velocity from a host array
+  !> @param mpmesh(in/out) MPMesh object
+  !> @param nComps(in) number of components, should always be 2
+  !> @param nVertices(in) numVertices
+  !> @param array(in) input vertices velocity 2D array (2,numVtx)
+  !---------------------------------------------------------------------------
+  subroutine polympo_setMeshVel(mpMesh, nComps, nVertices, array) &
+             bind(C, NAME='polympo_setMeshVel_f')
+    use :: iso_c_binding
+    type(c_ptr), value :: mpMesh
+    integer(c_int), value :: nComps, nVertices
+    type(c_ptr), intent(in), value :: array
+  end subroutine
+  !---------------------------------------------------------------------------
+  !> @brief get the vertices velocity from polyMPO
+  !> @param mpmesh(in/out) MPMesh object
+  !> @param nComps(in) number of components, should always be 2
+  !> @param nVertices(in) numVertices
+  !> @param array(in/out) output vertices velocity
+  !>        2D array (2,numVtx), allocated by user
+  !---------------------------------------------------------------------------
+  subroutine polympo_getMeshVel(mpMesh, nComps, nVertices, array) &
+             bind(C, NAME='polympo_getMeshVel_f')
+    use :: iso_c_binding
+    type(c_ptr), value :: mpMesh
+    integer(c_int), value :: nComps, nVertices
+    type(c_ptr), value :: array
+  end subroutine
+  !---------------------------------------------------------------------------
   !> @brief set the spherical velocity increment mesh array 
   !>        from a host array
   !> @param mpmesh(in/out) MPMesh object

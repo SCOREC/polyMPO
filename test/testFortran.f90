@@ -74,9 +74,17 @@ program main
         Mesharray(i,j) = (i-1)*numCompsVel + j
     end do
   end do
+  call polympo_setMeshVel(mpMesh, numCompsVel, nverts, c_loc(Mesharray))
   call polympo_setMeshOnSurfVeloIncr(mpMesh, numCompsVel, nverts, c_loc(Mesharray))
   call polympo_setMeshOnSurfDispIncr(mpMesh, numCompsVel, nverts, c_loc(Mesharray))
 
+  Mesharray = 1
+  call polympo_getMeshVel(mpMesh, numCompsVel, nverts, c_loc(Mesharray))
+  do i = 1,numCompsVel
+    do j = 1,nverts 
+        call assert((Mesharray(i,j) .eq. (i-1)*numCompsVel+j), "Assert MeshOnSurfVeloIncr Fail")
+    end do
+  end do
   Mesharray = 1
   call polympo_getMeshOnSurfVeloIncr(mpMesh, numCompsVel, nverts, c_loc(Mesharray))
   do i = 1,numCompsVel

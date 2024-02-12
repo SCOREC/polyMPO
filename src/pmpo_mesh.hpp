@@ -11,7 +11,6 @@ namespace polyMPO{
 using IntVtx2ElmView = Kokkos::View<int*[maxVtxsPerElm+1]>;
 using IntElm2VtxView = Kokkos::View<int*[maxElmsPerVtx+1]>;
 using IntElm2ElmView = Kokkos::View<int*[maxVtxsPerElm+1]>;
-using CellsOnVtxView = Kokkos::View<int*[maxVtxsPerElm+1]>;
 
 using DoubleSclrView = Kokkos::View<double*>;
 using DoubleVec2dView = Kokkos::View<double*[vec2d_nEntries]>;
@@ -67,7 +66,8 @@ class Mesh {
     //IntView nEdgesPerElm_;
     IntVtx2ElmView elm2VtxConn_;
     IntElm2ElmView elm2ElmConn_;
-     
+    IntElm2VtxView vtx2ElmConn_;
+ 
     //start of meshFields
     DoubleVec3dView vtxCoords_;
     DoubleSclrView vtxRotLat_;
@@ -77,7 +77,6 @@ class Mesh {
     DoubleVec2dView vtxRotLatLonIncr_;
     //DoubleMat2DView vtxStress_;
 
-    CellsOnVtxView cellsOnVtx;
   public:
     Mesh(){};
     Mesh( mesh_type meshType,
@@ -112,6 +111,7 @@ class Mesh {
     int getNumElements() { return numElms_; }
     IntVtx2ElmView getElm2VtxConn() { return elm2VtxConn_; }
     IntElm2ElmView getElm2ElmConn() { return elm2ElmConn_; }
+    IntElm2VtxView getVtx2ElmConn() { return vtx2ElmConn_; }
     template<MeshFieldIndex index> auto getMeshField();
     void setMeshVtxBasedFieldSize();
 

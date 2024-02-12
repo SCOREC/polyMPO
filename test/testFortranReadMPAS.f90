@@ -22,7 +22,7 @@ program main
   integer, dimension(:), pointer :: nEdgesOnCell
   real(kind=MPAS_RKIND), dimension(:), pointer :: xVertex, yVertex, zVertex
   real(kind=MPAS_RKIND), dimension(:), pointer :: latVertex, lonVertex
-  integer, dimension(:,:), pointer :: verticesOnCell, cellsOnCell
+  integer, dimension(:,:), pointer :: cellsOnVertex, verticesOnCell, cellsOnCell
 
   call mpi_init(ierr)
   call mpi_comm_rank(mpi_comm_handle, self, ierr)
@@ -46,13 +46,13 @@ program main
                         onSphere, sphereRadius, &
                         xVertex, yVertex, zVertex, &
                         latVertex, lonVertex, &
-                        verticesOnCell, cellsOnCell)
+                        verticesOnCell, cellsOnCell, cellsOnVertex)
   call loadMPASMeshInPolyMPO(mpMesh, maxEdges, vertexDegree, &
                         nCells, nVertices, nEdgesOnCell, &
                         onSphere, sphereRadius, &
                         xVertex, yVertex, zVertex, &
                         latVertex, &
-                        verticesOnCell, cellsOnCell)
+                        verticesOnCell, cellsOnCell, cellsOnVertex)
 
   !todo check the value using get functions. 
   

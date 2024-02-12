@@ -1,4 +1,3 @@
-#include "pmpo_createTestMPMesh.hpp"
 #include "pmpo_defines.h"
 #include "pmpo_c.h"
 #include <stdio.h>
@@ -508,6 +507,32 @@ void polympo_setMeshElm2ElmConn_f(MPMesh_ptr p_mpmesh, const int maxEdges, const
   Kokkos::parallel_for("set elm2ElmConn", nCells, KOKKOS_LAMBDA(const int elm){
     for(int i=0; i<maxEdges; i++){
         elm2ElmConn(elm,i+1) = elm2ElmArray(i,elm);
+	//printf("(%d, %d): %d \n", elm, i+1, elm2ElmArray(i,elm));
+    }  
+  });
+}
+
+void polympo_setMeshVtx2ElmConn_f(MPMesh_ptr p_mpmesh, const int vertexDegree, const int nVertices, const int* array){
+  //check vailidity
+  checkMPMeshValid(p_mpmesh);
+  kkViewHostU<const int**> arrayHost(array,vertexDegree,nVertices); //Fortran is column-major
+  auto p_mesh = ((polyMPO::MPMesh*)p_mpmesh)->p_mesh; 
+  PMT_ALWAYS_ASSERT(p_mesh->meshEditable());
+
+  //check the size
+  PMT_ALWAYS_ASSERT(vertexDegree <= 3);
+  PMT_ALWAYS_ASSERT(nVertices == p_mesh->getNumVertices());
+  
+  Kokkos::View<int**> vtx2ElmArray("MeshVerticesToElements",vertexDegree,nVertices);
+  Kokkos::deep_copy(vtx2ElmArray, arrayHost);
+  auto vtx2ElmConn = p_mesh->getVtx2ElmConn();
+  Kokkos::parallel_for("set vtx2ElmConn", nVertices, KOKKOS_LAMBDA(const int vtx){
+    //int arraySize = sizeof(vtx2ElmArray)/sizeof(vtx2ElmArray(0,0));
+    //printf("size: %d \n", arraySize);
+    for(int i=0; i<vertexDegree; i++){
+        //vtx2ElmConn(vtx,i) = vtx2ElmArray(i,vtx);
+	//printf("first: %d \n",vtx2ElmArray(i,vtx)); // works
+	//printf("second: % \n",vtx2ElmConn(vtx,0)); // ERROR!
     }  
   });
 }

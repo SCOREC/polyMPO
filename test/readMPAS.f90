@@ -26,7 +26,7 @@ subroutine loadMPASMeshInPolyMPO(mpMesh, maxEdges, vertexDegree, &
                         onSphere, sphereRadius, &
                         xVertex, yVertex, zVertex, &
                         latVertex, &
-                        verticesOnCell, cellsOnCell)
+                        verticesOnCell, cellsOnCell, cellsOnVertex)
     use :: netcdf
     use :: iso_c_binding
     implicit none
@@ -40,6 +40,7 @@ subroutine loadMPASMeshInPolyMPO(mpMesh, maxEdges, vertexDegree, &
     real(kind=MPAS_RKIND), dimension(:), pointer :: xVertex, yVertex, zVertex
     real(kind=MPAS_RKIND), dimension(:), pointer :: latVertex, lonVertex
     integer, dimension(:,:), pointer :: verticesOnCell, cellsOnCell
+    integer, dimension(:,:), pointer :: cellsOnVertex
 
     call polympo_checkPrecisionForRealKind(MPAS_RKIND)
     !check on maxEdges and vertexDegree
@@ -62,8 +63,9 @@ subroutine loadMPASMeshInPolyMPO(mpMesh, maxEdges, vertexDegree, &
     !set connectivities
     call polympo_setMeshElm2VtxConn(mpMesh,maxEdges,nCells,c_loc(verticesOnCell))
     call polympo_setMeshElm2ElmConn(mpMesh,maxEdges,nCells,c_loc(cellsOnCell))
+    call polympo_setMeshVtx2ElmConn(mpMesh,vertexDegree,nVertices,c_loc(cellsOnVertex))
     call polympo_setMeshNumEdgesPerElm(mpMesh,nCells,c_loc(nEdgesOnCell))
-     
+
     !end mesh structure fill
     call polympo_endMeshFill(mpMesh)
 
@@ -97,7 +99,7 @@ subroutine readMPASMeshFromNCFile(filename, maxEdges, vertexDegree, &
     integer :: ncid, status, nCellsID, nVerticesID, maxEdgesID, vertexDegreeID, &
                nEdgesOnCellID, xVertexID, yVertexID, zVertexID, &
                latVertexID, lonVertexID, &
-               verticesOnCellID, cellsOnCellID, cellsOnVertex
+               verticesOnCellID, cellsOnCellID, cellsOnVertexID
     
     status = nf90_open(path=trim(filename), mode=nf90_nowrite, ncid=ncid)
     if (status /= nf90_noerr) then
@@ -168,10 +170,10 @@ subroutine readMPASMeshFromNCFile(filename, maxEdges, vertexDegree, &
     allocate(latVertex(nVertices))
     allocate(lonVertex(nVertices))
     allocate(nEdgesOnCell(nCells))
-    !allocate(cellsOnVertex(maxEdges, nCells))
     allocate(verticesOnCell(maxEdges, nCells))
     allocate(cellsOnCell(maxEdges, nCells))
-   
+    allocate(cellsOnVertex(vertexDegree, nVertices))   
+
     status = nf90_get_att(ncid, nf90_global, "on_a_sphere", onSphere)
     if (status /= nf90_noerr) then
         write(0, *) "readMPASMeshFromNCFile: Error on get attribute 'on_a_sphere'"
@@ -245,6 +247,13 @@ subroutine readMPASMeshFromNCFile(filename, maxEdges, vertexDegree, &
         stop
     end if
 
+    status = nf90_inq_varid(ncid, 'cellsOnVertex', cellsOnVertexID)
+    if (status /= nf90_noerr) then
+        write(0, *) "readMPASMeshFromNCFile: Error on inquire varid of 'cellsOnVertexID'"
+        write(0, *) trim(nf90_strerror(status))
+        stop
+    end if
+
     status = nf90_get_var(ncid, xVertexID, xVertex)
     if (status /= nf90_noerr) then
         write(0, *) "readMPASMeshFromNCFile: Error on get var of 'xVertex'"
@@ -301,6 +310,13 @@ subroutine readMPASMeshFromNCFile(filename, maxEdges, vertexDegree, &
         stop
     end if
 
+    status = nf90_get_var(ncid, cellsOnVertexID, cellsOnVertex)
+    if (status /= nf90_noerr) then
+        write(0, *) "readMPASMeshFromNCFile: Error on get var of 'cellsOnVertex'"
+        write(0, *) trim(nf90_strerror(status))
+        stop
+    end if
+
     status = nf90_close(ncid)   
 end subroutine readMPASMeshFromNCFile
 subroutine setWithMPASMeshByFortran(mpMesh, fileName, n) bind(C, name="setWithMPASMeshByFortran")
@@ -328,19 +344,19 @@ subroutine setWithMPASMeshByFortran(mpMesh, fileName, n) bind(C, name="setWithMP
                         onSphere, sphereRadius, &
                         xVertex, yVertex, zVertex, &
                         latVertex, lonVertex, &
-                        verticesOnCell, cellsOnCell)
+                        verticesOnCell, cellsOnCell, cellsOnVertex)
     call loadMPASMeshInPolyMPO(mpMesh, maxEdges, vertexDegree, &
                         nCells, nVertices, nEdgesOnCell, &
                         onSphere, sphereRadius, &
                         xVertex, yVertex, zVertex, &
                         latVertex, &
-                        verticesOnCell, cellsOnCell)
+                        verticesOnCell, cellsOnCell, cellsOnVertex)
     
     deallocate(nEdgesOnCell)
     deallocate(xVertex)
     deallocate(yVertex)
     deallocate(zVertex)
-    !deallocate(cellsOnVertex)
+    deallocate(cellsOnVertex)
     deallocate(verticesOnCell)
     deallocate(cellsOnCell)
 end subroutine

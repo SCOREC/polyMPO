@@ -25,7 +25,7 @@ program main
   integer, dimension(:), pointer :: nEdgesOnCell
   real(kind=MPAS_RKIND), dimension(:), pointer :: xVertex, yVertex, zVertex
   real(kind=MPAS_RKIND), dimension(:), pointer :: latVertex, lonVertex
-  integer, dimension(:,:), pointer :: verticesOnCell, cellsOnCell
+  integer, dimension(:,:), pointer :: cellsOnVertex, verticesOnCell, cellsOnCell
   integer :: numMPs 
   integer, dimension(:), pointer :: mpsPerElm, mp2Elm, isMPActive
   real(kind=MPAS_RKIND), dimension(:,:), pointer :: mpPosition, mpLatLon
@@ -53,7 +53,7 @@ program main
                         onSphere, sphereRadius, &
                         xVertex, yVertex, zVertex, &
                         latVertex, lonVertex, &
-                        verticesOnCell, cellsOnCell)
+                        verticesOnCell, cellsOnCell, cellsOnVertex)
   if (onSphere .ne. 'YES') then
     write (*,*) "The mesh is not spherical!"
     call exit(1)
@@ -67,7 +67,7 @@ program main
                         onSphere, sphereRadius, &
                         xVertex, yVertex, zVertex, &
                         latVertex, &
-                        verticesOnCell, cellsOnCell)
+                        verticesOnCell, cellsOnCell, cellsOnVertex)
  
   nCompsDisp = 2
   allocate(dispIncr(nCompsDisp,nVertices))

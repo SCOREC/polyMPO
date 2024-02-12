@@ -254,7 +254,7 @@ program main
   integer, dimension(:), pointer :: nEdgesOnCell
   real(kind=MPAS_RKIND), dimension(:), pointer :: xVertex, yVertex, zVertex
   real(kind=MPAS_RKIND), dimension(:), pointer :: latVertex, lonVertex
-  integer, dimension(:,:), pointer :: verticesOnCell, cellsOnCell
+  integer, dimension(:,:), pointer :: cellsOnVertex, verticesOnCell, cellsOnCell
   real(kind=MPAS_RKIND), dimension(:,:), pointer :: mpPosition
 
   call mpi_init(ierr)
@@ -279,13 +279,13 @@ program main
                         onSphere, sphereRadius, &
                         xVertex, yVertex, zVertex, &
                         latVertex, lonVertex, &
-                        verticesOnCell, cellsOnCell)
+                        verticesOnCell, cellsOnCell, cellsOnVertex)
   call loadMPASMeshInPolyMPO(mpMesh, maxEdges, vertexDegree, &
                         nCells, nVertices, nEdgesOnCell, &
                         onSphere, sphereRadius, &
                         xVertex, yVertex, zVertex, &
                         latVertex, &
-                        verticesOnCell, cellsOnCell)
+                        verticesOnCell, cellsOnCell, cellsOnVertex)
 
   !check for allocation
   call assert(nCells .ge. 3, "This test requires a mesh with at least three cells")

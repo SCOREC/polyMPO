@@ -131,7 +131,8 @@ class Mesh {
                                                      elm2VtxConn_ = elm2VtxConn; }
     void setElm2ElmConn(IntElm2ElmView elm2ElmConn) {PMT_ALWAYS_ASSERT(meshEdit_);
                                                      elm2ElmConn_ = elm2ElmConn; }
-    
+    void setVtx2ElmConn(IntElm2VtxView vtx2ElmConn) {PMT_ALWAYS_ASSERT(meshEdit_);
+                                                     vtx2ElmConn_ = vtx2ElmConn; } 
     void computeRotLatLonIncr();
 };
 

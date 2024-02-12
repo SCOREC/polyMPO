@@ -40,6 +40,7 @@ MPMesh_ptr polympo_createMPMesh_f(const int testMeshOption, const int testMPOpti
   }else{
     p_mps = new polyMPO::MaterialPoints();  
   }
+  auto elm2ElmConn = p_mesh->getElm2ElmConn();
   MPMesh_ptr p_mpMeshReturn = (MPMesh_ptr) new polyMPO::MPMesh(p_mesh, p_mps);
   p_mpmeshes.push_back(p_mpMeshReturn);
   return p_mpMeshReturn;
@@ -391,8 +392,12 @@ void polympo_checkMeshMaxSettings_f(MPMesh_ptr p_mpmesh, const int maxEdges, con
 void polympo_setMeshNumVtxs_f(MPMesh_ptr p_mpmesh, const int numVtxs){
   checkMPMeshValid(p_mpmesh);
   auto p_mesh = ((polyMPO::MPMesh*)p_mpmesh)->p_mesh;
+  
+  auto vtx2Elm = polyMPO::IntElm2VtxView("MeshVerticesToElements",numVtxs);
+
   p_mesh->setNumVtxs(numVtxs);
-  p_mesh->setMeshVtxBasedFieldSize(); 
+  p_mesh->setMeshVtxBasedFieldSize();
+  p_mesh->setVtx2ElmConn(vtx2Elm); 
 }
 
 int polympo_getMeshNumVtxs_f(MPMesh_ptr p_mpmesh) {
@@ -408,7 +413,7 @@ void polympo_setMeshNumElms_f(MPMesh_ptr p_mpmesh, const int numElms){
 
   auto elm2Vtx = polyMPO::IntVtx2ElmView("MeshElementsToVertices",numElms); 
   auto elm2Elm = polyMPO::IntElm2ElmView("MeshElementsToElements",numElms); 
-
+  
   p_mesh->setNumElms(numElms);
   p_mesh->setElm2VtxConn(elm2Vtx);
   p_mesh->setElm2ElmConn(elm2Elm);
@@ -508,7 +513,6 @@ void polympo_setMeshElm2ElmConn_f(MPMesh_ptr p_mpmesh, const int maxEdges, const
   Kokkos::parallel_for("set elm2ElmConn", nCells, KOKKOS_LAMBDA(const int elm){
     for(int i=0; i<maxEdges; i++){
         elm2ElmConn(elm,i+1) = elm2ElmArray(i,elm);
-	//printf("(%d, %d): %d \n", elm, i+1, elm2ElmArray(i,elm));
     }  
   });
 }
@@ -528,12 +532,8 @@ void polympo_setMeshVtx2ElmConn_f(MPMesh_ptr p_mpmesh, const int vertexDegree, c
   Kokkos::deep_copy(vtx2ElmArray, arrayHost);
   auto vtx2ElmConn = p_mesh->getVtx2ElmConn();
   Kokkos::parallel_for("set vtx2ElmConn", nVertices, KOKKOS_LAMBDA(const int vtx){
-    //int arraySize = sizeof(vtx2ElmArray)/sizeof(vtx2ElmArray(0,0));
-    //printf("size: %d \n", arraySize);
     for(int i=0; i<vertexDegree; i++){
-        //vtx2ElmConn(vtx,i) = vtx2ElmArray(i,vtx);
-	//printf("first: %d \n",vtx2ElmArray(i,vtx)); // works
-	//printf("second: % \n",vtx2ElmConn(vtx,0)); // ERROR!
+        vtx2ElmConn(vtx,i) = vtx2ElmArray(i,vtx);
     }  
   });
 }

@@ -60,15 +60,35 @@ program main
   allocate(yArray(nverts))
   allocate(zArray(nverts))
 
+  ! MPMesh structure
   call polympo_getMPPositions(mpMesh, numCompsCoords, numMPs, c_loc(MPPositions))
   do i = 1,numMPs 
     call assert(abs(MPPositions(3,i) - 1.1) .lt. test_epsilon, "Assert zPositions for MP array Fail")
   end do
   call polympo_getMeshNumVtxs(mpMesh, nvertsGet)
   call assert(nverts.eq.nvertsGet,"num. verts mismatch")
-
   call polympo_getMeshNumElms(mpMesh, nElmsGet)
   call assert(numElms.eq.nElmsGet,"num. elms mismatch")
+
+  ! set MP Fields
+  do i = 1,numCompsVel
+    do j = 1,numMPs 
+        MParray(i,j) = (i-1)*numCompsVel + j
+    end do
+  end do
+  call polympo_setMPVel(mpMesh, numCompsVel, numMPs, c_loc(MParray))
+  
+  ! check MP Fields
+  MParray = 1
+  call polympo_getMPVel(mpMesh, numCompsVel, numMPs, c_loc(MParray))
+  do i = 1,numCompsVel
+    do j = 1,numMPs 
+        call assert((MParray(i,j) .eq. (i-1)*numCompsVel+j), "Assert MP Velocity Fail")
+    end do
+  end do
+  
+
+  ! set mesh Fields
   do i = 1,numCompsVel
     do j = 1,nverts 
         Mesharray(i,j) = (i-1)*numCompsVel + j
@@ -78,6 +98,7 @@ program main
   call polympo_setMeshOnSurfVeloIncr(mpMesh, numCompsVel, nverts, c_loc(Mesharray))
   call polympo_setMeshOnSurfDispIncr(mpMesh, numCompsVel, nverts, c_loc(Mesharray))
 
+  ! check mesh Fields
   Mesharray = 1
   call polympo_getMeshVel(mpMesh, numCompsVel, nverts, c_loc(Mesharray))
   do i = 1,numCompsVel

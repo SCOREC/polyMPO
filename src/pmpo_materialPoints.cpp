@@ -111,11 +111,14 @@ bool MaterialPoints::migrate() {
 
   int rank;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  Kokkos::parallel_for("setMigrateFields", MPs->capacity(), KOKKOS_LAMBDA(int i) {
-    new_elem(i) = MPs2Elm(i);
-    new_process(i) = MPs2Proc(i);
-    if (new_process(i) != rank) isMigrating(0) = 1;
-  });
+  auto setMigrationFields = PS_LAMBDA(const int& e, const int& mp, const bool& mask) {
+    if (mask) {
+      new_elem(mp) = MPs2Elm(mp);
+      new_process(mp) = MPs2Proc(mp);
+      if (new_process(mp) != rank) isMigrating(0) = 1;
+    }
+  };
+  parallel_for(setMigrationFields, "setMigrationFields");
   MPs->migrate(new_elem, new_process);
   return pumipic::getLastValue(isMigrating) > 0;
 }

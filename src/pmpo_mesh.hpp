@@ -114,7 +114,6 @@ class Mesh {
     int getNumElements() { return numElms_; }
     IntVtx2ElmView getElm2VtxConn() { return elm2VtxConn_; }
     IntElm2ElmView getElm2ElmConn() { return elm2ElmConn_; }
-    IntView getOnwningProc() { return owningProc_; }
     template<MeshFieldIndex index> auto getMeshField();
     void setMeshVtxBasedFieldSize();
 

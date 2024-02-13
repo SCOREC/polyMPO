@@ -7,6 +7,11 @@ int main(int argc, char* argv[] ) {
     MPI_Init(&argc, &argv);
     Kokkos::initialize(argc,argv);
 
+    int comm_rank;
+    MPI_Comm_rank(MPI_COMM_WORLD, &comm_rank);
+    int comm_size;
+    MPI_Comm_size(MPI_COMM_WORLD, &comm_size);
+
     {
         MPMesh* mpmesh = NULL;
         void* p;
@@ -24,11 +29,12 @@ int main(int argc, char* argv[] ) {
             mpsPerElm(elm) = 1;
         });
         Kokkos::parallel_for("setMPs", numMPs, KOKKOS_LAMBDA(const int mp){
-            activeMP2Elm(mp) = 1;
+            activeMP2Elm(mp) = mp;
             activeMPIDs(mp) = mp;
         });
 
         MaterialPoints p_MPs(numElms, numMPs, mpsPerElm, activeMP2Elm, activeMPIDs);
+        mpmesh->p_MPs = &p_MPs;
 
         auto elm2VtxConn = mesh->getElm2VtxConn();
         auto vtxCoords = mesh->getMeshField<polyMPO::MeshF_VtxCoords>(); 
@@ -49,10 +55,20 @@ int main(int argc, char* argv[] ) {
 
         IntView owningProc("owningProc", numElms);
         Kokkos::parallel_for("setOwningProc", numElms, KOKKOS_LAMBDA(const int elm){
-            owningProc(elm) = elmCenter(elm)[1] > 0 ? 1 : 0;
+            owningProc(elm) = elmCenter(elm)[1] > 0 ? comm_size-1 : 0;
         });
         mesh->setMeshEdit(true);
         mesh->setOwningProc(owningProc);
+        mpmesh->push();
+
+        auto MPs2Proc = p_MPs.getData<MPF_Tgt_Proc_ID>();
+        auto checkPostBackMigrate = PS_LAMBDA(const int& e, const int& mp, const bool& mask) {
+            if (mask) {
+                assert(MPs2Proc(mp) == comm_rank);
+                assert(owningProc(e) == comm_rank);
+            }
+        };
+        p_MPs.parallel_for(checkPostBackMigrate, "checkPostBackMigrate");
     } 
 
     Kokkos::finalize();

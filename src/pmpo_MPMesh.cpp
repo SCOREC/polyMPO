@@ -134,7 +134,8 @@ void MPMesh::CVTTrackingElmCenterBased(const int printVTPIndex){
                 }
                 if(closestElm<0){
                     MPs2Elm(mp) = iElm;
-                    MPs2Proc(mp) = elm2Process(iElm);
+                    if (elm2Process.size() > 0) 
+                        MPs2Proc(mp) = elm2Process(iElm);
                     break;
                 }else{
                     iElm = closestElm;
@@ -283,13 +284,14 @@ void MPMesh::push(){
 
   while(true) {
     CVTTrackingElmCenterBased(); // move to Tgt_XYZ
-    p_MPs->updateMPSlice<MPF_Cur_Pos_XYZ, MPF_Tgt_Pos_XYZ>(); // Tgt_XYZ becomes Cur_XYZ
-    p_MPs->updateMPSlice<MPF_Cur_Pos_Rot_Lat_Lon, MPF_Tgt_Pos_Rot_Lat_Lon>(); // Tgt becomes Cur
     bool isMigrating = p_MPs->migrate();
     bool anyIsMigrating = getAnyIsMigrating(isMigrating);
     p_MPs->updateMPElmID(); //update mpElm IDs slices
     if (!anyIsMigrating) break;
   }
+
+  p_MPs->updateMPSlice<MPF_Cur_Pos_XYZ, MPF_Tgt_Pos_XYZ>(); // Tgt_XYZ becomes Cur_XYZ
+  p_MPs->updateMPSlice<MPF_Cur_Pos_Rot_Lat_Lon, MPF_Tgt_Pos_Rot_Lat_Lon>(); // Tgt becomes Cur
 }
 
 void MPMesh::printVTP_mesh(int printVTPIndex){

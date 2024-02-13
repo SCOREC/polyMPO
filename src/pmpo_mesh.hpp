@@ -86,19 +86,21 @@ class Mesh {
           int numElms,
           DoubleVec3dView vtxCoords,
           IntVtx2ElmView elm2VtxConn,
-          IntElm2ElmView elm2ElmConn ):
+          IntElm2ElmView elm2ElmConn,
+	  IntElm2VtxView vtx2ElmConn ):
           meshType_(meshType),
           geomType_(geomType),
           sphereRadius_(sphereRadius),
           numVtxs_(numVtxs),
           numElms_(numElms),
           elm2VtxConn_(elm2VtxConn),
+	  vtx2ElmConn_(vtx2ElmConn),
           elm2ElmConn_(elm2ElmConn){
             meshEdit_ = true;
             setMeshVtxBasedFieldSize();
             meshEdit_ = false;
             vtxCoords_ = vtxCoords;
-        }
+          }
 
     bool meshEditable(){ return meshEdit_; }
     bool checkMeshType(int meshType);

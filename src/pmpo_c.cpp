@@ -533,7 +533,7 @@ void polympo_setMeshVtx2ElmConn_f(MPMesh_ptr p_mpmesh, const int vertexDegree, c
   auto vtx2ElmConn = p_mesh->getVtx2ElmConn();
   Kokkos::parallel_for("set vtx2ElmConn", nVertices, KOKKOS_LAMBDA(const int vtx){
     for(int i=0; i<vertexDegree; i++){
-        vtx2ElmConn(vtx,i) = vtx2ElmArray(i,vtx);
+        vtx2ElmConn(vtx,i+1) = vtx2ElmArray(i,vtx);
     }  
   });
 }

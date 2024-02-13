@@ -44,6 +44,8 @@ Mesh* createMesh(const mesh_type meshType, const geom_type geomType,
     }
     Kokkos::deep_copy(elm2ElmConn, h_elm2ElmConn);
 
+    IntElm2VtxView vtx2ElmConn("vertexToElmentConnection",nVertices);
+    
     return new Mesh(meshType,
                     geomType,
                     sphereRadius,
@@ -51,7 +53,8 @@ Mesh* createMesh(const mesh_type meshType, const geom_type geomType,
                     nCells,
                     vtxCoords,
                     elm2VtxConn,
-                    elm2ElmConn);
+                    elm2ElmConn,
+		    vtx2ElmConn);
 }
 
 Mesh* initTestMesh(const int testMeshOption, const int replicateFactor){
@@ -277,6 +280,8 @@ Mesh* replicateMesh(Mesh* mesh, int replicateFactor){
         }
     });
     
+    IntElm2VtxView vtx2ElmConn("vertexToElmentConnection",nVertices);
+ 
     //create new mesh   
     return new Mesh(meshType,
                     geomType,
@@ -285,7 +290,8 @@ Mesh* replicateMesh(Mesh* mesh, int replicateFactor){
                     nCells,
                     vtxCoords,
                     elm2VtxConn,
-                    elm2ElmConn);
+                    elm2ElmConn,
+		    vtx2ElmConn);
 
 }
 

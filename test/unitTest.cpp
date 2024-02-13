@@ -130,8 +130,21 @@ int main(int argc, char** argv) {
         auto p_mesh = mpMesh.p_mesh;
         auto vtxCoords = p_mesh->getMeshField<polyMPO::MeshF_VtxCoords>();
         auto basis = p_MPs->getData<MPF_Basis_Vals>();
+       
+	//determine the number of valid elements around each vertex 
+	int vtxDegree = 3; // maximum number of elements per vertex 
+	auto vtx2ElmConn = p_mesh->getVtx2ElmConn(); 
+        for (int i = 0; i < p_mesh->getNumVertices(); i++) {
+	    int elementCounter = 0;
+	    for (int j = 0; j < vtxDegree; j++) {
+		if (vtx2ElmConn(i,j) != 0) {
+		    elementCounter++;
+		}
+	    }
+	    vtx2ElmConn(i,0) = elementCounter;
+	} 
         
-        auto elm2VtxConn = p_mesh->getElm2VtxConn();
+	auto elm2VtxConn = p_mesh->getElm2VtxConn();
         const int numEntries = mpSlice2MeshFieldIndex.at(MPF_Basis_Vals).first;
         auto mpPositions = p_MPs->getData<MPF_Cur_Pos_XYZ>();
         auto assemble = PS_LAMBDA(const int& elm, const int& mp, const int& mask) {
@@ -229,7 +242,20 @@ int main(int argc, char** argv) {
         double radius = p_mesh->getSphereRadius();
         PMT_ALWAYS_ASSERT(radius > 0);
         
-        const int numEntries = mpSlice2MeshFieldIndex.at(MPF_Basis_Vals).first;
+	//determine the number of valid elements around each vertex 
+	int vtxDegree = 3; // maximum number of elements per vertex 
+	auto vtx2ElmConn = p_mesh->getVtx2ElmConn(); 
+        for (int i = 0; i < p_mesh->getNumVertices(); i++) {
+	    int elementCounter = 0;
+	    for (int j = 0; j < vtxDegree; j++) {
+		if (vtx2ElmConn(i,j) != 0) {
+		    elementCounter++;
+		}
+	    }
+	    vtx2ElmConn(i,0) = elementCounter;
+	} 
+	
+	const int numEntries = mpSlice2MeshFieldIndex.at(MPF_Basis_Vals).first;
         auto mpPositions = p_MPs->getData<MPF_Cur_Pos_XYZ>();
         auto assemble = PS_LAMBDA(const int& elm, const int& mp, const int& mask) {
         if (mask) {

@@ -3,7 +3,7 @@
 
 using namespace polyMPO;
 
-IntView divideProcsInWedges(Mesh* mesh, int numElms, int comm_rank, int comm_size) {
+IntView procWedges(Mesh* mesh, int numElms, int comm_size) {
     auto elm2VtxConn = mesh->getElm2VtxConn();
     auto vtxLat = mesh->getMeshField<polyMPO::MeshF_VtxRotLat>(); 
     
@@ -62,7 +62,7 @@ int main(int argc, char* argv[] ) {
         MaterialPoints p_MPs(numElms, numMPs, mpsPerElm, activeMP2Elm, activeMPIDs);
         mpmesh->p_MPs = &p_MPs;
 
-        IntView owningProc = divideProcsInWedges(mesh, numElms, comm_rank, comm_size);
+        IntView owningProc = procWedges(mesh, numElms, comm_size);
         mesh->setMeshEdit(true);
         mesh->setOwningProc(owningProc);
         mpmesh->push();

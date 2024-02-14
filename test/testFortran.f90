@@ -83,7 +83,7 @@ program main
   call polympo_getMPVel(mpMesh, numCompsVel, numMPs, c_loc(MParray))
   do i = 1,numCompsVel
     do j = 1,numMPs 
-        call assert((MParray(i,j) .eq. (i-1)*numCompsVel+j), "Assert MP Velocity Fail")
+        call assert((MParray(i,j) .eq. (i-1)*numCompsVel+j), "Assert MPVel Fail")
     end do
   end do
   
@@ -103,7 +103,7 @@ program main
   call polympo_getMeshVel(mpMesh, numCompsVel, nverts, c_loc(Mesharray))
   do i = 1,numCompsVel
     do j = 1,nverts 
-        call assert((Mesharray(i,j) .eq. (i-1)*numCompsVel+j), "Assert MeshOnSurfVeloIncr Fail")
+        call assert((Mesharray(i,j) .eq. (i-1)*numCompsVel+j), "Assert MeshVel Fail")
     end do
   end do
   Mesharray = 1

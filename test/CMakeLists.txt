@@ -96,4 +96,4 @@ pmpo_add_test(testFortranCreateRebuildMPs 1 ./testFortranCreateRebuildMPs ${TEST
 
 pmpo_add_test(test_timing 1 ./timeAssmblyWachspress 1 ${TEST_NC_FILE})
 pmpo_add_test(test_wachspress 1 ./testWachspress ${TEST_NC_FILE})
-pmpo_add_test(test_migration 2 ./testMigration ${TEST_NC_FILE})
+pmpo_add_test(test_migration 8 ./testMigration ${TEST_NC_FILE}) 

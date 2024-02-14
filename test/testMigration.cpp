@@ -3,27 +3,28 @@
 
 using namespace polyMPO;
 
-IntView divideProcsInHalf(Mesh* mesh, int numElms, int comm_rank, int comm_size) {
+IntView divideProcsInWedges(Mesh* mesh, int numElms, int comm_rank, int comm_size) {
     auto elm2VtxConn = mesh->getElm2VtxConn();
-    auto vtxCoords = mesh->getMeshField<polyMPO::MeshF_VtxCoords>(); 
+    auto vtxLat = mesh->getMeshField<polyMPO::MeshF_VtxRotLat>(); 
     
-    Vec3dView elmCenter("elementCenter",numElms);
-    Kokkos::parallel_for("calcElementCenter", numElms, KOKKOS_LAMBDA(const int elm){  
+    DoubleView elmLat("elmLat",numElms);
+    DoubleView max("max", 1);
+    DoubleView min("min", 1);
+    Kokkos::parallel_for("calcElementLat", numElms, KOKKOS_LAMBDA(const int elm){  
         int numVtx = elm2VtxConn(elm,0);
-        double sum_x = 0.0, sum_y = 0.0, sum_z = 0.0;
+        double sum = 0.0;
         for(int i=1; i<= numVtx; i++){
-            sum_x += vtxCoords(elm2VtxConn(elm,i)-1,0);
-            sum_y += vtxCoords(elm2VtxConn(elm,i)-1,1);
-            sum_z += vtxCoords(elm2VtxConn(elm,i)-1,2);
+            sum += vtxLat(elm2VtxConn(elm,i)-1);
         }
-        elmCenter(elm)[0] = sum_x/numVtx;
-        elmCenter(elm)[1] = sum_y/numVtx;
-        elmCenter(elm)[2] = sum_z/numVtx;
+        elmLat(elm) = sum/numVtx;
+        Kokkos::atomic_max(&max(0), elmLat(elm));
+        Kokkos::atomic_min(&min(0), elmLat(elm));
     });
 
     IntView owningProc("owningProc", numElms);
     Kokkos::parallel_for("setOwningProc", numElms, KOKKOS_LAMBDA(const int elm){
-        owningProc(elm) = elmCenter(elm)[1] > 0 ? comm_size-1 : 0;
+        double normalizedLat = (elmLat(elm) - min(0)) / (max(0) - min(0));
+        owningProc(elm) = normalizedLat * comm_size;
     });
     return owningProc;
 }
@@ -61,7 +62,7 @@ int main(int argc, char* argv[] ) {
         MaterialPoints p_MPs(numElms, numMPs, mpsPerElm, activeMP2Elm, activeMPIDs);
         mpmesh->p_MPs = &p_MPs;
 
-        IntView owningProc = divideProcsInHalf(mesh, numElms, comm_rank, comm_size);
+        IntView owningProc = divideProcsInWedges(mesh, numElms, comm_rank, comm_size);
         mesh->setMeshEdit(true);
         mesh->setOwningProc(owningProc);
         mpmesh->push();

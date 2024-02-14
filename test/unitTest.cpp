@@ -153,12 +153,12 @@ int main(int argc, char** argv) {
             int nElmVtxs = elm2VtxConn(elm,0);      // number of vertices bounding the element
             Vec3d eVtxCoords[maxVtxsPerElm + 1];
             for (int i = 1; i <= nElmVtxs; i++) {
-            // elm2VtxConn(elm,i) is the vertex ID (1-based index) of vertex #i of elm
-                eVtxCoords[i-1][0] = vtxCoords(elm2VtxConn(elm,i)-1,0);    
+	    	// elm2VtxConn(elm,i) is the vertex ID (1-based index) of vertex #i of elm
+		eVtxCoords[i-1][0] = vtxCoords(elm2VtxConn(elm,i)-1,0);    
                 eVtxCoords[i-1][1] = vtxCoords(elm2VtxConn(elm,i)-1,1);
                 eVtxCoords[i-1][2] = vtxCoords(elm2VtxConn(elm,i)-1,2);
             }
-            // last component of eVtxCoords stores the firs vertex (to avoid if-condition in the Wachspress computation)
+	    // last component of eVtxCoords stores the firs vertex (to avoid if-condition in the Wachspress computation)	
             eVtxCoords[nElmVtxs][0] = vtxCoords(elm2VtxConn(elm,1)-1,0);
             eVtxCoords[nElmVtxs][1] = vtxCoords(elm2VtxConn(elm,1)-1,1);
             eVtxCoords[nElmVtxs][2] = vtxCoords(elm2VtxConn(elm,1)-1,2);
@@ -257,9 +257,38 @@ int main(int argc, char** argv) {
 	
 	const int numEntries = mpSlice2MeshFieldIndex.at(MPF_Basis_Vals).first;
         auto mpPositions = p_MPs->getData<MPF_Cur_Pos_XYZ>();
-        auto assemble = PS_LAMBDA(const int& elm, const int& mp, const int& mask) {
+       
+	auto assemble2 = PS_LAMBDA(const int& iVtx, const int& mp, const int& mask) {
         if (mask) {
             /* get the coordinates of all the vertices of elm */
+            int numVElms = vtx2ElmConn(iVtx,0);
+	    Vec3d eVtxCoords[numVElms + 1];
+            for (int jElm = 0; jElm < numVElms; jElm++) {
+            	int elmID = vtx2ElmConn(iVtx,jElm);
+            	// elm2VtxConn(elm,i) is the vertex ID (1-based index) of vertex #i of elm
+            	eVtxCoords[elmID][0] = vtxCoords(iVtx,0);
+            	eVtxCoords[elmID][1] = vtxCoords(iVtx,1);
+            	eVtxCoords[elmID][2] = vtxCoords(iVtx,2);
+            }
+	    // last component of eVtxCoords stores the firs vertex (to avoid if-condition in the Wachspress computation)
+	
+	    /*	
+	    // compute the values of basis functions at mp position 
+            double basisByAreaSpherical[maxElmsPerVtx];
+            Vec3d mpCoord(mpPositions(mp,0), mpPositions(mp,1), mpPositions(mp,2));
+            getBasisByAreaGblForm3d(mpCoord, nElmVtxs, eVtxCoords, basisByAreaSpherical);
+            
+	    //const int numEntries = mpSlice2MeshFieldIndex.at(index).first;
+            for (int i = 0; i < numEntries; i++) {
+              basis(mp,i) = basisByAreaSpherical[i];
+            }
+	    */
+	  }
+	};
+	
+	auto assemble = PS_LAMBDA(const int& elm, const int& mp, const int& mask) {
+        if (mask) {
+            // get the coordinates of all the vertices of elm 
             int nElmVtxs = elm2VtxConn(elm,0);      // number of vertices bounding the element
             Vec3d eVtxCoords[maxVtxsPerElm + 1];
             for (int i = 1; i <= nElmVtxs; i++) {
@@ -273,7 +302,7 @@ int main(int argc, char** argv) {
             eVtxCoords[nElmVtxs][1] = vtxCoords(elm2VtxConn(elm,1)-1,1);
             eVtxCoords[nElmVtxs][2] = vtxCoords(elm2VtxConn(elm,1)-1,2);
 
-            /* compute the values of basis functions at mp position */
+            // compute the values of basis functions at mp position 
             double basisByAreaSpherical[maxElmsPerVtx];
             Vec3d mpCoord(mpPositions(mp,0), mpPositions(mp,1), mpPositions(mp,2));
             getBasisByAreaGblForm3d(mpCoord, nElmVtxs, eVtxCoords, basisByAreaSpherical);
@@ -283,6 +312,7 @@ int main(int argc, char** argv) {
             }
           }
         };
+	
         p_MPs->parallel_for(assemble, "assembly");
 
         //double del = 3.89;

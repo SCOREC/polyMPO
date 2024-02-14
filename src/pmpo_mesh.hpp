@@ -94,8 +94,8 @@ class Mesh {
           numVtxs_(numVtxs),
           numElms_(numElms),
           elm2VtxConn_(elm2VtxConn),
-	  vtx2ElmConn_(vtx2ElmConn),
-          elm2ElmConn_(elm2ElmConn){
+          elm2ElmConn_(elm2ElmConn),
+	  vtx2ElmConn_(vtx2ElmConn){
             meshEdit_ = true;
             setMeshVtxBasedFieldSize();
             meshEdit_ = false;

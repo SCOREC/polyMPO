@@ -268,12 +268,8 @@ bool getAnyIsMigrating(bool isMigrating) {
   int comm_size;
   MPI_Comm_size(MPI_COMM_WORLD, &comm_size);
 
-  bool anyIsMigrating = isMigrating;
-  for (int i=0; i < comm_size; i++) {
-    if (i == comm_rank) MPI_Bcast(&anyIsMigrating, 1, MPI_C_BOOL, i, MPI_COMM_WORLD);
-    else MPI_Bcast(&isMigrating, 1, MPI_C_BOOL, i, MPI_COMM_WORLD);
-    anyIsMigrating |= isMigrating;
-  }
+  bool anyIsMigrating = false;
+  MPI_Allreduce(&isMigrating, &anyIsMigrating, 1, MPI_C_BOOL, MPI_LOR, MPI_COMM_WORLD);
   return anyIsMigrating;
 }
 

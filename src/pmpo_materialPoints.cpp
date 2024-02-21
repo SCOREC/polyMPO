@@ -102,6 +102,7 @@ void MaterialPoints::finishRebuild() {
 }
 
 bool MaterialPoints::migrate() {
+  Kokkos::Timer timer;
   auto MPs2Elm = getData<MPF_Tgt_Elm_ID>();
   auto MPs2Proc = getData<MPF_Tgt_Proc_ID>();
 
@@ -120,6 +121,10 @@ bool MaterialPoints::migrate() {
   };
   parallel_for(setMigrationFields, "setMigrationFields");
   MPs->migrate(new_elem, new_process);
+
+  if (getOpMode() == polyMPO::MP_DEBUG)
+    printf("Material point migration: %f\n", timer.seconds());
+  
   return pumipic::getLastValue(isMigrating) > 0;
 }
 

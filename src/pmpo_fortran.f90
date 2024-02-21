@@ -507,7 +507,7 @@ module polympo
     type(c_ptr), value :: array
   end subroutine
   !---------------------------------------------------------------------------
-  !> @brief set the index to cell id array from a host array
+  !> @brief set the owning process array
   !> @param mpmesh(in/out) MPMesh object
   !> @param nCells(in) number of cells
   !> @param array(in) input mesh cell to process array

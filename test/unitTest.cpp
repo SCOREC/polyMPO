@@ -153,12 +153,12 @@ int main(int argc, char** argv) {
             int nElmVtxs = elm2VtxConn(elm,0);      // number of vertices bounding the element
             Vec3d eVtxCoords[maxVtxsPerElm + 1];
             for (int i = 1; i <= nElmVtxs; i++) {
-	    	// elm2VtxConn(elm,i) is the vertex ID (1-based index) of vertex #i of elm
-		eVtxCoords[i-1][0] = vtxCoords(elm2VtxConn(elm,i)-1,0);    
+                // elm2VtxConn(elm,i) is the vertex ID (1-based index) of vertex #i of elm
+                eVtxCoords[i-1][0] = vtxCoords(elm2VtxConn(elm,i)-1,0);    
                 eVtxCoords[i-1][1] = vtxCoords(elm2VtxConn(elm,i)-1,1);
                 eVtxCoords[i-1][2] = vtxCoords(elm2VtxConn(elm,i)-1,2);
             }
-	    // last component of eVtxCoords stores the firs vertex (to avoid if-condition in the Wachspress computation)	
+            // last component of eVtxCoords stores the firs vertex (to avoid if-condition in the Wachspress computation)	
             eVtxCoords[nElmVtxs][0] = vtxCoords(elm2VtxConn(elm,1)-1,0);
             eVtxCoords[nElmVtxs][1] = vtxCoords(elm2VtxConn(elm,1)-1,1);
             eVtxCoords[nElmVtxs][2] = vtxCoords(elm2VtxConn(elm,1)-1,2);
@@ -264,11 +264,11 @@ int main(int argc, char** argv) {
             int numVElms = vtx2ElmConn(iVtx,0);
 	    Vec3d eVtxCoords[numVElms + 1];
             for (int jElm = 0; jElm < numVElms; jElm++) {
-            	int elmID = vtx2ElmConn(iVtx,jElm);
-            	// elm2VtxConn(elm,i) is the vertex ID (1-based index) of vertex #i of elm
-            	eVtxCoords[elmID][0] = vtxCoords(iVtx,0);
-            	eVtxCoords[elmID][1] = vtxCoords(iVtx,1);
-            	eVtxCoords[elmID][2] = vtxCoords(iVtx,2);
+                int elmID = vtx2ElmConn(iVtx,jElm);
+                // elm2VtxConn(elm,i) is the vertex ID (1-based index) of vertex #i of elm
+                eVtxCoords[elmID][0] = vtxCoords(iVtx,0);
+                eVtxCoords[elmID][1] = vtxCoords(iVtx,1);
+                eVtxCoords[elmID][2] = vtxCoords(iVtx,2);
             }
 	    // last component of eVtxCoords stores the firs vertex (to avoid if-condition in the Wachspress computation)
 	

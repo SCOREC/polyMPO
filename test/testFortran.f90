@@ -73,7 +73,7 @@ program main
   ! set MP Fields
   do i = 1,numCompsVel
     do j = 1,numMPs 
-        MParray(i,j) = (i-1)*numCompsVel + j
+        MParray(i,j) = (i-1)*numMPs + j
     end do
   end do
   call polympo_setMPVel(mpMesh, numCompsVel, numMPs, c_loc(MParray))
@@ -83,7 +83,7 @@ program main
   call polympo_getMPVel(mpMesh, numCompsVel, numMPs, c_loc(MParray))
   do i = 1,numCompsVel
     do j = 1,numMPs 
-        call assert((MParray(i,j) .eq. (i-1)*numCompsVel+j), "Assert MPVel Fail")
+        call assert((MParray(i,j) .eq. (i-1)*numMPs+j), "Assert MPVel Fail")
     end do
   end do
   
@@ -91,7 +91,7 @@ program main
   ! set mesh Fields
   do i = 1,numCompsVel
     do j = 1,nverts 
-        Mesharray(i,j) = (i-1)*numCompsVel + j
+        Mesharray(i,j) = (i-1)*nverts + j
     end do
   end do
   call polympo_setMeshVel(mpMesh, numCompsVel, nverts, c_loc(Mesharray))
@@ -103,21 +103,21 @@ program main
   call polympo_getMeshVel(mpMesh, numCompsVel, nverts, c_loc(Mesharray))
   do i = 1,numCompsVel
     do j = 1,nverts 
-        call assert((Mesharray(i,j) .eq. (i-1)*numCompsVel+j), "Assert MeshVel Fail")
+        call assert((Mesharray(i,j) .eq. (i-1)*nverts+j), "Assert MeshVel Fail")
     end do
   end do
   Mesharray = 1
   call polympo_getMeshOnSurfVeloIncr(mpMesh, numCompsVel, nverts, c_loc(Mesharray))
   do i = 1,numCompsVel
     do j = 1,nverts 
-        call assert((Mesharray(i,j) .eq. (i-1)*numCompsVel+j), "Assert MeshOnSurfVeloIncr Fail")
+        call assert((Mesharray(i,j) .eq. (i-1)*nverts+j), "Assert MeshOnSurfVeloIncr Fail")
     end do
   end do
   Mesharray = 1
   call polympo_getMeshOnSurfDispIncr(mpMesh, numCompsVel, nverts, c_loc(Mesharray))
   do i = 1,numCompsVel
     do j = 1,nverts 
-        call assert((Mesharray(i,j) .eq. (i-1)*numCompsVel+j), "Assert MeshOnSurfDispIncr Fail")
+        call assert((Mesharray(i,j) .eq. (i-1)*nverts+j), "Assert MeshOnSurfDispIncr Fail")
     end do
   end do
 

@@ -242,10 +242,11 @@ int main(int argc, char** argv) {
         double radius = p_mesh->getSphereRadius();
         PMT_ALWAYS_ASSERT(radius > 0);
         
-	//determine the number of valid elements around each vertex 
+	//determine the number of valid elements around each vertex
+	int numVtxs = p_mesh->getNumVertices(); 
 	int vtxDegree = 3; // maximum number of elements per vertex 
 	auto vtx2ElmConn = p_mesh->getVtx2ElmConn(); 
-        for (int i = 0; i < p_mesh->getNumVertices(); i++) {
+        for (int i = 0; i < numVtxs; i++) {
 	    int elementCounter = 0;
 	    for (int j = 0; j < vtxDegree; j++) {
 		if (vtx2ElmConn(i,j) != 0) {
@@ -258,34 +259,43 @@ int main(int argc, char** argv) {
 	const int numEntries = mpSlice2MeshFieldIndex.at(MPF_Basis_Vals).first;
         auto mpPositions = p_MPs->getData<MPF_Cur_Pos_XYZ>();
        
-	auto assemble2 = PS_LAMBDA(const int& iVtx, const int& mp, const int& mask) {
-        if (mask) {
-            /* get the coordinates of all the vertices of elm */
+	auto assemble = KOKKOS_LAMBDA(const int iVtx) {
+            /* get the coordinates of all the elm around vertex */
             int numVElms = vtx2ElmConn(iVtx,0);
 	    Vec3d eVtxCoords[numVElms + 1];
             for (int jElm = 0; jElm < numVElms; jElm++) {
                 int elmID = vtx2ElmConn(iVtx,jElm);
-                // elm2VtxConn(elm,i) is the vertex ID (1-based index) of vertex #i of elm
-                eVtxCoords[elmID][0] = vtxCoords(iVtx,0);
-                eVtxCoords[elmID][1] = vtxCoords(iVtx,1);
-                eVtxCoords[elmID][2] = vtxCoords(iVtx,2);
-            }
-	    // last component of eVtxCoords stores the firs vertex (to avoid if-condition in the Wachspress computation)
-	
-	    /*	
-	    // compute the values of basis functions at mp position 
-            double basisByAreaSpherical[maxElmsPerVtx];
-            Vec3d mpCoord(mpPositions(mp,0), mpPositions(mp,1), mpPositions(mp,2));
-            getBasisByAreaGblForm3d(mpCoord, nElmVtxs, eVtxCoords, basisByAreaSpherical);
-            
-	    //const int numEntries = mpSlice2MeshFieldIndex.at(index).first;
-            for (int i = 0; i < numEntries; i++) {
-              basis(mp,i) = basisByAreaSpherical[i];
-            }
-	    */
-	  }
+		int nElmVtxs = elm2VtxConn(elmID,0);
+                Vec3d eVtxCoords[maxVtxsPerElm + 1];
+                for (int jVtx = 1; jVtx <= nElmVtxs; jVtx++) {
+		// elm2VtxConn(elm,i) is the vertex ID (1-based index) of vertex #i of elm
+		    eVtxCoords[jVtx-1][0] = vtxCoords(elm2VtxConn(elmID,jVtx)-1,0);
+		    eVtxCoords[jVtx-1][1] = vtxCoords(elm2VtxConn(elmID,jVtx)-1,1);
+		    eVtxCoords[jVtx-1][2] = vtxCoords(elm2VtxConn(elmID,jVtx)-1,2);
+                }
+                // last component of eVtxCoords stores the firs vertex (to avoid if-condition in the Wachspress computation)
+		eVtxCoords[nElmVtxs][0] = vtxCoords(elm2VtxConn(elmID,1)-1,0);
+                eVtxCoords[nElmVtxs][1] = vtxCoords(elm2VtxConn(elmID,1)-1,1);
+                eVtxCoords[nElmVtxs][2] = vtxCoords(elm2VtxConn(elmID,1)-1,2);
+
+		// compute the values of basis functions at each mp position
+	    	const int numMPs = p_MPs->getCount();
+            	for (int iMP = 0; iMP < numMPs; iMP++) {
+		    // compute the values of basis functions at mp position
+		    double basisByAreaSpherical[maxElmsPerVtx];
+            	    Vec3d mpCoord(mpPositions(iMP,0), mpPositions(iMP,1), mpPositions(iMP,2));
+            	    getBasisByAreaGblForm3d(mpCoord, nElmVtxs, eVtxCoords, basisByAreaSpherical);
+
+		    for (int j = 0; j < numEntries; j++) {
+              	        basis(iMP,j) = basisByAreaSpherical[j];
+            	    }
+            	}
+            }	
 	};
+	Kokkos::parallel_for("assemble", numVtxs, assemble);
 	
+	/*
+ 	// first method: loop over elements first
 	auto assemble = PS_LAMBDA(const int& elm, const int& mp, const int& mask) {
         if (mask) {
             // get the coordinates of all the vertices of elm 
@@ -311,11 +321,9 @@ int main(int argc, char** argv) {
               basis(mp,i) = basisByAreaSpherical[i];
             }
           }
-        };
-	
+        };	
         p_MPs->parallel_for(assemble, "assembly");
-
-        //double del = 3.89;
+	*/
         double del = 123.129418248;
         auto mpVel = p_MPs->getData<MPF_Vel>();
         auto mpCurPosXYZ = p_MPs->getData<MPF_Cur_Pos_XYZ>();
@@ -353,7 +361,6 @@ int main(int argc, char** argv) {
             fprintf(stderr, "expected != calc Value!\n\t[%d][%d]: %.6lf != %.6lf\n",
                                                 j,1,del+1,vtxField_h(j,1));
           }
-          //printf("%d: (%.16e, %.16e) \n", i, vtxField_h(j,0), vtxField_h(j,1));
           PMT_ALWAYS_ASSERT(res);
           PMT_ALWAYS_ASSERT(res2);
         }

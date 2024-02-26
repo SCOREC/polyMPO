@@ -79,14 +79,13 @@ program main
   call polympo_setMPVel(mpMesh, numCompsVel, numMPs, c_loc(MParray))
   
   ! check MP Fields
-  MParray = 1
+  MParray = -1
   call polympo_getMPVel(mpMesh, numCompsVel, numMPs, c_loc(MParray))
   do i = 1,numCompsVel
     do j = 1,numMPs 
         call assert((MParray(i,j) .eq. (i-1)*numMPs+j), "Assert MPVel Fail")
     end do
   end do
-  
 
   ! set mesh Fields
   do i = 1,numCompsVel
@@ -99,7 +98,7 @@ program main
   call polympo_setMeshOnSurfDispIncr(mpMesh, numCompsVel, nverts, c_loc(Mesharray))
 
   ! check mesh Fields
-  Mesharray = 1
+  Mesharray = -1
   call polympo_getMeshVel(mpMesh, numCompsVel, nverts, c_loc(Mesharray))
   do i = 1,numCompsVel
     do j = 1,nverts 

@@ -1,3 +1,11 @@
+option(POLYMPO_USE_NETCDF "Enable the use of NetCDF" ON)
+if(POLYMPO_USE_NETCDF)
+  find_package(PkgConfig REQUIRED)
+  pkg_check_modules(NetCDF REQUIRED IMPORTED_TARGET netcdf>=4.7.3)
+  pkg_check_modules(NetCDF_Fortran REQUIRED IMPORTED_TARGET netcdf-fortran>=4.5.2)
+endif()
+
+
 add_library(readMPAS readMPAS.f90)
 target_link_libraries(readMPAS pmpoUtils polympo_fortran polyMPO MPI::MPI_Fortran)
 target_link_libraries(readMPAS PkgConfig::NetCDF_Fortran)

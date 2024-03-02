@@ -166,18 +166,21 @@ MaterialPoints* initTestMPs(Mesh* mesh, int testMPOption){
         sum += numMPsPerElement(i);
     },numMPs);
     IntView MPToElement("MPToElement",numMPs);
-    int maxNumMPs = 6;
-    Int2dView ElementToMP("ElementToMP",numElms,maxNumMPs+1);
+    
+    int maxNumMPs = 0;
+    for(int i=0; i<numElms; i++) {
+	maxNumMPs = maxNumMPs < numMPsPerElement(i) ? numMPsPerElement(i) : maxNumMPs;
+    }
+    Int2dView ElementToMP("ElementToMP",numElms,maxNumMPs);
 
     Kokkos::parallel_scan("setMPsToElement", numElms, KOKKOS_LAMBDA(int i, int& iMP, bool is_final){
         if(is_final){  
             for(int j=0; j<numMPsPerElement(i); j++){
                 MPToElement(iMP+j) = i;
-		ElementToMP(i,j+1) = iMP;
+		ElementToMP(i,j) = iMP;
             }
-	    ElementToMP(i,0) = numMPsPerElement(i); 
         }
-        iMP += numMPsPerElement(i); 
+        iMP += numMPsPerElement(i);
     },numMPs);
 
     DoubleVec3dView positions("MPpositions",numMPs);

@@ -280,10 +280,10 @@ int main(int argc, char** argv) {
                 eVtxCoords[nElmVtxs][2] = vtxCoords(elm2VtxConn(elmID,1)-1,2);
 
 		// compute the values of basis functions at each mp position
-	    	//const int numMPs = p_MPs->getCount();
-	    	//const int numMPs = elm2mp(elmID,0);
+	    	//const int numMPs2 = elm2mp(elmID,0);
 	    	const int numMPs = p_MPs->getNumMPs(elmID);
-            	for (int iMP = 1; iMP <= numMPs; iMP++) {
+		//printf("numMPs: %d, numMPs2: %d \n", numMPs, numMPs2);
+            	for (int iMP = 0; iMP < numMPs; iMP++) {
 		    int mp = elm2mp(elmID,iMP);
 		    // compute the values of basis functions at mp position
 		    double basisByAreaSpherical[maxElmsPerVtx];

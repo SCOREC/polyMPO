@@ -51,10 +51,19 @@ PS* createDPS(int numElms, int numMPs, IntView mpsPerElm, IntView mp2elm, IntVie
 
 } //End anonymous namespace
 
+MaterialPoints::MaterialPoints(int numElms, int numMPs, DoubleVec3dView positions, IntView mpsPerElm, IntView mp2elm, Int2dView elm2mp) {
+  MPs = createDPS(numElms, numMPs, positions, mpsPerElm, mp2elm);
+  maxAppID = numMPs; //this ctor does not support inactive MPs
+  operating_mode = MP_RELEASE;
+  elm2mp_ = elm2mp;
+  mpsPerElm_ = mpsPerElm;
+};
+
 MaterialPoints::MaterialPoints(int numElms, int numMPs, DoubleVec3dView positions, IntView mpsPerElm, IntView mp2elm) {
   MPs = createDPS(numElms, numMPs, positions, mpsPerElm, mp2elm);
   maxAppID = numMPs; //this ctor does not support inactive MPs
   operating_mode = MP_RELEASE;
+  mpsPerElm_ = mpsPerElm;
 };
 
 MaterialPoints::MaterialPoints(int numElms, int numMPs, IntView mpsPerElm, IntView mp2elm, IntView mpAppID) {

@@ -283,7 +283,7 @@ int main(int argc, char** argv) {
 	    	//const int numMPs = p_MPs->getCount();
 	    	//const int numMPs = elm2mp(elmID,0);
 	    	const int numMPs = p_MPs->getNumMPs(elmID);
-            	for (int iMP = 0; iMP < numMPs; iMP++) {
+            	for (int iMP = 1; iMP <= numMPs; iMP++) {
 		    int mp = elm2mp(elmID,iMP);
 		    // compute the values of basis functions at mp position
 		    double basisByAreaSpherical[maxElmsPerVtx];

@@ -1,15 +1,11 @@
 
 #Instructions
-# 1.  Build polyMPO
-# 2.  Modify polyMPO/test/testFortranInit.f90 so that it compiles again
-# 3.  cd to buildPolyMPO and run "make VERBOSE=1"
-# 4.  Copy the libs starting at compiler after "Linking Fortran executable testFortranInit"
-# 5.  Copy the flags starting at compiler after "Building Fortran object test/CMakeFiles/testFortranInit.dir/testFortranInit.f90.o"
-# 6.  Replace varibles below
-# 7.  cd to polyMPO/test and run "chmod +x use_at_your_own_risk/generateMakefile.sh"
-# 8.  cd to polyMPO/test and run "./use_at_your_own_risk/generateMakefile.sh"
-# 9.  cd to polyMPO/test and run "make -f use_at_your_own_risk/MakefileGenerated.testFortranInit"
-# 10. cd to polyMPO/test and run "./testFortranInit", there should be no output
+# 1. Build polyMPO
+# 2. Replace path below
+# 3. cd to polyMPO/test and run "chmod +x use_at_your_own_risk/generateMakefile.sh"
+# 4. cd to polyMPO/test and run "./use_at_your_own_risk/generateMakefile.sh"
+# 5. cd to polyMPO/test and run "make -f use_at_your_own_risk/MakefileGenerated.testFortranInit"
+# 6. cd to polyMPO/test and run "./testFortranInit", there should be no output
 
 #Modify these
 
@@ -25,7 +21,6 @@ flags=$(echo $flags | sed "s@#.*with@@g")
 flags=$(echo $flags | sed "s@Fortran_DEFINES = @@g")
 flags=$(echo $flags | sed "s@Fortran_INCLUDES = @@g")
 flags=$(echo $flags | sed "s@Fortran_FLAGS = @@g")
-echo $flags
 
 # break into multiple lines
 libs=$(echo $libs | sed "s@\ @ \\\\\n\t@g")

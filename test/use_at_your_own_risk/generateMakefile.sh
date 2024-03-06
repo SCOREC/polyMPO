@@ -21,8 +21,12 @@ path=/lore/castia5/cranium/cpu-pumi-pic/buildPolyMPO-CPU/test
 
 #Leave these alone
 
+# break into multiple lines
+libs=$(echo $libs | sed "s@\ @ \\\\\n\t@g")
+flags=$(echo $flags | sed "s@\ @ \\\\\n\t@g")
+
 file=use_at_your_own_risk/MakefileGenerated.testFortranInit
-printf "testFortranInit: testFortranInit.o \n\t $libs \n\ntestFortranInit.o: testFortranInit.f90 \n\t $flags" > $file
+printf "testFortranInit: testFortranInit.o \n\t$libs \n\ntestFortranInit.o: testFortranInit.f90 \n\t$flags" > $file
 
 # replace ".." with path
 sed -i "s@\.\.@$path/\.\.@g" $file
@@ -30,8 +34,8 @@ sed -i "s@\.\.@$path/\.\.@g" $file
 # set to build in current directory
 sed -i "s@CMakeFiles/testFortranInit.dir/@@g" $file
 
-# replace .f90.o with .o file
+# replace ".f90.o" with ".o" file
 sed -i "s@\.f90\.o@\.o@g" $file
 
-# add path to .a files without a path
-sed -i "s@\ \([a-zA-Z]*\)\.a@\ $path/\1.a@g" $file
+# add path to ".a" files without a path
+sed -i "s@\t\([a-zA-Z]*\)\.a@\t$path/\1.a@g" $file

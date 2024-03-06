@@ -105,14 +105,14 @@ program main
         call assert((Mesharray(i,j) .eq. (i-1)*nverts+j), "Assert MeshVel Fail")
     end do
   end do
-  Mesharray = 1
+  Mesharray = -1
   call polympo_getMeshOnSurfVeloIncr(mpMesh, numCompsVel, nverts, c_loc(Mesharray))
   do i = 1,numCompsVel
     do j = 1,nverts 
         call assert((Mesharray(i,j) .eq. (i-1)*nverts+j), "Assert MeshOnSurfVeloIncr Fail")
     end do
   end do
-  Mesharray = 1
+  Mesharray = -1
   call polympo_getMeshOnSurfDispIncr(mpMesh, numCompsVel, nverts, c_loc(Mesharray))
   do i = 1,numCompsVel
     do j = 1,nverts 
@@ -126,9 +126,9 @@ program main
   yArray = value2
   zArray = value1 + value2 
   call polympo_setMeshVtxCoords(mpMesh, nverts, c_loc(xArray), c_loc(yArray), c_loc(zArray))
-  xArray = 1
-  yArray = 1
-  zArray = 1 
+  xArray = -1
+  yArray = -1
+  zArray = -1 
   call polympo_getMeshVtxCoords(mpMesh, nverts, c_loc(xArray), c_loc(yArray), c_loc(zArray))
   call assert(all(xArray .eq. value1), "Assert xArray == value1 Failed!")
   call assert(all(yArray .eq. value2), "Assert yArray == value2 Failed!")

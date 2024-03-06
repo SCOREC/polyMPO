@@ -1,13 +1,15 @@
 
 #Instructions
-# 1. Build polyMPO
-# 2. Modify polyMPO/test/testFortranInit.f90
-# 3. cd to buildPolyMPO and run "make VERBOSE=1"
-# 4. Copy libs and flags from the output of step 3
-# 5. Replace varibles below
-# 6. cd to polyMPO/test and run "./use_at_your_own_risk/generateMakefile.sh"
-# 7. run "make -f use_at_your_own_risk/MakefileGenerated.testFortranInit"
-# 8. run "./testFortranInit", there should be no output
+# 1.  Build polyMPO
+# 2.  Modify polyMPO/test/testFortranInit.f90 so that it compiles again
+# 3.  cd to buildPolyMPO and run "make VERBOSE=1"
+# 4.  Copy the libs starting at compiler after "Linking Fortran executable testFortranInit"
+# 5.  Copy the flags starting at compiler after "Building Fortran object test/CMakeFiles/testFortranInit.dir/testFortranInit.f90.o"
+# 6.  Replace varibles below
+# 7.  cd to polyMPO/test and run "chmod +x use_at_your_own_risk/generateMakefile.sh"
+# 8.  cd to polyMPO/test and run "./use_at_your_own_risk/generateMakefile.sh"
+# 9.  cd to polyMPO/test and run "make -f use_at_your_own_risk/MakefileGenerated.testFortranInit"
+# 10. cd to polyMPO/test and run "./testFortranInit", there should be no output
 
 #Modify these
 

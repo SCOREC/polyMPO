@@ -1,13 +1,13 @@
 
 #Instructions
-1. Build polyMPO
-2. Modify polyMPO/test/testFortranInit.f90
-3. cd to buildPolyMPO and run "make VERBOSE=1"
-4. Copy libs and flags from the output of step 3
-5. Replace varibles below
-6. cd to polyMPO/test and run "./use_at_your_own_risk/generateMakefile.sh"
-7. run "make -f use_at_your_own_risk/MakefileGenerated.testFortranInit"
-8. run "./testFortranInit", there should be no output
+# 1. Build polyMPO
+# 2. Modify polyMPO/test/testFortranInit.f90
+# 3. cd to buildPolyMPO and run "make VERBOSE=1"
+# 4. Copy libs and flags from the output of step 3
+# 5. Replace varibles below
+# 6. cd to polyMPO/test and run "./use_at_your_own_risk/generateMakefile.sh"
+# 7. run "make -f use_at_your_own_risk/MakefileGenerated.testFortranInit"
+# 8. run "./testFortranInit", there should be no output
 
 #Modify these
 

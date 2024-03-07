@@ -1,7 +1,7 @@
 
 #Instructions
 # 1. Build polyMPO
-# 2. Replace path below
+# 2. Below replace path to build dir
 # 3. cd to polyMPO/test and run "chmod +x use_at_your_own_risk/generateMakefile.sh"
 # 4. cd to polyMPO/test and run "./use_at_your_own_risk/generateMakefile.sh"
 # 5. cd to polyMPO/test and run "make -f use_at_your_own_risk/MakefileGenerated.testFortranInit"
@@ -9,7 +9,7 @@
 
 #Modify these
 
-path=/lore/castia5/cranium/cpu-pumi-pic/buildPolyMPO-CPU/test
+path=../../buildPolyMPO-CPU/test
 
 #Leave these alone
 
@@ -40,3 +40,8 @@ sed -i "s@\.f90\.o@\.o@g" $file
 
 # add path to ".a" files without a path
 sed -i "s@\t\([a-zA-Z]*\)\.a@\t$path/\1.a@g" $file
+
+# remove netcdf and hdf5
+sed -i "/netcdf/d" $file
+sed -i "/NETCDF/d" $file
+sed -i "/hdf5/d" $file

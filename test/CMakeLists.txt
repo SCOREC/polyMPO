@@ -1,3 +1,11 @@
+option(POLYMPO_USE_NETCDF "Enable the use of NetCDF" ON)
+if(POLYMPO_USE_NETCDF)
+  find_package(PkgConfig REQUIRED)
+  pkg_check_modules(NetCDF REQUIRED IMPORTED_TARGET netcdf>=4.7.3)
+  pkg_check_modules(NetCDF_Fortran REQUIRED IMPORTED_TARGET netcdf-fortran>=4.5.2)
+endif()
+
+
 add_library(readMPAS readMPAS.f90)
 target_link_libraries(readMPAS pmpoUtils polympo_fortran polyMPO MPI::MPI_Fortran)
 target_link_libraries(readMPAS PkgConfig::NetCDF_Fortran)
@@ -23,6 +31,11 @@ function(pmpo_add_exe exename srcname)
     add_executable(${exename} EXCLUDE_FROM_ALL ${srcname})
   endif()
   target_link_libraries (${exename} polyMPO pmpoUtils)
+  if(POLYMPO_USE_NETCDF)
+    target_link_libraries (${exename} PkgConfig::NetCDF)
+    target_compile_definitions(${exename} PRIVATE POLYMPO_HAS_NETCDF)
+    target_include_directories(${exename} PRIVATE ${NetCDF_INCLUDEDIR})
+  endif()
   set_property(TARGET ${exename} PROPERTY CXX_STANDARD "17")
   set_property(TARGET ${exename} PROPERTY CXX_STANDARD_REQUIRED ON)
   set_property(TARGET ${exename} PROPERTY CXX_EXTENSIONS OFF)
@@ -52,6 +65,7 @@ pmpo_add_fortran_exe(testFortranInit testFortranInit.f90)
 pmpo_add_fortran_exe(testFortran testFortran.f90)
 pmpo_add_fortran_exe(testFortranReadMPAS testFortranReadMPAS.f90)
 pmpo_add_fortran_exe(testFortranMPMeshModule testFortranMPMeshModule.f90)
+pmpo_add_fortran_exe(testFortranMPAppIDs testFortranMPAppIDs.f90)
 pmpo_add_fortran_exe(testFortranMPAdvection testFortranMPAdvection.f90)
 pmpo_add_fortran_exe(testFortranCreateRebuildMPs testFortranCreateRebuildMPs.f90)
 
@@ -67,6 +81,19 @@ function(pmpo_add_test testname command)
   endif()
 endfunction()
 
+<<<<<<< HEAD
+=======
+pmpo_add_test(unit_test ./unitTest)
+pmpo_add_test(mp_unit_test ./mpUnitTest)
+pmpo_add_test(test_reconstruction ./testReconstruction)
+pmpo_add_test(test_tracking ./testTracking)
+pmpo_add_test(test_rebuild ./testRebuild)
+pmpo_add_test(testFortranInit ./testFortranInit)
+pmpo_add_test(testFortran ./testFortran)
+pmpo_add_test(testFortranMPMeshModule ./testFortranMPMeshModule)
+pmpo_add_test(testFortranMPAppIDs ./testFortranMPAppIDs)
+
+>>>>>>> 2e37f718d2388d637ea9acd789264a2cf90aba79
 #set NC file for test
 set(TEST_NC_FILE_PLANAR "${CMAKE_SOURCE_DIR}/test/sample_mpas_meshes/planar_nonuniform_cvt_for_square_673elms.nc")
 set(TEST_NC_FILE_SPHERICAL

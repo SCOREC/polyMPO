@@ -110,7 +110,7 @@ cmake --build ${oh%%install} -j 24 --target install
 
 #cabana
 mkdir -p $cab
-git clone -b 0.6.1 https://github.com/ECP-copa/Cabana.git cabana
+git clone -b 0.5.0 https://github.com/ECP-copa/Cabana.git cabana
 cmake -S cabana -B ${cab%%install} \
   -DCMAKE_INSTALL_PREFIX=$cab \
   -DCMAKE_BUILD_TYPE="Release" \
@@ -121,7 +121,7 @@ cmake --build ${cab%%install} -j 24 --target install
 
 #pumipic
 mkdir -p $pumipic
-git clone -b 2.0.3 --recursive https://github.com/SCOREC/pumi-pic.git
+git clone --recursive https://github.com/SCOREC/pumi-pic.git
 cmake -S pumi-pic -B ${pumipic%%install} \
   -DCMAKE_INSTALL_PREFIX=$pumipic \
   -DCMAKE_BUILD_TYPE="Debug" \
@@ -164,7 +164,6 @@ bdir=$PWD/buildPolyMPO-GPU
 cmake -S polyMPO -B $bdir \
 -DKokkos_DIR=$kk/lib64/cmake/Kokkos \
 -DCMAKE_CXX_COMPILER=$kk/bin/nvcc_wrapper \
--DIS_TESTING=off \
 -DCMAKE_INSTALL_PREFIX=$bdir/install
 ```
 
@@ -285,7 +284,7 @@ export MPICH_CXX=g++
 cd $root
 
 ##kokkos
-git clone -b 4.1.00 https://github.com/kokkos/kokkos.git
+git clone -b 4.0.01 https://github.com/kokkos/kokkos.git
 mkdir -p $kk
 cmake -S kokkos -B ${kk%%install} \
   -DCMAKE_INSTALL_PREFIX=$kk \
@@ -328,7 +327,7 @@ cmake --build ${oh%%install} -j 24 --target install
 
 #cabana
 mkdir -p $cab
-git clone -b 0.6.1 https://github.com/ECP-copa/Cabana.git cabana
+git clone -b 0.5.0 https://github.com/ECP-copa/Cabana.git cabana
 cmake -S cabana -B ${cab%%install} \
   -DCMAKE_INSTALL_PREFIX=$cab \
   -DCMAKE_BUILD_TYPE="Release" \
@@ -339,7 +338,7 @@ cmake --build ${cab%%install} -j 24 --target install
 
 #pumipic
 mkdir -p $pumipic
-git clone -b 2.0.3 --recursive https://github.com/SCOREC/pumi-pic.git
+git clone --recursive -b ac/cuda-off https://github.com/SCOREC/pumi-pic.git
 cmake -S pumi-pic -B ${pumipic%%install} \
   -DCMAKE_INSTALL_PREFIX=$pumipic \
   -DCMAKE_BUILD_TYPE="Debug" \
@@ -361,7 +360,6 @@ cmake -S polyMPO -B $bdir \
 -DCMAKE_BUILD_TYPE=Debug \
 -DKokkos_DIR=$kk/lib64/cmake/Kokkos \
 -DCMAKE_CXX_COMPILER=mpicxx \
--DIS_TESTING=off \
 -DCMAKE_INSTALL_PREFIX=$bdir/install
 ```
 
@@ -417,7 +415,7 @@ export MPICH_CXX=$root/kokkos/bin/nvcc_wrapper
 cd $root
 
 #kokkos
-git clone -b 4.1.00 https://github.com/kokkos/kokkos.git
+git clone -b 3.7.01 https://github.com/kokkos/kokkos.git
 mkdir -p $kk
 cmake -S kokkos -B ${kk%%install} \
   -DCMAKE_INSTALL_PREFIX=$kk \
@@ -471,7 +469,7 @@ cmake --build ${oh%%install} -j 24 --target install
 
 #cabana
 mkdir -p $cab
-git clone -b 0.6.1 https://github.com/ECP-copa/Cabana.git cabana
+git clone -b 0.5.0 https://github.com/ECP-copa/Cabana.git cabana
 cd cabana
 git checkout d3503a6f
 cd ..
@@ -485,7 +483,7 @@ cmake --build ${cab%%install} -j 24 --target install
 
 #pumipic
 mkdir -p $pumipic
-git clone -b 2.0.3 --recursive https://github.com/SCOREC/pumi-pic.git
+git clone --recursive https://github.com/SCOREC/pumi-pic.git
 cd pumi-pic
 git checkout bd930e1
 cd ..
@@ -509,7 +507,6 @@ bdir=$PWD/buildPolyMPO-GPU
 cmake -S polyMPO -B $bdir \
 -DKokkos_DIR=$kk/lib64/cmake/Kokkos \
 -DCMAKE_CXX_COMPILER=$kk/bin/nvcc_wrapper \
--DIS_TESTING=off \
 -DCMAKE_INSTALL_PREFIX=$bdir/install
 ```
 
@@ -552,8 +549,8 @@ build scripts needed for building on the CPU.
 ```
 export root=$PWD
 module load cmake/3.22.0
-module load cray-hdf5/1.12.2.9
-module load cray-netcdf/4.9.0.9
+module load cray-hdf5/1.12.2.7
+module load cray-netcdf/4.9.0.3
 
 function getname() {
   name=$1
@@ -578,7 +575,7 @@ export MPICH_CXX=$root/kokkos/bin/nvcc_wrapper
 cd $root
 
 ##kokkos
-git clone -b 4.1.00 https://github.com/kokkos/kokkos.git
+git clone -b 4.0.01 https://github.com/kokkos/kokkos.git
 mkdir -p $kk
 cmake -S kokkos -B ${kk%%install} \
   -DCMAKE_INSTALL_PREFIX=$kk \
@@ -621,7 +618,7 @@ cmake --build ${oh%%install} -j 24 --target install
 
 #cabana
 mkdir -p $cab
-git clone -b 0.6.1 https://github.com/ECP-copa/Cabana.git cabana
+git clone -b 0.5.0 https://github.com/ECP-copa/Cabana.git cabana
 cmake -S cabana -B ${cab%%install} \
   -DCMAKE_INSTALL_PREFIX=$cab \
   -DCMAKE_BUILD_TYPE="Release" \
@@ -632,7 +629,7 @@ cmake --build ${cab%%install} -j 24 --target install
 
 #pumipic
 mkdir -p $pumipic
-git clone -b 2.0.3 --recursive https://github.com/SCOREC/pumi-pic.git
+git clone --recursive -b ac/cuda-off https://github.com/SCOREC/pumi-pic.git
 cmake -S pumi-pic -B ${pumipic%%install} \
   -DCMAKE_INSTALL_PREFIX=$pumipic \
   -DCMAKE_BUILD_TYPE="Debug" \
@@ -654,7 +651,6 @@ cmake -S polyMPO -B $bdir \
 -DCMAKE_BUILD_TYPE=Debug \
 -DKokkos_DIR=$kk/lib64/cmake/Kokkos \
 -DCMAKE_CXX_COMPILER=mpicxx \
--DIS_TESTING=off \
 -DCMAKE_INSTALL_PREFIX=$bdir/install
 ```
 

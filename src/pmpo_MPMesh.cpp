@@ -90,8 +90,8 @@ void MPMesh::CVTTrackingElmCenterBased(const int printVTPIndex){
       printVTP_mesh(printVTPIndex);
     }
 
-    Vec3dView elmCenter("elementCenter",numElms);
-    Kokkos::parallel_for("calcElementCenter", numElms, KOKKOS_LAMBDA(const int elm){  
+    Vec3dView elmCenter("elmentCenter",numElms);
+    auto calcCenter = PS_LAMBDA(const int& elm, const int&, const int&){
         int numVtx = elm2VtxConn(elm,0);
         double sum_x = 0.0, sum_y = 0.0, sum_z = 0.0;
         for(int i=1; i<= numVtx; i++){
@@ -102,7 +102,7 @@ void MPMesh::CVTTrackingElmCenterBased(const int printVTPIndex){
         elmCenter(elm)[0] = sum_x/numVtx;
         elmCenter(elm)[1] = sum_y/numVtx;
         elmCenter(elm)[2] = sum_z/numVtx;
-    });
+    };
 
     Vec3dView history("positionHistory",numMPs);
     Vec3dView resultLeft("positionResult",numMPs);

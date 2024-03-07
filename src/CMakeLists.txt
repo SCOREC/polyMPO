@@ -16,7 +16,6 @@ set(SOURCES
   pmpo_MPMesh.cpp
   pmpo_c.cpp
   pmpo_createTestMPMesh.cpp
-  ../test/testMPAppIDs.cpp
 )
 
 add_library(polyMPO-core ${SOURCES})
@@ -37,6 +36,10 @@ target_include_directories(polyMPO-core
   $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/test>
   $<INSTALL_INTERFACE:include>)
 target_link_libraries(polyMPO-core PUBLIC pumipic::pumipic)
+if(${NetCDF_FOUND})
+  target_compile_definitions(polyMPO-core PRIVATE POLYMPO_HAS_NETCDF)
+  target_link_libraries(polyMPO-core PRIVATE PkgConfig::NetCDF)
+endif()
 
 polyMPO_export_lib(polyMPO-core "${HEADERS}")
 
@@ -47,6 +50,11 @@ export_target(polyMPO)
 ### Fortran inteface ###
 add_library(polympo_fortran pmpo_fortran.f90)
 target_link_libraries(polympo_fortran PUBLIC MPI::MPI_Fortran)
+if(${NetCDF_Fortran_FOUND})
+  target_link_libraries(polympo_fortran PRIVATE PkgConfig::NetCDF_Fortran)
+  # why doesn't target_link_libraries do the following?
+  target_include_directories(polympo_fortran PRIVATE ${NetCDF_Fortran_INCLUDEDIR})
+endif()
 target_include_directories(polympo_fortran INTERFACE
   $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>
   $<INSTALL_INTERFACE:include>)

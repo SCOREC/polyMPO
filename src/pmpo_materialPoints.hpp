@@ -28,7 +28,6 @@ typedef double mp_sym_mat3d_t[6];//TODO
 typedef double mp_basis_t[maxVtxsPerElm];
 typedef double mp_basis_grad2d_t[maxVtxsPerElm*2];
 typedef double mp_constv_mdl_param_t[12];
-typedef std::function<int()> IntFunc;
 
 enum MaterialPointSlice {
   MPF_Status = 0,
@@ -122,7 +121,6 @@ class MaterialPoints {
     bool isRotatedFlag = false;
     Operating_Mode operating_mode;
     RebuildHelper rebuildFields;
-    IntFunc getAppID;
 
   public:
     MaterialPoints() : MPs(nullptr) {};
@@ -130,7 +128,6 @@ class MaterialPoints {
     MaterialPoints(int numElms, int numMPs, IntView mpsPerElm, IntView mp2elm, IntView mpAppID);
     ~MaterialPoints();
 
-    void rebuild(IntView addedMP2elm, IntView addedMPAppID);
     void startRebuild(IntView tgtElm, int addedNumMPs, IntView addedMP2elm, IntView addedMPAppID, Kokkos::View<const int*> addedMPMask);
     void finishRebuild();
     bool rebuildOngoing();
@@ -142,9 +139,6 @@ class MaterialPoints {
     template<int mpSliceIndex, typename mpSliceData>
     typename std::enable_if<mpSliceData::rank==2>::type
     setRebuildMPSlice(mpSliceData mpSliceIn);
-
-    void setAppIDFunc(IntFunc getAppIDIn);
-    int getNextAppID();
 
     void rebuild() {
       IntView tgtElm("tgtElm", MPs->capacity());
@@ -169,11 +163,12 @@ class MaterialPoints {
       ps::parallel_for(MPs, swap, "swap");
     }
     void updateMaxAppID() {
-      auto mpAppID_m = MPs->get<MPF_MP_APP_ID>();
+      auto mpInfo = ps::createMemberViews<MaterialPointTypes>(MPs->nPtcls());
+      auto mpAppID_m = ps::getMemberView<MaterialPointTypes, MPF_MP_APP_ID>(mpInfo);
       maxAppID = 0;
-      Kokkos::parallel_reduce("setMax" , MPs->nPtcls(),
+      Kokkos::parallel_reduce("setMax" , mpAppID_m.size(),
         KOKKOS_LAMBDA(const int i, int & valueToUpdate) {
-          if ( mpAppID_m(i) > valueToUpdate ) valueToUpdate = mpAppID_m(i);
+          if ( mpAppID_m(i) > valueToUpdate ) valueToUpdate = mpAppID_m(i) ;
         },
         Kokkos::Max<int>(maxAppID)
       );
@@ -239,7 +234,6 @@ class MaterialPoints {
     }
     int getCapacity() { return MPs->capacity(); }
     int getCount() { return MPs->nPtcls(); }
-    int getNumElems() { return MPs->nElems(); }
     auto getPositions() { return getData<MPF_Cur_Pos_XYZ>(); }
 
     Operating_Mode getOpMode() { return operating_mode; }

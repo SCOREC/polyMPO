@@ -156,7 +156,6 @@ jobs:
       uses: actions/checkout@v3
       with:
         repository: ECP-copa/cabana
-        ref: 0.6.1
         path: cabana
 
     - name: Cabana Create Directory
@@ -191,7 +190,6 @@ jobs:
       with:
         submodules: recursive
         repository: SCOREC/pumi-pic
-        ref: 2.0.3
         path: pumi-pic
 
     - name: PUMI-PIC Create Directory

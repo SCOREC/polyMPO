@@ -2,9 +2,9 @@
 # 1. Build polyMPO
 # 2. (Optional) Below replace path to build dir
 # 3. cd to polyMPO/test/use_at_your_risk
-# 3. run "chmod +x generateMakefile.sh"
-# 4. run "./generateMakefile.sh"
-# 5. run "make -f MakefileGenerated.testFortranInit"
+# 3. run "chmod +x generateMakefileCPUNoNetcdfOrHDF5.sh"
+# 4. run "./generateMakefileCPUNoNetcdfOrHDF5.sh"
+# 5. run "make -f MakefileGeneratedCPUNoNetcdfOrHDF5.testFortranInit"
 # 6. run "./testFortranInit", there should be no output
 
 #Modify these
@@ -15,7 +15,7 @@ path=../../../buildPolyMPO-CPU/test
 
 libs=$(cat $path/CMakeFiles/testFortranInit.dir/link.txt)
 flags=$(cat $path/CMakeFiles/testFortranInit.dir/flags.make)
-file=MakefileGenerated.testFortranInit
+file=MakefileGeneratedCPUNoNetcdfOrHDF5.testFortranInit
 
 #Remove extra
 flags=$(echo $flags | sed "s@#.*with@@g")
@@ -48,3 +48,5 @@ sed -i "/hdf5/d" $file
 
 # run from use_at_your_own_risk
 sed -i 's@testFortranInit.f90@../testFortranInit.f90@g' $file
+
+echo "Makefile Generated"

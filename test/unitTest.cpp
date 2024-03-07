@@ -280,6 +280,7 @@ int main(int argc, char** argv) {
                 eVtxCoords[nElmVtxs][2] = vtxCoords(elm2VtxConn(elmID,1)-1,2);
 
 		// compute the values of basis functions at each mp position
+<<<<<<< HEAD
 	    	//const int numMPs2 = elm2mp(elmID,0);
 	    	const int numMPs = p_MPs->getNumMPs(elmID);
 <<<<<<< HEAD
@@ -289,6 +290,10 @@ int main(int argc, char** argv) {
 >>>>>>> parent of db2fc60... fix indexing
 =======
 >>>>>>> parent of db2fc60... fix indexing
+=======
+	    	const int numMPs = p_MPs->getCount();
+	    	//const int numMPs = elm2mp(elmID,0);
+>>>>>>> parent of a1a8f08... fix minor error
             	for (int iMP = 0; iMP < numMPs; iMP++) {
 		    int mp = elm2mp(elmID,iMP);
 		    // compute the values of basis functions at mp position

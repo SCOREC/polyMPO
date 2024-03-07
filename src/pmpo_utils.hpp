@@ -32,7 +32,6 @@ using Vec2dView = Kokkos::View<Vec2d*>;
 using Vec3dView = Kokkos::View<Vec3d*>;
 using DoubleView = Kokkos::View<double*>;
 using IntView = Kokkos::View<int*>;
-using Int2dView = Kokkos::View<int**>;
 using BoolView = Kokkos::View<bool*>;
 
 class Vec2d {

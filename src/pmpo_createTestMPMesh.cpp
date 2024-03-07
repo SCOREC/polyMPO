@@ -166,19 +166,26 @@ MaterialPoints* initTestMPs(Mesh* mesh, int testMPOption){
         sum += numMPsPerElement(i);
     },numMPs);
     IntView MPToElement("MPToElement",numMPs);
+<<<<<<< HEAD
     
     int maxNumMPs = 0;
     for(int i=0; i<numElms; i++) {
 	maxNumMPs = maxNumMPs < numMPsPerElement(i) ? numMPsPerElement(i) : maxNumMPs;
     }
     Int2dView ElementToMP("ElementToMP",numElms,maxNumMPs);
+=======
+>>>>>>> parent of 34b0e4e... add mp2Elm
 
     Kokkos::parallel_scan("setMPsToElement", numElms, KOKKOS_LAMBDA(int i, int& iMP, bool is_final){
         if(is_final){  
             for(int j=0; j<numMPsPerElement(i); j++){
                 MPToElement(iMP+j) = i;
+<<<<<<< HEAD
 		ElementToMP(i,j) = iMP;
             }
+=======
+            }   
+>>>>>>> parent of 34b0e4e... add mp2Elm
         }
         iMP += numMPsPerElement(i);
     },numMPs);
@@ -226,7 +233,7 @@ MaterialPoints* initTestMPs(Mesh* mesh, int testMPOption){
         exit(1);
     }
     if(geomType == geom_spherical_surf){
-        auto p_MPs = new MaterialPoints(numElms,numMPs,positions,numMPsPerElement,MPToElement,ElementToMP);
+        auto p_MPs = new MaterialPoints(numElms,numMPs,positions,numMPsPerElement,MPToElement);
         p_MPs->setRotatedFlag(false);
         auto mpRotLatLonField = p_MPs->getData<MPF_Cur_Pos_Rot_Lat_Lon>();
         auto setRotLatLon = PS_LAMBDA(const int& elm, const int& mp, const int& mask){
@@ -236,7 +243,7 @@ MaterialPoints* initTestMPs(Mesh* mesh, int testMPOption){
         p_MPs->parallel_for(setRotLatLon, "set MP latitude longtitude");
         return p_MPs;
     }else{
-        return new MaterialPoints(numElms,numMPs,positions,numMPsPerElement,MPToElement,ElementToMP);
+        return new MaterialPoints(numElms,numMPs,positions,numMPsPerElement,MPToElement);
     }
 }
 

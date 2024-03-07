@@ -254,17 +254,16 @@ int main(int argc, char** argv) {
 		}
 	    }
 	    vtx2ElmConn(i,0) = elementCounter;
-	}
-	auto elm2mp = p_MPs->getMPsPerElm(); 
+	} 
 	
 	const int numEntries = mpSlice2MeshFieldIndex.at(MPF_Basis_Vals).first;
         auto mpPositions = p_MPs->getData<MPF_Cur_Pos_XYZ>();
        
 	auto assemble = KOKKOS_LAMBDA(const int iVtx) {
             /* get the coordinates of all the elm around vertex */
-            int nElms = vtx2ElmConn(iVtx,0);
-	    Vec3d eVtxCoords[nElms + 1];
-            for (int jElm = 1; jElm <= nElms; jElm++) {
+            int numVElms = vtx2ElmConn(iVtx,0);
+	    Vec3d eVtxCoords[numVElms + 1];
+            for (int jElm = 0; jElm < numVElms; jElm++) {
                 int elmID = vtx2ElmConn(iVtx,jElm);
 		int nElmVtxs = elm2VtxConn(elmID,0);
                 Vec3d eVtxCoords[maxVtxsPerElm + 1];
@@ -292,17 +291,19 @@ int main(int argc, char** argv) {
 >>>>>>> parent of db2fc60... fix indexing
 =======
 	    	const int numMPs = p_MPs->getCount();
+<<<<<<< HEAD
 	    	//const int numMPs = elm2mp(elmID,0);
 >>>>>>> parent of a1a8f08... fix minor error
+=======
+>>>>>>> parent of 34b0e4e... add mp2Elm
             	for (int iMP = 0; iMP < numMPs; iMP++) {
-		    int mp = elm2mp(elmID,iMP);
 		    // compute the values of basis functions at mp position
 		    double basisByAreaSpherical[maxElmsPerVtx];
-            	    Vec3d mpCoord(mpPositions(mp,0), mpPositions(mp,1), mpPositions(mp,2));
+            	    Vec3d mpCoord(mpPositions(iMP,0), mpPositions(iMP,1), mpPositions(iMP,2));
             	    getBasisByAreaGblForm3d(mpCoord, nElmVtxs, eVtxCoords, basisByAreaSpherical);
 
 		    for (int j = 0; j < numEntries; j++) {
-              	        basis(mp,j) = basisByAreaSpherical[j];
+              	        basis(iMP,j) = basisByAreaSpherical[j];
             	    }
             	}
             }	

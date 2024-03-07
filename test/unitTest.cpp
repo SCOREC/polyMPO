@@ -282,7 +282,10 @@ int main(int argc, char** argv) {
 		// compute the values of basis functions at each mp position
 	    	//const int numMPs2 = elm2mp(elmID,0);
 	    	const int numMPs = p_MPs->getNumMPs(elmID);
+<<<<<<< HEAD
 		//printf("numMPs: %d, numMPs2: %d \n", numMPs, numMPs2);
+=======
+>>>>>>> parent of db2fc60... fix indexing
             	for (int iMP = 0; iMP < numMPs; iMP++) {
 		    int mp = elm2mp(elmID,iMP);
 		    // compute the values of basis functions at mp position

@@ -166,26 +166,12 @@ MaterialPoints* initTestMPs(Mesh* mesh, int testMPOption){
         sum += numMPsPerElement(i);
     },numMPs);
     IntView MPToElement("MPToElement",numMPs);
-<<<<<<< HEAD
-    
-    int maxNumMPs = 0;
-    for(int i=0; i<numElms; i++) {
-	maxNumMPs = maxNumMPs < numMPsPerElement(i) ? numMPsPerElement(i) : maxNumMPs;
-    }
-    Int2dView ElementToMP("ElementToMP",numElms,maxNumMPs);
-=======
->>>>>>> parent of 34b0e4e... add mp2Elm
 
     Kokkos::parallel_scan("setMPsToElement", numElms, KOKKOS_LAMBDA(int i, int& iMP, bool is_final){
         if(is_final){  
             for(int j=0; j<numMPsPerElement(i); j++){
                 MPToElement(iMP+j) = i;
-<<<<<<< HEAD
-		ElementToMP(i,j) = iMP;
             }
-=======
-            }   
->>>>>>> parent of 34b0e4e... add mp2Elm
         }
         iMP += numMPsPerElement(i);
     },numMPs);

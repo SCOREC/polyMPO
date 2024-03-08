@@ -395,6 +395,7 @@ void polympo_checkMeshMaxSettings_f(MPMesh_ptr p_mpmesh, const int maxEdges, con
   PMT_ALWAYS_ASSERT(vertexDegree <=  maxElmsPerVtx);
 }
 
+<<<<<<< HEAD
 void polympo_setMeshNumVtxs_f(MPMesh_ptr p_mpmesh, const int numVtxs){
   checkMPMeshValid(p_mpmesh);
   auto p_mesh = ((polyMPO::MPMesh*)p_mpmesh)->p_mesh;
@@ -432,6 +433,8 @@ int polympo_getMeshNumElms_f(MPMesh_ptr p_mpmesh) {
   return nElms;
 }
 
+=======
+>>>>>>> 2e37f718d2388d637ea9acd789264a2cf90aba79
 void polympo_setMeshTypeGeneralPoly_f(MPMesh_ptr p_mpmesh){
   //chech validity
   checkMPMeshValid(p_mpmesh);

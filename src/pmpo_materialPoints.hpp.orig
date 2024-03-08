@@ -122,9 +122,12 @@ class MaterialPoints {
     bool isRotatedFlag = false;
     Operating_Mode operating_mode;
     RebuildHelper rebuildFields;
+<<<<<<< HEAD
     Int2dView elm2mp_;
     IntView mpsPerElm_;
+=======
     IntFunc getAppID;
+>>>>>>> 2e37f718d2388d637ea9acd789264a2cf90aba79
 
   public:
     MaterialPoints() : MPs(nullptr) {};

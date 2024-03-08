@@ -393,6 +393,7 @@ module polympo
     type(c_ptr), intent(in), value :: cellsOnCell
   end subroutine
   !---------------------------------------------------------------------------
+<<<<<<< HEAD
   !> @brief set the polympo mesh number of edges per element
   !>        modifies mesh topology polympo_startMeshFill required
   !> @param mpmesh(in/out) MPMesh object
@@ -421,6 +422,8 @@ module polympo
     type(c_ptr), intent(in), value :: nEdgesOnCell
   end subroutine
   !---------------------------------------------------------------------------
+=======
+>>>>>>> 2e37f718d2388d637ea9acd789264a2cf90aba79
   !> @brief set the polympo mesh vertices coordinates
   !> @param mpmesh(in/out) MPMesh object
   !> @param nVertices(in) length of array in 

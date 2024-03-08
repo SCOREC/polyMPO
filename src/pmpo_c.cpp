@@ -395,43 +395,6 @@ void polympo_checkMeshMaxSettings_f(MPMesh_ptr p_mpmesh, const int maxEdges, con
   PMT_ALWAYS_ASSERT(vertexDegree <=  maxElmsPerVtx);
 }
 
-void polympo_setMeshNumVtxs_f(MPMesh_ptr p_mpmesh, const int numVtxs){
-  checkMPMeshValid(p_mpmesh);
-  auto p_mesh = ((polyMPO::MPMesh*)p_mpmesh)->p_mesh;
-  
-  auto vtx2Elm = polyMPO::IntElm2VtxView("MeshVerticesToElements",numVtxs);
-
-  p_mesh->setNumVtxs(numVtxs);
-  p_mesh->setMeshVtxBasedFieldSize();
-  p_mesh->setVtx2ElmConn(vtx2Elm); 
-}
-
-int polympo_getMeshNumVtxs_f(MPMesh_ptr p_mpmesh) {
-  checkMPMeshValid(p_mpmesh); //chech vailidity
-  auto p_mesh = ((polyMPO::MPMesh*)p_mpmesh)->p_mesh;
-  int nVtxs = p_mesh->getNumVertices();
-  return nVtxs;
-}
-
-void polympo_setMeshNumElms_f(MPMesh_ptr p_mpmesh, const int numElms){
-  checkMPMeshValid(p_mpmesh);
-  auto p_mesh = ((polyMPO::MPMesh*)p_mpmesh)->p_mesh;
-
-  auto elm2Vtx = polyMPO::IntVtx2ElmView("MeshElementsToVertices",numElms); 
-  auto elm2Elm = polyMPO::IntElm2ElmView("MeshElementsToElements",numElms); 
-  
-  p_mesh->setNumElms(numElms);
-  p_mesh->setElm2VtxConn(elm2Vtx);
-  p_mesh->setElm2ElmConn(elm2Elm);
-}
-
-int polympo_getMeshNumElms_f(MPMesh_ptr p_mpmesh) {
-  checkMPMeshValid(p_mpmesh); //chech vailidity
-  auto p_mesh = ((polyMPO::MPMesh*)p_mpmesh)->p_mesh;
-  int nElms = p_mesh->getNumElements();
-  return nElms;
-}
-
 void polympo_setMeshTypeGeneralPoly_f(MPMesh_ptr p_mpmesh){
   //chech validity
   checkMPMeshValid(p_mpmesh);

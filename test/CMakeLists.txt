@@ -103,7 +103,6 @@ if(EXISTS ${TEST_NC_FILE_SPHERICAL})
 else()
     set(TEST_NC_FILE ${TEST_NC_FILE_PLANAR})
 endif()
-
 pmpo_add_test(testFortranReadMPAS ./testFortranReadMPAS ${TEST_NC_FILE})
 pmpo_add_test(testFortranCreateRebuildMPs ./testFortranCreateRebuildMPs ${TEST_NC_FILE})
 

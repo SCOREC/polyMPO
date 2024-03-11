@@ -121,6 +121,8 @@ class MaterialPoints {
     bool isRotatedFlag = false;
     Operating_Mode operating_mode;
     RebuildHelper rebuildFields;
+    IntView mpsPerElm_;
+    IntView mp2elm_;
 
   public:
     MaterialPoints() : MPs(nullptr) {};
@@ -257,6 +259,12 @@ class MaterialPoints {
     }
     void setRotatedFlag(bool flagSet) {
       isRotatedFlag = flagSet;
+    }
+    int getNumMPs(int elm) {
+      return mpsPerElm_(elm);
+    }
+    int getElm(int mp) {
+      return mp2elm_(mp);
     }
 
     // MUTATOR  

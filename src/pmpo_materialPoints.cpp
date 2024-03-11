@@ -55,6 +55,8 @@ MaterialPoints::MaterialPoints(int numElms, int numMPs, DoubleVec3dView position
   MPs = createDPS(numElms, numMPs, positions, mpsPerElm, mp2elm);
   maxAppID = numMPs; //this ctor does not support inactive MPs
   operating_mode = MP_RELEASE;
+  mpsPerElm_ = mpsPerElm;
+  mp2elm_ = mp2elm;
 };
 
 MaterialPoints::MaterialPoints(int numElms, int numMPs, IntView mpsPerElm, IntView mp2elm, IntView mpAppID) {

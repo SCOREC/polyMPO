@@ -130,8 +130,30 @@ int main(int argc, char** argv) {
         auto p_mesh = mpMesh.p_mesh;
         auto vtxCoords = p_mesh->getMeshField<polyMPO::MeshF_VtxCoords>();
         auto basis = p_MPs->getData<MPF_Basis_Vals>();
-       
-	//determine the number of valid elements around each vertex 
+      
+	int numElm = p_mesh->getNumElements();
+
+	// figure out max MPs per element
+	int maxMP = 0;
+	int numMP;
+	for (int i = 0; i < numElm; i++) {
+	    numMP = p_MPs->getNumMPs(i);
+     	    if (numMP > maxMP) maxMP = numMP;
+	}
+	
+	Kokkos::View<int**> elm2mp("elm2mp", numElm, maxMP+1);
+	auto setMPs = PS_LAMBDA(const int&, const int& mp, const int& mask){
+    	    if(mask) {
+		int elm = p_MPs->getElm(mp);
+		int idx = elm2mp(elm,0); // first idx contains number of mps
+		elm2mp(elm,idx+1) = mp;
+		elm2mp(elm,0)++;
+    	    }
+	};
+	mpMesh.p_MPs->parallel_for(setMPs, "setVel=CurMP");
+ 
+	//determine the number of valid elements around each vertex
+	int numVtxs = p_mesh->getNumVertices();  
 	int vtxDegree = 3; // maximum number of elements per vertex 
 	auto vtx2ElmConn = p_mesh->getVtx2ElmConn(); 
         for (int i = 0; i < p_mesh->getNumVertices(); i++) {
@@ -147,9 +169,55 @@ int main(int argc, char** argv) {
 	auto elm2VtxConn = p_mesh->getElm2VtxConn();
         const int numEntries = mpSlice2MeshFieldIndex.at(MPF_Basis_Vals).first;
         auto mpPositions = p_MPs->getData<MPF_Cur_Pos_XYZ>();
-        auto assemble = PS_LAMBDA(const int& elm, const int& mp, const int& mask) {
+       
+	/*	 
+	auto assemble = KOKKOS_LAMBDA(const int iVtx) {
+            // get the coordinates of all the elm around vertex
+            int numVElms = vtx2ElmConn(iVtx,0);
+	    Vec3d eVtxCoords[numVElms + 1];
+	    printf("numVElms: %d \n", numVElms);
+            for (int jElm = 0; jElm < numVElms; jElm++) {
+                int elmID = vtx2ElmConn(iVtx,jElm);
+		int nElmVtxs = elm2VtxConn(elmID,0);
+                Vec3d eVtxCoords[maxVtxsPerElm + 1];
+                for (int jVtx = 1; jVtx <= nElmVtxs; jVtx++) {
+		// elm2VtxConn(elm,i) is the vertex ID (1-based index) of vertex #i of elm
+		    eVtxCoords[jVtx-1][0] = vtxCoords(elm2VtxConn(elmID,jVtx)-1,0);
+		    eVtxCoords[jVtx-1][1] = vtxCoords(elm2VtxConn(elmID,jVtx)-1,1);
+		    eVtxCoords[jVtx-1][2] = vtxCoords(elm2VtxConn(elmID,jVtx)-1,2);
+                }
+                // last component of eVtxCoords stores the firs vertex (to avoid if-condition in the Wachspress computation)
+		eVtxCoords[nElmVtxs][0] = vtxCoords(elm2VtxConn(elmID,1)-1,0);
+                eVtxCoords[nElmVtxs][1] = vtxCoords(elm2VtxConn(elmID,1)-1,1);
+                eVtxCoords[nElmVtxs][2] = vtxCoords(elm2VtxConn(elmID,1)-1,2);
+
+		// compute the values of basis functions at each mp position
+	    	//const int numMPs2 = elm2mp(elmID,0);
+		//printf("numMPs: %d, numMPs2: %d \n", numMPs, numMPs2);
+	    	//const int numMPs = p_MPs->getCount();
+	    	//const int numMPs = elm2mp(elmID,0);
+	    	const int numMPs = p_MPs->getNumMPs(elmID);
+            	for (int iMP = 0; iMP < numMPs; iMP++) {
+		    int mp = elm2mp(elmID,iMP+1);
+		    // compute the values of basis functions at mp position
+		    double basisByArea[maxElmsPerVtx];
+            	    Vec3d mpCoord(mpPositions(mp,0), mpPositions(mp,1), mpPositions(mp,2));
+            	    getBasisByAreaGblForm3d(mpCoord, nElmVtxs, eVtxCoords, basisByArea);
+
+		    for (int j = 0; j < numEntries; j++) {
+              	        basis(mp,j) = basisByArea[j];
+			printf("basis: %f \n", basisByArea[j]);
+            	    }
+            	}
+            }	
+	};
+	Kokkos::parallel_for("assemble", numVtxs, assemble);
+	*/	
+
+	// loop over elements first
+	auto assemble = PS_LAMBDA(const int& elm, const int& mp, const int& mask) {
         if (mask) {
-            /* get the coordinates of all the vertices of elm */
+            // get the coordinates of all the vertices of elm
             int nElmVtxs = elm2VtxConn(elm,0);      // number of vertices bounding the element
             Vec3d eVtxCoords[maxVtxsPerElm + 1];
             for (int i = 1; i <= nElmVtxs; i++) {
@@ -163,7 +231,7 @@ int main(int argc, char** argv) {
             eVtxCoords[nElmVtxs][1] = vtxCoords(elm2VtxConn(elm,1)-1,1);
             eVtxCoords[nElmVtxs][2] = vtxCoords(elm2VtxConn(elm,1)-1,2);
 
-            /* compute the values of basis functions at mp position */
+            // compute the values of basis functions at mp position
             double basisByArea[maxElmsPerVtx];
             Vec3d mpCoord(mpPositions(mp,0), mpPositions(mp,1), mpPositions(mp,2));
             getBasisByAreaGblForm3d(mpCoord, nElmVtxs, eVtxCoords, basisByArea);
@@ -174,7 +242,8 @@ int main(int argc, char** argv) {
           }
         };
         p_MPs->parallel_for(assemble, "assembly");
-        
+	      
+
         //TODO: write PS_LAMBDA to assign 2 velocity component to be position[0] and [1]
         double del = 3.89;
         auto mpVel = p_MPs->getData<MPF_Vel>();
@@ -241,7 +310,29 @@ int main(int argc, char** argv) {
         auto elm2VtxConn = p_mesh->getElm2VtxConn();
         double radius = p_mesh->getSphereRadius();
         PMT_ALWAYS_ASSERT(radius > 0);
-        
+      
+	int numElm = p_mesh->getNumElements();
+	
+	// figure out max MPs per element
+	int maxMP = 0;
+	int numMP;
+	for (int i = 0; i < numElm; i++) {
+	    numMP = p_MPs->getNumMPs(i);
+     	    if (numMP > maxMP) maxMP = numMP;
+	}
+	int numMPs = p_MPs->getCount();
+
+	Kokkos::View<int**> elm2mp("elm2mp", numElm+1, maxMP+1);
+	auto setMPs = PS_LAMBDA(const int&, const int& mp, const int& mask){
+    	    if(mask) {
+		int elm = p_MPs->getElm(mp)+1;
+		int idx = elm2mp(elm,0); // first idx contains number of mps
+		elm2mp(elm,idx+1) = mp;
+		elm2mp(elm,0)++;
+    	    }
+	};
+	mpMesh.p_MPs->parallel_for(setMPs, "setVel=CurMP");
+	
 	//determine the number of valid elements around each vertex
 	int numVtxs = p_mesh->getNumVertices(); 
 	int vtxDegree = 3; // maximum number of elements per vertex 
@@ -258,7 +349,7 @@ int main(int argc, char** argv) {
 	
 	const int numEntries = mpSlice2MeshFieldIndex.at(MPF_Basis_Vals).first;
         auto mpPositions = p_MPs->getData<MPF_Cur_Pos_XYZ>();
-       
+      
 	auto assemble = KOKKOS_LAMBDA(const int iVtx) {
             /* get the coordinates of all the elm around vertex */
             int numVElms = vtx2ElmConn(iVtx,0);
@@ -281,16 +372,17 @@ int main(int argc, char** argv) {
 		// compute the values of basis functions at each mp position
 	    	//const int numMPs2 = elm2mp(elmID,0);
 		//printf("numMPs: %d, numMPs2: %d \n", numMPs, numMPs2);
-	    	const int numMPs = p_MPs->getCount();
+	    	//const int numMPs = p_MPs->getCount();
 	    	//const int numMPs = elm2mp(elmID,0);
+	    	const int numMPs = elm2mp(elmID,0);
             	for (int iMP = 0; iMP < numMPs; iMP++) {
+		    int mp = elm2mp(elmID,iMP+1);
 		    // compute the values of basis functions at mp position
 		    double basisByAreaSpherical[maxElmsPerVtx];
-            	    Vec3d mpCoord(mpPositions(iMP,0), mpPositions(iMP,1), mpPositions(iMP,2));
+            	    Vec3d mpCoord(mpPositions(mp,0), mpPositions(mp,1), mpPositions(mp,2));
             	    getBasisByAreaGblForm3d(mpCoord, nElmVtxs, eVtxCoords, basisByAreaSpherical);
-
 		    for (int j = 0; j < numEntries; j++) {
-              	        basis(iMP,j) = basisByAreaSpherical[j];
+              	        basis(mp,j) = basisByAreaSpherical[j];
             	    }
             	}
             }	

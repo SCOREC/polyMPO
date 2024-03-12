@@ -587,7 +587,7 @@ void polympo_getMeshElmCenter_f(MPMesh_ptr p_mpmesh, const int nElements, double
   auto p_mesh = ((polyMPO::MPMesh*)p_mpmesh)->p_mesh;
 
   //check the size
-  PMT_ALWAYS_ASSERT(p_mesh->getNumVertices()==nElements); 
+  PMT_ALWAYS_ASSERT(p_mesh->getNumElements()==nElements); 
   
   //copy the device to host 
   auto coordsArray = p_mesh->getMeshField<polyMPO::MeshF_ElmCenterXYZ>();

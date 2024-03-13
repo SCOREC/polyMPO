@@ -164,6 +164,7 @@ bdir=$PWD/buildPolyMPO-GPU
 cmake -S polyMPO -B $bdir \
 -DKokkos_DIR=$kk/lib64/cmake/Kokkos \
 -DCMAKE_CXX_COMPILER=$kk/bin/nvcc_wrapper \
+-DIS_TESTING=off \
 -DCMAKE_INSTALL_PREFIX=$bdir/install
 ```
 
@@ -360,6 +361,7 @@ cmake -S polyMPO -B $bdir \
 -DCMAKE_BUILD_TYPE=Debug \
 -DKokkos_DIR=$kk/lib64/cmake/Kokkos \
 -DCMAKE_CXX_COMPILER=mpicxx \
+-DIS_TESTING=off \
 -DCMAKE_INSTALL_PREFIX=$bdir/install
 ```
 
@@ -507,6 +509,7 @@ bdir=$PWD/buildPolyMPO-GPU
 cmake -S polyMPO -B $bdir \
 -DKokkos_DIR=$kk/lib64/cmake/Kokkos \
 -DCMAKE_CXX_COMPILER=$kk/bin/nvcc_wrapper \
+-DIS_TESTING=off \
 -DCMAKE_INSTALL_PREFIX=$bdir/install
 ```
 
@@ -651,6 +654,7 @@ cmake -S polyMPO -B $bdir \
 -DCMAKE_BUILD_TYPE=Debug \
 -DKokkos_DIR=$kk/lib64/cmake/Kokkos \
 -DCMAKE_CXX_COMPILER=mpicxx \
+-DIS_TESTING=off \
 -DCMAKE_INSTALL_PREFIX=$bdir/install
 ```
 

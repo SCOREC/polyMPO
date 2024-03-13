@@ -423,6 +423,7 @@ void polympo_setMeshNumElms_f(MPMesh_ptr p_mpmesh, const int numElms){
   p_mesh->setNumElms(numElms);
   p_mesh->setElm2VtxConn(elm2Vtx);
   p_mesh->setElm2ElmConn(elm2Elm);
+  p_mesh->setMeshElmBasedFieldSize();
 }
 
 void polympo_getMeshNumElms_f(MPMesh_ptr p_mpmesh, int & numElms) {

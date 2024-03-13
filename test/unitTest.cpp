@@ -216,7 +216,7 @@ int main(int argc, char** argv) {
         }
         interpolateWachspress2DTest(mpMesh);
     }
-
+   
     //spherical test
     //this test is only designed to work with the following option values:
     const int testMeshOption2 = 1;

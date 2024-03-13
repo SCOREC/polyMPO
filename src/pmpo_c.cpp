@@ -430,8 +430,12 @@ void polympo_setMeshSphereRadius_f(MPMesh_ptr p_mpmesh, const double sphereRadiu
 void polympo_setMeshNumVtxs_f(MPMesh_ptr p_mpmesh, const int numVtxs){
   checkMPMeshValid(p_mpmesh);
   auto p_mesh = ((polyMPO::MPMesh*)p_mpmesh)->p_mesh;
+  
+  auto vtx2Elm = polyMPO::IntElm2VtxView("MeshVerticesToElements",numVtxs);
+  
   p_mesh->setNumVtxs(numVtxs);
-  p_mesh->setMeshVtxBasedFieldSize(); 
+  p_mesh->setMeshVtxBasedFieldSize();
+  p_mesh->setVtx2ElmConn(vtx2Elm); 
 }
 
 void polympo_getMeshNumVtxs_f(MPMesh_ptr p_mpmesh, int & numVtxs) {
@@ -531,6 +535,7 @@ void polympo_setMeshVtx2ElmConn_f(MPMesh_ptr p_mpmesh, const int vertexDegree, c
   Kokkos::View<int**> vtx2ElmArray("MeshVerticesToElements",vertexDegree,nVertices);
   Kokkos::deep_copy(vtx2ElmArray, arrayHost);
   auto vtx2ElmConn = p_mesh->getVtx2ElmConn();
+ 
   Kokkos::parallel_for("set vtx2ElmConn", nVertices, KOKKOS_LAMBDA(const int vtx){
     for(int i=0; i<vertexDegree; i++){
         vtx2ElmConn(vtx,i+1) = vtx2ElmArray(i,vtx);

@@ -252,7 +252,7 @@ int main(int argc, char** argv) {
 	    if (numMP > maxMP) maxMP = numMP;
 	}
 
-	Kokkos::View<int**> elm2mp("elm2mp", numElm, maxMP+1);
+	Kokkos::View<int**> elm2mp("elm2mp", numElm+1, maxMP+1);
 	auto setMPs = PS_LAMBDA(const int&, const int& mp, const int& mask){
             if(mask) {
 		int elm = p_MPs->getElm(mp)+1;
@@ -263,6 +263,12 @@ int main(int argc, char** argv) {
 	};
 	mpMesh.p_MPs->parallel_for(setMPs, "setVel=CurMP");
 
+	for (int i = 0; i < numElm+1; i++) {
+	    int num = elm2mp(i,0);
+	    for (int j = 0; j < num+1; j++) {
+		printf("elm2mp(%d, %d): %d \n", i,j,elm2mp(i,j));
+	    }
+	}
 	//determine the number of valid elements around each vertex
 	int numVtxs = p_mesh->getNumVertices(); 
 	int vtxDegree = 3; // maximum number of elements per vertex 
@@ -279,7 +285,7 @@ int main(int argc, char** argv) {
 	
 	const int numEntries = mpSlice2MeshFieldIndex.at(MPF_Basis_Vals).first;
         auto mpPositions = p_MPs->getData<MPF_Cur_Pos_XYZ>();
-       
+      
 	auto assemble = KOKKOS_LAMBDA(const int iVtx) {
             /* get the coordinates of all the elm around vertex */
             int nElms = vtx2ElmConn(iVtx,0);
@@ -301,10 +307,10 @@ int main(int argc, char** argv) {
 
 		// compute the values of basis functions at each mp position
 	    	//const int numMPs2 = elm2mp(elmID,0);
-	    	const int numMPs = p_MPs->getNumMPs(elmID);
+	    	//const int numMPs = p_MPs->getNumMPs(elmID);
+		const int numMPs = elm2mp(elmID,0);
             	for (int iMP = 0; iMP < numMPs; iMP++) {
 		    int mp = elm2mp(elmID,iMP+1);
-		    printf("mp: %d \n", mp);
 		    // compute the values of basis functions at mp position
 		    double basisByAreaSpherical[maxElmsPerVtx];
             	    Vec3d mpCoord(mpPositions(mp,0), mpPositions(mp,1), mpPositions(mp,2));
@@ -317,7 +323,7 @@ int main(int argc, char** argv) {
             }	
 	};
 	Kokkos::parallel_for("assemble", numVtxs, assemble);
-	
+
 	/*
  	// first method: loop over elements first
 	auto assemble = PS_LAMBDA(const int& elm, const int& mp, const int& mask) {

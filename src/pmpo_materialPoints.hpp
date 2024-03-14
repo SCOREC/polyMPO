@@ -122,13 +122,12 @@ class MaterialPoints {
     bool isRotatedFlag = false;
     Operating_Mode operating_mode;
     RebuildHelper rebuildFields;
-    Int2dView elm2mp_;
+    IntView mp2elm_;
     IntView mpsPerElm_;
     IntFunc getAppID;
 
   public:
     MaterialPoints() : MPs(nullptr) {};
-    MaterialPoints(int numElms, int numMPs, DoubleVec3dView positions, IntView mpsPerElm, IntView mp2elm, Int2dView elm2mp);
     MaterialPoints(int numElms, int numMPs, DoubleVec3dView positions, IntView mpsPerElm, IntView mp2elm);
     MaterialPoints(int numElms, int numMPs, IntView mpsPerElm, IntView mp2elm, IntView mpAppID);
     ~MaterialPoints();
@@ -267,8 +266,8 @@ class MaterialPoints {
     void setRotatedFlag(bool flagSet) {
       isRotatedFlag = flagSet;
     }
-    Int2dView getMPsPerElm() {
-      return elm2mp_; 
+    int getElm(int mp) {
+      return mp2elm_(mp); 
     }
     int getNumMPs(int elm) {
       return mpsPerElm_(elm);

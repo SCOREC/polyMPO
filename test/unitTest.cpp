@@ -241,7 +241,28 @@ int main(int argc, char** argv) {
         auto elm2VtxConn = p_mesh->getElm2VtxConn();
         double radius = p_mesh->getSphereRadius();
         PMT_ALWAYS_ASSERT(radius > 0);
-        
+       
+	int numElm = p_mesh->getNumElements();
+
+	//figure out max MPs per element                                                                            
+	int maxMP = 0;
+	int numMP;
+	for (int i = 0; i < numElm; i++) {
+	    numMP = p_MPs->getNumMPs(i);
+	    if (numMP > maxMP) maxMP = numMP;
+	}
+
+	Kokkos::View<int**> elm2mp("elm2mp", numElm, maxMP+1);
+	auto setMPs = PS_LAMBDA(const int&, const int& mp, const int& mask){
+            if(mask) {
+		int elm = p_MPs->getElm(mp)+1;
+		int idx = elm2mp(elm,0); // first idx contains number of mps
+		elm2mp(elm,idx+1) = mp;
+		elm2mp(elm,0)++;
+    	    }
+	};
+	mpMesh.p_MPs->parallel_for(setMPs, "setVel=CurMP");
+
 	//determine the number of valid elements around each vertex
 	int numVtxs = p_mesh->getNumVertices(); 
 	int vtxDegree = 3; // maximum number of elements per vertex 
@@ -255,7 +276,6 @@ int main(int argc, char** argv) {
 	    }
 	    vtx2ElmConn(i,0) = elementCounter;
 	}
-	auto elm2mp = p_MPs->getMPsPerElm(); 
 	
 	const int numEntries = mpSlice2MeshFieldIndex.at(MPF_Basis_Vals).first;
         auto mpPositions = p_MPs->getData<MPF_Cur_Pos_XYZ>();
@@ -264,7 +284,7 @@ int main(int argc, char** argv) {
             /* get the coordinates of all the elm around vertex */
             int nElms = vtx2ElmConn(iVtx,0);
 	    Vec3d eVtxCoords[nElms + 1];
-            for (int jElm = 1; jElm <= nElms; jElm++) {
+            for (int jElm = 0; jElm < nElms; jElm++) {
                 int elmID = vtx2ElmConn(iVtx,jElm);
 		int nElmVtxs = elm2VtxConn(elmID,0);
                 Vec3d eVtxCoords[maxVtxsPerElm + 1];
@@ -282,9 +302,9 @@ int main(int argc, char** argv) {
 		// compute the values of basis functions at each mp position
 	    	//const int numMPs2 = elm2mp(elmID,0);
 	    	const int numMPs = p_MPs->getNumMPs(elmID);
-		//printf("numMPs: %d, numMPs2: %d \n", numMPs, numMPs2);
             	for (int iMP = 0; iMP < numMPs; iMP++) {
-		    int mp = elm2mp(elmID,iMP);
+		    int mp = elm2mp(elmID,iMP+1);
+		    printf("mp: %d \n", mp);
 		    // compute the values of basis functions at mp position
 		    double basisByAreaSpherical[maxElmsPerVtx];
             	    Vec3d mpCoord(mpPositions(mp,0), mpPositions(mp,1), mpPositions(mp,2));

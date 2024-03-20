@@ -197,28 +197,32 @@ module polympo
   !> @warning THIS IS NOT SUPPORTED YET 
   !> @param mpmesh(in/out) MPMesh object
   !> @param n(in) half length of array
-  !> @param array(in) input MP velocity 1D array (numMPs*2)
+  !> @param uVelocity(in) input MP velocity 1D array on u-component
+  !> @param vVelocity(in) input MP velocity 1D array on v-component
   !---------------------------------------------------------------------------
-  subroutine polympo_setMPVel(mpMesh, nComps, numMPs, array) &
+  subroutine polympo_setMPVel(mpMesh, nComps, numMPs, uVelocity, vVelocity) &
              bind(C, NAME='polympo_setMPVel_f')
     use :: iso_c_binding
     type(c_ptr), value :: mpMesh
     integer(c_int), value :: nComps, numMPs
-    type(c_ptr), intent(in), value :: array
+    type(c_ptr), intent(in), value :: uVelocity, vVelocity
   end subroutine
   !---------------------------------------------------------------------------
   !> @brief get the velocity MP array from a polympo array
   !> @warning THIS IS NOT SUPPORTED YET 
   !> @param mpmesh(in/out) MPMesh object
   !> @param n(in) half length of array
-  !> @param array(in/out) output MP velocity 1D array (numMPs*2), allocated by user
+  !> @param uVelocity(in/out) output MP velocity 1D array on u-component,
+  !>                          allocated by user
+  !> @param vVelocity(in/out) output MP velocity 1D array on v-component,
+  !>                          allocated by user
   !---------------------------------------------------------------------------
-  subroutine polympo_getMPVel(mpMesh, nComps, numMPs, array) &
+  subroutine polympo_getMPVel(mpMesh, nComps, numMPs, uVelocity, vVelocity) &
              bind(C, NAME='polympo_getMPVel_f')
     use :: iso_c_binding
     type(c_ptr), value :: mpMesh
     integer(c_int), value :: nComps, numMPs
-    type(c_ptr), value :: array
+    type(c_ptr), value :: uVelocity, vVelocity
   end subroutine
   !---------------------------------------------------------------------------
   !> @brief Enable the setting of mesh topology (number of entities and entity adjacencies). 

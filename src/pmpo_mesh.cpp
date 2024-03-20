@@ -55,4 +55,8 @@ namespace polyMPO{
         });
     }
 
+    IntView Mesh::getElm2Process() {
+        return owningProc_;
+    }
+
 } // namespace polyMPO

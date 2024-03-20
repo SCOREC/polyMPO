@@ -66,7 +66,9 @@ class Mesh {
     //IntView nEdgesPerElm_;
     IntVtx2ElmView elm2VtxConn_;
     IntElm2ElmView elm2ElmConn_;
-  
+
+    IntView owningProc_;
+
     //start of meshFields
     DoubleVec3dView vtxCoords_;
     DoubleSclrView vtxRotLat_;
@@ -103,6 +105,8 @@ class Mesh {
     bool checkMeshType(int meshType);
     bool checkGeomType(int geomType);
 
+    IntView getElm2Process();
+
     mesh_type getMeshType() { return meshType_; }
     geom_type getGeomType() { return geomType_; }
     double getSphereRadius() { return sphereRadius_; }
@@ -129,6 +133,8 @@ class Mesh {
                                                      elm2VtxConn_ = elm2VtxConn; }
     void setElm2ElmConn(IntElm2ElmView elm2ElmConn) {PMT_ALWAYS_ASSERT(meshEdit_);
                                                      elm2ElmConn_ = elm2ElmConn; }
+    void setOwningProc(IntView owningProc) {PMT_ALWAYS_ASSERT(meshEdit_);
+                                            owningProc_ = owningProc; }
     
     void computeRotLatLonIncr();
 };

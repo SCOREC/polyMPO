@@ -101,6 +101,33 @@ void MaterialPoints::finishRebuild() {
   rebuildFields.ongoing = false;
 }
 
+bool MaterialPoints::migrate() {
+  Kokkos::Timer timer;
+  auto MPs2Elm = getData<MPF_Tgt_Elm_ID>();
+  auto MPs2Proc = getData<MPF_Tgt_Proc_ID>();
+
+  IntView new_elem("new_elem", MPs->capacity());
+  IntView new_process("new_process", MPs->capacity());
+  IntView isMigrating("isMigrating", 1);
+
+  int rank;
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  auto setMigrationFields = PS_LAMBDA(const int& e, const int& mp, const bool& mask) {
+    if (mask) {
+      new_elem(mp) = MPs2Elm(mp);
+      new_process(mp) = MPs2Proc(mp);
+      if (new_process(mp) != rank) isMigrating(0) = 1;
+    }
+  };
+  parallel_for(setMigrationFields, "setMigrationFields");
+  MPs->migrate(new_elem, new_process);
+
+  if (getOpMode() == polyMPO::MP_DEBUG)
+    printf("Material point migration: %f\n", timer.seconds());
+  
+  return pumipic::getLastValue(isMigrating) > 0;
+}
+
 bool MaterialPoints::rebuildOngoing() { return rebuildFields.ongoing; }
 
 void MaterialPoints::setAppIDFunc(IntFunc getAppIDIn) { getAppID = getAppIDIn; }

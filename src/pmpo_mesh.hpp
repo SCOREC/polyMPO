@@ -25,7 +25,8 @@ enum MeshFieldIndex{
     MeshF_Vel,
     MeshF_OnSurfVeloIncr,
     MeshF_OnSurfDispIncr,
-    MeshF_RotLatLonIncr
+    MeshF_RotLatLonIncr,
+    MeshF_ElmCenterXYZ
 };
 enum MeshFieldType{
     MeshFType_Invalid = -2,
@@ -42,7 +43,8 @@ const std::map<MeshFieldIndex, std::pair<MeshFieldType,
                {MeshF_Vel,              {MeshFType_VtxBased,"MeshField_Velocity"}},
                {MeshF_OnSurfVeloIncr,   {MeshFType_VtxBased,"MeshField_OnSurfaceVelocityIncrement"}},
                {MeshF_OnSurfDispIncr,   {MeshFType_VtxBased,"MeshField_OnSurfaceDisplacementIncrement"}},
-               {MeshF_RotLatLonIncr,    {MeshFType_VtxBased,"MeshField_RotationalLatitudeLongitudeIncreasement"}}};
+               {MeshF_RotLatLonIncr,    {MeshFType_VtxBased,"MeshField_RotationalLatitudeLongitudeIncreasement"}},
+               {MeshF_ElmCenterXYZ,  {MeshFType_ElmBased,"MeshField_ElementCenterXYZ"}}};
 
 enum mesh_type {mesh_unrecognized_lower = -1,
                 mesh_general_polygonal, //other meshes
@@ -70,6 +72,7 @@ class Mesh {
     //start of meshFields
     DoubleVec3dView vtxCoords_;
     DoubleSclrView vtxRotLat_;
+    DoubleVec3dView elmCenterXYZ_;
     DoubleVec2dView vtxVel_;
     DoubleVec2dView vtxOnSurfVeloIncr_;
     DoubleVec2dView vtxOnSurfDispIncr_;
@@ -95,6 +98,7 @@ class Mesh {
           elm2ElmConn_(elm2ElmConn){
             meshEdit_ = true;
             setMeshVtxBasedFieldSize();
+            setMeshElmBasedFieldSize();
             meshEdit_ = false;
             vtxCoords_ = vtxCoords;
         }
@@ -112,6 +116,7 @@ class Mesh {
     IntElm2ElmView getElm2ElmConn() { return elm2ElmConn_; }
     template<MeshFieldIndex index> auto getMeshField();
     void setMeshVtxBasedFieldSize();
+    void setMeshElmBasedFieldSize();
 
     void setMeshEdit(bool meshEdit) { meshEdit_ = meshEdit; }
     //onec MeshType/GeomType is set to valid types, we can't change them anymore
@@ -160,6 +165,9 @@ auto Mesh::getMeshField(){
     }
     else if constexpr (index==MeshF_RotLatLonIncr){
         return vtxRotLatLonIncr_;
+    }
+    else if constexpr (index==MeshF_ElmCenterXYZ){
+        return elmCenterXYZ_;
     }
     fprintf(stderr,"Mesh Field Index error!\n");
     exit(1);

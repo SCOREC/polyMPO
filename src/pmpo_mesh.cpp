@@ -38,6 +38,15 @@ namespace polyMPO{
         PMT_ALWAYS_ASSERT(vtxRotLatLonIncrMapEntry.first == MeshFType_VtxBased);
         vtxRotLatLonIncr_ = DoubleVec2dView(vtxRotLatLonIncrMapEntry.second,numVtxs_);
     }
+
+    void Mesh::setMeshElmBasedFieldSize(){
+        PMT_ALWAYS_ASSERT(meshEdit_);
+
+        auto elmCoordsMapEntry = meshFields2TypeAndString.at(MeshF_ElmCenterXYZ);
+        PMT_ALWAYS_ASSERT(elmCoordsMapEntry.first == MeshFType_ElmBased);
+        elmCenterXYZ_ = DoubleVec3dView(elmCoordsMapEntry.second, numElms_);
+
+    }
     
     void Mesh::computeRotLatLonIncr(){
         PMT_ALWAYS_ASSERT(geomType_ == geom_spherical_surf);

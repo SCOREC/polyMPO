@@ -108,3 +108,5 @@ pmpo_add_test(testFortranCreateRebuildMPs ./testFortranCreateRebuildMPs ${TEST_N
 
 pmpo_add_test(test_timing ./timeAssmblyWachspress 1 ${TEST_NC_FILE})
 pmpo_add_test(test_wachspress ./testWachspress ${TEST_NC_FILE})
+
+bob_end_subdir()

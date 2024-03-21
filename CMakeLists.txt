@@ -2,6 +2,8 @@ cmake_minimum_required(VERSION 3.19)
 project(polyMPO VERSION 0.0.2 LANGUAGES CXX Fortran)
 
 include(CTest)
+include(GNUInstallDirs)
+include(CMakePackageConfigHelpers)
 enable_testing()
 
 function(export_target tgt_name)
@@ -54,3 +56,38 @@ option(IS_TESTING "Build for CTest" OFF)
 if(IS_TESTING)
   add_subdirectory (test)
 endif()
+
+## export the library
+set_target_properties(polyMPO PROPERTIES
+  PUBLIC_HEADER "${POLYMPO_HEADERS}")
+target_include_directories(polyMPO
+  INTERFACE
+  "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>"
+  "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>")
+install(
+  TARGETS polyMPO polyMPO-core
+  EXPORT polyMPO-targets
+  LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+  ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+  RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+  INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+  PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+
+configure_package_config_file(
+  "${CMAKE_CURRENT_SOURCE_DIR}/config.cmake.in"
+  "${CMAKE_CURRENT_BINARY_DIR}/polympo-config.cmake"
+  INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/polyMPO
+)
+write_basic_package_version_file(
+  "${PROJECT_BINARY_DIR}/polympo-config-version.cmake"
+  COMPATIBILITY AnyNewerVersion)
+
+install(FILES
+  "${PROJECT_BINARY_DIR}/polympo-config.cmake"
+  "${PROJECT_BINARY_DIR}/polympo-config-version.cmake"
+  DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/polyMPO)
+
+install(
+  EXPORT polyMPO-targets
+  NAMESPACE polyMPO::
+  DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/polyMPO)

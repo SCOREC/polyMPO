@@ -93,18 +93,10 @@ program main
         Mesharray(i,j) = (i-1)*nverts + j
     end do
   end do
-  call polympo_setMeshVel(mpMesh, numCompsVel, nverts, c_loc(Mesharray))
   call polympo_setMeshOnSurfVeloIncr(mpMesh, numCompsVel, nverts, c_loc(Mesharray))
   call polympo_setMeshOnSurfDispIncr(mpMesh, numCompsVel, nverts, c_loc(Mesharray))
 
   ! check mesh Fields
-  Mesharray = -1
-  call polympo_getMeshVel(mpMesh, numCompsVel, nverts, c_loc(Mesharray))
-  do i = 1,numCompsVel
-    do j = 1,nverts 
-        call assert((Mesharray(i,j) .eq. (i-1)*nverts+j), "Assert MeshVel Fail")
-    end do
-  end do
   Mesharray = -1
   call polympo_getMeshOnSurfVeloIncr(mpMesh, numCompsVel, nverts, c_loc(Mesharray))
   do i = 1,numCompsVel
@@ -133,6 +125,22 @@ program main
   call assert(all(xArray .eq. value1), "Assert xArray == value1 Failed!")
   call assert(all(yArray .eq. value2), "Assert yArray == value2 Failed!")
   call assert(all(zArray .eq. value1 + value2), "Assert zArray == value1 + value2 Failed!")
+
+  !use xArray and yArrray to hold u and v components 
+  do i = 1, nverts
+    xArray(i) = i + value1
+    yArray(i) = value2 - i
+  end do 
+  write(*,*) xArray, yArray
+  call polympo_setMeshVel(mpMesh, numCompsVel, nverts, c_loc(xArray),c_loc(yArray))
+  xArray = -1
+  yArray = -1
+  call polympo_getMeshVel(mpMesh, numCompsVel, nverts, c_loc(xArray),c_loc(yArray))
+  write(*,*) xArray, yArray
+  do i = 1, nverts
+    call assert((xArray(i) .eq. i+value1), "Assert MeshVel u-component Velocity Fail")
+    call assert((yArray(i) .eq. value2-i), "Assert MeshVel v-component Velocity Fail")
+  end do 
 
   deallocate(MParray)
   deallocate(Mesharray)

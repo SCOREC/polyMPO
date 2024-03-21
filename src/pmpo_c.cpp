@@ -588,7 +588,7 @@ void polympo_getMeshVtxRotLat_f(MPMesh_ptr p_mpmesh, const int nVertices, double
   }
 }
 
-void polympo_setMeshVel_f(MPMesh_ptr p_mpmesh, const int nComps, const int nVertices, const double* array){
+void polympo_setMeshVel_f(MPMesh_ptr p_mpmesh, const int nComps, const int nVertices, const double* uVelIn, const double* vVelIn){
   //check mpMesh is valid
   checkMPMeshValid(p_mpmesh);
   auto p_mesh = ((polyMPO::MPMesh*)p_mpmesh)->p_mesh;
@@ -601,13 +601,13 @@ void polympo_setMeshVel_f(MPMesh_ptr p_mpmesh, const int nComps, const int nVert
   auto coordsArray = p_mesh->getMeshField<polyMPO::MeshF_Vel>();
   auto h_coordsArray = Kokkos::create_mirror_view(coordsArray);
   for(int i=0; i<nVertices; i++){
-    h_coordsArray(i,0) = array[i*vec2d_nEntries];
-    h_coordsArray(i,1) = array[i*vec2d_nEntries+1];
+    h_coordsArray(i,0) = uVelIn[i];
+    h_coordsArray(i,1) = vVelIn[i];
   }
   Kokkos::deep_copy(coordsArray, h_coordsArray);
 }
 
-void polympo_getMeshVel_f(MPMesh_ptr p_mpmesh, const int nComps, const int nVertices, double* array){
+void polympo_getMeshVel_f(MPMesh_ptr p_mpmesh, const int nComps, const int nVertices, double* uVelOut, double* vVelOut){
   //check mpMesh is valid
   checkMPMeshValid(p_mpmesh);
   auto p_mesh = ((polyMPO::MPMesh*)p_mpmesh)->p_mesh;
@@ -620,8 +620,8 @@ void polympo_getMeshVel_f(MPMesh_ptr p_mpmesh, const int nComps, const int nVert
   auto coordsArray = p_mesh->getMeshField<polyMPO::MeshF_Vel>();
   auto h_coordsArray = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(),coordsArray);
   for(int i=0; i<nVertices; i++){
-    array[i*vec2d_nEntries] = h_coordsArray(i,0);
-    array[i*vec2d_nEntries+1] = h_coordsArray(i,1);
+    uVelOut[i] = h_coordsArray(i,0);
+    vVelOut[i] = h_coordsArray(i,1);
   }
 }
 

@@ -44,8 +44,6 @@ install(DIRECTORY ${CMAKE_Fortran_MODULE_DIRECTORY}/ DESTINATION include)
 
 add_subdirectory (src)
 
-include_directories(src)
-
 option(IS_TESTING "Build for CTest" OFF)
 if(IS_TESTING)
   add_subdirectory (test)

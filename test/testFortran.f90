@@ -132,10 +132,10 @@ program main
     yArray(i) = value2 - i
   end do 
   write(*,*) xArray, yArray
-  call polympo_setMeshVel(mpMesh, numCompsVel, nverts, c_loc(xArray),c_loc(yArray))
+  call polympo_setMeshVel(mpMesh, nverts, c_loc(xArray),c_loc(yArray))
   xArray = -1
   yArray = -1
-  call polympo_getMeshVel(mpMesh, numCompsVel, nverts, c_loc(xArray),c_loc(yArray))
+  call polympo_getMeshVel(mpMesh, nverts, c_loc(xArray),c_loc(yArray))
   write(*,*) xArray, yArray
   do i = 1, nverts
     call assert((xArray(i) .eq. i+value1), "Assert MeshVel u-component Velocity Fail")

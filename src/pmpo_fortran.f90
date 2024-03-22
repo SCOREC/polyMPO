@@ -447,33 +447,31 @@ module polympo
   !---------------------------------------------------------------------------
   !> @brief set the vertices velocity from a host array
   !> @param mpmesh(in/out) MPMesh object
-  !> @param nComps(in) number of components, should always be 2
   !> @param nVertices(in) numVertices
   !> @param uVel(in) vertices u-component velocity 1D array (numVtx)
   !> @param vVel(in) vertices v-component velocity 1D array (numVtx)
   !---------------------------------------------------------------------------
-  subroutine polympo_setMeshVel(mpMesh, nComps, nVertices, uVel, vVel) &
+  subroutine polympo_setMeshVel(mpMesh, nVertices, uVel, vVel) &
              bind(C, NAME='polympo_setMeshVel_f')
     use :: iso_c_binding
     type(c_ptr), value :: mpMesh
-    integer(c_int), value :: nComps, nVertices
+    integer(c_int), value :: nVertices
     type(c_ptr), intent(in), value :: uVel, vVel
   end subroutine
   !---------------------------------------------------------------------------
   !> @brief get the vertices velocity from polyMPO
   !> @param mpmesh(in/out) MPMesh object
-  !> @param nComps(in) number of components, should always be 2
   !> @param nVertices(in) numVertices
   !> @param uVel(in/out) output vertices u-component velocity
   !>        1D array (numVtx), allocated by user
   !> @param vVel(in/out) output vertices v-component velocity
   !>        1D array (numVtx), allocated by user
   !---------------------------------------------------------------------------
-  subroutine polympo_getMeshVel(mpMesh, nComps, nVertices, uVel, vVel) &
+  subroutine polympo_getMeshVel(mpMesh, nVertices, uVel, vVel) &
              bind(C, NAME='polympo_getMeshVel_f')
     use :: iso_c_binding
     type(c_ptr), value :: mpMesh
-    integer(c_int), value :: nComps, nVertices
+    integer(c_int), value :: nVertices
     type(c_ptr), value :: uVel, vVel
   end subroutine
   !---------------------------------------------------------------------------

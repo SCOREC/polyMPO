@@ -27,12 +27,12 @@ void polympo_getMPCurElmID_f(MPMesh_ptr p_mpmesh, const int numMPs, int* elmIDs)
 void polympo_setMPLatLonRotatedFlag_f(MPMesh_ptr p_mpmesh, const int isRotateFlag);
 
 //MP slices
-void polympo_setMPPositions_f(MPMesh_ptr p_mpmesh, const int numComps, const int numMPs, const double* mpPositionsIn);
-void polympo_getMPPositions_f(MPMesh_ptr p_mpmesh, const int numComps, const int numMPs, double* mpPositionsIn);
-void polympo_setMPRotLatLon_f(MPMesh_ptr p_mpmesh, const int numComps, const int numMPs, const double* mpRotLatLonIn);
-void polympo_getMPRotLatLon_f(MPMesh_ptr p_mpmesh, const int numComps, const int numMPs, double* mpRotLatLonHost);
-void polympo_setMPVel_f(MPMesh_ptr p_mpmesh, const int numComps, const int numMPs, const double* mpVelIn);
-void polympo_getMPVel_f(MPMesh_ptr p_mpmesh, const int numComps, const int numMPs, double* mpVelHost);
+void polympo_setMPPositions_f(MPMesh_ptr p_mpmesh, const int nComps, const int numMPs, const double* mpPositionsIn);
+void polympo_getMPPositions_f(MPMesh_ptr p_mpmesh, const int nComps, const int numMPs, double* mpPositionsIn);
+void polympo_setMPRotLatLon_f(MPMesh_ptr p_mpmesh, const int nComps, const int numMPs, const double* mpRotLatLonIn);
+void polympo_getMPRotLatLon_f(MPMesh_ptr p_mpmesh, const int nComps, const int numMPs, double* mpRotLatLonHost);
+void polympo_setMPVel_f(MPMesh_ptr p_mpmesh, const int nComps, const int numMPs, const double* mpVelIn);
+void polympo_getMPVel_f(MPMesh_ptr p_mpmesh, const int nComps, const int numMPs, double* mpVelHost);
 
 //Mesh info
 void polympo_startMeshFill_f(MPMesh_ptr p_mpmesh);

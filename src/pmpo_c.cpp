@@ -229,15 +229,15 @@ void polympo_setMPLatLonRotatedFlag_f(MPMesh_ptr p_mpmesh, const int isRotateFla
 }
 
 void polympo_setMPPositions_f(MPMesh_ptr p_mpmesh,
-                            const int numComps,
+                            const int nComps,
                             const int numMPs,
                             const double* mpPositionsIn){
   checkMPMeshValid(p_mpmesh);
   auto p_MPs = ((polyMPO::MPMesh*)p_mpmesh)->p_MPs;
-  PMT_ALWAYS_ASSERT(numComps == vec3d_nEntries);
+  PMT_ALWAYS_ASSERT(nComps == vec3d_nEntries);
   PMT_ALWAYS_ASSERT(numMPs >= p_MPs->getCount());
   PMT_ALWAYS_ASSERT(numMPs >= p_MPs->getMaxAppID());
-  kkViewHostU<const double**> mpPositionsIn_h(mpPositionsIn,numComps,numMPs);
+  kkViewHostU<const double**> mpPositionsIn_h(mpPositionsIn,nComps,numMPs);
 
   if (p_MPs->rebuildOngoing()) {
     p_MPs->setRebuildMPSlice<polyMPO::MPF_Cur_Pos_XYZ>(mpPositionsIn_h);
@@ -259,12 +259,12 @@ void polympo_setMPPositions_f(MPMesh_ptr p_mpmesh,
 }
 
 void polympo_getMPPositions_f(MPMesh_ptr p_mpmesh,
-                            const int numComps,
+                            const int nComps,
                             const int numMPs,
                             double* mpPositionsHost){
   checkMPMeshValid(p_mpmesh);
   auto p_MPs = ((polyMPO::MPMesh*)p_mpmesh)->p_MPs;
-  PMT_ALWAYS_ASSERT(numComps == vec3d_nEntries);
+  PMT_ALWAYS_ASSERT(nComps == vec3d_nEntries);
   PMT_ALWAYS_ASSERT(numMPs >= p_MPs->getCount());
   PMT_ALWAYS_ASSERT(numMPs >= p_MPs->getMaxAppID());
 
@@ -279,25 +279,25 @@ void polympo_getMPPositions_f(MPMesh_ptr p_mpmesh,
     }
   };
   p_MPs->parallel_for(getPos, "getMPPositions");
-  kkDbl2dViewHostU arrayHost(mpPositionsHost,numComps,numMPs);
+  kkDbl2dViewHostU arrayHost(mpPositionsHost,nComps,numMPs);
   Kokkos::deep_copy(arrayHost, mpPositionsCopy);
 }
 
 void polympo_setMPRotLatLon_f(MPMesh_ptr p_mpmesh,
-                         const int numComps,
+                         const int nComps,
                          const int numMPs,
                          const double* mpRotLatLonIn){
   static int callCount = 0;
   PMT_ALWAYS_ASSERT(callCount == 0);
   checkMPMeshValid(p_mpmesh);
   auto p_MPs = ((polyMPO::MPMesh*)p_mpmesh)->p_MPs;
-  PMT_ALWAYS_ASSERT(numComps == vec2d_nEntries);
+  PMT_ALWAYS_ASSERT(nComps == vec2d_nEntries);
   PMT_ALWAYS_ASSERT(numMPs >= p_MPs->getCount());
   PMT_ALWAYS_ASSERT(numMPs >= p_MPs->getMaxAppID());
 
   auto mpRotLatLon = p_MPs->getData<polyMPO::MPF_Cur_Pos_Rot_Lat_Lon>();
   auto mpAppID = p_MPs->getData<polyMPO::MPF_MP_APP_ID>();
-  kkViewHostU<const double**> mpRotLatLonIn_h(mpRotLatLonIn,numComps,numMPs);
+  kkViewHostU<const double**> mpRotLatLonIn_h(mpRotLatLonIn,nComps,numMPs);
   Kokkos::View<double**> mpRotLatLonIn_d("mpRotLatLonDevice",vec2d_nEntries,numMPs);
   Kokkos::deep_copy(mpRotLatLonIn_d, mpRotLatLonIn_h);
   auto setPos = PS_LAMBDA(const int& elm, const int& mp, const int& mask){
@@ -311,12 +311,12 @@ void polympo_setMPRotLatLon_f(MPMesh_ptr p_mpmesh,
 }
 
 void polympo_getMPRotLatLon_f(MPMesh_ptr p_mpmesh,
-                         const int numComps,
+                         const int nComps,
                          const int numMPs,
                          double* mpRotLatLonHost){
   checkMPMeshValid(p_mpmesh);
   auto p_MPs = ((polyMPO::MPMesh*)p_mpmesh)->p_MPs;
-  PMT_ALWAYS_ASSERT(numComps == vec2d_nEntries);
+  PMT_ALWAYS_ASSERT(nComps == vec2d_nEntries);
   PMT_ALWAYS_ASSERT(numMPs >= p_MPs->getCount());
   PMT_ALWAYS_ASSERT(numMPs >= p_MPs->getMaxAppID());
 
@@ -330,20 +330,20 @@ void polympo_getMPRotLatLon_f(MPMesh_ptr p_mpmesh,
     }
   };
   p_MPs->parallel_for(getPos, "getMPRotLatLon");
-  kkDbl2dViewHostU arrayHost(mpRotLatLonHost,numComps,numMPs);
+  kkDbl2dViewHostU arrayHost(mpRotLatLonHost,nComps,numMPs);
   Kokkos::deep_copy(arrayHost, mpRotLatLonCopy);
 }
 
-void polympo_setMPVel_f(MPMesh_ptr p_mpmesh, const int numComps, const int numMPs, const double* mpVelIn) {
+void polympo_setMPVel_f(MPMesh_ptr p_mpmesh, const int nComps, const int numMPs, const double* mpVelIn) {
   checkMPMeshValid(p_mpmesh);
   auto p_MPs = ((polyMPO::MPMesh*)p_mpmesh)->p_MPs;
-  PMT_ALWAYS_ASSERT(numComps == vec2d_nEntries);
+  PMT_ALWAYS_ASSERT(nComps == vec2d_nEntries);
   PMT_ALWAYS_ASSERT(numMPs >= p_MPs->getCount());
   PMT_ALWAYS_ASSERT(numMPs >= p_MPs->getMaxAppID());
 
   auto mpVel = p_MPs->getData<polyMPO::MPF_Vel>();
   auto mpAppID = p_MPs->getData<polyMPO::MPF_MP_APP_ID>();
-  kkViewHostU<const double**> mpVelIn_h(mpVelIn,numComps,numMPs);
+  kkViewHostU<const double**> mpVelIn_h(mpVelIn,nComps,numMPs);
   Kokkos::View<double**> mpVelIn_d("mpVelDevice",vec2d_nEntries,numMPs);
   Kokkos::deep_copy(mpVelIn_d, mpVelIn_h);
   auto setMPVel = PS_LAMBDA(const int& elm, const int& mp, const int& mask){
@@ -355,10 +355,10 @@ void polympo_setMPVel_f(MPMesh_ptr p_mpmesh, const int numComps, const int numMP
   p_MPs->parallel_for(setMPVel, "setMPVel");
 }
 
-void polympo_getMPVel_f(MPMesh_ptr p_mpmesh, const int numComps, const int numMPs, double* mpVelHost) {
+void polympo_getMPVel_f(MPMesh_ptr p_mpmesh, const int nComps, const int numMPs, double* mpVelHost) {
   checkMPMeshValid(p_mpmesh);
   auto p_MPs = ((polyMPO::MPMesh*)p_mpmesh)->p_MPs;
-  PMT_ALWAYS_ASSERT(numComps == vec2d_nEntries);
+  PMT_ALWAYS_ASSERT(nComps == vec2d_nEntries);
   PMT_ALWAYS_ASSERT(numMPs >= p_MPs->getCount());
   PMT_ALWAYS_ASSERT(numMPs >= p_MPs->getMaxAppID());
 
@@ -372,7 +372,7 @@ void polympo_getMPVel_f(MPMesh_ptr p_mpmesh, const int numComps, const int numMP
     }
   };
   p_MPs->parallel_for(getMPVel, "getMPVel");
-  kkDbl2dViewHostU arrayHost(mpVelHost,numComps,numMPs);
+  kkDbl2dViewHostU arrayHost(mpVelHost,nComps,numMPs);
   Kokkos::deep_copy(arrayHost, mpVelCopy);
 }
 

@@ -196,7 +196,8 @@ module polympo
   !> @brief set the velocity MP array from a host array
   !> @warning THIS IS NOT SUPPORTED YET 
   !> @param mpmesh(in/out) MPMesh object
-  !> @param n(in) half length of array
+  !> @param nComps(in) number of components, should always be 2
+  !> @param numMPs(in) number of the MPs
   !> @param array(in) input MP velocity 1D array (numMPs*2)
   !---------------------------------------------------------------------------
   subroutine polympo_setMPVel(mpMesh, nComps, numMPs, array) &
@@ -210,7 +211,8 @@ module polympo
   !> @brief get the velocity MP array from a polympo array
   !> @warning THIS IS NOT SUPPORTED YET 
   !> @param mpmesh(in/out) MPMesh object
-  !> @param n(in) half length of array
+  !> @param nComps(in) number of components, should always be 2
+  !> @param numMPs(in) number of the MPs
   !> @param array(in/out) output MP velocity 1D array (numMPs*2), allocated by user
   !---------------------------------------------------------------------------
   subroutine polympo_getMPVel(mpMesh, nComps, numMPs, array) &

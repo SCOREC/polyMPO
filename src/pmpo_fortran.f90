@@ -194,7 +194,6 @@ module polympo
   end subroutine
   !---------------------------------------------------------------------------
   !> @brief set the velocity MP array from a host array
-  !> @warning THIS IS NOT SUPPORTED YET 
   !> @param mpmesh(in/out) MPMesh object
   !> @param nComps(in) number of components, should always be 2
   !> @param numMPs(in) number of the MPs
@@ -209,7 +208,6 @@ module polympo
   end subroutine
   !---------------------------------------------------------------------------
   !> @brief get the velocity MP array from a polympo array
-  !> @warning THIS IS NOT SUPPORTED YET 
   !> @param mpmesh(in/out) MPMesh object
   !> @param nComps(in) number of components, should always be 2
   !> @param numMPs(in) number of the MPs

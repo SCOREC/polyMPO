@@ -390,7 +390,7 @@ Currently Loaded Modules:
 export root=$PWD
 module load cmake/3.24.3
 module load cray-hdf5
-module load cray-netcdf/4.9.0.1
+module load cray-netcdf/4.9.0.9
 
 function getname() {
   name=$1

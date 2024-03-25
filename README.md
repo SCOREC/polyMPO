@@ -50,7 +50,8 @@ export kk=$root/`getname kokkos`/install   # This is where kokkos will be (or is
 export oh=$root/`getname omegah`/install  # This is where omega_h will be (or is) installed
 export cab=$root/`getname cabana`/install # This is where cabana will be (or is) installed
 export pumipic=$root/`getname pumipic`/install # This is where PumiPIC will be (or is) installed
-export CMAKE_PREFIX_PATH=$engpar:$kk:$kk/lib64/cmake:$oh:$cab:$pumipic:$CMAKE_PREFIX_PATH
+export polyMPO=$root/buildPolyMPO-GPU/install # This is where polyMPO will be (or is) installed
+export CMAKE_PREFIX_PATH=$engpar:$kk:$kk/lib64/cmake:$oh:$cab:$pumipic:$polyMPO:$CMAKE_PREFIX_PATH
 export MPICH_CXX=$root/kokkos/bin/nvcc_wrapper
 ```
 
@@ -160,19 +161,17 @@ Run the build script:
 Create a file named `doConfigPolyMpo-GPU.sh` with the following contents:
 
 ```
-bdir=$PWD/buildPolyMPO-GPU
-cmake -S polyMPO -B $bdir \
+cmake -S polyMPO -B ${polyMPO%%install} \
 -DKokkos_DIR=$kk/lib64/cmake/Kokkos \
 -DCMAKE_CXX_COMPILER=$kk/bin/nvcc_wrapper \
 -DIS_TESTING=off \
--DCMAKE_INSTALL_PREFIX=$bdir/install
+-DCMAKE_INSTALL_PREFIX=$polyMPO
 ```
 
 Create a file named `buildPolyMpo-GPU.sh` with the following contents:
 
 ```
-bdir=$PWD/buildPolyMPO-GPU
-cmake --build $bdir --target install -j4
+cmake --build ${polyMPO%%install} --target install -j4
 ```
 
 Make them executable:
@@ -273,7 +272,8 @@ export kk=$root/`getname kokkos`/install   # This is where kokkos will be (or is
 export oh=$root/`getname omegah`/install  # This is where omega_h will be (or is) installed
 export cab=$root/`getname cabana`/install # This is where cabana will be (or is) installed
 export pumipic=$root/`getname pumipic`/install # This is where PumiPIC will be (or is) installed
-export CMAKE_PREFIX_PATH=$engpar:$kk:$kk/lib64/cmake:$oh:$cab:$pumipic:$CMAKE_PREFIX_PATH
+export polyMPO=$root/buildPolyMPO-CPU/install # This is where polyMPO will be (or is) installed
+export CMAKE_PREFIX_PATH=$engpar:$kk:$kk/lib64/cmake:$oh:$cab:$pumipic:$polyMPO:$CMAKE_PREFIX_PATH
 export MPICH_CXX=g++
 ```
 
@@ -356,20 +356,18 @@ cmake --build ${pumipic%%install} -j 24 --target install
 `doConfigPolyMPO-CPU.sh`
 
 ```
-bdir=$PWD/buildPolyMPO-CPU
-cmake -S polyMPO -B $bdir \
+cmake -S polyMPO -B ${polyMPO%%install} \
 -DCMAKE_BUILD_TYPE=Debug \
 -DKokkos_DIR=$kk/lib64/cmake/Kokkos \
 -DCMAKE_CXX_COMPILER=mpicxx \
 -DIS_TESTING=off \
--DCMAKE_INSTALL_PREFIX=$bdir/install
+-DCMAKE_INSTALL_PREFIX=$polyMPO
 ```
 
 `buildPolyMPO-CPU.sh`
 
 ```
-bdir=$PWD/buildPolyMPO-CPU
-cmake --build $bdir --target install -j4
+cmake --build ${polyMPO%%install} --target install -j4
 ```
 
 [Back To Top](#table-of-contents)
@@ -405,7 +403,8 @@ export kk=$root/`getname kokkos`/install   # This is where kokkos will be (or is
 export oh=$root/`getname omegah`/install  # This is where omega_h will be (or is) installed
 export cab=$root/`getname cabana`/install # This is where cabana will be (or is) installed
 export pumipic=$root/`getname pumipic`/install # This is where PumiPIC will be (or is) installed
-export CMAKE_PREFIX_PATH=$engpar:$kk:$kk/lib64/cmake:$oh:$cab:$pumipic:$CMAKE_PREFIX_PATH
+export polyMPO=$root/buildPolyMPO-GPU/install # This is where polyMPO will be (or is) installed
+export CMAKE_PREFIX_PATH=$engpar:$kk:$kk/lib64/cmake:$oh:$cab:$pumipic:$polyMPO:$CMAKE_PREFIX_PATH
 export MPICH_CXX=$root/kokkos/bin/nvcc_wrapper
 ```
 
@@ -505,19 +504,17 @@ cmake --build ${pumipic%%install} -j 24 --target install
 `doConfigPolyMpo.sh`
 
 ```
-bdir=$PWD/buildPolyMPO-GPU
-cmake -S polyMPO -B $bdir \
+cmake -S polyMPO -B ${polyMPO%%install} \
 -DKokkos_DIR=$kk/lib64/cmake/Kokkos \
 -DCMAKE_CXX_COMPILER=$kk/bin/nvcc_wrapper \
 -DIS_TESTING=off \
--DCMAKE_INSTALL_PREFIX=$bdir/install
+-DCMAKE_INSTALL_PREFIX=$polyMPO
 ```
 
 `buildPolyMpo.sh`
 
 ```
-bdir=$PWD/buildPolyMPO-GPU
-cmake --build $bdir --target install -j4
+cmake --build ${polyMPO%%install} --target install -j4
 ```
 
 ### Running interactively
@@ -566,7 +563,8 @@ export kk=$root/`getname kokkos`/install   # This is where kokkos will be (or is
 export oh=$root/`getname omegah`/install  # This is where omega_h will be (or is) installed
 export cab=$root/`getname cabana`/install # This is where cabana will be (or is) installed
 export pumipic=$root/`getname pumipic`/install # This is where PumiPIC will be (or is) installed
-export CMAKE_PREFIX_PATH=$engpar:$kk:$kk/lib64/cmake:$oh:$cab:$pumipic:$CMAKE_PREFIX_PATH
+export polyMPO=$root/buildPolyMPO-CPU/install # This is where polyMPO will be (or is) installed
+export CMAKE_PREFIX_PATH=$engpar:$kk:$kk/lib64/cmake:$oh:$cab:$pumipic:$polyMPO:$CMAKE_PREFIX_PATH
 export MPICH_CXX=$root/kokkos/bin/nvcc_wrapper
 ```
 
@@ -649,20 +647,18 @@ cmake --build ${pumipic%%install} -j 24 --target install
 `doConfigPolyMPO-CPU.sh`
 
 ```
-bdir=$PWD/buildPolyMPO-CPU
-cmake -S polyMPO -B $bdir \
+cmake -S polyMPO -B ${polyMPO%%install} \
 -DCMAKE_BUILD_TYPE=Debug \
 -DKokkos_DIR=$kk/lib64/cmake/Kokkos \
 -DCMAKE_CXX_COMPILER=mpicxx \
 -DIS_TESTING=off \
--DCMAKE_INSTALL_PREFIX=$bdir/install
+-DCMAKE_INSTALL_PREFIX=$polyMPO
 ```
 
 `buildPolyMPO-CPU.sh`
 
 ```
-bdir=$PWD/buildPolyMPO-CPU
-cmake --build $bdir --target install -j4
+cmake --build ${polyMPO%%install} --target install -j4
 ```
 
 ### Running interactively

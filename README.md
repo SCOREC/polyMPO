@@ -162,10 +162,10 @@ Create a file named `doConfigPolyMpo-GPU.sh` with the following contents:
 
 ```
 cmake -S polyMPO -B ${polyMPO%%install} \
--DKokkos_DIR=$kk/lib64/cmake/Kokkos \
--DCMAKE_CXX_COMPILER=$kk/bin/nvcc_wrapper \
--DIS_TESTING=off \
--DCMAKE_INSTALL_PREFIX=$polyMPO
+  -DKokkos_DIR=$kk/lib64/cmake/Kokkos \
+  -DCMAKE_CXX_COMPILER=$kk/bin/nvcc_wrapper \
+  -DIS_TESTING=off \
+  -DCMAKE_INSTALL_PREFIX=$polyMPO
 ```
 
 Create a file named `buildPolyMpo-GPU.sh` with the following contents:
@@ -357,11 +357,11 @@ cmake --build ${pumipic%%install} -j 24 --target install
 
 ```
 cmake -S polyMPO -B ${polyMPO%%install} \
--DCMAKE_BUILD_TYPE=Debug \
--DKokkos_DIR=$kk/lib64/cmake/Kokkos \
--DCMAKE_CXX_COMPILER=mpicxx \
--DIS_TESTING=off \
--DCMAKE_INSTALL_PREFIX=$polyMPO
+  -DCMAKE_BUILD_TYPE=Debug \
+  -DKokkos_DIR=$kk/lib64/cmake/Kokkos \
+  -DCMAKE_CXX_COMPILER=mpicxx \
+  -DIS_TESTING=off \
+  -DCMAKE_INSTALL_PREFIX=$polyMPO
 ```
 
 `buildPolyMPO-CPU.sh`
@@ -505,10 +505,10 @@ cmake --build ${pumipic%%install} -j 24 --target install
 
 ```
 cmake -S polyMPO -B ${polyMPO%%install} \
--DKokkos_DIR=$kk/lib64/cmake/Kokkos \
--DCMAKE_CXX_COMPILER=$kk/bin/nvcc_wrapper \
--DIS_TESTING=off \
--DCMAKE_INSTALL_PREFIX=$polyMPO
+  -DKokkos_DIR=$kk/lib64/cmake/Kokkos \
+  -DCMAKE_CXX_COMPILER=$kk/bin/nvcc_wrapper \
+  -DIS_TESTING=off \
+  -DCMAKE_INSTALL_PREFIX=$polyMPO
 ```
 
 `buildPolyMpo.sh`
@@ -648,11 +648,11 @@ cmake --build ${pumipic%%install} -j 24 --target install
 
 ```
 cmake -S polyMPO -B ${polyMPO%%install} \
--DCMAKE_BUILD_TYPE=Debug \
--DKokkos_DIR=$kk/lib64/cmake/Kokkos \
--DCMAKE_CXX_COMPILER=mpicxx \
--DIS_TESTING=off \
--DCMAKE_INSTALL_PREFIX=$polyMPO
+  -DCMAKE_BUILD_TYPE=Debug \
+  -DKokkos_DIR=$kk/lib64/cmake/Kokkos \
+  -DCMAKE_CXX_COMPILER=mpicxx \
+  -DIS_TESTING=off \
+  -DCMAKE_INSTALL_PREFIX=$polyMPO
 ```
 
 `buildPolyMPO-CPU.sh`

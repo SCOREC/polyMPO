@@ -42,7 +42,7 @@ polyMPO_export_lib(polyMPO-core "${HEADERS}")
 
 add_library(polyMPO INTERFACE)
 target_link_libraries(polyMPO INTERFACE ${polyMPO_EXPORTED_TARGETS})
-export_target(polyMPO)
+bob_export_target(polyMPO)
 
 ### Fortran inteface ###
 add_library(polympo_fortran pmpo_fortran.f90)
@@ -53,3 +53,4 @@ target_include_directories(polympo_fortran INTERFACE
 set(HEADERS)
 polyMPO_export_lib(polympo_fortran "${HEADERS}")
 
+bob_end_subdir()

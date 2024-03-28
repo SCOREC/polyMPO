@@ -1,8 +1,8 @@
 option(POLYMPO_USE_NETCDF "Enable the use of NetCDF" ON)
 if(POLYMPO_USE_NETCDF)
   find_package(PkgConfig REQUIRED)
-  pkg_check_modules(NetCDF REQUIRED IMPORTED_TARGET netcdf>=4.7.3)
-  pkg_check_modules(NetCDF_Fortran REQUIRED IMPORTED_TARGET netcdf-fortran>=4.5.2)
+  pkg_search_module(NetCDF REQUIRED IMPORTED_TARGET netcdf>=4.7.3 netcdf_parallel>=4.7.3)
+  pkg_search_module(NetCDF_Fortran REQUIRED IMPORTED_TARGET netcdf-fortran>=4.5.2 netcdf-fortran_parallel>=4.5.2)
 endif()
 
 
@@ -25,7 +25,7 @@ target_include_directories(pmpoUtils PRIVATE
 
 #add exe
 function(pmpo_add_exe exename srcname)
-  if(BUILD_TESTING)
+  if(IS_TESTING)
     add_executable(${exename} ${srcname})
   else()
     add_executable(${exename} EXCLUDE_FROM_ALL ${srcname})
@@ -108,3 +108,5 @@ pmpo_add_test(testFortranCreateRebuildMPs ./testFortranCreateRebuildMPs ${TEST_N
 
 pmpo_add_test(test_timing ./timeAssmblyWachspress 1 ${TEST_NC_FILE})
 pmpo_add_test(test_wachspress ./testWachspress ${TEST_NC_FILE})
+
+bob_end_subdir()

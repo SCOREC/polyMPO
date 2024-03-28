@@ -27,12 +27,12 @@ void polympo_getMPCurElmID_f(MPMesh_ptr p_mpmesh, const int numMPs, int* elmIDs)
 void polympo_setMPLatLonRotatedFlag_f(MPMesh_ptr p_mpmesh, const int isRotateFlag);
 
 //MP slices
-void polympo_setMPPositions_f(MPMesh_ptr p_mpmesh, const int numComps, const int numMPs, const double* mpPositionsIn);
-void polympo_getMPPositions_f(MPMesh_ptr p_mpmesh, const int numComps, const int numMPs, double* mpPositionsIn);
-void polympo_setMPRotLatLon_f(MPMesh_ptr p_mpmesh, const int numComps, const int numMPs, const double* mpRotLatLonIn);
-void polympo_getMPRotLatLon_f(MPMesh_ptr p_mpmesh, const int numComps, const int numMPs, double* mpRotLatLonHost);
-void polympo_setMPVel_f(MPMesh_ptr p_mpmesh, const int numComps, const int numMPs, const double* uVel, const double* vVel);
-void polympo_getMPVel_f(MPMesh_ptr p_mpmesh, const int numComps, const int numMPs, double* uVel, double* vVel);
+void polympo_setMPPositions_f(MPMesh_ptr p_mpmesh, const int nComps, const int numMPs, const double* mpPositionsIn);
+void polympo_getMPPositions_f(MPMesh_ptr p_mpmesh, const int nComps, const int numMPs, double* mpPositionsIn);
+void polympo_setMPRotLatLon_f(MPMesh_ptr p_mpmesh, const int nComps, const int numMPs, const double* mpRotLatLonIn);
+void polympo_getMPRotLatLon_f(MPMesh_ptr p_mpmesh, const int nComps, const int numMPs, double* mpRotLatLonHost);
+void polympo_setMPVel_f(MPMesh_ptr p_mpmesh, const int nComps, const int numMPs, const double* mpVelIn);
+void polympo_getMPVel_f(MPMesh_ptr p_mpmesh, const int nComps, const int numMPs, double* mpVelHost);
 
 //Mesh info
 void polympo_startMeshFill_f(MPMesh_ptr p_mpmesh);
@@ -56,8 +56,8 @@ void polympo_setMeshVtxCoords_f(MPMesh_ptr p_mpmesh, const int nVertices, const 
 void polympo_getMeshVtxCoords_f(MPMesh_ptr p_mpmesh, const int nVertices, double* xArray, double* yArray, double* zArray);
 void polympo_setMeshVtxRotLat_f(MPMesh_ptr p_mpmesh, const int nVertices, const double* latitude);
 void polympo_getMeshVtxRotLat_f(MPMesh_ptr p_mpmesh, const int nVertices, double* latitude);
-void polympo_setMeshVel_f(MPMesh_ptr p_mpmesh, const int nComps, const int nVertices, const double* velocity);
-void polympo_getMeshVel_f(MPMesh_ptr p_mpmesh, const int nComps, const int nVertices, double* velocity);
+void polympo_setMeshVel_f(MPMesh_ptr p_mpmesh, const int nVertices, const double* uVelocity, const double* vVelocity);
+void polympo_getMeshVel_f(MPMesh_ptr p_mpmesh, const int nVertices, double* uVelocity, double* vVelocity);
 void polympo_setMeshOnSurfVeloIncr_f(MPMesh_ptr p_mpmesh, const int nComps, const int nVertices, const double* array);//vec2d
 void polympo_getMeshOnSurfVeloIncr_f(MPMesh_ptr p_mpmesh, const int nComps, const int nVertices, double* array);//vec2d
 void polympo_setMeshOnSurfDispIncr_f(MPMesh_ptr p_mpmesh, const int nComps, const int nVertices, const double* array);//vec2d

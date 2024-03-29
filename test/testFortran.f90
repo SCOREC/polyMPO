@@ -27,7 +27,7 @@ program main
   real(kind=APP_RKIND) :: test_epsilon = 1e-6
   real(kind=APP_RKIND) :: value1, value2
   integer, dimension(:), pointer :: MPElmID
-  real(kind=APP_RKIND), dimension(:,:), pointer :: MParray
+  real(kind=APP_RKIND), dimension(:), pointer :: MParray1, MParray2
   real(kind=APP_RKIND), dimension(:,:), pointer :: MPPositions
   real(kind=APP_RKIND), dimension(:,:), pointer :: Mesharray
   real(kind=APP_RKIND), dimension(:), pointer :: xArray, yArray, zArray
@@ -53,7 +53,8 @@ program main
   numElms = 10
 
   allocate(Mesharray(numCompsVel,nverts))
-  allocate(MParray(numCompsVel,numMPs))
+  allocate(MParray1(numMPs))
+  allocate(MParray2(numMPs))
   allocate(MPElmID(numMPs))
   allocate(MPPositions(numCompsCoords,numMPs))
   allocate(xArray(nverts))
@@ -71,20 +72,21 @@ program main
   call assert(numElms.eq.nElmsGet,"num. elms mismatch")
 
   ! set MP Fields
-  do i = 1,numCompsVel
-    do j = 1,numMPs 
-        MParray(i,j) = (i-1)*numMPs + j
-    end do
+  do i = 1,numMPs 
+    MParray1(i) = i - numMPs
+    MParray2(i) = numMPs - i
   end do
-  call polympo_setMPVel(mpMesh, numCompsVel, numMPs, c_loc(MParray))
+  call polympo_setMPVel(mpMesh, numCompsVel, numMPs, c_loc(MParray1), c_loc(MParray2))
   
+  write(*,*) MParray2
   ! check MP Fields
-  MParray = -1
-  call polympo_getMPVel(mpMesh, numCompsVel, numMPs, c_loc(MParray))
-  do i = 1,numCompsVel
-    do j = 1,numMPs 
-        call assert((MParray(i,j) .eq. (i-1)*numMPs+j), "Assert MPVel Fail")
-    end do
+  MParray1 = -1
+  MParray2 = -1
+  call polympo_getMPVel(mpMesh, numCompsVel, numMPs, c_loc(MParray1), c_loc(MParray2))
+  write(*,*) MParray2
+  do i = 1,numMPs
+    call assert((MParray1(i) .eq. i-numMPs), "Assert MPVel Array1 Fail")
+    call assert((MParray2(i) .eq. numMPs-i), "Assert MPVel Array2 Fail")
   end do
 
   ! set mesh Fields
@@ -134,7 +136,8 @@ program main
   call assert(all(yArray .eq. value2), "Assert yArray == value2 Failed!")
   call assert(all(zArray .eq. value1 + value2), "Assert zArray == value1 + value2 Failed!")
 
-  deallocate(MParray)
+  deallocate(MParray1)
+  deallocate(MParray2)
   deallocate(Mesharray)
   deallocate(xArray)
   deallocate(yArray)

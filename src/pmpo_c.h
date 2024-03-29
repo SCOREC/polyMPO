@@ -31,8 +31,8 @@ void polympo_setMPPositions_f(MPMesh_ptr p_mpmesh, const int numComps, const int
 void polympo_getMPPositions_f(MPMesh_ptr p_mpmesh, const int numComps, const int numMPs, double* mpPositionsIn);
 void polympo_setMPRotLatLon_f(MPMesh_ptr p_mpmesh, const int numComps, const int numMPs, const double* mpRotLatLonIn);
 void polympo_getMPRotLatLon_f(MPMesh_ptr p_mpmesh, const int numComps, const int numMPs, double* mpRotLatLonHost);
-void polympo_setMPVel_f(MPMesh_ptr p_mpmesh, const int numComps, const int numMPs, const double* mpVelIn);
-void polympo_getMPVel_f(MPMesh_ptr p_mpmesh, const int numComps, const int numMPs, double* mpVelHost);
+void polympo_setMPVel_f(MPMesh_ptr p_mpmesh, const int numComps, const int numMPs, const double* uVel, const double* vVel);
+void polympo_getMPVel_f(MPMesh_ptr p_mpmesh, const int numComps, const int numMPs, double* uVel, double* vVel);
 
 //Mesh info
 void polympo_startMeshFill_f(MPMesh_ptr p_mpmesh);

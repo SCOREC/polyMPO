@@ -40,10 +40,6 @@ target_link_libraries(polyMPO-core PUBLIC pumipic::pumipic)
 
 polyMPO_export_lib(polyMPO-core "${HEADERS}")
 
-add_library(polyMPO INTERFACE)
-target_link_libraries(polyMPO INTERFACE ${polyMPO_EXPORTED_TARGETS})
-bob_export_target(polyMPO)
-
 ### Fortran inteface ###
 add_library(polympo_fortran pmpo_fortran.f90)
 target_link_libraries(polympo_fortran PUBLIC MPI::MPI_Fortran)
@@ -52,5 +48,9 @@ target_include_directories(polympo_fortran INTERFACE
   $<INSTALL_INTERFACE:include>)
 set(HEADERS)
 polyMPO_export_lib(polympo_fortran "${HEADERS}")
+
+add_library(polyMPO INTERFACE)
+target_link_libraries(polyMPO INTERFACE ${polyMPO_EXPORTED_TARGETS})
+bob_export_target(polyMPO)
 
 bob_end_subdir()

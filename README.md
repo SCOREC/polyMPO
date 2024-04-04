@@ -580,7 +580,7 @@ git clone -b 4.1.00 https://github.com/kokkos/kokkos.git
 mkdir -p $kk
 cmake -S kokkos -B ${kk%%install} \
   -DCMAKE_INSTALL_PREFIX=$kk \
-  -DCMAKE_CXX_COMPILER=g++ \
+  -DCMAKE_CXX_COMPILER=CC \
   -DKokkos_ENABLE_SERIAL=ON \
   -DKokkos_ENABLE_OPENMP=off \
   -DKokkos_ENABLE_CUDA=off \
@@ -593,8 +593,8 @@ git clone https://github.com/SCOREC/EnGPar.git
 cmake -S EnGPar -B ${engpar%%install} \
   -DCMAKE_INSTALL_PREFIX=$engpar \
   -DCMAKE_BUILD_TYPE="Release" \
-  -DCMAKE_C_COMPILER="mpicc" \
-  -DCMAKE_CXX_COMPILER="mpicxx" \
+  -DCMAKE_C_COMPILER=cc \
+  -DCMAKE_CXX_COMPILER=CC \
   -DCMAKE_CXX_FLAGS="-std=c++11" \
   -DENABLE_PARMETIS=OFF \
   -DENABLE_PUMI=OFF \
@@ -612,8 +612,8 @@ cmake -S omega_h -B ${oh%%install} \
   -DOmega_h_USE_CUDA=off \
   -DOmega_h_USE_MPI=on  \
   -DBUILD_TESTING=off  \
-  -DCMAKE_C_COMPILER=`which mpicc` \
-  -DCMAKE_CXX_COMPILER=`which mpicxx` \
+  -DCMAKE_C_COMPILER=cc \
+  -DCMAKE_CXX_COMPILER=CC \
   -DKokkos_PREFIX=$kk/lib64/cmake
 cmake --build ${oh%%install} -j 24 --target install
 
@@ -623,7 +623,7 @@ git clone -b 0.6.1 https://github.com/ECP-copa/Cabana.git cabana
 cmake -S cabana -B ${cab%%install} \
   -DCMAKE_INSTALL_PREFIX=$cab \
   -DCMAKE_BUILD_TYPE="Release" \
-  -DCMAKE_CXX_COMPILER=`which mpicxx` \
+  -DCMAKE_CXX_COMPILER=CC \
   -DCabana_ENABLE_TESTING=OFF \
   -DCabana_ENABLE_EXAMPLES=OFF
 cmake --build ${cab%%install} -j 24 --target install
@@ -634,7 +634,7 @@ git clone -b 2.0.3 --recursive https://github.com/SCOREC/pumi-pic.git
 cmake -S pumi-pic -B ${pumipic%%install} \
   -DCMAKE_INSTALL_PREFIX=$pumipic \
   -DCMAKE_BUILD_TYPE="Debug" \
-  -DCMAKE_CXX_COMPILER=mpicxx \
+  -DCMAKE_CXX_COMPILER=CC \
   -DENABLE_CABANA=ON \
   -DTEST_DATA_DIR=$root/pumi-pic/pumipic-data \
   -DOmega_h_PREFIX=$oh \
@@ -650,7 +650,7 @@ cmake --build ${pumipic%%install} -j 24 --target install
 cmake -S polyMPO -B ${polyMPO%%install} \
   -DCMAKE_BUILD_TYPE=Debug \
   -DKokkos_DIR=$kk/lib64/cmake/Kokkos \
-  -DCMAKE_CXX_COMPILER=mpicxx \
+  -DCMAKE_CXX_COMPILER=CC \
   -DIS_TESTING=off \
   -DCMAKE_INSTALL_PREFIX=$polyMPO
 ```

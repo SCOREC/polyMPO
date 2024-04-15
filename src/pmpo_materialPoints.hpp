@@ -75,7 +75,7 @@ const static std::map<MaterialPointSlice, std::pair<int,MeshFieldIndex>>
                            {MPF_Stress,          {6,MeshF_Unsupported}},
                            {MPF_Stress_Div,      {3,MeshF_Unsupported}},
                            {MPF_Shear_Traction,  {3,MeshF_Unsupported}},
-                           {MPF_Constv_Mdl_Param,{12,MeshF_Unsupported}},
+                           {MPF_Constv_Mdl_Param,{12,MeshF_Invalid}},
                            {MPF_MP_APP_ID,       {1,MeshF_Invalid}}};
 
 const static std::vector<std::pair<MaterialPointSlice, MaterialPointSlice>>

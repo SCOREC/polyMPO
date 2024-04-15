@@ -25,6 +25,7 @@ void polympo_finishRebuildMPs_f(MPMesh_ptr p_mpmesh);
 void polympo_setAppIDFunc_f(MPMesh_ptr p_mpmesh, IntVoidFunc getNext, void* appIDs);
 void polympo_getMPCurElmID_f(MPMesh_ptr p_mpmesh, const int numMPs, int* elmIDs);
 void polympo_setMPLatLonRotatedFlag_f(MPMesh_ptr p_mpmesh, const int isRotateFlag);
+void polympo_setMPReconstructionFlag_f(MPMesh_ptr p_mpmesh, const int isReconsFlag);
 
 //MP slices
 void polympo_setMPPositions_f(MPMesh_ptr p_mpmesh, const int nComps, const int numMPs, const double* mpPositionsIn);
@@ -50,6 +51,13 @@ void polympo_getMeshNumElms_f(MPMesh_ptr p_mpmesh, int & numElms);
 void polympo_setMeshNumEdgesPerElm_f(MPMesh_ptr p_mpmesh, const int nCells, const int* array);
 void polympo_setMeshElm2VtxConn_f(MPMesh_ptr p_mpmesh, const int maxEdges, const int nCells, const int* array);
 void polympo_setMeshElm2ElmConn_f(MPMesh_ptr p_mpmesh, const int maxEdges, const int nCells, const int* array);
+void polympo_reconstructMPMass_f(MPMesh_ptr p_mpmesh);
+void polympo_reconstructMPVel_f(MPMesh_ptr p_mpmesh);
+void polympo_reconstructMPRotLatLonIncr_f(MPMesh_ptr p_mpmesh);
+void polympo_reconstructMPStrainRate_f(MPMesh_ptr p_mpmesh);
+void polympo_reconstructMPStress_f(MPMesh_ptr p_mpmesh);
+void polympo_reconstructMPStressDiv_f(MPMesh_ptr p_mpmesh);
+void polympo_reconstructMPShearTracktion_f(MPMesh_ptr p_mpmesh);
 
 //Mesh fields
 void polympo_setMeshVtxCoords_f(MPMesh_ptr p_mpmesh, const int nVertices, const double* xArray, const double* yArray, const double* zArray);

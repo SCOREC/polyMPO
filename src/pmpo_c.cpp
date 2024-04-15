@@ -228,6 +228,11 @@ void polympo_setMPLatLonRotatedFlag_f(MPMesh_ptr p_mpmesh, const int isRotateFla
 
 }
 
+void polympo_setMPReconstructionFlag_f(MPMesh_ptr p_mpmesh, const int isReconsFlag){
+  //TODO set the reconstruction flag 
+  PMT_ALWAYS_ASSERT(0);
+}
+
 void polympo_setMPPositions_f(MPMesh_ptr p_mpmesh,
                             const int nComps,
                             const int numMPs,
@@ -515,6 +520,36 @@ void polympo_setMeshElm2ElmConn_f(MPMesh_ptr p_mpmesh, const int maxEdges, const
     }  
   });
 }
+
+//TODO skeleton of reconstruction functions
+void polympo_reconstructMPMass_f(MPMesh_ptr p_mpmesh){
+  PMT_ALWAYS_ASSERT(0);
+}
+
+void polympo_reconstructMPVel_f(MPMesh_ptr p_mpmesh){
+  PMT_ALWAYS_ASSERT(0);
+}
+
+void polympo_reconstructMPRotLatLonIncr_f(MPMesh_ptr p_mpmesh){
+  PMT_ALWAYS_ASSERT(0);
+}
+
+void polympo_reconstructMPStrainRate_f(MPMesh_ptr p_mpmesh){
+  PMT_ALWAYS_ASSERT(0);
+}
+
+void polympo_reconstructMPStress_f(MPMesh_ptr p_mpmesh){
+  PMT_ALWAYS_ASSERT(0);
+}
+
+void polympo_reconstructMPStressDiv_f(MPMesh_ptr p_mpmesh){
+  PMT_ALWAYS_ASSERT(0);
+}
+
+void polympo_reconstructMPShearTracktion_f(MPMesh_ptr p_mpmesh){
+  PMT_ALWAYS_ASSERT(0);
+}
+
 
 void polympo_setMeshVtxCoords_f(MPMesh_ptr p_mpmesh, const int nVertices, const double* xArray, const double* yArray, const double* zArray){
   //chech validity

@@ -134,6 +134,18 @@ module polympo
     integer(c_int), value :: isRotateFlag
   end subroutine
   !---------------------------------------------------------------------------
+  !> @brief enable the Reconstruction of MP fields
+  !> @param mpmesh(in/out) MPMesh object
+  !> @param isReconsFlag(in) Flag>0 = True, otherwise False.
+  !> TODO: not support yet!
+  !---------------------------------------------------------------------------
+  subroutine polympo_setMPReconstructionFlag(mpMesh, isReconsFlag) &
+             bind(C, NAME='polympo_setMPReconstructionFlag_f')
+    use :: iso_c_binding
+    type(c_ptr), value :: mpMesh
+    integer(c_int), value :: isReconsFlag
+  end subroutine
+  !---------------------------------------------------------------------------
   !> @brief set the MP positions array from a host array
   !> @param mpmesh(in/out) MPMesh object
   !> @param nComps(in) number of components, should always be 3
@@ -391,6 +403,77 @@ module polympo
     type(c_ptr), value :: mpMesh
     integer(c_int), value :: maxEdges, nCells
     type(c_ptr), intent(in), value :: cellsOnCell
+  end subroutine
+  !---------------------------------------------------------------------------
+  !> @brief start the reconstruction of MP Mass Field
+  !> @param mpmesh(in/out) MPMesh object
+  !> TODO not support yet!
+  !---------------------------------------------------------------------------
+  subroutine polympo_reconstructMPMass(mpMesh) &
+             bind(C, NAME='polympo_reconstructMPMass_f')
+    use :: iso_c_binding
+    type(c_ptr), value :: mpMesh
+  end subroutine
+  !---------------------------------------------------------------------------
+  !> @brief start the reconstruction of MP Velocity Field
+  !> @param mpmesh(in/out) MPMesh object
+  !> TODO not support yet!
+  !---------------------------------------------------------------------------
+  subroutine polympo_reconstructMPVel(mpMesh) &
+             bind(C, NAME='polympo_reconstructMPVel_f')
+    use :: iso_c_binding
+    type(c_ptr), value :: mpMesh
+  end subroutine
+  !---------------------------------------------------------------------------
+  !> @brief start the reconstruction of MP Rotational Latitude Longitude
+  !>        Increment Field
+  !> @param mpmesh(in/out) MPMesh object
+  !> TODO not support yet!
+  !---------------------------------------------------------------------------
+  subroutine polympo_reconstructMPRotLatLonIncr(mpMesh) &
+             bind(C, NAME='polympo_reconstructMPRotLatLonIncr_f')
+    use :: iso_c_binding
+    type(c_ptr), value :: mpMesh
+  end subroutine
+  !---------------------------------------------------------------------------
+  !> @brief start the reconstruction of MP Strain Rate Field
+  !> @param mpmesh(in/out) MPMesh object
+  !> TODO not support yet!
+  !---------------------------------------------------------------------------
+  subroutine polympo_reconstructMPStrainRate(mpMesh) &
+             bind(C, NAME='polympo_reconstructMPStrainRate_f')
+    use :: iso_c_binding
+    type(c_ptr), value :: mpMesh
+  end subroutine
+  !---------------------------------------------------------------------------
+  !> @brief start the reconstruction of MP Stress Field
+  !> @param mpmesh(in/out) MPMesh object
+  !> TODO not support yet!
+  !---------------------------------------------------------------------------
+  subroutine polympo_reconstructMPStress(mpMesh) &
+             bind(C, NAME='polympo_reconstructMPStress_f')
+    use :: iso_c_binding
+    type(c_ptr), value :: mpMesh
+  end subroutine
+  !---------------------------------------------------------------------------
+  !> @brief start the reconstruction of MP Stress Divergence Field
+  !> @param mpmesh(in/out) MPMesh object
+  !> TODO not support yet!
+  !---------------------------------------------------------------------------
+  subroutine polympo_reconstructMPStressDiv(mpMesh) &
+             bind(C, NAME='polympo_reconstructMPStressDiv_f')
+    use :: iso_c_binding
+    type(c_ptr), value :: mpMesh
+  end subroutine
+  !---------------------------------------------------------------------------
+  !> @brief start the reconstruction of MP Shear Tracktion Field
+  !> @param mpmesh(in/out) MPMesh object
+  !> TODO not support yet!
+  !---------------------------------------------------------------------------
+  subroutine polympo_reconstructMPShearTracktion(mpMesh) &
+             bind(C, NAME='polympo_reconstructMPShearTracktion_f')
+    use :: iso_c_binding
+    type(c_ptr), value :: mpMesh
   end subroutine
   !---------------------------------------------------------------------------
   !> @brief set the polympo mesh vertices coordinates

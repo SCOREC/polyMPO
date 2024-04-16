@@ -523,31 +523,45 @@ void polympo_setMeshElm2ElmConn_f(MPMesh_ptr p_mpmesh, const int maxEdges, const
 
 //TODO skeleton of reconstruction functions
 void polympo_reconstructMPMass_f(MPMesh_ptr p_mpmesh){
-  PMT_ALWAYS_ASSERT(0);
+  checkMPMeshValid(p_mpmesh);
+  auto p_MPs = ((polyMPO::MPMesh*)p_mpmesh)->p_MPs;
+  p_MPs->setReconstructSlice(polyMPO::MPF_Mass);
 }
 
 void polympo_reconstructMPVel_f(MPMesh_ptr p_mpmesh){
-  PMT_ALWAYS_ASSERT(0);
+  checkMPMeshValid(p_mpmesh);
+  auto p_MPs = ((polyMPO::MPMesh*)p_mpmesh)->p_MPs;
+  p_MPs->setReconstructSlice(polyMPO::MPF_Vel);
 }
 
 void polympo_reconstructMPRotLatLonIncr_f(MPMesh_ptr p_mpmesh){
-  PMT_ALWAYS_ASSERT(0);
+  checkMPMeshValid(p_mpmesh);
+  auto p_MPs = ((polyMPO::MPMesh*)p_mpmesh)->p_MPs;
+  p_MPs->setReconstructSlice(polyMPO::MPF_Rot_Lat_Lon_Incr);
 }
 
 void polympo_reconstructMPStrainRate_f(MPMesh_ptr p_mpmesh){
-  PMT_ALWAYS_ASSERT(0);
+  checkMPMeshValid(p_mpmesh);
+  auto p_MPs = ((polyMPO::MPMesh*)p_mpmesh)->p_MPs;
+  p_MPs->setReconstructSlice(polyMPO::MPF_Strain_Rate);
 }
 
 void polympo_reconstructMPStress_f(MPMesh_ptr p_mpmesh){
-  PMT_ALWAYS_ASSERT(0);
+  checkMPMeshValid(p_mpmesh);
+  auto p_MPs = ((polyMPO::MPMesh*)p_mpmesh)->p_MPs;
+  p_MPs->setReconstructSlice(polyMPO::MPF_Stress);
 }
 
 void polympo_reconstructMPStressDiv_f(MPMesh_ptr p_mpmesh){
-  PMT_ALWAYS_ASSERT(0);
+  checkMPMeshValid(p_mpmesh);
+  auto p_MPs = ((polyMPO::MPMesh*)p_mpmesh)->p_MPs;
+  p_MPs->setReconstructSlice(polyMPO::MPF_Stress_Div);
 }
 
 void polympo_reconstructMPShearTracktion_f(MPMesh_ptr p_mpmesh){
-  PMT_ALWAYS_ASSERT(0);
+  checkMPMeshValid(p_mpmesh);
+  auto p_MPs = ((polyMPO::MPMesh*)p_mpmesh)->p_MPs;
+  p_MPs->setReconstructSlice(polyMPO::MPF_Shear_Traction);
 }
 
 

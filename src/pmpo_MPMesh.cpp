@@ -2,6 +2,7 @@
 #include "pmpo_utils.hpp"
 #include "pmpo_MPMesh.hpp"
 #include "pmpo_wachspressBasis.hpp"
+#include "pmpo_assembly.hpp"
 
 namespace polyMPO{
 
@@ -256,6 +257,13 @@ void MPMesh::T2LTracking(Vec2dView dx){
         }
     }; 
     p_MPs->parallel_for(T2LCalc,"T2lTrackingCalc");
+}
+
+void MPMesh::reconstructSlices() {
+    for (auto const& [index, isReconstruct] : p_MPs->getReconstructSlices()) {
+        if (isReconstruct) assembly<MPF_Vel,MeshF_Vel>(*this,false,false);
+    }
+    p_MPs->getReconstructSlices().clear();
 }
 
 void MPMesh::push(){

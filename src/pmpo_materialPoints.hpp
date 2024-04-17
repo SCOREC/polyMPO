@@ -145,6 +145,7 @@ class MaterialPoints {
     setRebuildMPSlice(mpSliceData mpSliceIn);
 
     void setReconstructSlice(MaterialPointSlice mpSliceIndex);
+    std::map<MaterialPointSlice, bool> getReconstructSlices() { return reconstructSlice; }
 
     void setAppIDFunc(IntFunc getAppIDIn);
     int getNextAppID();

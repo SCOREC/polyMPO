@@ -260,10 +260,16 @@ void MPMesh::T2LTracking(Vec2dView dx){
 }
 
 void MPMesh::reconstructSlices() {
-    for (auto const& [index, isReconstruct] : p_MPs->getReconstructSlices()) {
-        if (isReconstruct) assembly<MPF_Vel,MeshF_Vel>(*this,false,false);
+    auto slicesToReconstruct = p_MPs->getReconstructSlices();
+    for (auto const& [index, isReconstruct] : slicesToReconstruct) {
+        if (!isReconstruct) continue;
+        if (index == MPF_Vel) assembly<MPF_Vel, MeshF_Vel>(*this,false,false);
+        else if (index == MPF_Rot_Lat_Lon_Incr) assembly<MPF_Rot_Lat_Lon_Incr, MeshF_RotLatLonIncr>(*this,false,false);
+        
+        fprintf(stderr,"Mesh Field Invalid/Unsupported!\n");
+        exit(1);
     }
-    p_MPs->getReconstructSlices().clear();
+    slicesToReconstruct.clear();
 }
 
 void MPMesh::push(){
@@ -272,6 +278,7 @@ void MPMesh::push(){
   p_MPs->updateRotLatLonAndXYZ2Tgt(p_mesh->getSphereRadius()); // set Tgt_XYZ
 
   CVTTrackingElmCenterBased(); // move to Tgt_XYZ
+  reconstructSlices();
 
   p_MPs->updateMPSlice<MPF_Cur_Pos_XYZ, MPF_Tgt_Pos_XYZ>(); // Tgt_XYZ becomes Cur_XYZ
   p_MPs->updateMPSlice<MPF_Cur_Pos_Rot_Lat_Lon, MPF_Tgt_Pos_Rot_Lat_Lon>(); // Tgt becomes Cur

@@ -50,7 +50,7 @@ void assembly(MPMesh& mpMesh, bool basisWeightFlag, bool massWeightFlag){
     auto basis = p_MPs->getData<MPF_Basis_Vals>();
     //if(!basisWeightFlag){
     //}
-    const int numEntries = mpSlice2MeshFieldIndex.at(mpfIndex).first;
+    const int numEntries = mpSliceToMeshFieldSize.at(mpfIndex);
     constexpr MeshFieldIndex meshFieldIndex = mpSliceToMeshFieldIndex[mpfIndex];
     auto meshField = p_mesh->getMeshField<meshFieldIndex>(); 
     //auto meshField = p_mesh->getMeshField<Mesh_Field_Cur_Pos_XYZ>(); 

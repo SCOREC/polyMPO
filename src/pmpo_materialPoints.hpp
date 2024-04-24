@@ -57,26 +57,26 @@ enum Operating_Mode{
   MP_DEBUG
 };
 
-const static std::map<MaterialPointSlice, std::pair<int,MeshFieldIndex>> 
-      mpSlice2MeshFieldIndex = {{MPF_Status,     {1,MeshF_Invalid}},
-                           {MPF_Cur_Elm_ID,      {0,MeshF_Invalid}},
-                           {MPF_Tgt_Elm_ID,      {0,MeshF_Invalid}},
-                           {MPF_Cur_Pos_Rot_Lat_Lon, {2,MeshF_Invalid}},
-                           {MPF_Tgt_Pos_Rot_Lat_Lon, {2,MeshF_Invalid}},
-                           {MPF_Cur_Pos_XYZ,     {3,MeshF_Invalid}},
-                           {MPF_Tgt_Pos_XYZ,     {3,MeshF_Invalid}},
-                           {MPF_Flag_Basis_Vals, {1,MeshF_Invalid}},
-                           {MPF_Basis_Vals,      {maxVtxsPerElm,MeshF_Invalid}},
-                           {MPF_Basis_Grad_Vals, {maxVtxsPerElm*2,MeshF_Invalid}},
-                           {MPF_Mass,            {1,MeshF_Unsupported}},
-                           {MPF_Vel,             {2,MeshF_Vel}},
-                           {MPF_Rot_Lat_Lon_Incr,{2,MeshF_RotLatLonIncr}},
-                           {MPF_Strain_Rate,     {6,MeshF_Unsupported}},
-                           {MPF_Stress,          {6,MeshF_Unsupported}},
-                           {MPF_Stress_Div,      {3,MeshF_Unsupported}},
-                           {MPF_Shear_Traction,  {3,MeshF_Unsupported}},
-                           {MPF_Constv_Mdl_Param,{12,MeshF_Invalid}},
-                           {MPF_MP_APP_ID,       {1,MeshF_Invalid}}};
+const static std::map<MaterialPointSlice, int> 
+      mpSliceToMeshFieldSize = {{MPF_Status,           1},
+                           {MPF_Cur_Elm_ID,           0},
+                           {MPF_Tgt_Elm_ID,           0},
+                           {MPF_Cur_Pos_Rot_Lat_Lon,  2},
+                           {MPF_Tgt_Pos_Rot_Lat_Lon,  2},
+                           {MPF_Cur_Pos_XYZ,          3},
+                           {MPF_Tgt_Pos_XYZ,          3},
+                           {MPF_Flag_Basis_Vals,      1},
+                           {MPF_Basis_Vals,           maxVtxsPerElm},
+                           {MPF_Basis_Grad_Vals,      maxVtxsPerElm*2},
+                           {MPF_Mass,                 1},
+                           {MPF_Vel,                  2},
+                           {MPF_Rot_Lat_Lon_Incr,     2},
+                           {MPF_Strain_Rate,          6},
+                           {MPF_Stress,               6},
+                           {MPF_Stress_Div,           3},
+                           {MPF_Shear_Traction,       3},
+                           {MPF_Constv_Mdl_Param,     12},
+                           {MPF_MP_APP_ID,            1}};
 
 static constexpr auto mpSliceToMeshFieldIndex{[]() constexpr{
   std::array<MeshFieldIndex, 19> result{};
@@ -210,8 +210,8 @@ class MaterialPoints {
     void updateMPSlice(){
       auto curData = MPs->get<mpfIndexCur>();
       auto tgtData = MPs->get<mpfIndexTgt>();
-      const int numEntriesCur = mpSlice2MeshFieldIndex.at(mpfIndexCur).first;
-      const int numEntriesTgt = mpSlice2MeshFieldIndex.at(mpfIndexTgt).first;
+      const int numEntriesCur = mpSliceToMeshFieldSize.at(mpfIndexCur);
+      const int numEntriesTgt = mpSliceToMeshFieldSize.at(mpfIndexTgt);
       PMT_ALWAYS_ASSERT(numEntriesCur == numEntriesTgt);
       
       auto swap = PS_LAMBDA(const int&, const int& mp, const int& mask) {
@@ -300,7 +300,7 @@ class MaterialPoints {
 template <MaterialPointSlice index>
 void MaterialPoints::fillData(double value){
   auto mpData = getData<index>();
-  const int numEntries = mpSlice2MeshFieldIndex.at(index).first;
+  const int numEntries = mpSliceToMeshFieldSize.at(index);
   auto setValue = PS_LAMBDA(const int&, const int& mp, const int& mask){
     if(mask) { //if material point is 'active'/'enabled'
       for(int i=0; i<numEntries; i++){

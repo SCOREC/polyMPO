@@ -78,6 +78,30 @@ const static std::map<MaterialPointSlice, std::pair<int,MeshFieldIndex>>
                            {MPF_Constv_Mdl_Param,{12,MeshF_Invalid}},
                            {MPF_MP_APP_ID,       {1,MeshF_Invalid}}};
 
+static constexpr auto mpSliceToMeshFieldIndex{[]() constexpr{
+  std::array<MeshFieldIndex, 19> result{};
+  result[MPF_Status]              = MeshF_Invalid;
+  result[MPF_Cur_Elm_ID]          = MeshF_Invalid;
+  result[MPF_Tgt_Elm_ID]          = MeshF_Invalid;
+  result[MPF_Cur_Pos_Rot_Lat_Lon] = MeshF_Invalid;
+  result[MPF_Tgt_Pos_Rot_Lat_Lon] = MeshF_Invalid;
+  result[MPF_Cur_Pos_XYZ]         = MeshF_Invalid;
+  result[MPF_Tgt_Pos_XYZ]         = MeshF_Invalid;
+  result[MPF_Flag_Basis_Vals]     = MeshF_Invalid;
+  result[MPF_Basis_Vals]          = MeshF_Invalid;
+  result[MPF_Basis_Grad_Vals]     = MeshF_Invalid;
+  result[MPF_Mass]                = MeshF_Unsupported;
+  result[MPF_Vel]                 = MeshF_Vel;
+  result[MPF_Rot_Lat_Lon_Incr]    = MeshF_RotLatLonIncr;
+  result[MPF_Strain_Rate]         = MeshF_Unsupported;
+  result[MPF_Stress]              = MeshF_Unsupported;
+  result[MPF_Stress_Div]          = MeshF_Unsupported;
+  result[MPF_Shear_Traction]      = MeshF_Unsupported;
+  result[MPF_Constv_Mdl_Param]    = MeshF_Invalid;
+  result[MPF_MP_APP_ID]           = MeshF_Invalid;
+  return result;
+}()};
+
 const static std::vector<std::pair<MaterialPointSlice, MaterialPointSlice>>
         mpSliceSwap = {{MPF_Cur_Elm_ID, MPF_Tgt_Elm_ID},
                        {MPF_Cur_Pos_Rot_Lat_Lon, MPF_Tgt_Pos_Rot_Lat_Lon},

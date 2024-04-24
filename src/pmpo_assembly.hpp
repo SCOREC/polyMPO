@@ -32,7 +32,7 @@ DoubleView assemblyV0(MPMesh& mpMesh){
     return vField;
 }
 
-template <MaterialPointSlice mpfIndex, MeshFieldIndex mfIndex>
+template <MaterialPointSlice mpfIndex>
 void assembly(MPMesh& mpMesh, bool basisWeightFlag, bool massWeightFlag){
     if(basisWeightFlag || massWeightFlag) {
       std::cerr << "WARNING: basis and mass weight flags ignored\n";
@@ -51,9 +51,8 @@ void assembly(MPMesh& mpMesh, bool basisWeightFlag, bool massWeightFlag){
     //if(!basisWeightFlag){
     //}
     const int numEntries = mpSlice2MeshFieldIndex.at(mpfIndex).first;
-    const MeshFieldIndex meshFieldIndex = mpSlice2MeshFieldIndex.at(mpfIndex).second;
-    PMT_ALWAYS_ASSERT(meshFieldIndex == mfIndex);
-    auto meshField = p_mesh->getMeshField<mfIndex>(); 
+    constexpr MeshFieldIndex meshFieldIndex = mpSliceToMeshFieldIndex[mpfIndex];
+    auto meshField = p_mesh->getMeshField<meshFieldIndex>(); 
     //auto meshField = p_mesh->getMeshField<Mesh_Field_Cur_Pos_XYZ>(); 
     auto assemble = PS_LAMBDA(const int& elm, const int& mp, const int& mask) {
         if(mask) { //if material point is 'active'/'enabled'

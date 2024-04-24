@@ -263,8 +263,8 @@ void MPMesh::reconstructSlices() {
     auto slicesToReconstruct = p_MPs->getReconstructSlices();
     for (auto const& [index, isReconstruct] : slicesToReconstruct) {
         if (!isReconstruct) continue;
-        if (index == MPF_Vel) assembly<MPF_Vel, MeshF_Vel>(*this,false,false);
-        else if (index == MPF_Rot_Lat_Lon_Incr) assembly<MPF_Rot_Lat_Lon_Incr, MeshF_RotLatLonIncr>(*this,false,false);
+        if (index == MPF_Vel) assembly<MPF_Vel>(*this,false,false);
+        else if (index == MPF_Rot_Lat_Lon_Incr) assembly<MPF_Rot_Lat_Lon_Incr>(*this,false,false);
         
         fprintf(stderr,"Mesh Field Invalid/Unsupported!\n");
         exit(1);

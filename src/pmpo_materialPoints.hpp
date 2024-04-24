@@ -58,7 +58,7 @@ enum Operating_Mode{
 };
 
 const static std::map<MaterialPointSlice, int> 
-      mpSliceToMeshFieldSize = {{MPF_Status,           1},
+      mpSliceToMeshFieldSize = {{MPF_Status,          1},
                            {MPF_Cur_Elm_ID,           0},
                            {MPF_Tgt_Elm_ID,           0},
                            {MPF_Cur_Pos_Rot_Lat_Lon,  2},

@@ -553,11 +553,11 @@ module polympo
   !> @param isReconsOption(in) 1 = True, otherwise False.
   !> TODO: not support yet!
   !---------------------------------------------------------------------------
-  subroutine polympo_setReconstructionOption(mpMesh, isReconsOption) &
-             bind(C, NAME='polympo_setReconstructionFlag_f')
+  subroutine polympo_setReconstructionOption(mpMesh, reconsOption) &
+             bind(C, NAME='polympo_setReconstructionOption_f')
     use :: iso_c_binding
     type(c_ptr), value :: mpMesh
-    integer(c_int), value :: isReconsOption
+    integer(c_int), value :: reconsOption
   end subroutine
   !---------------------------------------------------------------------------
   !> @brief start the reconstruction of MP Mass to Mesh Vertices

@@ -28,6 +28,14 @@ class MPMesh{
     void reconstructSlices();
     void push();
 
+    DoubleView assemblyV0();
+    template <MaterialPointSlice index>
+    DoubleView wtScaAssembly();
+    template <MaterialPointSlice index>
+    Vec2dView wtVec2Assembly();
+    template <MaterialPointSlice mpfIndex>
+    void assembly(bool basisWeightFlag, bool massWeightFlag);
+
     void printVTP_mesh(int printVTPIndex);
 };
 

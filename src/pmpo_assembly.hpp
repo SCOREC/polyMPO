@@ -1,18 +1,15 @@
 #ifndef POLYMPO_ASSEMBLY_H
 #define POLYMPO_ASSEMBLY_H
 
-#include "pmpo_MPMesh.hpp"
 #include "pmpo_wachspressBasis.hpp"
 
 namespace polyMPO{
 
-DoubleView assemblyV0(MPMesh& mpMesh){
-    auto p_mesh = mpMesh.p_mesh;
+DoubleView MPMesh::assemblyV0(){
     int numVtxs = p_mesh->getNumVertices();
     auto elm2VtxConn = p_mesh->getElm2VtxConn();
     
     DoubleView vField("vField2",numVtxs);
-    auto p_MPs = mpMesh.p_MPs;
     auto mpPositions = p_MPs->getData<MPF_Cur_Pos_XYZ>(); //get the array of MP coordinates/positions
     auto assemble = PS_LAMBDA(const int& elm, const int& mp, const int& mask) {
     //for elm in elementsInMesh { //pseudo code - the 'parallel_for' handles this
@@ -33,14 +30,12 @@ DoubleView assemblyV0(MPMesh& mpMesh){
 }
 
 template <MaterialPointSlice mpfIndex>
-void assembly(MPMesh& mpMesh, bool basisWeightFlag, bool massWeightFlag){
+void MPMesh::assembly(bool basisWeightFlag, bool massWeightFlag){
     if(basisWeightFlag || massWeightFlag) {
       std::cerr << "WARNING: basis and mass weight flags ignored\n";
     }
-    auto p_mesh = mpMesh.p_mesh;
     auto elm2VtxConn = p_mesh->getElm2VtxConn();
    
-    auto p_MPs = mpMesh.p_MPs;
     auto mpData = p_MPs->getData<mpfIndex>();
     auto massWeight = p_MPs->getData<MPF_Mass>();
     //TODO:massWeight is not used in the loop
@@ -73,12 +68,10 @@ void assembly(MPMesh& mpMesh, bool basisWeightFlag, bool massWeightFlag){
 
 // (HDT) weighted assembly of scalar field
 template <MaterialPointSlice index>
-DoubleView wtScaAssembly(MPMesh& mpMesh){
-    auto p_mesh = mpMesh.p_mesh;
+DoubleView MPMesh::wtScaAssembly(){
     auto vtxCoords = p_mesh->getMeshField<polyMPO::MeshF_VtxCoords>();
     int numVtxs = p_mesh->getNumVertices(); // total number of vertices of the mesh
     auto elm2VtxConn = p_mesh->getElm2VtxConn();
-    auto p_MPs = mpMesh.p_MPs;
     auto mpPositions = p_MPs->getData<MPF_Cur_Pos_XYZ>();
     
     DoubleView vField("wtScaField", numVtxs); // Kokkos array of double type, size = numVtxs
@@ -121,12 +114,10 @@ DoubleView wtScaAssembly(MPMesh& mpMesh){
 
 // (HDT) weighted assembly of vector2 field (not weighted by mass/volume)
 template <MaterialPointSlice index>
-Vec2dView wtVec2Assembly(MPMesh& mpMesh){
-    auto p_mesh = mpMesh.p_mesh;
+Vec2dView MPMesh::wtVec2Assembly(){
     auto vtxCoords = p_mesh->getMeshField<polyMPO::MeshF_VtxCoords>();
     int numVtxs = p_mesh->getNumVertices(); // total number of vertices of the mesh
     auto elm2VtxConn = p_mesh->getElm2VtxConn();
-    auto p_MPs = mpMesh.p_MPs;
     auto mpPositions = p_MPs->getData<MPF_Cur_Pos_XYZ>();
     
     Vec2dView vField("wtVec2Field", numVtxs); // Kokkos array of Vec2d type, size = numVtxs

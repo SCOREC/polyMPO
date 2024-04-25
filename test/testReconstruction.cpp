@@ -21,7 +21,7 @@ int main(int argc, char** argv) {
       PMT_ALWAYS_ASSERT(p_mesh->getNumElements() == 10);
 
       /* run the weighted assembly for Vec2d and scalar vertex fields */
-      auto vtxVec2Field = polyMPO::wtVec2Assembly<MPF_Cur_Pos_XYZ>(mpMesh);
+      auto vtxVec2Field = mpMesh.wtVec2Assembly<MPF_Cur_Pos_XYZ>();
       
       auto nVtxs = p_mesh->getNumVertices();
 

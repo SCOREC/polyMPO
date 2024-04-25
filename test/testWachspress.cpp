@@ -19,7 +19,7 @@ int main(int argc, char** argv) {
         auto mpMesh = initTestMPMesh(mesh,testMPOption);
         
         //test assembly in assembly.hpp
-        polyMPO::assembly<MPF_Vel>(mpMesh,false,false);
+        mpMesh.assembly<MPF_Vel>(false,false);
         interpolateWachspress2DTest(mpMesh);
         interpolateWachspress3DTest(mpMesh,testMeshOption);
     }

@@ -263,18 +263,20 @@ void MPMesh::reconstructSlices() {
     auto slicesToReconstruct = p_MPs->getReconstructSlices();
     for (auto const& [index, isReconstruct] : slicesToReconstruct) {
         if (!isReconstruct) continue;
-        if (index == MPF_Vel) assembly<MPF_Vel, MeshF_Vel>(*this,false,false);
-        else if (index == MPF_Rot_Lat_Lon_Incr) assembly<MPF_Rot_Lat_Lon_Incr, MeshF_RotLatLonIncr>(*this,false,false);
-        
-        fprintf(stderr,"Mesh Field Invalid/Unsupported!\n");
-        exit(1);
+        switch (index) {
+            case MPF_Vel: assembly<MPF_Vel>(*this,false,false); break;
+            case MPF_Rot_Lat_Lon_Incr: assembly<MPF_Rot_Lat_Lon_Incr>(*this,false,false); break;
+            default:
+                fprintf(stderr,"Mesh Field Invalid/Unsupported!\n");
+                exit(1);
+        }
     }
     slicesToReconstruct.clear();
 }
 
 void MPMesh::push(){
   p_mesh->computeRotLatLonIncr();
-  sphericalInterpolation<MeshF_RotLatLonIncr, MPF_Rot_Lat_Lon_Incr>(*this);
+  sphericalInterpolation<MPF_Rot_Lat_Lon_Incr>(*this);
   p_MPs->updateRotLatLonAndXYZ2Tgt(p_mesh->getSphereRadius()); // set Tgt_XYZ
 
   CVTTrackingElmCenterBased(); // move to Tgt_XYZ

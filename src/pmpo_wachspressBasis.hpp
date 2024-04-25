@@ -304,7 +304,7 @@ void getBasisByAreaGblForm_1(Vec2d MP, int numVtxs, Vec2d* vtxCoords, double* ba
 */
 
 // spherical interpolation of values from mesh vertices to MPsi
-template <MeshFieldIndex mfIndex, MaterialPointSlice mpfIndex>
+template <MaterialPointSlice mpfIndex>
 void sphericalInterpolation(MPMesh& mpMesh){
     auto p_mesh = mpMesh.p_mesh;
     auto vtxCoords = p_mesh->getMeshField<polyMPO::MeshF_VtxCoords>();
@@ -317,11 +317,10 @@ void sphericalInterpolation(MPMesh& mpMesh){
     PMT_ALWAYS_ASSERT(radius >0);
     auto mpField = p_MPs->getData<mpfIndex>();
     
-    const int numEntries = mpSlice2MeshFieldIndex.at(mpfIndex).first;
+    const int numEntries = mpSliceToMeshFieldSize.at(mpfIndex);
     //check field correspondence
-    const MeshFieldIndex meshFieldIndex = mpSlice2MeshFieldIndex.at(mpfIndex).second;
-    PMT_ALWAYS_ASSERT(meshFieldIndex == mfIndex);
-    auto meshField = p_mesh->getMeshField<mfIndex>(); 
+    constexpr MeshFieldIndex meshFieldIndex = mpSliceToMeshFieldIndex[mpfIndex];
+    auto meshField = p_mesh->getMeshField<meshFieldIndex>(); 
 
     auto interpolation = PS_LAMBDA(const int& elm, const int& mp, const int& mask) {
         if(mask) { //if material point is 'active'/'enabled'

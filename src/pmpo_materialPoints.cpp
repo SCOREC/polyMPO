@@ -103,8 +103,6 @@ void MaterialPoints::finishRebuild() {
 
 bool MaterialPoints::rebuildOngoing() { return rebuildFields.ongoing; }
 
-void MaterialPoints::setReconstructSlice(MaterialPointSlice mpSliceIndex) { reconstructSlice[mpSliceIndex] = true; }
-
 void MaterialPoints::setAppIDFunc(IntFunc getAppIDIn) { getAppID = getAppIDIn; }
 
 int MaterialPoints::getNextAppID() { return getAppID(); }

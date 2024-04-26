@@ -147,7 +147,6 @@ class MaterialPoints {
     Operating_Mode operating_mode;
     RebuildHelper rebuildFields;
     IntFunc getAppID;
-    std::map<MaterialPointSlice, bool> reconstructSlice = std::map<MaterialPointSlice, bool>();
 
   public:
     MaterialPoints() : MPs(nullptr) {};
@@ -167,9 +166,6 @@ class MaterialPoints {
     template<int mpSliceIndex, typename mpSliceData>
     typename std::enable_if<mpSliceData::rank==2>::type
     setRebuildMPSlice(mpSliceData mpSliceIn);
-
-    void setReconstructSlice(MaterialPointSlice mpSliceIndex);
-    std::map<MaterialPointSlice, bool> getReconstructSlices() { return reconstructSlice; }
 
     void setAppIDFunc(IntFunc getAppIDIn);
     int getNextAppID();

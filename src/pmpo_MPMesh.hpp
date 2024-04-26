@@ -13,6 +13,7 @@ class MPMesh{
   public:
     Mesh* p_mesh;
     MaterialPoints* p_MPs;
+    std::map<MaterialPointSlice, std::function<void()>> reconstructSlice = std::map<MaterialPointSlice, std::function<void()>>();
     
     MPMesh(Mesh* inMesh, MaterialPoints* inMPs):
         p_mesh(inMesh), p_MPs(inMPs) {
@@ -21,11 +22,14 @@ class MPMesh{
       delete p_mesh;
       delete p_MPs;
     }
+    
+    template<MaterialPointSlice mpSliceIndex>
+    void setReconstructSlice();
+    void reconstructSlices();
 
     void CVTTrackingEdgeCenterBased(Vec2dView dx);
     void CVTTrackingElmCenterBased(const int printVTPIndex = -1);
     void T2LTracking(Vec2dView dx);
-    void reconstructSlices();
     void push();
 
     DoubleView assemblyV0();

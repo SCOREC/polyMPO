@@ -163,5 +163,8 @@ Vec2dView MPMesh::wtVec2Assembly(){
     return vField;
 } // wtVec2Assembly
 
+template<MaterialPointSlice mpSliceIndex>
+void MPMesh::setReconstructSlice() { reconstructSlice[mpSliceIndex] = [this](){ assembly<mpSliceIndex>(false, false); }; }
+
 } //end namespace polyMPO
 #endif

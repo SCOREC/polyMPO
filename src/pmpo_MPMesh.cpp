@@ -2,7 +2,6 @@
 #include "pmpo_utils.hpp"
 #include "pmpo_MPMesh.hpp"
 #include "pmpo_wachspressBasis.hpp"
-#include "pmpo_assembly.hpp"
 
 namespace polyMPO{
 
@@ -260,18 +259,10 @@ void MPMesh::T2LTracking(Vec2dView dx){
 }
 
 void MPMesh::reconstructSlices() {
-    auto slicesToReconstruct = p_MPs->getReconstructSlices();
-    for (auto const& [index, isReconstruct] : slicesToReconstruct) {
-        if (!isReconstruct) continue;
-        switch (index) {
-            case MPF_Vel: assembly<MPF_Vel>(false,false); break;
-            case MPF_Rot_Lat_Lon_Incr: assembly<MPF_Rot_Lat_Lon_Incr>(false,false); break;
-            default:
-                fprintf(stderr,"Mesh Field Invalid/Unsupported!\n");
-                exit(1);
-        }
+    for (auto const& [index, reconstruct] : reconstructSlice) {
+        if (reconstruct) reconstruct();
     }
-    slicesToReconstruct.clear();
+    reconstructSlice.clear();
 }
 
 void MPMesh::push(){

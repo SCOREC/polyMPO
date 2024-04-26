@@ -706,8 +706,9 @@ void polympo_push_f(MPMesh_ptr p_mpmesh){
 }
 
 void polympo_setReconstructionOption_f(MPMesh_ptr p_mpmesh, const int reconsOption){
-  //TODO set the reconstruction option 
-  PMT_ALWAYS_ASSERT(0);
+  checkMPMeshValid(p_mpmesh);
+  auto mpmesh = ((polyMPO::MPMesh*)p_mpmesh);
+  mpmesh->reconsOption = reconsOption;
 }
 
 //TODO skeleton of reconstruction functions

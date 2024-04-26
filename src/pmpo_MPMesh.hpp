@@ -13,6 +13,8 @@ class MPMesh{
   public:
     Mesh* p_mesh;
     MaterialPoints* p_MPs;
+
+    int reconsOption;
     std::map<MaterialPointSlice, std::function<void()>> reconstructSlice = std::map<MaterialPointSlice, std::function<void()>>();
     
     MPMesh(Mesh* inMesh, MaterialPoints* inMPs):

@@ -22,10 +22,6 @@ class MPMesh{
       delete p_mesh;
       delete p_MPs;
     }
-    
-    template<MaterialPointSlice mpSliceIndex>
-    void setReconstructSlice();
-    void reconstructSlices();
 
     void CVTTrackingEdgeCenterBased(Vec2dView dx);
     void CVTTrackingElmCenterBased(const int printVTPIndex = -1);
@@ -39,6 +35,10 @@ class MPMesh{
     Vec2dView wtVec2Assembly();
     template <MaterialPointSlice mpfIndex>
     void assembly(bool basisWeightFlag, bool massWeightFlag);
+
+    template<MaterialPointSlice mpSliceIndex>
+    void setReconstructSlice();
+    void reconstructSlices();
 
     void printVTP_mesh(int printVTPIndex);
 };

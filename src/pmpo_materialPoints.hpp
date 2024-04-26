@@ -57,50 +57,26 @@ enum Operating_Mode{
   MP_DEBUG
 };
 
-const static std::map<MaterialPointSlice, int> 
-      mpSliceToMeshFieldSize = {{MPF_Status,          1},
-                           {MPF_Cur_Elm_ID,           0},
-                           {MPF_Tgt_Elm_ID,           0},
-                           {MPF_Cur_Pos_Rot_Lat_Lon,  2},
-                           {MPF_Tgt_Pos_Rot_Lat_Lon,  2},
-                           {MPF_Cur_Pos_XYZ,          3},
-                           {MPF_Tgt_Pos_XYZ,          3},
-                           {MPF_Flag_Basis_Vals,      1},
-                           {MPF_Basis_Vals,           maxVtxsPerElm},
-                           {MPF_Basis_Grad_Vals,      maxVtxsPerElm*2},
-                           {MPF_Mass,                 1},
-                           {MPF_Vel,                  2},
-                           {MPF_Rot_Lat_Lon_Incr,     2},
-                           {MPF_Strain_Rate,          6},
-                           {MPF_Stress,               6},
-                           {MPF_Stress_Div,           3},
-                           {MPF_Shear_Traction,       3},
-                           {MPF_Constv_Mdl_Param,     12},
-                           {MPF_MP_APP_ID,            1}};
-
-static constexpr auto mpSliceToMeshFieldIndex{[]() constexpr{
-  std::array<MeshFieldIndex, 19> result{};
-  result[MPF_Status]              = MeshF_Invalid;
-  result[MPF_Cur_Elm_ID]          = MeshF_Invalid;
-  result[MPF_Tgt_Elm_ID]          = MeshF_Invalid;
-  result[MPF_Cur_Pos_Rot_Lat_Lon] = MeshF_Invalid;
-  result[MPF_Tgt_Pos_Rot_Lat_Lon] = MeshF_Invalid;
-  result[MPF_Cur_Pos_XYZ]         = MeshF_Invalid;
-  result[MPF_Tgt_Pos_XYZ]         = MeshF_Invalid;
-  result[MPF_Flag_Basis_Vals]     = MeshF_Invalid;
-  result[MPF_Basis_Vals]          = MeshF_Invalid;
-  result[MPF_Basis_Grad_Vals]     = MeshF_Invalid;
-  result[MPF_Mass]                = MeshF_Unsupported;
-  result[MPF_Vel]                 = MeshF_Vel;
-  result[MPF_Rot_Lat_Lon_Incr]    = MeshF_RotLatLonIncr;
-  result[MPF_Strain_Rate]         = MeshF_Unsupported;
-  result[MPF_Stress]              = MeshF_Unsupported;
-  result[MPF_Stress_Div]          = MeshF_Unsupported;
-  result[MPF_Shear_Traction]      = MeshF_Unsupported;
-  result[MPF_Constv_Mdl_Param]    = MeshF_Invalid;
-  result[MPF_MP_APP_ID]           = MeshF_Invalid;
-  return result;
-}()};
+template <MaterialPointSlice> struct mpSliceToMeshField;
+template <> struct mpSliceToMeshField<MPF_Status              > { static const MeshFieldIndex index = MeshF_Invalid;       static const int size = 1; };
+template <> struct mpSliceToMeshField<MPF_Cur_Elm_ID          > { static const MeshFieldIndex index = MeshF_Invalid;       static const int size = 0; };
+template <> struct mpSliceToMeshField<MPF_Tgt_Elm_ID          > { static const MeshFieldIndex index = MeshF_Invalid;       static const int size = 0; };
+template <> struct mpSliceToMeshField<MPF_Cur_Pos_Rot_Lat_Lon > { static const MeshFieldIndex index = MeshF_Invalid;       static const int size = 2; };
+template <> struct mpSliceToMeshField<MPF_Tgt_Pos_Rot_Lat_Lon > { static const MeshFieldIndex index = MeshF_Invalid;       static const int size = 2; };
+template <> struct mpSliceToMeshField<MPF_Cur_Pos_XYZ         > { static const MeshFieldIndex index = MeshF_Invalid;       static const int size = 3; };
+template <> struct mpSliceToMeshField<MPF_Tgt_Pos_XYZ         > { static const MeshFieldIndex index = MeshF_Invalid;       static const int size = 3; };
+template <> struct mpSliceToMeshField<MPF_Flag_Basis_Vals     > { static const MeshFieldIndex index = MeshF_Invalid;       static const int size = 1; };
+template <> struct mpSliceToMeshField<MPF_Basis_Vals          > { static const MeshFieldIndex index = MeshF_Invalid;       static const int size = maxVtxsPerElm; };
+template <> struct mpSliceToMeshField<MPF_Basis_Grad_Vals     > { static const MeshFieldIndex index = MeshF_Invalid;       static const int size = maxVtxsPerElm*2; };
+template <> struct mpSliceToMeshField<MPF_Mass                > { static const MeshFieldIndex index = MeshF_Unsupported;   static const int size = 1; };
+template <> struct mpSliceToMeshField<MPF_Vel                 > { static const MeshFieldIndex index = MeshF_Vel;           static const int size = 2; };
+template <> struct mpSliceToMeshField<MPF_Rot_Lat_Lon_Incr    > { static const MeshFieldIndex index = MeshF_RotLatLonIncr; static const int size = 2; };
+template <> struct mpSliceToMeshField<MPF_Strain_Rate         > { static const MeshFieldIndex index = MeshF_Unsupported;   static const int size = 6; };
+template <> struct mpSliceToMeshField<MPF_Stress              > { static const MeshFieldIndex index = MeshF_Unsupported;   static const int size = 6; };
+template <> struct mpSliceToMeshField<MPF_Stress_Div          > { static const MeshFieldIndex index = MeshF_Unsupported;   static const int size = 3; };
+template <> struct mpSliceToMeshField<MPF_Shear_Traction      > { static const MeshFieldIndex index = MeshF_Unsupported;   static const int size = 3; };
+template <> struct mpSliceToMeshField<MPF_Constv_Mdl_Param    > { static const MeshFieldIndex index = MeshF_Invalid;       static const int size = 12; };
+template <> struct mpSliceToMeshField<MPF_MP_APP_ID           > { static const MeshFieldIndex index = MeshF_Invalid;       static const int size = 1; };
 
 const static std::vector<std::pair<MaterialPointSlice, MaterialPointSlice>>
         mpSliceSwap = {{MPF_Cur_Elm_ID, MPF_Tgt_Elm_ID},
@@ -206,8 +182,8 @@ class MaterialPoints {
     void updateMPSlice(){
       auto curData = MPs->get<mpfIndexCur>();
       auto tgtData = MPs->get<mpfIndexTgt>();
-      const int numEntriesCur = mpSliceToMeshFieldSize.at(mpfIndexCur);
-      const int numEntriesTgt = mpSliceToMeshFieldSize.at(mpfIndexTgt);
+      const int numEntriesCur = mpSliceToMeshField<mpfIndexCur>::size;
+      const int numEntriesTgt = mpSliceToMeshField<mpfIndexTgt>::size;
       PMT_ALWAYS_ASSERT(numEntriesCur == numEntriesTgt);
       
       auto swap = PS_LAMBDA(const int&, const int& mp, const int& mask) {
@@ -296,7 +272,7 @@ class MaterialPoints {
 template <MaterialPointSlice index>
 void MaterialPoints::fillData(double value){
   auto mpData = getData<index>();
-  const int numEntries = mpSliceToMeshFieldSize.at(index);
+  const int numEntries = mpSliceToMeshField<index>::size;
   auto setValue = PS_LAMBDA(const int&, const int& mp, const int& mask){
     if(mask) { //if material point is 'active'/'enabled'
       for(int i=0; i<numEntries; i++){

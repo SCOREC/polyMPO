@@ -45,8 +45,8 @@ void MPMesh::assembly(bool basisWeightFlag, bool massWeightFlag){
     auto basis = p_MPs->getData<MPF_Basis_Vals>();
     //if(!basisWeightFlag){
     //}
-    const int numEntries = mpSliceToMeshFieldSize.at(mpfIndex);
-    constexpr MeshFieldIndex meshFieldIndex = mpSliceToMeshFieldIndex[mpfIndex];
+    const int numEntries = mpSliceToMeshField<mpfIndex>::size;
+    constexpr MeshFieldIndex meshFieldIndex = mpSliceToMeshField<mpfIndex>::index;
     auto meshField = p_mesh->getMeshField<meshFieldIndex>(); 
     //auto meshField = p_mesh->getMeshField<Mesh_Field_Cur_Pos_XYZ>(); 
     auto assemble = PS_LAMBDA(const int& elm, const int& mp, const int& mask) {

@@ -164,7 +164,14 @@ Vec2dView MPMesh::wtVec2Assembly(){
 } // wtVec2Assembly
 
 template<MaterialPointSlice mpSliceIndex>
-void MPMesh::setReconstructSlice() { reconstructSlice[mpSliceIndex] = [this](){ assembly<mpSliceIndex>(false, false); }; }
+void MPMesh::setReconstructSlice() {
+  auto function = [this](){ assembly<mpSliceIndex>(false, false); }; 
+  const auto [iter, success] = reconstructSlice.insert({mpSliceIndex, function});
+  if (!success){
+    std::cerr << "Error: Slice is already being reconstructed\n";
+    exit(1);
+  }
+}
 
 } //end namespace polyMPO
 #endif

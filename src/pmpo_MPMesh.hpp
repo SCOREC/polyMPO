@@ -7,6 +7,27 @@
 
 namespace polyMPO{
 
+template <MaterialPointSlice> const MeshFieldIndex mpSliceToMeshFieldIndex;
+template <> const MeshFieldIndex mpSliceToMeshFieldIndex < MPF_Status              > = MeshF_Invalid;
+template <> const MeshFieldIndex mpSliceToMeshFieldIndex < MPF_Cur_Elm_ID          > = MeshF_Invalid;
+template <> const MeshFieldIndex mpSliceToMeshFieldIndex < MPF_Tgt_Elm_ID          > = MeshF_Invalid;
+template <> const MeshFieldIndex mpSliceToMeshFieldIndex < MPF_Cur_Pos_Rot_Lat_Lon > = MeshF_Invalid;
+template <> const MeshFieldIndex mpSliceToMeshFieldIndex < MPF_Tgt_Pos_Rot_Lat_Lon > = MeshF_Invalid;
+template <> const MeshFieldIndex mpSliceToMeshFieldIndex < MPF_Cur_Pos_XYZ         > = MeshF_Invalid;
+template <> const MeshFieldIndex mpSliceToMeshFieldIndex < MPF_Tgt_Pos_XYZ         > = MeshF_Invalid;
+template <> const MeshFieldIndex mpSliceToMeshFieldIndex < MPF_Flag_Basis_Vals     > = MeshF_Invalid;
+template <> const MeshFieldIndex mpSliceToMeshFieldIndex < MPF_Basis_Vals          > = MeshF_Invalid;
+template <> const MeshFieldIndex mpSliceToMeshFieldIndex < MPF_Basis_Grad_Vals     > = MeshF_Invalid;
+template <> const MeshFieldIndex mpSliceToMeshFieldIndex < MPF_Mass                > = MeshF_Unsupported;
+template <> const MeshFieldIndex mpSliceToMeshFieldIndex < MPF_Vel                 > = MeshF_Vel;
+template <> const MeshFieldIndex mpSliceToMeshFieldIndex < MPF_Rot_Lat_Lon_Incr    > = MeshF_RotLatLonIncr;
+template <> const MeshFieldIndex mpSliceToMeshFieldIndex < MPF_Strain_Rate         > = MeshF_Unsupported;
+template <> const MeshFieldIndex mpSliceToMeshFieldIndex < MPF_Stress              > = MeshF_Unsupported;
+template <> const MeshFieldIndex mpSliceToMeshFieldIndex < MPF_Stress_Div          > = MeshF_Unsupported;
+template <> const MeshFieldIndex mpSliceToMeshFieldIndex < MPF_Shear_Traction      > = MeshF_Unsupported;
+template <> const MeshFieldIndex mpSliceToMeshFieldIndex < MPF_Constv_Mdl_Param    > = MeshF_Invalid;
+template <> const MeshFieldIndex mpSliceToMeshFieldIndex < MPF_MP_APP_ID           > = MeshF_Invalid;
+
 #define maxMPsPerElm 8
 
 class MPMesh{

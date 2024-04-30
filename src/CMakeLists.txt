@@ -4,7 +4,7 @@ set(HEADERS
   pmpo_wachspressBasis.hpp
   pmpo_MPMesh.hpp
   pmpo_utils.hpp
-  pmpo_assembly.hpp
+  pmpo_MPMesh_assembly.hpp
   pmpo_c.h
   pmpo_createTestMPMesh.hpp
 )

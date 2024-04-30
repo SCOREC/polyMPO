@@ -1,5 +1,5 @@
 #include "pmpo_MPMesh.hpp"
-#include "pmpo_assembly.hpp"
+#include "pmpo_MPMesh_assembly.hpp"
 #include "pmpo_createTestMPMesh.hpp"
 #include "testUtils.hpp"
 #include <mpi.h>

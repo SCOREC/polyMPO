@@ -1,7 +1,7 @@
 #include "pmpo_createTestMPMesh.hpp"
 #include "pmpo_defines.h"
 #include "pmpo_c.h"
-#include "pmpo_assembly.hpp"
+#include "pmpo_MPMesh_assembly.hpp"
 #include <stdio.h>
 
 namespace{

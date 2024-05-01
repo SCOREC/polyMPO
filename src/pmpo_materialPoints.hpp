@@ -83,25 +83,25 @@ const static std::vector<std::pair<MaterialPointSlice, MaterialPointSlice>>
                        {MPF_Cur_Pos_Rot_Lat_Lon, MPF_Tgt_Pos_Rot_Lat_Lon},
                        {MPF_Cur_Pos_XYZ, MPF_Tgt_Pos_XYZ}};
 
-typedef MemberTypes<mp_flag_t,              //MP_Status
-                    mp_elm_id_t,            //MP_Cur_Elm_ID
-                    mp_elm_id_t,            //MP_Tgt_Elm_ID
-                    mp_vec2d_t,             //MP_Cur_Pos_Rot_Lat_Lon
-                    mp_vec2d_t,             //MP_Tgt_Pos_Rot_Lat_Lon
-                    mp_vec3d_t,             //MP_Cur_Pos_XYZ
-                    mp_vec3d_t,             //MP_Tgt_Pos_XYZ
-                    mp_flag_t,              //MP_Flag_Basis_Vals
-                    mp_basis_t,             //MP_Basis_Vals
-                    mp_basis_grad2d_t,      //MP_Basis_Grad_Vals
-                    mp_sclr_t,              //MP_Mass //TODO: test Mass in assembly
-                    mp_vec2d_t,             //MP_Vel
-                    mp_vec2d_t,             //MP_Rot_Lat_Lon_Incr
-                    mp_sym_mat3d_t,         //MP_Strain_Rate
-                    mp_sym_mat3d_t,         //MP_Stress
-                    mp_vec3d_t,             //MP_Stress_Div
-                    mp_vec3d_t,             //MP_Shear_Traction
-                    mp_constv_mdl_param_t,  //MP_Constv_Mdl_Param
-                    mp_id_t                 //MP_APP_ID
+typedef MemberTypes<mp_flag_t,              //MPF_Status
+                    mp_elm_id_t,            //MPF_Cur_Elm_ID
+                    mp_elm_id_t,            //MPF_Tgt_Elm_ID
+                    mp_vec2d_t,             //MPF_Cur_Pos_Rot_Lat_Lon
+                    mp_vec2d_t,             //MPF_Tgt_Pos_Rot_Lat_Lon
+                    mp_vec3d_t,             //MPF_Cur_Pos_XYZ
+                    mp_vec3d_t,             //MPF_Tgt_Pos_XYZ
+                    mp_flag_t,              //MPF_Flag_Basis_Vals
+                    mp_basis_t,             //MPF_Basis_Vals
+                    mp_basis_grad2d_t,      //MPF_Basis_Grad_Vals
+                    mp_sclr_t,              //MPF_Mass //TODO: test Mass in assembly
+                    mp_vec2d_t,             //MPF_Vel
+                    mp_vec2d_t,             //MPF_Rot_Lat_Lon_Incr
+                    mp_sym_mat3d_t,         //MPF_Strain_Rate
+                    mp_sym_mat3d_t,         //MPF_Stress
+                    mp_vec3d_t,             //MPF_Stress_Div
+                    mp_vec3d_t,             //MPF_Shear_Traction
+                    mp_constv_mdl_param_t,  //MPF_Constv_Mdl_Param
+                    mp_id_t                 //MPF_APP_ID
                     >MaterialPointTypes;
 typedef ps::ParticleStructure<MaterialPointTypes> PS;
 

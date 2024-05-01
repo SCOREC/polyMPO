@@ -58,14 +58,14 @@ enum Operating_Mode{
 };
 
 template <MaterialPointSlice> struct mpSliceToMeshField;
-template <> struct mpSliceToMeshField < MPF_Status              > { static const int size = 1;               using type = mp_flag_t;             };
+template <> struct mpSliceToMeshField < MPF_Status              > { static const int size = 0;               using type = mp_flag_t;             };
 template <> struct mpSliceToMeshField < MPF_Cur_Elm_ID          > { static const int size = 0;               using type = mp_elm_id_t;           };
 template <> struct mpSliceToMeshField < MPF_Tgt_Elm_ID          > { static const int size = 0;               using type = mp_elm_id_t;           };
 template <> struct mpSliceToMeshField < MPF_Cur_Pos_Rot_Lat_Lon > { static const int size = 2;               using type = mp_vec2d_t;            };
 template <> struct mpSliceToMeshField < MPF_Tgt_Pos_Rot_Lat_Lon > { static const int size = 2;               using type = mp_vec2d_t;            };
 template <> struct mpSliceToMeshField < MPF_Cur_Pos_XYZ         > { static const int size = 3;               using type = mp_vec3d_t;            };
 template <> struct mpSliceToMeshField < MPF_Tgt_Pos_XYZ         > { static const int size = 3;               using type = mp_vec3d_t;            };
-template <> struct mpSliceToMeshField < MPF_Flag_Basis_Vals     > { static const int size = 1;               using type = mp_flag_t;             };
+template <> struct mpSliceToMeshField < MPF_Flag_Basis_Vals     > { static const int size = 0;               using type = mp_flag_t;             };
 template <> struct mpSliceToMeshField < MPF_Basis_Vals          > { static const int size = maxVtxsPerElm;   using type = mp_basis_t;            };
 template <> struct mpSliceToMeshField < MPF_Basis_Grad_Vals     > { static const int size = maxVtxsPerElm*2; using type = mp_basis_grad2d_t;     };
 template <> struct mpSliceToMeshField < MPF_Mass                > { static const int size = 1;               using type = mp_sclr_t;             };
@@ -76,7 +76,7 @@ template <> struct mpSliceToMeshField < MPF_Stress              > { static const
 template <> struct mpSliceToMeshField < MPF_Stress_Div          > { static const int size = 3;               using type = mp_vec3d_t;            };
 template <> struct mpSliceToMeshField < MPF_Shear_Traction      > { static const int size = 3;               using type = mp_vec3d_t;            };
 template <> struct mpSliceToMeshField < MPF_Constv_Mdl_Param    > { static const int size = 12;              using type = mp_constv_mdl_param_t; };
-template <> struct mpSliceToMeshField < MPF_MP_APP_ID           > { static const int size = 1;               using type = mp_id_t;               };
+template <> struct mpSliceToMeshField < MPF_MP_APP_ID           > { static const int size = 0;               using type = mp_id_t;               };
 
 template <MaterialPointSlice slice> const int mpSliceToMeshFieldSize = mpSliceToMeshField<slice>::size;
 

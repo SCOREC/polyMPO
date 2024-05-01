@@ -58,46 +58,27 @@ enum Operating_Mode{
 };
 
 template <MaterialPointSlice> struct mpSliceToMeshField;
-template <> struct mpSliceToMeshField < MPF_Status              > { using type = mp_flag_t;             };
-template <> struct mpSliceToMeshField < MPF_Cur_Elm_ID          > { using type = mp_elm_id_t;           };
-template <> struct mpSliceToMeshField < MPF_Tgt_Elm_ID          > { using type = mp_elm_id_t;           };
-template <> struct mpSliceToMeshField < MPF_Cur_Pos_Rot_Lat_Lon > { using type = mp_vec2d_t;            };
-template <> struct mpSliceToMeshField < MPF_Tgt_Pos_Rot_Lat_Lon > { using type = mp_vec2d_t;            };
-template <> struct mpSliceToMeshField < MPF_Cur_Pos_XYZ         > { using type = mp_vec3d_t;            };
-template <> struct mpSliceToMeshField < MPF_Tgt_Pos_XYZ         > { using type = mp_vec3d_t;            };
-template <> struct mpSliceToMeshField < MPF_Flag_Basis_Vals     > { using type = mp_flag_t;             };
-template <> struct mpSliceToMeshField < MPF_Basis_Vals          > { using type = mp_basis_t;            };
-template <> struct mpSliceToMeshField < MPF_Basis_Grad_Vals     > { using type = mp_basis_grad2d_t;     };
-template <> struct mpSliceToMeshField < MPF_Mass                > { using type = mp_sclr_t;             };
-template <> struct mpSliceToMeshField < MPF_Vel                 > { using type = mp_vec2d_t;            };
-template <> struct mpSliceToMeshField < MPF_Rot_Lat_Lon_Incr    > { using type = mp_vec2d_t;            };
-template <> struct mpSliceToMeshField < MPF_Strain_Rate         > { using type = mp_sym_mat3d_t;        };
-template <> struct mpSliceToMeshField < MPF_Stress              > { using type = mp_sym_mat3d_t;        };
-template <> struct mpSliceToMeshField < MPF_Stress_Div          > { using type = mp_vec3d_t;            };
-template <> struct mpSliceToMeshField < MPF_Shear_Traction      > { using type = mp_vec3d_t;            };
-template <> struct mpSliceToMeshField < MPF_Constv_Mdl_Param    > { using type = mp_constv_mdl_param_t; };
-template <> struct mpSliceToMeshField < MPF_MP_APP_ID           > { using type = mp_id_t;               };
+template <> struct mpSliceToMeshField < MPF_Status              > { static const int size = 1;               using type = mp_flag_t;             };
+template <> struct mpSliceToMeshField < MPF_Cur_Elm_ID          > { static const int size = 0;               using type = mp_elm_id_t;           };
+template <> struct mpSliceToMeshField < MPF_Tgt_Elm_ID          > { static const int size = 0;               using type = mp_elm_id_t;           };
+template <> struct mpSliceToMeshField < MPF_Cur_Pos_Rot_Lat_Lon > { static const int size = 2;               using type = mp_vec2d_t;            };
+template <> struct mpSliceToMeshField < MPF_Tgt_Pos_Rot_Lat_Lon > { static const int size = 2;               using type = mp_vec2d_t;            };
+template <> struct mpSliceToMeshField < MPF_Cur_Pos_XYZ         > { static const int size = 3;               using type = mp_vec3d_t;            };
+template <> struct mpSliceToMeshField < MPF_Tgt_Pos_XYZ         > { static const int size = 3;               using type = mp_vec3d_t;            };
+template <> struct mpSliceToMeshField < MPF_Flag_Basis_Vals     > { static const int size = 1;               using type = mp_flag_t;             };
+template <> struct mpSliceToMeshField < MPF_Basis_Vals          > { static const int size = maxVtxsPerElm;   using type = mp_basis_t;            };
+template <> struct mpSliceToMeshField < MPF_Basis_Grad_Vals     > { static const int size = maxVtxsPerElm*2; using type = mp_basis_grad2d_t;     };
+template <> struct mpSliceToMeshField < MPF_Mass                > { static const int size = 1;               using type = mp_sclr_t;             };
+template <> struct mpSliceToMeshField < MPF_Vel                 > { static const int size = 2;               using type = mp_vec2d_t;            };
+template <> struct mpSliceToMeshField < MPF_Rot_Lat_Lon_Incr    > { static const int size = 2;               using type = mp_vec2d_t;            };
+template <> struct mpSliceToMeshField < MPF_Strain_Rate         > { static const int size = 6;               using type = mp_sym_mat3d_t;        };
+template <> struct mpSliceToMeshField < MPF_Stress              > { static const int size = 6;               using type = mp_sym_mat3d_t;        };
+template <> struct mpSliceToMeshField < MPF_Stress_Div          > { static const int size = 3;               using type = mp_vec3d_t;            };
+template <> struct mpSliceToMeshField < MPF_Shear_Traction      > { static const int size = 3;               using type = mp_vec3d_t;            };
+template <> struct mpSliceToMeshField < MPF_Constv_Mdl_Param    > { static const int size = 12;              using type = mp_constv_mdl_param_t; };
+template <> struct mpSliceToMeshField < MPF_MP_APP_ID           > { static const int size = 1;               using type = mp_id_t;               };
 
-template <MaterialPointSlice> const int mpSliceToMeshFieldSize;
-template <> const int mpSliceToMeshFieldSize < MPF_Status              > = 1;
-template <> const int mpSliceToMeshFieldSize < MPF_Cur_Elm_ID          > = 0;
-template <> const int mpSliceToMeshFieldSize < MPF_Tgt_Elm_ID          > = 0;
-template <> const int mpSliceToMeshFieldSize < MPF_Cur_Pos_Rot_Lat_Lon > = 2;
-template <> const int mpSliceToMeshFieldSize < MPF_Tgt_Pos_Rot_Lat_Lon > = 2;
-template <> const int mpSliceToMeshFieldSize < MPF_Cur_Pos_XYZ         > = 3;
-template <> const int mpSliceToMeshFieldSize < MPF_Tgt_Pos_XYZ         > = 3;
-template <> const int mpSliceToMeshFieldSize < MPF_Flag_Basis_Vals     > = 1;
-template <> const int mpSliceToMeshFieldSize < MPF_Basis_Vals          > = maxVtxsPerElm;
-template <> const int mpSliceToMeshFieldSize < MPF_Basis_Grad_Vals     > = maxVtxsPerElm*2;
-template <> const int mpSliceToMeshFieldSize < MPF_Mass                > = 1;
-template <> const int mpSliceToMeshFieldSize < MPF_Vel                 > = 2;
-template <> const int mpSliceToMeshFieldSize < MPF_Rot_Lat_Lon_Incr    > = 2;
-template <> const int mpSliceToMeshFieldSize < MPF_Strain_Rate         > = 6;
-template <> const int mpSliceToMeshFieldSize < MPF_Stress              > = 6;
-template <> const int mpSliceToMeshFieldSize < MPF_Stress_Div          > = 3;
-template <> const int mpSliceToMeshFieldSize < MPF_Shear_Traction      > = 3;
-template <> const int mpSliceToMeshFieldSize < MPF_Constv_Mdl_Param    > = 12;
-template <> const int mpSliceToMeshFieldSize < MPF_MP_APP_ID           > = 1;
+template <MaterialPointSlice slice> const int mpSliceToMeshFieldSize = mpSliceToMeshField<slice>::size;
 
 const static std::vector<std::pair<MaterialPointSlice, MaterialPointSlice>>
         mpSliceSwap = {{MPF_Cur_Elm_ID, MPF_Tgt_Elm_ID},

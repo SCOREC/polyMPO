@@ -57,32 +57,36 @@ enum Operating_Mode{
   MP_DEBUG
 };
 
-template <typename Type, int Size> struct MPTypeHelper { using type = Type[Size]; static const int size = Size; };
-template <typename Type> struct MPTypeHelper <Type, 0> { using type = int; static const int size = 0; };
-
 template <MaterialPointSlice> struct mpSliceToMeshField;
-template <> struct mpSliceToMeshField < MPF_Status              > { using typeHelper = MPTypeHelper<int,     0>; };
-template <> struct mpSliceToMeshField < MPF_Cur_Elm_ID          > { using typeHelper = MPTypeHelper<int,     0>; };
-template <> struct mpSliceToMeshField < MPF_Tgt_Elm_ID          > { using typeHelper = MPTypeHelper<int,     0>; };
-template <> struct mpSliceToMeshField < MPF_Cur_Pos_Rot_Lat_Lon > { using typeHelper = MPTypeHelper<double,  2>; };
-template <> struct mpSliceToMeshField < MPF_Tgt_Pos_Rot_Lat_Lon > { using typeHelper = MPTypeHelper<double,  2>; };
-template <> struct mpSliceToMeshField < MPF_Cur_Pos_XYZ         > { using typeHelper = MPTypeHelper<double,  3>; };
-template <> struct mpSliceToMeshField < MPF_Tgt_Pos_XYZ         > { using typeHelper = MPTypeHelper<double,  3>; };
-template <> struct mpSliceToMeshField < MPF_Flag_Basis_Vals     > { using typeHelper = MPTypeHelper<int,     0>; };
-template <> struct mpSliceToMeshField < MPF_Basis_Vals          > { using typeHelper = MPTypeHelper<double,  maxVtxsPerElm>; };
-template <> struct mpSliceToMeshField < MPF_Basis_Grad_Vals     > { using typeHelper = MPTypeHelper<double,  maxVtxsPerElm*2>; };
-template <> struct mpSliceToMeshField < MPF_Mass                > { using typeHelper = MPTypeHelper<double,  1>; };
-template <> struct mpSliceToMeshField < MPF_Vel                 > { using typeHelper = MPTypeHelper<double,  2>; };
-template <> struct mpSliceToMeshField < MPF_Rot_Lat_Lon_Incr    > { using typeHelper = MPTypeHelper<double,  2>; };
-template <> struct mpSliceToMeshField < MPF_Strain_Rate         > { using typeHelper = MPTypeHelper<double,  6>; };
-template <> struct mpSliceToMeshField < MPF_Stress              > { using typeHelper = MPTypeHelper<double,  6>; };
-template <> struct mpSliceToMeshField < MPF_Stress_Div          > { using typeHelper = MPTypeHelper<double,  3>; };
-template <> struct mpSliceToMeshField < MPF_Shear_Traction      > { using typeHelper = MPTypeHelper<double,  3>; };
-template <> struct mpSliceToMeshField < MPF_Constv_Mdl_Param    > { using typeHelper = MPTypeHelper<double,  12>; };
-template <> struct mpSliceToMeshField < MPF_MP_APP_ID           > { using typeHelper = MPTypeHelper<int,     0>; };
+template <> struct mpSliceToMeshField < MPF_Status              > { using type = int; };
+template <> struct mpSliceToMeshField < MPF_Cur_Elm_ID          > { using type = int; };
+template <> struct mpSliceToMeshField < MPF_Tgt_Elm_ID          > { using type = int; };
+template <> struct mpSliceToMeshField < MPF_Cur_Pos_Rot_Lat_Lon > { using type = double[2]; };
+template <> struct mpSliceToMeshField < MPF_Tgt_Pos_Rot_Lat_Lon > { using type = double[2]; };
+template <> struct mpSliceToMeshField < MPF_Cur_Pos_XYZ         > { using type = double[3]; };
+template <> struct mpSliceToMeshField < MPF_Tgt_Pos_XYZ         > { using type = double[3]; };
+template <> struct mpSliceToMeshField < MPF_Flag_Basis_Vals     > { using type = int; };
+template <> struct mpSliceToMeshField < MPF_Basis_Vals          > { using type = double[maxVtxsPerElm]; };
+template <> struct mpSliceToMeshField < MPF_Basis_Grad_Vals     > { using type = double[maxVtxsPerElm*2]; };
+template <> struct mpSliceToMeshField < MPF_Mass                > { using type = double[1]; };
+template <> struct mpSliceToMeshField < MPF_Vel                 > { using type = double[2]; };
+template <> struct mpSliceToMeshField < MPF_Rot_Lat_Lon_Incr    > { using type = double[2]; };
+template <> struct mpSliceToMeshField < MPF_Strain_Rate         > { using type = double[6]; };
+template <> struct mpSliceToMeshField < MPF_Stress              > { using type = double[6]; };
+template <> struct mpSliceToMeshField < MPF_Stress_Div          > { using type = double[3]; };
+template <> struct mpSliceToMeshField < MPF_Shear_Traction      > { using type = double[3]; };
+template <> struct mpSliceToMeshField < MPF_Constv_Mdl_Param    > { using type = double[12]; };
+template <> struct mpSliceToMeshField < MPF_MP_APP_ID           > { using type = int; };
 
-template <MaterialPointSlice slice> using mpSliceToMeshFieldType = typename mpSliceToMeshField<slice>::typeHelper::type;
-template <MaterialPointSlice slice> const int mpSliceToMeshFieldSize = mpSliceToMeshField<slice>::typeHelper::size;
+template <MaterialPointSlice slice> 
+static constexpr int getSize() {
+  if ( !std::is_array<typename mpSliceToMeshField<slice>::type>::value ) return 0;
+  typename mpSliceToMeshField<slice>::type constructed; 
+  return std::size(constructed);
+}
+
+template <MaterialPointSlice slice> using mpSliceToMeshFieldType = typename mpSliceToMeshField<slice>::type;
+template <MaterialPointSlice slice> const int mpSliceToMeshFieldSize = getSize<slice>();
 
 const static std::vector<std::pair<MaterialPointSlice, MaterialPointSlice>>
         mpSliceSwap = {{MPF_Cur_Elm_ID, MPF_Tgt_Elm_ID},

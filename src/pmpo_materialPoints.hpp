@@ -85,7 +85,6 @@ static constexpr int getSize() {
   return std::size(constructed);
 }
 
-template <MaterialPointSlice slice> using mpSliceToMeshFieldType = typename mpSliceToMeshField<slice>::type;
 template <MaterialPointSlice slice> const int mpSliceToMeshFieldSize = getSize<slice>();
 
 const static std::vector<std::pair<MaterialPointSlice, MaterialPointSlice>>
@@ -93,25 +92,25 @@ const static std::vector<std::pair<MaterialPointSlice, MaterialPointSlice>>
                        {MPF_Cur_Pos_Rot_Lat_Lon, MPF_Tgt_Pos_Rot_Lat_Lon},
                        {MPF_Cur_Pos_XYZ, MPF_Tgt_Pos_XYZ}};
 
-typedef MemberTypes<mpSliceToMeshFieldType < MPF_Status              >,
-                    mpSliceToMeshFieldType < MPF_Cur_Elm_ID          >,
-                    mpSliceToMeshFieldType < MPF_Tgt_Elm_ID          >,
-                    mpSliceToMeshFieldType < MPF_Cur_Pos_Rot_Lat_Lon >,
-                    mpSliceToMeshFieldType < MPF_Tgt_Pos_Rot_Lat_Lon >,
-                    mpSliceToMeshFieldType < MPF_Cur_Pos_XYZ         >,
-                    mpSliceToMeshFieldType < MPF_Tgt_Pos_XYZ         >,
-                    mpSliceToMeshFieldType < MPF_Flag_Basis_Vals     >,
-                    mpSliceToMeshFieldType < MPF_Basis_Vals          >,
-                    mpSliceToMeshFieldType < MPF_Basis_Grad_Vals     >,
-                    mpSliceToMeshFieldType < MPF_Mass                >,
-                    mpSliceToMeshFieldType < MPF_Vel                 >,
-                    mpSliceToMeshFieldType < MPF_Rot_Lat_Lon_Incr    >,
-                    mpSliceToMeshFieldType < MPF_Strain_Rate         >,
-                    mpSliceToMeshFieldType < MPF_Stress              >,
-                    mpSliceToMeshFieldType < MPF_Stress_Div          >,
-                    mpSliceToMeshFieldType < MPF_Shear_Traction      >,
-                    mpSliceToMeshFieldType < MPF_Constv_Mdl_Param    >,
-                    mpSliceToMeshFieldType < MPF_MP_APP_ID           >
+typedef MemberTypes<mpSliceToMeshField < MPF_Status              >::type,
+                    mpSliceToMeshField < MPF_Cur_Elm_ID          >::type,
+                    mpSliceToMeshField < MPF_Tgt_Elm_ID          >::type,
+                    mpSliceToMeshField < MPF_Cur_Pos_Rot_Lat_Lon >::type,
+                    mpSliceToMeshField < MPF_Tgt_Pos_Rot_Lat_Lon >::type,
+                    mpSliceToMeshField < MPF_Cur_Pos_XYZ         >::type,
+                    mpSliceToMeshField < MPF_Tgt_Pos_XYZ         >::type,
+                    mpSliceToMeshField < MPF_Flag_Basis_Vals     >::type,
+                    mpSliceToMeshField < MPF_Basis_Vals          >::type,
+                    mpSliceToMeshField < MPF_Basis_Grad_Vals     >::type,
+                    mpSliceToMeshField < MPF_Mass                >::type,
+                    mpSliceToMeshField < MPF_Vel                 >::type,
+                    mpSliceToMeshField < MPF_Rot_Lat_Lon_Incr    >::type,
+                    mpSliceToMeshField < MPF_Strain_Rate         >::type,
+                    mpSliceToMeshField < MPF_Stress              >::type,
+                    mpSliceToMeshField < MPF_Stress_Div          >::type,
+                    mpSliceToMeshField < MPF_Shear_Traction      >::type,
+                    mpSliceToMeshField < MPF_Constv_Mdl_Param    >::type,
+                    mpSliceToMeshField < MPF_MP_APP_ID           >::type
                     >MaterialPointTypes;
 typedef ps::ParticleStructure<MaterialPointTypes> PS;
 

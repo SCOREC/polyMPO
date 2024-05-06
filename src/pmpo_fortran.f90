@@ -550,7 +550,7 @@ module polympo
   !---------------------------------------------------------------------------
   !> @brief set the Reconstruction of MP fields options
   !> @param mpmesh(in/out) MPMesh object
-  !> @param isReconsOption(in) 1 = True, otherwise False.
+  !> @param reconsOption(in) 1 = True, otherwise False.
   !> TODO: not support yet!
   !---------------------------------------------------------------------------
   subroutine polympo_setReconstructionOption(mpMesh, reconsOption) &

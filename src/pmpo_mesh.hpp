@@ -13,9 +13,9 @@ using IntElm2VtxView = Kokkos::View<int*[maxElmsPerVtx+1]>;
 using IntElm2ElmView = Kokkos::View<int*[maxVtxsPerElm+1]>;
 
 using DoubleSclrView = Kokkos::View<double*>;
-using DoubleVec2dView = Kokkos::View<double*[vec2d_nEntries]>;
-using DoubleVec3dView = Kokkos::View<double*[vec3d_nEntries]>;
-using DoubleSymMat3dView = Kokkos::View<double*[6]>;
+using DoubleVec2dView = Kokkos::View<vec2d_t*>;
+using DoubleVec3dView = Kokkos::View<vec3d_t*>;
+using DoubleSymMat3dView = Kokkos::View<sym_mat3d_t*>;
 
 enum MeshFieldIndex{
     MeshF_Invalid = -2,

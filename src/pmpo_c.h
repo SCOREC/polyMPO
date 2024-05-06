@@ -31,8 +31,14 @@ void polympo_setMPPositions_f(MPMesh_ptr p_mpmesh, const int nComps, const int n
 void polympo_getMPPositions_f(MPMesh_ptr p_mpmesh, const int nComps, const int numMPs, double* mpPositionsIn);
 void polympo_setMPRotLatLon_f(MPMesh_ptr p_mpmesh, const int nComps, const int numMPs, const double* mpRotLatLonIn);
 void polympo_getMPRotLatLon_f(MPMesh_ptr p_mpmesh, const int nComps, const int numMPs, double* mpRotLatLonHost);
+void polympo_setMPMass_f(MPMesh_ptr p_mpmesh, const int nComps, const int numMPs, const double* mpMassIn);
+void polympo_getMPMass_f(MPMesh_ptr p_mpmesh, const int nComps, const int numMPs, double* mpMassHost);
 void polympo_setMPVel_f(MPMesh_ptr p_mpmesh, const int nComps, const int numMPs, const double* mpVelIn);
 void polympo_getMPVel_f(MPMesh_ptr p_mpmesh, const int nComps, const int numMPs, double* mpVelHost);
+void polympo_setMPStrainRate_f(MPMesh_ptr p_mpmesh, const int nComps, const int numMPs, const double* mpStrainRateIn);
+void polympo_getMPStrainRate_f(MPMesh_ptr p_mpmesh, const int nComps, const int numMPs, double* mpStrainRateHost);
+void polympo_setMPStress_f(MPMesh_ptr p_mpmesh, const int nComps, const int numMPs, const double* mpStressIn);
+void polympo_getMPStress_f(MPMesh_ptr p_mpmesh, const int nComps, const int numMPs, double* mpStressHost);
 
 //Mesh info
 void polympo_startMeshFill_f(MPMesh_ptr p_mpmesh);
@@ -68,9 +74,9 @@ void polympo_push_f(MPMesh_ptr p_mpmesh);
 
 // Reconstruction of variables from MPs to mesh vertices
 void polympo_setReconstructionOption_f(MPMesh_ptr p_mpmesh, const int reconsOption);
-void polympo_reconstructMass_f(MPMesh_ptr p_mpmesh);
-void polympo_reconstructVel_f(MPMesh_ptr p_mpmesh);
-void polympo_reconstructStrainRate_f(MPMesh_ptr p_mpmesh);
-void polympo_reconstructStress_f(MPMesh_ptr p_mpmesh);
+void polympo_reconstructMass_f(MPMesh_ptr p_mpmesh, const int reconsOption);
+void polympo_reconstructVel_f(MPMesh_ptr p_mpmesh, const int reconsOption);
+void polympo_reconstructStrainRate_f(MPMesh_ptr p_mpmesh, const int reconsOption);
+void polympo_reconstructStress_f(MPMesh_ptr p_mpmesh, const int reconsOption);
 }
 #endif

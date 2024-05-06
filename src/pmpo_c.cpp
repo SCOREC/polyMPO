@@ -335,6 +335,46 @@ void polympo_getMPRotLatLon_f(MPMesh_ptr p_mpmesh,
   Kokkos::deep_copy(arrayHost, mpRotLatLonCopy);
 }
 
+void polympo_setMPMass_f(MPMesh_ptr p_mpmesh, const int nComps, const int numMPs, const double* mpMassIn) {
+  checkMPMeshValid(p_mpmesh);
+  auto p_MPs = ((polyMPO::MPMesh*)p_mpmesh)->p_MPs;
+  PMT_ALWAYS_ASSERT(nComps == 1); //TODO mp_sclr_t
+  PMT_ALWAYS_ASSERT(numMPs >= p_MPs->getCount());
+  PMT_ALWAYS_ASSERT(numMPs >= p_MPs->getMaxAppID());
+
+  auto mpMass = p_MPs->getData<polyMPO::MPF_Mass>();
+  auto mpAppID = p_MPs->getData<polyMPO::MPF_MP_APP_ID>();
+  kkViewHostU<const double**> mpMassIn_h(mpMassIn,nComps,numMPs);
+  Kokkos::View<double**> mpMassIn_d("mpMassDevice",vec2d_nEntries,numMPs);
+  Kokkos::deep_copy(mpMassIn_d, mpMassIn_h);
+  auto setMPMass = PS_LAMBDA(const int& elm, const int& mp, const int& mask){
+    if(mask){
+      mpMass(mp,0) = mpMassIn_d(0, mpAppID(mp));
+    }
+  };
+  p_MPs->parallel_for(setMPMass, "setMPMass");
+}
+
+void polympo_getMPMass_f(MPMesh_ptr p_mpmesh, const int nComps, const int numMPs, double* mpMassHost) {
+  checkMPMeshValid(p_mpmesh);
+  auto p_MPs = ((polyMPO::MPMesh*)p_mpmesh)->p_MPs;
+  PMT_ALWAYS_ASSERT(nComps == 1); //TODO mp_sclr_t
+  PMT_ALWAYS_ASSERT(numMPs >= p_MPs->getCount());
+  PMT_ALWAYS_ASSERT(numMPs >= p_MPs->getMaxAppID());
+
+  auto mpMass = p_MPs->getData<polyMPO::MPF_Mass>();
+  auto mpAppID = p_MPs->getData<polyMPO::MPF_MP_APP_ID>();
+  Kokkos::View<double**> mpMassCopy("mpMassCopy",vec2d_nEntries,numMPs);
+  auto getMPMass = PS_LAMBDA(const int& elm, const int& mp, const int& mask){
+    if(mask){
+      mpMassCopy(0,mpAppID(mp)) = mpMass(mp,0);
+    }
+  };
+  p_MPs->parallel_for(getMPMass, "getMPMass");
+  kkDbl2dViewHostU arrayHost(mpMassHost,nComps,numMPs);
+  Kokkos::deep_copy(arrayHost, mpMassCopy);
+}
+
 void polympo_setMPVel_f(MPMesh_ptr p_mpmesh, const int nComps, const int numMPs, const double* mpVelIn) {
   checkMPMeshValid(p_mpmesh);
   auto p_MPs = ((polyMPO::MPMesh*)p_mpmesh)->p_MPs;
@@ -375,6 +415,38 @@ void polympo_getMPVel_f(MPMesh_ptr p_mpmesh, const int nComps, const int numMPs,
   p_MPs->parallel_for(getMPVel, "getMPVel");
   kkDbl2dViewHostU arrayHost(mpVelHost,nComps,numMPs);
   Kokkos::deep_copy(arrayHost, mpVelCopy);
+}
+
+//TODO: implement these
+void polympo_setMPStrainRate_f(MPMesh_ptr p_mpmesh, const int nComps, const int numMPs, const double* mpStrainRateIn){
+  checkMPMeshValid(p_mpmesh);
+  auto p_MPs = ((polyMPO::MPMesh*)p_mpmesh)->p_MPs;
+  PMT_ALWAYS_ASSERT(nComps == 6); //TODO: mp_sym_mat3d_t
+  PMT_ALWAYS_ASSERT(numMPs >= p_MPs->getCount());
+  PMT_ALWAYS_ASSERT(numMPs >= p_MPs->getMaxAppID());
+
+  auto mpStrainRate = p_MPs->getData<polyMPO::MPF_Vel>();
+  auto mpAppID = p_MPs->getData<polyMPO::MPF_MP_APP_ID>();
+  kkViewHostU<const double**> mpStrainRateIn_h(mpStrainRateIn,nComps,numMPs);
+  Kokkos::View<double**> mpStrainRateIn_d("mpStrainRateDevice",vec2d_nEntries,numMPs);
+  Kokkos::deep_copy(mpStrainRateIn_d, mpStrainRateIn_h);
+  auto setMPStrainRate = PS_LAMBDA(const int& elm, const int& mp, const int& mask){
+    if(mask){
+      mpStrainRate(mp,0) = mpStrainRateIn_d(0, mpAppID(mp));
+      mpStrainRate(mp,1) = mpStrainRateIn_d(1, mpAppID(mp));
+      mpStrainRate(mp,2) = mpStrainRateIn_d(2, mpAppID(mp));
+      mpStrainRate(mp,3) = mpStrainRateIn_d(3, mpAppID(mp));
+      mpStrainRate(mp,4) = mpStrainRateIn_d(4, mpAppID(mp));
+      mpStrainRate(mp,5) = mpStrainRateIn_d(5, mpAppID(mp));
+    }
+  };
+  p_MPs->parallel_for(setMPStrainRate, "setMPStrainRate");
+}
+void polympo_getMPStrainRate_f(MPMesh_ptr p_mpmesh, const int nComps, const int numMPs, double* mpStrainRateHost){
+}
+void polympo_setMPStress_f(MPMesh_ptr p_mpmesh, const int nComps, const int numMPs, const double* mpStressIn){
+}
+void polympo_getMPStress_f(MPMesh_ptr p_mpmesh, const int nComps, const int numMPs, double* mpStressHost){
 }
 
 void polympo_startMeshFill_f(MPMesh_ptr p_mpmesh){
@@ -712,25 +784,25 @@ void polympo_setReconstructionOption_f(MPMesh_ptr p_mpmesh, const int reconsOpti
 }
 
 //TODO skeleton of reconstruction functions
-void polympo_reconstructMPMass_f(MPMesh_ptr p_mpmesh){
+void polympo_reconstructMPMass_f(MPMesh_ptr p_mpmesh, const int reconsOption){
   checkMPMeshValid(p_mpmesh);
   // auto mpmesh = ((polyMPO::MPMesh*)p_mpmesh);
   // mpmesh->setReconstructSlice<polyMPO::MPF_Mass>();
 }
 
-void polympo_reconstructMPVel_f(MPMesh_ptr p_mpmesh){
+void polympo_reconstructMPVel_f(MPMesh_ptr p_mpmesh, const int reconsOption){
   checkMPMeshValid(p_mpmesh);
   auto mpmesh = ((polyMPO::MPMesh*)p_mpmesh);
   mpmesh->setReconstructSlice<polyMPO::MPF_Vel>();
 }
 
-void polympo_reconstructMPStrainRate_f(MPMesh_ptr p_mpmesh){
+void polympo_reconstructMPStrainRate_f(MPMesh_ptr p_mpmesh, const int reconsOption){
   checkMPMeshValid(p_mpmesh);
   // auto mpmesh = ((polyMPO::MPMesh*)p_mpmesh);
   // mpmesh->setReconstructSlice<polyMPO::MPF_Strain_Rate>();
 }
 
-void polympo_reconstructMPStress_f(MPMesh_ptr p_mpmesh){
+void polympo_reconstructMPStress_f(MPMesh_ptr p_mpmesh, const int reconsOption){
   checkMPMeshValid(p_mpmesh);
   // auto mpmesh = ((polyMPO::MPMesh*)p_mpmesh);
   // mpmesh->setReconstructSlice<polyMPO::MPF_Stress>();

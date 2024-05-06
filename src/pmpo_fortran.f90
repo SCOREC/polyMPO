@@ -562,42 +562,50 @@ module polympo
   !---------------------------------------------------------------------------
   !> @brief start the reconstruction of MP Mass to Mesh Vertices
   !> @param mpmesh(in/out) MPMesh object
+  !> @param reconsOption(in) 1 = True, otherwise False.
   !> TODO not support yet!
   !---------------------------------------------------------------------------
-  subroutine polympo_reconstructMass(mpMesh) &
+  subroutine polympo_reconstructMass(mpMesh, reconsOption) &
              bind(C, NAME='polympo_reconstructMass_f')
     use :: iso_c_binding
     type(c_ptr), value :: mpMesh
+    integer(c_int), value :: reconsOption
   end subroutine
   !---------------------------------------------------------------------------
   !> @brief start the reconstruction of MP Velocity to Mesh Vertices
   !> @param mpmesh(in/out) MPMesh object
+  !> @param reconsOption(in) 1 = True, otherwise False.
   !> TODO not support yet!
   !---------------------------------------------------------------------------
-  subroutine polympo_reconstructVel(mpMesh) &
+  subroutine polympo_reconstructVel(mpMesh, reconsOption) &
              bind(C, NAME='polympo_reconstructVel_f')
     use :: iso_c_binding
     type(c_ptr), value :: mpMesh
+    integer(c_int), value :: reconsOption
   end subroutine
   !---------------------------------------------------------------------------
   !> @brief start the reconstruction of MP Strain Rate to Mesh Vertices
   !> @param mpmesh(in/out) MPMesh object
+  !> @param reconsOption(in) 1 = True, otherwise False.
   !> TODO not support yet!
   !---------------------------------------------------------------------------
-  subroutine polympo_reconstructStrainRate(mpMesh) &
+  subroutine polympo_reconstructStrainRate(mpMesh, reconsOption) &
              bind(C, NAME='polympo_reconstructStrainRate_f')
     use :: iso_c_binding
     type(c_ptr), value :: mpMesh
+    integer(c_int), value :: reconsOption
   end subroutine
   !---------------------------------------------------------------------------
   !> @brief start the reconstruction of MP Stress to Mesh Vertices
   !> @param mpmesh(in/out) MPMesh object
+  !> @param reconsOption(in) 1 = True, otherwise False.
   !> TODO not support yet!
   !---------------------------------------------------------------------------
-  subroutine polympo_reconstructStress(mpMesh) &
+  subroutine polympo_reconstructStress(mpMesh, reconsOption) &
              bind(C, NAME='polympo_reconstructStress_f')
     use :: iso_c_binding
     type(c_ptr), value :: mpMesh
+    integer(c_int), value :: reconsOption
   end subroutine
   end interface
   contains

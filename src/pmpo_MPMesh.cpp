@@ -291,7 +291,7 @@ void MPMesh::printVTP_mesh(int printVTPIndex){
     FILE * pFile = fopen(fileOutput,"w");
     free(fileOutput);
 
-    DoubleVec3dView::HostMirror h_vtxCoords = Kokkos::create_mirror_view(vtxCoords);
+    auto h_vtxCoords = Kokkos::create_mirror_view(vtxCoords);
     IntVtx2ElmView::HostMirror h_elm2VtxConn = Kokkos::create_mirror_view(elm2VtxConn);
     const int nCells = p_mesh->getNumElements();
     const int nVertices = p_mesh->getNumVertices();

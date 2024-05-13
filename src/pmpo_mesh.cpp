@@ -16,27 +16,27 @@ namespace polyMPO{
 
         auto vtxCoordsMapEntry = meshFields2TypeAndString.at(MeshF_VtxCoords);
         PMT_ALWAYS_ASSERT(vtxCoordsMapEntry.first == MeshFType_VtxBased);
-        vtxCoords_ = DoubleVec3dView(vtxCoordsMapEntry.second,numVtxs_);
+        vtxCoords_ = MeshFView<MeshF_VtxCoords>(vtxCoordsMapEntry.second,numVtxs_);
 
         auto vtxRotLatMapEntry = meshFields2TypeAndString.at(MeshF_VtxRotLat);
         PMT_ALWAYS_ASSERT(vtxRotLatMapEntry.first == MeshFType_VtxBased);
-        vtxRotLat_ = DoubleSclrView(vtxRotLatMapEntry.second,numVtxs_);
+        vtxRotLat_ = MeshFView<MeshF_VtxRotLat>(vtxRotLatMapEntry.second,numVtxs_);
 
         auto vtxVelMapEntry = meshFields2TypeAndString.at(MeshF_Vel);
         PMT_ALWAYS_ASSERT(vtxVelMapEntry.first == MeshFType_VtxBased);
-        vtxVel_ = DoubleVec2dView(vtxVelMapEntry.second,numVtxs_);
+        vtxVel_ = MeshFView<MeshF_Vel>(vtxVelMapEntry.second,numVtxs_);
 
         auto vtxOnSurfVeloIncrMapEntry = meshFields2TypeAndString.at(MeshF_OnSurfVeloIncr);
         PMT_ALWAYS_ASSERT(vtxOnSurfVeloIncrMapEntry.first == MeshFType_VtxBased);
-        vtxOnSurfVeloIncr_ = DoubleVec2dView(vtxOnSurfVeloIncrMapEntry.second,numVtxs_);
+        vtxOnSurfVeloIncr_ = MeshFView<MeshF_OnSurfVeloIncr>(vtxOnSurfVeloIncrMapEntry.second,numVtxs_);
 
         auto vtxOnSurfDispIncrMapEntry = meshFields2TypeAndString.at(MeshF_OnSurfDispIncr);
         PMT_ALWAYS_ASSERT(vtxOnSurfDispIncrMapEntry.first == MeshFType_VtxBased);
-        vtxOnSurfDispIncr_ = DoubleVec2dView(vtxOnSurfDispIncrMapEntry.second,numVtxs_);
+        vtxOnSurfDispIncr_ = MeshFView<MeshF_OnSurfDispIncr>(vtxOnSurfDispIncrMapEntry.second,numVtxs_);
 
         auto vtxRotLatLonIncrMapEntry = meshFields2TypeAndString.at(MeshF_RotLatLonIncr);
         PMT_ALWAYS_ASSERT(vtxRotLatLonIncrMapEntry.first == MeshFType_VtxBased);
-        vtxRotLatLonIncr_ = DoubleVec2dView(vtxRotLatLonIncrMapEntry.second,numVtxs_);
+        vtxRotLatLonIncr_ = MeshFView<MeshF_RotLatLonIncr>(vtxRotLatLonIncrMapEntry.second,numVtxs_);
     }
     
     void Mesh::computeRotLatLonIncr(){

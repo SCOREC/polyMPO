@@ -80,6 +80,9 @@ static constexpr int getSize() {
 
 template <MaterialPointSlice slice> const int mpSliceToMeshFieldSize = getSize<slice>();
 
+template <MaterialPointSlice slice>
+using MPSView = Kokkos::View<typename mpSliceToMeshField<slice>::type*>;
+
 const static std::vector<std::pair<MaterialPointSlice, MaterialPointSlice>>
         mpSliceSwap = {{MPF_Cur_Elm_ID, MPF_Tgt_Elm_ID},
                        {MPF_Cur_Pos_Rot_Lat_Lon, MPF_Tgt_Pos_Rot_Lat_Lon},
@@ -128,7 +131,7 @@ class MaterialPoints {
 
   public:
     MaterialPoints() : MPs(nullptr) {};
-    MaterialPoints(int numElms, int numMPs, DoubleVec3dView positions, IntView mpsPerElm, IntView mp2elm);
+    MaterialPoints(int numElms, int numMPs, MPSView<MPF_Cur_Pos_XYZ> positions, IntView mpsPerElm, IntView mp2elm);
     MaterialPoints(int numElms, int numMPs, IntView mpsPerElm, IntView mp2elm, IntView mpAppID);
     ~MaterialPoints();
 

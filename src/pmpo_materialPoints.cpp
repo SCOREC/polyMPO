@@ -19,7 +19,7 @@ pumipic::MemberTypeViews createInternalMemberViews(int numMPs, View mp2elm, View
   return mpInfo;
 }
 
-PS* createDPS(int numElms, int numMPs, DoubleVec3dView positions, IntView mpsPerElm, IntView mp2elm) {
+PS* createDPS(int numElms, int numMPs, MPSView<MPF_Cur_Pos_XYZ> positions, IntView mpsPerElm, IntView mp2elm) {
   PS::kkGidView elmGids("elementGlobalIds", numElms); //TODO - initialize this to [0..numElms)
   auto mpInfo = ps::createMemberViews<MaterialPointTypes>(numMPs);
   auto mpPositions = ps::getMemberView<MaterialPointTypes, MPF_Cur_Pos_XYZ>(mpInfo);
@@ -51,7 +51,7 @@ PS* createDPS(int numElms, int numMPs, IntView mpsPerElm, IntView mp2elm, IntVie
 
 } //End anonymous namespace
 
-MaterialPoints::MaterialPoints(int numElms, int numMPs, DoubleVec3dView positions, IntView mpsPerElm, IntView mp2elm) {
+MaterialPoints::MaterialPoints(int numElms, int numMPs, MPSView<MPF_Cur_Pos_XYZ> positions, IntView mpsPerElm, IntView mp2elm) {
   MPs = createDPS(numElms, numMPs, positions, mpsPerElm, mp2elm);
   maxAppID = numMPs; //this ctor does not support inactive MPs
   operating_mode = MP_RELEASE;

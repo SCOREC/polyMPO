@@ -12,11 +12,6 @@ using IntVtx2ElmView = Kokkos::View<int*[maxVtxsPerElm+1]>;
 using IntElm2VtxView = Kokkos::View<int*[maxElmsPerVtx+1]>;
 using IntElm2ElmView = Kokkos::View<int*[maxVtxsPerElm+1]>;
 
-using DoubleSclrView = Kokkos::View<double*>;
-using DoubleVec2dView = Kokkos::View<double*[vec2d_nEntries]>;
-using DoubleVec3dView = Kokkos::View<double*[vec3d_nEntries]>;
-using DoubleSymMat3dView = Kokkos::View<double*[6]>;
-
 enum MeshFieldIndex{
     MeshF_Invalid = -2,
     MeshF_Unsupported,
@@ -33,6 +28,18 @@ enum MeshFieldType{
     MeshFType_VtxBased,
     MeshFType_ElmBased
 };
+
+template <MeshFieldIndex> struct meshFieldToType;
+template <> struct meshFieldToType < MeshF_VtxCoords         > { using type = Kokkos::View<vec3d_t*>; };
+template <> struct meshFieldToType < MeshF_VtxRotLat         > { using type = Kokkos::View<double*>; };
+template <> struct meshFieldToType < MeshF_Vel               > { using type = Kokkos::View<vec2d_t*>; };
+template <> struct meshFieldToType < MeshF_OnSurfVeloIncr    > { using type = Kokkos::View<vec2d_t*>; };
+template <> struct meshFieldToType < MeshF_OnSurfDispIncr    > { using type = Kokkos::View<vec2d_t*>; };
+template <> struct meshFieldToType < MeshF_RotLatLonIncr     > { using type = Kokkos::View<vec2d_t*>; };
+
+template <MeshFieldIndex index>
+using MeshFView = typename meshFieldToType<index>::type;
+
 const std::map<MeshFieldIndex, std::pair<MeshFieldType,
                                          std::string>> meshFields2TypeAndString = 
               {{MeshF_Invalid,          {MeshFType_Invalid,"MeshField_InValid!"}},
@@ -68,12 +75,12 @@ class Mesh {
     IntElm2ElmView elm2ElmConn_;
   
     //start of meshFields
-    DoubleVec3dView vtxCoords_;
-    DoubleSclrView vtxRotLat_;
-    DoubleVec2dView vtxVel_;
-    DoubleVec2dView vtxOnSurfVeloIncr_;
-    DoubleVec2dView vtxOnSurfDispIncr_;
-    DoubleVec2dView vtxRotLatLonIncr_;
+    MeshFView<MeshF_VtxCoords> vtxCoords_;
+    MeshFView<MeshF_VtxRotLat> vtxRotLat_;
+    MeshFView<MeshF_Vel> vtxVel_;
+    MeshFView<MeshF_OnSurfVeloIncr> vtxOnSurfVeloIncr_;
+    MeshFView<MeshF_OnSurfDispIncr> vtxOnSurfDispIncr_;
+    MeshFView<MeshF_RotLatLonIncr> vtxRotLatLonIncr_;
     //DoubleMat2DView vtxStress_;
 
   public:
@@ -83,7 +90,7 @@ class Mesh {
           double sphereRadius,
           int numVtxs,
           int numElms,
-          DoubleVec3dView vtxCoords,
+          MeshFView<MeshF_VtxCoords> vtxCoords,
           IntVtx2ElmView elm2VtxConn,
           IntElm2ElmView elm2ElmConn ):
           meshType_(meshType),

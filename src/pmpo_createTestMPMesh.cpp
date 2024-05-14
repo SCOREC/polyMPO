@@ -15,8 +15,8 @@ Mesh* createMesh(const mesh_type meshType, const geom_type geomType,
                  const std::vector<std::vector<int>> &elm2ElmConn_array){
     const int nCells = nCells_size;
     const int nVertices = nVertices_size;
-    DoubleVec3dView vtxCoords("verticesCoordinates", nVertices);
-    DoubleVec3dView::HostMirror h_vtxCoords = Kokkos::create_mirror_view(vtxCoords);
+    MeshFView<MeshF_VtxCoords> vtxCoords("verticesCoordinates", nVertices);
+    auto h_vtxCoords = Kokkos::create_mirror_view(vtxCoords);
     for(int i=0; i<nVertices_size; i++){
         h_vtxCoords(i,0) = v_array[i][0]; 
         h_vtxCoords(i,1) = v_array[i][1];
@@ -149,8 +149,8 @@ MaterialPoints* initTestMPs(Mesh* mesh, int testMPOption){
         default:
             fprintf(stderr,"TestMPOption not avaiable! return an empty one!");
     }
-    DoubleVec3dView vtxCoords = mesh->getMeshField<polyMPO::MeshF_VtxCoords>();   
-    IntVtx2ElmView elm2VtxConn = mesh->getElm2VtxConn();
+    auto vtxCoords = mesh->getMeshField<polyMPO::MeshF_VtxCoords>();   
+    auto elm2VtxConn = mesh->getElm2VtxConn();
     auto geomType = mesh->getGeomType();
 
     int numMPs = 0;
@@ -173,8 +173,8 @@ MaterialPoints* initTestMPs(Mesh* mesh, int testMPOption){
         iMP += numMPsPerElement(i); 
     },numMPs);
 
-    DoubleVec3dView positions("MPpositions",numMPs);
-    DoubleVec2dView latLonPositions("MPRotLatLonPositions",numMPs); 
+    MPSView<MPF_Cur_Pos_XYZ> positions("MPpositions",numMPs);
+    MPSView<MPF_Cur_Pos_Rot_Lat_Lon> latLonPositions("MPRotLatLonPositions",numMPs); 
     if(geomType == geom_planar_surf){     
         Kokkos::parallel_for("intializeMPsPositionPlanar", numMPs, KOKKOS_LAMBDA(const int iMP){
             int ielm = MPToElement(iMP);
@@ -245,8 +245,8 @@ Mesh* replicateMesh(Mesh* mesh, int replicateFactor){
     const int nCells = nCells_size*replicateFactor;
     const int nVertices = nVertices_size*replicateFactor;
      
-    DoubleVec3dView v_array = mesh->getMeshField<polyMPO::MeshF_VtxCoords>(); 
-    DoubleVec3dView vtxCoords("verticesCoordinates", nVertices);
+    auto v_array = mesh->getMeshField<polyMPO::MeshF_VtxCoords>(); 
+    MeshFView<polyMPO::MeshF_VtxCoords> vtxCoords("verticesCoordinates", nVertices);
     Kokkos::parallel_for("set vtxCoords", nVertices_size, KOKKOS_LAMBDA(const int i){
         for(int f=0; f<replicateFactor; f++){
             vtxCoords(i+f*nVertices_size,0) = v_array(i,0); 

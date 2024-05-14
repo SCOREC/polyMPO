@@ -18,9 +18,6 @@ using hostSpace = Kokkos::HostSpace;
 using defaultSpace = Kokkos::DefaultExecutionSpace::memory_space;
 
 typedef double mp_sclr_t[1];//TODO
-typedef vec2d_t mp_vec2d_t;
-typedef double mp_vec3d_t[3];//TODO
-typedef double mp_sym_mat3d_t[6];//TODO
 typedef double mp_basis_t[maxVtxsPerElm];
 typedef double mp_basis_grad2d_t[maxVtxsPerElm*2];
 typedef double mp_constv_mdl_param_t[12];
@@ -57,20 +54,20 @@ template <MaterialPointSlice> struct mpSliceToMeshField;
 template <> struct mpSliceToMeshField < MPF_Status              > { using type = int; };
 template <> struct mpSliceToMeshField < MPF_Cur_Elm_ID          > { using type = int; };
 template <> struct mpSliceToMeshField < MPF_Tgt_Elm_ID          > { using type = int; };
-template <> struct mpSliceToMeshField < MPF_Cur_Pos_Rot_Lat_Lon > { using type = mp_vec2d_t; };
-template <> struct mpSliceToMeshField < MPF_Tgt_Pos_Rot_Lat_Lon > { using type = mp_vec2d_t; };
-template <> struct mpSliceToMeshField < MPF_Cur_Pos_XYZ         > { using type = mp_vec3d_t; };
-template <> struct mpSliceToMeshField < MPF_Tgt_Pos_XYZ         > { using type = mp_vec3d_t; };
+template <> struct mpSliceToMeshField < MPF_Cur_Pos_Rot_Lat_Lon > { using type = vec2d_t; };
+template <> struct mpSliceToMeshField < MPF_Tgt_Pos_Rot_Lat_Lon > { using type = vec2d_t; };
+template <> struct mpSliceToMeshField < MPF_Cur_Pos_XYZ         > { using type = vec3d_t; };
+template <> struct mpSliceToMeshField < MPF_Tgt_Pos_XYZ         > { using type = vec3d_t; };
 template <> struct mpSliceToMeshField < MPF_Flag_Basis_Vals     > { using type = int; };
 template <> struct mpSliceToMeshField < MPF_Basis_Vals          > { using type = mp_basis_t; };
 template <> struct mpSliceToMeshField < MPF_Basis_Grad_Vals     > { using type = mp_basis_grad2d_t; };
 template <> struct mpSliceToMeshField < MPF_Mass                > { using type = mp_sclr_t; };
-template <> struct mpSliceToMeshField < MPF_Vel                 > { using type = mp_vec2d_t; };
-template <> struct mpSliceToMeshField < MPF_Rot_Lat_Lon_Incr    > { using type = mp_vec2d_t; };
-template <> struct mpSliceToMeshField < MPF_Strain_Rate         > { using type = mp_sym_mat3d_t; };
-template <> struct mpSliceToMeshField < MPF_Stress              > { using type = mp_sym_mat3d_t; };
-template <> struct mpSliceToMeshField < MPF_Stress_Div          > { using type = mp_vec3d_t; };
-template <> struct mpSliceToMeshField < MPF_Shear_Traction      > { using type = mp_vec3d_t; };
+template <> struct mpSliceToMeshField < MPF_Vel                 > { using type = vec2d_t; };
+template <> struct mpSliceToMeshField < MPF_Rot_Lat_Lon_Incr    > { using type = vec2d_t; };
+template <> struct mpSliceToMeshField < MPF_Strain_Rate         > { using type = sym_mat3d_t; };
+template <> struct mpSliceToMeshField < MPF_Stress              > { using type = sym_mat3d_t; };
+template <> struct mpSliceToMeshField < MPF_Stress_Div          > { using type = vec3d_t; };
+template <> struct mpSliceToMeshField < MPF_Shear_Traction      > { using type = vec3d_t; };
 template <> struct mpSliceToMeshField < MPF_Constv_Mdl_Param    > { using type = mp_constv_mdl_param_t; };
 template <> struct mpSliceToMeshField < MPF_MP_APP_ID           > { using type = int; };
 
@@ -82,6 +79,9 @@ static constexpr int getSize() {
 }
 
 template <MaterialPointSlice slice> const int mpSliceToMeshFieldSize = getSize<slice>();
+
+template <MaterialPointSlice slice>
+using MPSView = Kokkos::View<typename mpSliceToMeshField<slice>::type*>;
 
 const static std::vector<std::pair<MaterialPointSlice, MaterialPointSlice>>
         mpSliceSwap = {{MPF_Cur_Elm_ID, MPF_Tgt_Elm_ID},
@@ -131,7 +131,7 @@ class MaterialPoints {
 
   public:
     MaterialPoints() : MPs(nullptr) {};
-    MaterialPoints(int numElms, int numMPs, DoubleVec3dView positions, IntView mpsPerElm, IntView mp2elm);
+    MaterialPoints(int numElms, int numMPs, MPSView<MPF_Cur_Pos_XYZ> positions, IntView mpsPerElm, IntView mp2elm);
     MaterialPoints(int numElms, int numMPs, IntView mpsPerElm, IntView mp2elm, IntView mpAppID);
     ~MaterialPoints();
 

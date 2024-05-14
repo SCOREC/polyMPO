@@ -562,50 +562,54 @@ module polympo
   !---------------------------------------------------------------------------
   !> @brief start the reconstruction of MP Mass to Mesh Vertices
   !> @param mpmesh(in/out) MPMesh object
-  !> @param reconsOption(in) 1 = True, otherwise False.
+  !> @param order Order of the reconstruction field
+  !> @param meshEntType Mesh entity type
   !> TODO not support yet!
   !---------------------------------------------------------------------------
-  subroutine polympo_reconstructMass(mpMesh, reconsOption) &
+  subroutine polympo_reconstructMass(mpMesh, order, meshEntType) &
              bind(C, NAME='polympo_reconstructMass_f')
     use :: iso_c_binding
     type(c_ptr), value :: mpMesh
-    integer(c_int), value :: reconsOption
+    integer(c_int), value :: order, meshEntType
   end subroutine
   !---------------------------------------------------------------------------
   !> @brief start the reconstruction of MP Velocity to Mesh Vertices
   !> @param mpmesh(in/out) MPMesh object
-  !> @param reconsOption(in) 1 = True, otherwise False.
+  !> @param order Order of the reconstruction field
+  !> @param meshEntType Mesh entity type
   !> TODO not support yet!
   !---------------------------------------------------------------------------
-  subroutine polympo_reconstructVel(mpMesh, reconsOption) &
+  subroutine polympo_reconstructVel(mpMesh, order, meshEntType) &
              bind(C, NAME='polympo_reconstructVel_f')
     use :: iso_c_binding
     type(c_ptr), value :: mpMesh
-    integer(c_int), value :: reconsOption
+    integer(c_int), value :: order, meshEntType
   end subroutine
   !---------------------------------------------------------------------------
   !> @brief start the reconstruction of MP Strain Rate to Mesh Vertices
   !> @param mpmesh(in/out) MPMesh object
-  !> @param reconsOption(in) 1 = True, otherwise False.
+  !> @param order Order of the reconstruction field
+  !> @param meshEntType Mesh entity type
   !> TODO not support yet!
   !---------------------------------------------------------------------------
-  subroutine polympo_reconstructStrainRate(mpMesh, reconsOption) &
+  subroutine polympo_reconstructStrainRate(mpMesh, order, meshEntType) &
              bind(C, NAME='polympo_reconstructStrainRate_f')
     use :: iso_c_binding
     type(c_ptr), value :: mpMesh
-    integer(c_int), value :: reconsOption
+    integer(c_int), value :: order, meshEntType
   end subroutine
   !---------------------------------------------------------------------------
   !> @brief start the reconstruction of MP Stress to Mesh Vertices
   !> @param mpmesh(in/out) MPMesh object
-  !> @param reconsOption(in) 1 = True, otherwise False.
+  !> @param order Order of the reconstruction field
+  !> @param meshEntType Mesh entity type
   !> TODO not support yet!
   !---------------------------------------------------------------------------
-  subroutine polympo_reconstructStress(mpMesh, reconsOption) &
+  subroutine polympo_reconstructStress(mpMesh, order, meshEntType) &
              bind(C, NAME='polympo_reconstructStress_f')
     use :: iso_c_binding
     type(c_ptr), value :: mpMesh
-    integer(c_int), value :: reconsOption
+    integer(c_int), value :: order, meshEntType
   end subroutine
   end interface
   contains

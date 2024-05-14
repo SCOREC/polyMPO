@@ -784,25 +784,25 @@ void polympo_setReconstructionOption_f(MPMesh_ptr p_mpmesh, const int reconsOpti
 }
 
 //TODO skeleton of reconstruction functions
-void polympo_reconstructMPMass_f(MPMesh_ptr p_mpmesh, const int reconsOption){
+void polympo_reconstructMPMass_f(MPMesh_ptr p_mpmesh, const int order, const int meshEntType){
   checkMPMeshValid(p_mpmesh);
   // auto mpmesh = ((polyMPO::MPMesh*)p_mpmesh);
   // mpmesh->setReconstructSlice<polyMPO::MPF_Mass>();
 }
 
-void polympo_reconstructMPVel_f(MPMesh_ptr p_mpmesh, const int reconsOption){
+void polympo_reconstructMPVel_f(MPMesh_ptr p_mpmesh, const int order, const int meshEntType){
   checkMPMeshValid(p_mpmesh);
   auto mpmesh = ((polyMPO::MPMesh*)p_mpmesh);
   mpmesh->setReconstructSlice<polyMPO::MPF_Vel>();
 }
 
-void polympo_reconstructMPStrainRate_f(MPMesh_ptr p_mpmesh, const int reconsOption){
+void polympo_reconstructMPStrainRate_f(MPMesh_ptr p_mpmesh, const int order, const int meshEntType){
   checkMPMeshValid(p_mpmesh);
   // auto mpmesh = ((polyMPO::MPMesh*)p_mpmesh);
   // mpmesh->setReconstructSlice<polyMPO::MPF_Strain_Rate>();
 }
 
-void polympo_reconstructMPStress_f(MPMesh_ptr p_mpmesh, const int reconsOption){
+void polympo_reconstructMPStress_f(MPMesh_ptr p_mpmesh, const int order, const int meshEntType){
   checkMPMeshValid(p_mpmesh);
   // auto mpmesh = ((polyMPO::MPMesh*)p_mpmesh);
   // mpmesh->setReconstructSlice<polyMPO::MPF_Stress>();

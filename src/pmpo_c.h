@@ -74,9 +74,9 @@ void polympo_push_f(MPMesh_ptr p_mpmesh);
 
 // Reconstruction of variables from MPs to mesh vertices
 void polympo_setReconstructionOption_f(MPMesh_ptr p_mpmesh, const int reconsOption);
-void polympo_reconstructMass_f(MPMesh_ptr p_mpmesh, const int reconsOption);
-void polympo_reconstructVel_f(MPMesh_ptr p_mpmesh, const int reconsOption);
-void polympo_reconstructStrainRate_f(MPMesh_ptr p_mpmesh, const int reconsOption);
-void polympo_reconstructStress_f(MPMesh_ptr p_mpmesh, const int reconsOption);
+void polympo_reconstructMass_f(MPMesh_ptr p_mpmesh, const int order, const int meshEntType);
+void polympo_reconstructVel_f(MPMesh_ptr p_mpmesh, const int order, const int meshEntType);
+void polympo_reconstructStrainRate_f(MPMesh_ptr p_mpmesh, const int order, const int meshEntType);
+void polympo_reconstructStress_f(MPMesh_ptr p_mpmesh, const int order, const int meshEntType);
 }
 #endif

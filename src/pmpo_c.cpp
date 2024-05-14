@@ -783,6 +783,12 @@ void polympo_setReconstructionOption_f(MPMesh_ptr p_mpmesh, const int reconsOpti
   mpmesh->reconsOption = reconsOption;
 }
 
+void polympo_reconstruct_f(MPMesh_ptr p_mpmesh){
+  checkMPMeshValid(p_mpmesh);
+  auto mpmesh = ((polyMPO::MPMesh*)p_mpmesh);
+  mpmesh->reconstructSlices();
+}
+
 //TODO skeleton of reconstruction functions
 void polympo_reconstructMPMass_f(MPMesh_ptr p_mpmesh, const int order, const int meshEntType){
   checkMPMeshValid(p_mpmesh);

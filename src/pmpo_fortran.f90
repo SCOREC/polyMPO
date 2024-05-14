@@ -560,6 +560,15 @@ module polympo
     integer(c_int), value :: reconsOption
   end subroutine
   !---------------------------------------------------------------------------
+  !> @brief directly call the reconstruct of the MP fields to mesh fields
+  !> @param mpmesh(in/out) MPMesh object
+  !---------------------------------------------------------------------------
+  subroutine polympo_reconstruct(mpMesh) &
+             bind(C, NAME='polympo_reconstruct_f')
+    use :: iso_c_binding
+    type(c_ptr), value :: mpMesh
+  end subroutine
+  !---------------------------------------------------------------------------
   !> @brief start the reconstruction of MP Mass to Mesh Vertices
   !> @param mpmesh(in/out) MPMesh object
   !> @param order Order of the reconstruction field

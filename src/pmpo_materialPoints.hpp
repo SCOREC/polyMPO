@@ -17,10 +17,6 @@ using particle_structs::MemberTypes;
 using hostSpace = Kokkos::HostSpace;
 using defaultSpace = Kokkos::DefaultExecutionSpace::memory_space;
 
-typedef double mp_sclr_t[1];//TODO
-typedef double mp_basis_t[maxVtxsPerElm];
-typedef double mp_basis_grad2d_t[maxVtxsPerElm*2];
-typedef double mp_constv_mdl_param_t[12];
 typedef std::function<int()> IntFunc;
 
 enum MaterialPointSlice {
@@ -59,16 +55,16 @@ template <> struct mpSliceToMeshField < MPF_Tgt_Pos_Rot_Lat_Lon > { using type =
 template <> struct mpSliceToMeshField < MPF_Cur_Pos_XYZ         > { using type = vec3d_t; };
 template <> struct mpSliceToMeshField < MPF_Tgt_Pos_XYZ         > { using type = vec3d_t; };
 template <> struct mpSliceToMeshField < MPF_Flag_Basis_Vals     > { using type = int; };
-template <> struct mpSliceToMeshField < MPF_Basis_Vals          > { using type = mp_basis_t; };
-template <> struct mpSliceToMeshField < MPF_Basis_Grad_Vals     > { using type = mp_basis_grad2d_t; };
-template <> struct mpSliceToMeshField < MPF_Mass                > { using type = mp_sclr_t; };
+template <> struct mpSliceToMeshField < MPF_Basis_Vals          > { using type = double[maxVtxsPerElm]; };
+template <> struct mpSliceToMeshField < MPF_Basis_Grad_Vals     > { using type = double[maxVtxsPerElm*2]; };
+template <> struct mpSliceToMeshField < MPF_Mass                > { using type = double[1]; };
 template <> struct mpSliceToMeshField < MPF_Vel                 > { using type = vec2d_t; };
 template <> struct mpSliceToMeshField < MPF_Rot_Lat_Lon_Incr    > { using type = vec2d_t; };
-template <> struct mpSliceToMeshField < MPF_Strain_Rate         > { using type = sym_mat3d_t; };
-template <> struct mpSliceToMeshField < MPF_Stress              > { using type = sym_mat3d_t; };
+template <> struct mpSliceToMeshField < MPF_Strain_Rate         > { using type = double[6]; };
+template <> struct mpSliceToMeshField < MPF_Stress              > { using type = double[6]; };
 template <> struct mpSliceToMeshField < MPF_Stress_Div          > { using type = vec3d_t; };
 template <> struct mpSliceToMeshField < MPF_Shear_Traction      > { using type = vec3d_t; };
-template <> struct mpSliceToMeshField < MPF_Constv_Mdl_Param    > { using type = mp_constv_mdl_param_t; };
+template <> struct mpSliceToMeshField < MPF_Constv_Mdl_Param    > { using type = double[12]; };
 template <> struct mpSliceToMeshField < MPF_MP_APP_ID           > { using type = int; };
 
 template <MaterialPointSlice slice> 

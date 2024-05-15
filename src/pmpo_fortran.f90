@@ -193,6 +193,34 @@ module polympo
     type(c_ptr), value :: array
   end subroutine
   !---------------------------------------------------------------------------
+  !> @brief set the Mass MP array from a host array
+  !> @param mpmesh(in/out) MPMesh object
+  !> @param nComps(in) number of components, should always be 1
+  !> @param numMPs(in) number of the MPs
+  !> @param array(in) input MP Mass 1D array (numMPs)
+  !---------------------------------------------------------------------------
+  subroutine polympo_setMPMass(mpMesh, nComps, numMPs, array) &
+             bind(C, NAME='polympo_setMPMass_f')
+    use :: iso_c_binding
+    type(c_ptr), value :: mpMesh
+    integer(c_int), value :: nComps, numMPs
+    type(c_ptr), intent(in), value :: array
+  end subroutine
+  !---------------------------------------------------------------------------
+  !> @brief get the Mass MP array from a polympo array
+  !> @param mpmesh(in/out) MPMesh object
+  !> @param nComps(in) number of components, should always be 1
+  !> @param numMPs(in) number of the MPs
+  !> @param array(in/out) output MP Mass 1D array (numMPs), allocated by user
+  !---------------------------------------------------------------------------
+  subroutine polympo_getMPMass(mpMesh, nComps, numMPs, array) &
+             bind(C, NAME='polympo_getMPMass_f')
+    use :: iso_c_binding
+    type(c_ptr), value :: mpMesh
+    integer(c_int), value :: nComps, numMPs
+    type(c_ptr), value :: array
+  end subroutine
+  !---------------------------------------------------------------------------
   !> @brief set the velocity MP array from a host array
   !> @param mpmesh(in/out) MPMesh object
   !> @param nComps(in) number of components, should always be 2

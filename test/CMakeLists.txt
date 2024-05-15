@@ -68,6 +68,7 @@ pmpo_add_fortran_exe(testFortranMPMeshModule testFortranMPMeshModule.f90)
 pmpo_add_fortran_exe(testFortranMPAppIDs testFortranMPAppIDs.f90)
 pmpo_add_fortran_exe(testFortranMPAdvection testFortranMPAdvection.f90)
 pmpo_add_fortran_exe(testFortranCreateRebuildMPs testFortranCreateRebuildMPs.f90)
+pmpo_add_fortran_exe(testFortranMPReconstruction testFortranMPReconstruction.f90)
 
 #add test
 find_program(MPIRUN_EXECUTABLE NAMES mpirun) 
@@ -105,6 +106,7 @@ else()
 endif()
 pmpo_add_test(testFortranReadMPAS ./testFortranReadMPAS ${TEST_NC_FILE})
 pmpo_add_test(testFortranCreateRebuildMPs ./testFortranCreateRebuildMPs ${TEST_NC_FILE})
+pmpo_add_test(testFortranMPReconstruction ./testFortranMPReconstruction ${TEST_NC_FILE})
 
 pmpo_add_test(test_timing ./timeAssmblyWachspress 1 ${TEST_NC_FILE})
 pmpo_add_test(test_wachspress ./testWachspress ${TEST_NC_FILE})

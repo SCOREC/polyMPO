@@ -16,7 +16,6 @@ program main
   integer :: maxEdges, vertexDegree, nCells, nVertices
   integer :: nCompsDisp
   integer :: mpi_comm_handle = MPI_COMM_WORLD
-  real(kind=MPAS_RKIND) :: xc, yc, zc, radius, maxlon, minlon, deltaLon, lon
   real(kind=MPAS_RKIND) :: pi = 4.0_MPAS_RKIND*atan(1.0_MPAS_RKIND)
   character (len=2048) :: filename
   real(kind=MPAS_RKIND), dimension(:,:), pointer :: dispIncr
@@ -29,6 +28,8 @@ program main
   integer :: numMPs 
   integer, dimension(:), pointer :: mpsPerElm, mp2Elm, isMPActive
   real(kind=MPAS_RKIND), dimension(:,:), pointer :: mpPosition, mpLatLon
+  real(kind=MPAS_RKIND), dimension(:,:), pointer :: mpMass, mpVel
+  real(kind=MPAS_RKIND), dimension(:), pointer :: meshMass, meshVelU, meshVelV
   logical :: inBound
   integer, parameter :: MP_ACTIVE = 1
   integer, parameter :: MP_INACTIVE = 0
@@ -61,6 +62,7 @@ program main
 
   setMeshOption = 0 !create an empty mesh
   setMPOption = 0   !create an empty set of MPs
+  sphereRadius = 1
   mpMesh = polympo_createMPMesh(setMeshOption,setMPOption) !creates test mesh
   call loadMPASMeshInPolyMPO(mpMesh, maxEdges, vertexDegree, &
                         nCells, nVertices, nEdgesOnCell, &
@@ -78,96 +80,61 @@ program main
   allocate(isMPActive(numMPs))
   allocate(mpPosition(3,numMPs))
   allocate(mpLatLon(2,numMPs))
+  allocate(mpMass(1,numMPs))
+  allocate(mpVel(2,numMPs))
+  allocate(meshMass(nVertices))
+  allocate(meshVelU(nVertices))
+  allocate(meshVelV(nVertices))
 
   isMPActive = MP_ACTIVE !all active MPs and some changed below
   mpsPerElm = 1 !all elements have 1 MP and some changed below
   do i = 1,numMPs
     mp2Elm(i) = i
+    mpMass(1,i) = real(i,MPAS_RKIND) + 1.0_MPAS_RKIND
+    mpVel(1,i) = real(i,MPAS_RKIND)*2.0_MPAS_RKIND 
+    mpVel(2,i) = real(i,MPAS_RKIND)*2.0_MPAS_RKIND + 1.0_MPAS_RKIND 
+    j = verticesOnCell(1,i)
+    mpLatLon(1,j) = latVertex(j)
+    mpLatLon(2,j) = lonVertex(j) 
+    mpPosition(1,j) = xVertex(j)
+    mpPosition(2,j) = yVertex(j)
+    mpPosition(3,j) = zVertex(j)
+    !write(*,*) i, mpVel(1,i), mpVel(2,i)
   end do
-  do i = 1, numMPs
-    inBound = .true.
-    do k = 1, nEdgesOnCell(i)
-      j = verticesOnCell(k,i)
-      if ((latVertex(j) .gt. 0.4*pi) .or. (latVertex(j) .lt. -0.4*pi)) then
-        inBound = .false.
-        isMPActive(i) = MP_INACTIVE
-        mpsPerElm(i) = 0
-        mp2Elm(i) = INVALID_ELM_ID
-        EXIT  
-      endif
-    end do
+  !write(*,*) mpVel(1,1), mpVel(2,1)
+  !write(*,*) mpVel(1,2), mpVel(2,2)
+  !write(*,*) mpVel(1,3), mpVel(2,3)
 
-    if (inBound) then
-      xc = 0.0_MPAS_RKIND
-      yc = 0.0_MPAS_RKIND
-      zc = 0.0_MPAS_RKIND
-      do k = 1, nEdgesOnCell(i)
-        j = verticesOnCell(k,i)
-        xc = xc + xVertex(j) 
-        yc = yc + yVertex(j) 
-        zc = zc + zVertex(j) 
-        xComputed = sphereRadius*cos(latVertex(j))*cos(lonVertex(j))
-        yComputed = sphereRadius*cos(latVertex(j))*sin(lonVertex(j))
-        zComputed = sphereRadius*sin(latVertex(j))
-        latComputed = asin(zVertex(j)/sphereRadius)
-        lonComputed = atan2(yVertex(j),xVertex(j))
-        if (lonComputed .le. 0.0_MPAS_RKIND) then ! lon[0,2pi]
-          lonComputed = lonComputed + 2.0_MPAS_RKIND*pi
-        endif
-
-      end do
-      xc = xc/nEdgesOnCell(i)
-      yc = yc/nEdgesOnCell(i)
-      zc = zc/nEdgesOnCell(i)
-      ! normalize
-      radius = sqrt(xc*xc + yc*yc + zc*zc)! assuming sphere center to be at origin
-      xc = xc/radius * sphereRadius
-      yc = yc/radius * sphereRadius
-      zc = zc/radius * sphereRadius
-      mpPosition(1,i) = xc
-      mpPosition(2,i) = yc
-      mpPosition(3,i) = zc
-      mpLatLon(1,i) = asin(zc/sphereRadius)
-      lon = atan2(yc,xc)
-      if (lon .le. 0.0_MPAS_RKIND) then ! lon[0,2pi]
-        lon = lon + 2.0_MPAS_RKIND*pi
-      endif 
-      mpLatLon(2,i) = lon
-    endif
-  end do
-  ! check first element/cell for delta
-  maxlon = minval(lonVertex)
-  minlon = maxval(lonVertex)
-  do i = 1, nEdgesOnCell(1)
-    j = verticesOnCell(i,1)
-    if(maxlon .lt. lonVertex(j)) then
-      maxlon = lonVertex(j)
-    endif
-    if(minlon .gt. lonVertex(j)) then
-      minlon = lonVertex(j)
-    endif
-  end do
   call polympo_createMPs(mpMesh,nCells,numMPs,c_loc(mpsPerElm),c_loc(mp2Elm),c_loc(isMPActive))
   call polympo_setMPRotLatLon(mpMesh,2,numMPs,c_loc(mpLatLon))
   call polympo_setMPPositions(mpMesh,3,numMPs,c_loc(mpPosition))
+ 
+  !write(*,*) mpMass 
+  !write(*,*) mpVel
+  call polympo_setMPMass(mpMesh,1,numMPs,c_loc(mpMass))
+  call polympo_setMPVel(mpMesh,2,numMPs,c_loc(mpVel))
+  !mpMass = 0
+  !mpVel = -1
+  !call polympo_getMPMass(mpMesh,1,numMPs,c_loc(mpMass))
+  !write(*,*) mpMass 
+  !call polympo_getMPVel(mpMesh,2,numMPs,c_loc(mpVel))
+  !write(*,*) mpVel 
+
+  call polympo_setReconstructionOption(mpMesh, 1)
+  call polympo_reconstructVel(mpMesh,0,0)
+  call polympo_reconstruct(mpMesh)
+
+  meshVelU = -1
+  meshVelV = -1
+  !call polympo_getMeshVel(mpMesh,nCells,c_loc(meshMass)) todo
+  call polympo_getMeshVel(mpMesh,nVertices,c_loc(meshVelU), c_loc(meshVelV))
+  do i = 1,numMPs
+    j = verticesOnCell(1,i)
+    write(*,*) mpVel(1,i), meshVelU(j)
+    write(*,*) mpVel(1,i), meshVelV(j)
+  end do
 
   
-  deltaLon = maxlon - minlon
-
-  do i = 1,nVertices
-    !dispIncr(1,i) = sphereRadius*cos(latVertex(i))*deltaLon
-    dispIncr(1,i) = 0.0_MPAS_RKIND
-    dispIncr(2,i) = 0.0_MPAS_RKIND
-  end do
-  call polympo_setMeshOnSurfDispIncr(mpMesh,nCompsDisp,nVertices,c_loc(dispIncr))
-  call polympo_push(mpMesh)
-  do i = 1,nVertices
-    !dispIncr(1,i) = sphereRadius*cos(latVertex(i))*2*deltaLon
-    dispIncr(1,i) = 0.0_MPAS_RKIND
-    dispIncr(2,i) = 0.0_MPAS_RKIND
-  end do
-  call polympo_setMeshOnSurfDispIncr(mpMesh,nCompsDisp,nVertices,c_loc(dispIncr))
-  call polympo_push(mpMesh)
   call polympo_deleteMPMesh(mpMesh)
   call polympo_finalize()
 
@@ -187,6 +154,11 @@ program main
   deallocate(isMPActive)
   deallocate(mpPosition)
   deallocate(mpLatLon)
+  deallocate(mpMass)
+  deallocate(mpVel)
+  deallocate(meshMass)
+  deallocate(meshVelU)
+  deallocate(meshVelV)
 
   stop
 end program

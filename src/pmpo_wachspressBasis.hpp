@@ -317,7 +317,7 @@ void sphericalInterpolation(MPMesh& mpMesh){
     PMT_ALWAYS_ASSERT(radius >0);
     auto mpField = p_MPs->getData<mpfIndex>();
     
-    const int numEntries = mpSliceToMeshFieldSize<mpfIndex>;
+    const int numEntries = mpSliceToNumEntries<mpfIndex>();
     //check field correspondence
     constexpr MeshFieldIndex meshFieldIndex = mpSliceToMeshFieldIndex<mpfIndex>;
     auto meshField = p_mesh->getMeshField<meshFieldIndex>(); 

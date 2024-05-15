@@ -68,13 +68,11 @@ template <> struct mpSliceToMeshField < MPF_Constv_Mdl_Param    > { using type =
 template <> struct mpSliceToMeshField < MPF_MP_APP_ID           > { using type = int; };
 
 template <MaterialPointSlice slice> 
-static constexpr int getSize() {
+static constexpr int mpSliceToNumEntries() {
   if ( !std::is_array<typename mpSliceToMeshField<slice>::type>::value ) return 0;
   typename mpSliceToMeshField<slice>::type constructed; 
   return std::size(constructed);
 }
-
-template <MaterialPointSlice slice> const int mpSliceToMeshFieldSize = getSize<slice>();
 
 template <MaterialPointSlice slice>
 using MPSView = Kokkos::View<typename mpSliceToMeshField<slice>::type*>;
@@ -183,8 +181,8 @@ class MaterialPoints {
     void updateMPSlice(){
       auto curData = MPs->get<mpfIndexCur>();
       auto tgtData = MPs->get<mpfIndexTgt>();
-      const int numEntriesCur = mpSliceToMeshFieldSize<mpfIndexCur>;
-      const int numEntriesTgt = mpSliceToMeshFieldSize<mpfIndexTgt>;
+      const int numEntriesCur = mpSliceToNumEntries<mpfIndexCur>();
+      const int numEntriesTgt = mpSliceToNumEntries<mpfIndexTgt>();
       PMT_ALWAYS_ASSERT(numEntriesCur == numEntriesTgt);
       
       auto swap = PS_LAMBDA(const int&, const int& mp, const int& mask) {
@@ -273,7 +271,7 @@ class MaterialPoints {
 template <MaterialPointSlice index>
 void MaterialPoints::fillData(double value){
   auto mpData = getData<index>();
-  const int numEntries = mpSliceToMeshFieldSize<index>;
+  const int numEntries = mpSliceToNumEntries<index>();
   auto setValue = PS_LAMBDA(const int&, const int& mp, const int& mask){
     if(mask) { //if material point is 'active'/'enabled'
       for(int i=0; i<numEntries; i++){

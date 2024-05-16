@@ -45,7 +45,7 @@ void MPMesh::assembly(bool basisWeightFlag, bool massWeightFlag){
     auto basis = p_MPs->getData<MPF_Basis_Vals>();
     //if(!basisWeightFlag){
     //}
-    const int numEntries = mpSliceToMeshFieldSize<mpfIndex>;
+    const int numEntries = mpSliceToNumEntries<mpfIndex>();
     constexpr MeshFieldIndex meshFieldIndex = mpSliceToMeshFieldIndex<mpfIndex>;
     auto meshField = p_mesh->getMeshField<meshFieldIndex>(); 
     //auto meshField = p_mesh->getMeshField<Mesh_Field_Cur_Pos_XYZ>(); 

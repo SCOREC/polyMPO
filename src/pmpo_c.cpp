@@ -777,39 +777,34 @@ void polympo_push_f(MPMesh_ptr p_mpmesh){
   ((polyMPO::MPMesh*)p_mpmesh) ->push();
 }
 
-void polympo_setReconstructionOption_f(MPMesh_ptr p_mpmesh, const int reconsOption){
-  checkMPMeshValid(p_mpmesh);
-  auto mpmesh = ((polyMPO::MPMesh*)p_mpmesh);
-  mpmesh->reconsOption = reconsOption;
-}
-
-void polympo_reconstruct_f(MPMesh_ptr p_mpmesh){
-  checkMPMeshValid(p_mpmesh);
-  auto mpmesh = ((polyMPO::MPMesh*)p_mpmesh);
-  mpmesh->reconstructSlices();
-}
-
 //TODO skeleton of reconstruction functions
-void polympo_reconstructMass_f(MPMesh_ptr p_mpmesh, const int order, const int meshEntType){
+void polympo_setReconstructionOfMass_f(MPMesh_ptr p_mpmesh, const int order, const int meshEntType){
   checkMPMeshValid(p_mpmesh);
   // auto mpmesh = ((polyMPO::MPMesh*)p_mpmesh);
   // mpmesh->setReconstructSlice<polyMPO::MPF_Mass>();
 }
 
-void polympo_reconstructVel_f(MPMesh_ptr p_mpmesh, const int order, const int meshEntType){
+void polympo_setReconstructionOfVel_f(MPMesh_ptr p_mpmesh, const int order, const int meshEntType){
   checkMPMeshValid(p_mpmesh);
   auto mpmesh = ((polyMPO::MPMesh*)p_mpmesh);
+  mpmesh->reconsOption = 1;
   mpmesh->setReconstructSlice<polyMPO::MPF_Vel>();
 }
 
-void polympo_reconstructStrainRate_f(MPMesh_ptr p_mpmesh, const int order, const int meshEntType){
+void polympo_setReconstructionOfStrainRate_f(MPMesh_ptr p_mpmesh, const int order, const int meshEntType){
   checkMPMeshValid(p_mpmesh);
   // auto mpmesh = ((polyMPO::MPMesh*)p_mpmesh);
   // mpmesh->setReconstructSlice<polyMPO::MPF_Strain_Rate>();
 }
 
-void polympo_reconstructStress_f(MPMesh_ptr p_mpmesh, const int order, const int meshEntType){
+void polympo_setReconstructionOfStress_f(MPMesh_ptr p_mpmesh, const int order, const int meshEntType){
   checkMPMeshValid(p_mpmesh);
   // auto mpmesh = ((polyMPO::MPMesh*)p_mpmesh);
   // mpmesh->setReconstructSlice<polyMPO::MPF_Stress>();
+}
+
+void polympo_applyReconstruction_f(MPMesh_ptr p_mpmesh){
+  checkMPMeshValid(p_mpmesh);
+  auto mpmesh = ((polyMPO::MPMesh*)p_mpmesh);
+  mpmesh->reconstructSlices();
 }

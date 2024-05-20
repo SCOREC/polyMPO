@@ -576,35 +576,14 @@ module polympo
     type(c_ptr), value :: mpMesh
   end subroutine
   !---------------------------------------------------------------------------
-  !> @brief set the Reconstruction of MP fields options
-  !> @param mpmesh(in/out) MPMesh object
-  !> @param reconsOption(in) 1 = True, otherwise False.
-  !> TODO: not support yet!
-  !---------------------------------------------------------------------------
-  subroutine polympo_setReconstructionOption(mpMesh, reconsOption) &
-             bind(C, NAME='polympo_setReconstructionOption_f')
-    use :: iso_c_binding
-    type(c_ptr), value :: mpMesh
-    integer(c_int), value :: reconsOption
-  end subroutine
-  !---------------------------------------------------------------------------
-  !> @brief directly call the reconstruct of the MP fields to mesh fields
-  !> @param mpmesh(in/out) MPMesh object
-  !---------------------------------------------------------------------------
-  subroutine polympo_reconstruct(mpMesh) &
-             bind(C, NAME='polympo_reconstruct_f')
-    use :: iso_c_binding
-    type(c_ptr), value :: mpMesh
-  end subroutine
-  !---------------------------------------------------------------------------
   !> @brief start the reconstruction of MP Mass to Mesh Vertices
   !> @param mpmesh(in/out) MPMesh object
   !> @param order Order of the reconstruction field
   !> @param meshEntType Mesh entity type
   !> TODO not support yet!
   !---------------------------------------------------------------------------
-  subroutine polympo_reconstructMass(mpMesh, order, meshEntType) &
-             bind(C, NAME='polympo_reconstructMass_f')
+  subroutine polympo_setReconstructionOfMass(mpMesh, order, meshEntType) &
+             bind(C, NAME='polympo_setReconstructionOfMass_f')
     use :: iso_c_binding
     type(c_ptr), value :: mpMesh
     integer(c_int), value :: order, meshEntType
@@ -616,8 +595,8 @@ module polympo
   !> @param meshEntType Mesh entity type
   !> TODO not support yet!
   !---------------------------------------------------------------------------
-  subroutine polympo_reconstructVel(mpMesh, order, meshEntType) &
-             bind(C, NAME='polympo_reconstructVel_f')
+  subroutine polympo_setReconstructionOfVel(mpMesh, order, meshEntType) &
+             bind(C, NAME='polympo_setReconstructionOfVel_f')
     use :: iso_c_binding
     type(c_ptr), value :: mpMesh
     integer(c_int), value :: order, meshEntType
@@ -629,8 +608,8 @@ module polympo
   !> @param meshEntType Mesh entity type
   !> TODO not support yet!
   !---------------------------------------------------------------------------
-  subroutine polympo_reconstructStrainRate(mpMesh, order, meshEntType) &
-             bind(C, NAME='polympo_reconstructStrainRate_f')
+  subroutine polympo_setReconstructionOfStrainRate(mpMesh, order, meshEntType) &
+             bind(C, NAME='polympo_setReconstructionOfStrainRate_f')
     use :: iso_c_binding
     type(c_ptr), value :: mpMesh
     integer(c_int), value :: order, meshEntType
@@ -642,11 +621,20 @@ module polympo
   !> @param meshEntType Mesh entity type
   !> TODO not support yet!
   !---------------------------------------------------------------------------
-  subroutine polympo_reconstructStress(mpMesh, order, meshEntType) &
-             bind(C, NAME='polympo_reconstructStress_f')
+  subroutine polympo_setReconstructionOfStress(mpMesh, order, meshEntType) &
+             bind(C, NAME='polympo_setReconstructionOfStress_f')
     use :: iso_c_binding
     type(c_ptr), value :: mpMesh
     integer(c_int), value :: order, meshEntType
+  end subroutine
+  !---------------------------------------------------------------------------
+  !> @brief directly call the reconstruct of the MP fields to mesh fields
+  !> @param mpmesh(in/out) MPMesh object
+  !---------------------------------------------------------------------------
+  subroutine polympo_applyReconstruction(mpMesh) &
+             bind(C, NAME='polympo_applyReconstruction_f')
+    use :: iso_c_binding
+    type(c_ptr), value :: mpMesh
   end subroutine
   end interface
   contains

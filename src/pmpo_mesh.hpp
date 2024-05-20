@@ -25,7 +25,8 @@ enum MeshFieldIndex{
     MeshF_Vel,
     MeshF_OnSurfVeloIncr,
     MeshF_OnSurfDispIncr,
-    MeshF_RotLatLonIncr
+    MeshF_RotLatLonIncr,
+    MeshF_StrainRate
 };
 enum MeshFieldType{
     MeshFType_Invalid = -2,
@@ -39,10 +40,11 @@ const std::map<MeshFieldIndex, std::pair<MeshFieldType,
                {MeshF_Unsupported,      {MeshFType_Unsupported,"MeshField_Unsupported"}},
                {MeshF_VtxCoords,        {MeshFType_VtxBased,"MeshField_VerticesCoords"}},
                {MeshF_VtxRotLat,        {MeshFType_VtxBased,"MeshField_VerticesLatitude"}},
-               {MeshF_Vel,              {MeshFType_VtxBased,"MeshField_Velocity"}},
+        {MeshF_Vel,              {MeshFType_VtxBased,"MeshField_Velocity"}},
                {MeshF_OnSurfVeloIncr,   {MeshFType_VtxBased,"MeshField_OnSurfaceVelocityIncrement"}},
                {MeshF_OnSurfDispIncr,   {MeshFType_VtxBased,"MeshField_OnSurfaceDisplacementIncrement"}},
-               {MeshF_RotLatLonIncr,    {MeshFType_VtxBased,"MeshField_RotationalLatitudeLongitudeIncreasement"}}};
+               {MeshF_RotLatLonIncr,    {MeshFType_VtxBased,"MeshField_RotationalLatitudeLongitudeIncreasement"}}
+               {MeshF_StrainRate,       {MeshFType_VtxBased,"MeshField_StrainRate"}}};
 
 enum mesh_type {mesh_unrecognized_lower = -1,
                 mesh_general_polygonal, //other meshes
@@ -74,6 +76,7 @@ class Mesh {
     DoubleVec2dView vtxOnSurfVeloIncr_;
     DoubleVec2dView vtxOnSurfDispIncr_;
     DoubleVec2dView vtxRotLatLonIncr_;
+    DoubleSymMat3dView vtxStrainRate_;
     //DoubleMat2DView vtxStress_;
 
   public:
@@ -160,6 +163,9 @@ auto Mesh::getMeshField(){
     }
     else if constexpr (index==MeshF_RotLatLonIncr){
         return vtxRotLatLonIncr_;
+    }
+    else if constexpr (index==MeshF_StrainRate){
+        return vtxStrainRate_;
     }
     fprintf(stderr,"Mesh Field Index error!\n");
     exit(1);

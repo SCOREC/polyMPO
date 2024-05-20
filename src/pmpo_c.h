@@ -62,6 +62,8 @@ void polympo_setMeshOnSurfVeloIncr_f(MPMesh_ptr p_mpmesh, const int nComps, cons
 void polympo_getMeshOnSurfVeloIncr_f(MPMesh_ptr p_mpmesh, const int nComps, const int nVertices, double* array);//vec2d
 void polympo_setMeshOnSurfDispIncr_f(MPMesh_ptr p_mpmesh, const int nComps, const int nVertices, const double* array);//vec2d
 void polympo_getMeshOnSurfDispIncr_f(MPMesh_ptr p_mpmesh, const int nComps, const int nVertices, double* array);//vec2d
+void polympo_setMeshVtxStrainRate_f(MPMesh_ptr p_mpmesh, const int nVertices, const double* xNormal, const double* yNormal, const double* zNormal, const double* xyShear, const double* xzShear, const double* yzShear);
+void polympo_getMeshVtxStrainRate_f(MPMesh_ptr p_mpmesh, const int nVertices, double* xNormal, double* yNormal, double* zNormal, double* xyShear, double* xzShear, double* yzShear);
 
 // calculations
 void polympo_push_f(MPMesh_ptr p_mpmesh);

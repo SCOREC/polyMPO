@@ -673,7 +673,7 @@ void polympo_setMeshOnSurfDispIncr_f(MPMesh_ptr p_mpmesh, const int nComps, cons
   //copy the host array to the device
   Kokkos::parallel_for("set mesh dispIncr", nVertices, KOKKOS_LAMBDA(const int iVtx){
     vtxField(iVtx,0) = array_d(0,iVtx);
-    vtxField(iVtx,1) = array_d(1,iVtx);
+    vtxField(iVtx,1) = array_d(1,iVtx);wait but 
   });
 }
 
@@ -698,6 +698,48 @@ void polympo_getMeshOnSurfDispIncr_f(MPMesh_ptr p_mpmesh, const int nComps, cons
   });
   Kokkos::deep_copy(arrayHost, array_d);
 }
+
+void polympo_setMeshVtxStrainRate_f(MPMesh_ptr p_mpmesh, const int nVertices, const double *xNormal, const double *yNormal, const double *zNormal, const double *xyShear, const double *xzShear, const double *yzShear){
+  //check mpMesh is valid
+  checkMPMeshValid(p_mpmesh);
+  auto p_mesh = ((polyMPO::MPMesh*)p_mpmesh)->p_mesh;
+
+  //check the size
+  PMT_ALWAYS_ASSERT(p_mesh->getNumVertices()==nVertices);
+
+  auto strainRate = p_mesh->getMeshField<polyMPO::MeshF_VtxStrainRate>();
+  auto h_strainRate = Kokkos::create_mirror_view(strainRate);
+  for(int i = 0; i < nVertices; i++){
+    h_strainRate(i,0) = xNormal[i];
+    h_strainRate(i,1) = yNormal[i];
+    h_strainRate(i,2) = zNormal[i];
+    h_strainRate(i,3) = xyShear[i];
+    h_strainRate(i,4) = xzShear[i];
+    h_strainRate(i,5) = yzShear[i];
+  }
+  Kokkos::deep_copy(strainRate, h_strainRate);
+}
+
+void polympo_getMeshVtxStrainRate_f(MPMesh_ptr p_mpmesh, const int nVertices, double *xNormal, double *yNormal, double *zNormal, double *xyShear, double *xzShear, double *yzShear){
+  //check mpMesh is valid
+  checkMPMeshValid(p_mpmesh);
+  auto p_mesh = ((polyMPO::MPMesh*)p_mpmesh)->p_mesh;
+
+  //check the size
+  PMT_ALWAYS_ASSERT(p_mesh->getNumVertices()==nVertices);
+  
+  auto strainRate = p_mesh->getMeshField<polyMPO::MeshF_VtxStrainRate>();
+  auto h_strainRate = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), strainRate);
+  for(int i = 0; i < nVertices; i++){
+    xNormal[i] = h_strainRate(i,0);
+    yNormal[i] = h_strainRate(i,1);
+    zNormal[i] = h_strainRate(i,2);
+    xyShear[i] = h_strainRate(i,3);
+    xzShear[i] = h_strainRate(i,4);
+    yzShear[i] = h_strainRate(i,5);
+  }
+}
+
 
 void polympo_push_f(MPMesh_ptr p_mpmesh){
   checkMPMeshValid(p_mpmesh);

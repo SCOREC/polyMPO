@@ -43,7 +43,7 @@ const std::map<MeshFieldIndex, std::pair<MeshFieldType,
         {MeshF_Vel,              {MeshFType_VtxBased,"MeshField_Velocity"}},
                {MeshF_OnSurfVeloIncr,   {MeshFType_VtxBased,"MeshField_OnSurfaceVelocityIncrement"}},
                {MeshF_OnSurfDispIncr,   {MeshFType_VtxBased,"MeshField_OnSurfaceDisplacementIncrement"}},
-               {MeshF_RotLatLonIncr,    {MeshFType_VtxBased,"MeshField_RotationalLatitudeLongitudeIncreasement"}}
+               {MeshF_RotLatLonIncr,    {MeshFType_VtxBased,"MeshField_RotationalLatitudeLongitudeIncreasement"}},
                {MeshF_StrainRate,       {MeshFType_VtxBased,"MeshField_StrainRate"}}};
 
 enum mesh_type {mesh_unrecognized_lower = -1,

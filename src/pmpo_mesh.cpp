@@ -38,7 +38,7 @@ namespace polyMPO{
         PMT_ALWAYS_ASSERT(vtxRotLatLonIncrMapEntry.first == MeshFType_VtxBased);
         vtxRotLatLonIncr_ = DoubleVec2dView(vtxRotLatLonIncrMapEntry.second,numVtxs_);
 
-        auto vtxStrainRateMapEntry = meshFields2TypeAndString.at(MeshF_StrainRate);
+        auto vtxStrainRateMapEntry = meshFields2TypeAndString.at(MeshF_VtxStrainRate);
         PMT_ALWAYS_ASSERT(vtxStrainRateMapEntry.first == MeshFType_VtxBased);
         vtxStrainRate_ = DoubleSymMat3dView(vtxStrainRateMapEntry.second,numVtxs_);
     }

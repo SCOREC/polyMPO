@@ -673,7 +673,7 @@ void polympo_setMeshOnSurfDispIncr_f(MPMesh_ptr p_mpmesh, const int nComps, cons
   //copy the host array to the device
   Kokkos::parallel_for("set mesh dispIncr", nVertices, KOKKOS_LAMBDA(const int iVtx){
     vtxField(iVtx,0) = array_d(0,iVtx);
-    vtxField(iVtx,1) = array_d(1,iVtx);wait but 
+    vtxField(iVtx,1) = array_d(1,iVtx);
   });
 }
 

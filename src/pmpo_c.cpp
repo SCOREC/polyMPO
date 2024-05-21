@@ -721,7 +721,7 @@ void polympo_reconstructMPMass_f(MPMesh_ptr p_mpmesh){
 void polympo_reconstructMPVel_f(MPMesh_ptr p_mpmesh){
   checkMPMeshValid(p_mpmesh);
   auto mpmesh = ((polyMPO::MPMesh*)p_mpmesh);
-  mpmesh->setReconstructSlice<polyMPO::MPF_Vel>();
+  mpmesh->setReconstructSlice<polyMPO::MeshF_Vel>();
 }
 
 void polympo_reconstructMPStrainRate_f(MPMesh_ptr p_mpmesh){

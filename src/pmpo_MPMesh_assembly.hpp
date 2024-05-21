@@ -29,13 +29,14 @@ DoubleView MPMesh::assemblyV0(){
     return vField;
 }
 
-template <MaterialPointSlice mpfIndex>
+template <MeshFieldIndex meshFieldIndex>
 void MPMesh::assembly(bool basisWeightFlag, bool massWeightFlag){
     if(basisWeightFlag || massWeightFlag) {
       std::cerr << "WARNING: basis and mass weight flags ignored\n";
     }
     auto elm2VtxConn = p_mesh->getElm2VtxConn();
    
+    constexpr MaterialPointSlice mpfIndex = meshFieldIndexToMPSlice<meshFieldIndex>;
     auto mpData = p_MPs->getData<mpfIndex>();
     auto massWeight = p_MPs->getData<MPF_Mass>();
     //TODO:massWeight is not used in the loop
@@ -46,7 +47,6 @@ void MPMesh::assembly(bool basisWeightFlag, bool massWeightFlag){
     //if(!basisWeightFlag){
     //}
     const int numEntries = mpSliceToNumEntries<mpfIndex>();
-    constexpr MeshFieldIndex meshFieldIndex = mpSliceToMeshFieldIndex<mpfIndex>;
     auto meshField = p_mesh->getMeshField<meshFieldIndex>(); 
     //auto meshField = p_mesh->getMeshField<Mesh_Field_Cur_Pos_XYZ>(); 
     auto assemble = PS_LAMBDA(const int& elm, const int& mp, const int& mask) {
@@ -163,10 +163,10 @@ Vec2dView MPMesh::wtVec2Assembly(){
     return vField;
 } // wtVec2Assembly
 
-template<MaterialPointSlice mpSliceIndex>
+template<MeshFieldIndex meshFieldIndex>
 void MPMesh::setReconstructSlice() {
-  auto function = [this](){ assembly<mpSliceIndex>(false, false); }; 
-  const auto [iter, success] = reconstructSlice.insert({mpSliceIndex, function});
+  auto function = [this](){ assembly<meshFieldIndex>(false, false); };
+  const auto [iter, success] = reconstructSlice.insert({meshFieldIndex, function});
   if (!success){
     std::cerr << "Error: Slice is already being reconstructed\n";
     exit(1);

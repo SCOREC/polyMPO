@@ -304,7 +304,7 @@ void getBasisByAreaGblForm_1(Vec2d MP, int numVtxs, Vec2d* vtxCoords, double* ba
 */
 
 // spherical interpolation of values from mesh vertices to MPsi
-template <MaterialPointSlice mpfIndex>
+template <MeshFieldIndex meshFieldIndex>
 void sphericalInterpolation(MPMesh& mpMesh){
     auto p_mesh = mpMesh.p_mesh;
     auto vtxCoords = p_mesh->getMeshField<polyMPO::MeshF_VtxCoords>();
@@ -315,11 +315,11 @@ void sphericalInterpolation(MPMesh& mpMesh){
     auto MPsPosition = p_MPs->getPositions();
     double radius = p_mesh->getSphereRadius();
     PMT_ALWAYS_ASSERT(radius >0);
+    constexpr MaterialPointSlice mpfIndex = meshFieldIndexToMPSlice<meshFieldIndex>;
     auto mpField = p_MPs->getData<mpfIndex>();
     
     const int numEntries = mpSliceToNumEntries<mpfIndex>();
     //check field correspondence
-    constexpr MeshFieldIndex meshFieldIndex = mpSliceToMeshFieldIndex<mpfIndex>;
     auto meshField = p_mesh->getMeshField<meshFieldIndex>(); 
 
     auto interpolation = PS_LAMBDA(const int& elm, const int& mp, const int& mask) {

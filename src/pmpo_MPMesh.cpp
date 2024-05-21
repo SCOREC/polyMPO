@@ -268,7 +268,7 @@ void MPMesh::reconstructSlices() {
 
 void MPMesh::push(){
   p_mesh->computeRotLatLonIncr();
-  sphericalInterpolation<MPF_Rot_Lat_Lon_Incr>(*this);
+  sphericalInterpolation<MeshF_RotLatLonIncr>(*this);
   p_MPs->updateRotLatLonAndXYZ2Tgt(p_mesh->getSphereRadius()); // set Tgt_XYZ
 
   CVTTrackingElmCenterBased(); // move to Tgt_XYZ

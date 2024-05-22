@@ -854,9 +854,9 @@ void polympo_setReconstructionOfMass_f(MPMesh_ptr p_mpmesh, const int order, con
   checkMPMeshValid(p_mpmesh);
   auto mpmesh = ((polyMPO::MPMesh*)p_mpmesh);
   polyMPO::MeshFieldType type = static_cast<polyMPO::MeshFieldType>(meshEntType);
-  if (polyMPO::MeshFType_VtxBased)
+  if (type == polyMPO::MeshFType_VtxBased)
     mpmesh->setReconstructSlice<polyMPO::MeshF_VtxMass>();
-  if (polyMPO::MeshFType_ElmBased)
+  if (type == polyMPO::MeshFType_ElmBased)
     mpmesh->setReconstructSlice<polyMPO::MeshF_ElmMass>();
 }
 

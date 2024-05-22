@@ -52,10 +52,10 @@ const std::map<MeshFieldIndex, std::pair<MeshFieldType,
                {MeshF_VtxRotLat,        {MeshFType_VtxBased,"MeshField_VerticesLatitude"}},
                {MeshF_Vel,              {MeshFType_VtxBased,"MeshField_Velocity"}},
                {MeshF_VtxMass,          {MeshFType_VtxBased,"MeshField_VerticesMass"}},
+               {MeshF_ElmMass,          {MeshFType_ElmBased,"MeshField_ElementsMass"}},
                {MeshF_OnSurfVeloIncr,   {MeshFType_VtxBased,"MeshField_OnSurfaceVelocityIncrement"}},
                {MeshF_OnSurfDispIncr,   {MeshFType_VtxBased,"MeshField_OnSurfaceDisplacementIncrement"}},
-               {MeshF_RotLatLonIncr,    {MeshFType_VtxBased,"MeshField_RotationalLatitudeLongitudeIncreasement"}},
-               {MeshF_ElmMass,          {MeshFType_ElmBased,"MeshField_ElementsMass"}}};
+               {MeshF_RotLatLonIncr,    {MeshFType_VtxBased,"MeshField_RotationalLatitudeLongitudeIncreasement"}}};
 
 enum mesh_type {mesh_unrecognized_lower = -1,
                 mesh_general_polygonal, //other meshes
@@ -85,10 +85,10 @@ class Mesh {
     MeshFView<MeshF_VtxRotLat> vtxRotLat_;
     MeshFView<MeshF_Vel> vtxVel_;
     MeshFView<MeshF_VtxMass> vtxMass_;
+    MeshFView<MeshF_ElmMass> elmMass_;
     MeshFView<MeshF_OnSurfVeloIncr> vtxOnSurfVeloIncr_;
     MeshFView<MeshF_OnSurfDispIncr> vtxOnSurfDispIncr_;
     MeshFView<MeshF_RotLatLonIncr> vtxRotLatLonIncr_;
-    MeshFView<MeshF_ElmMass> elmMass_;
     //DoubleMat2DView vtxStress_;
 
   public:

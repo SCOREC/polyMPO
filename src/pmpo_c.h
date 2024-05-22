@@ -66,12 +66,12 @@ void polympo_setMeshVel_f(MPMesh_ptr p_mpmesh, const int nVertices, const double
 void polympo_getMeshVel_f(MPMesh_ptr p_mpmesh, const int nVertices, double* uVelocity, double* vVelocity);
 void polympo_setMeshVtxMass_f(MPMesh_ptr p_mpmesh, const int nVertices, const double* vtxMass);
 void polympo_getMeshVtxMass_f(MPMesh_ptr p_mpmesh, const int nVertices, double* vtxMass);
+void polympo_setMeshElmMass_f(MPMesh_ptr p_mpmesh, const int nCells, const double* elmMass);
+void polympo_getMeshElmMass_f(MPMesh_ptr p_mpmesh, const int nCells, double* elmMass);
 void polympo_setMeshOnSurfVeloIncr_f(MPMesh_ptr p_mpmesh, const int nComps, const int nVertices, const double* array);//vec2d
 void polympo_getMeshOnSurfVeloIncr_f(MPMesh_ptr p_mpmesh, const int nComps, const int nVertices, double* array);//vec2d
 void polympo_setMeshOnSurfDispIncr_f(MPMesh_ptr p_mpmesh, const int nComps, const int nVertices, const double* array);//vec2d
 void polympo_getMeshOnSurfDispIncr_f(MPMesh_ptr p_mpmesh, const int nComps, const int nVertices, double* array);//vec2d
-void polympo_setMeshElmMass_f(MPMesh_ptr p_mpmesh, const int nCells, const double* elmMass);
-void polympo_getMeshElmMass_f(MPMesh_ptr p_mpmesh, const int nCells, double* elmMass);
 
 // calculations
 void polympo_push_f(MPMesh_ptr p_mpmesh);

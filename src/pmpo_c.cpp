@@ -729,6 +729,39 @@ void polympo_getMeshVtxMass_f(MPMesh_ptr p_mpmesh, const int nVertices, double* 
   }
 }
 
+void polympo_setMeshElmMass_f(MPMesh_ptr p_mpmesh, const int nCells, const double* elmMass){
+  //check mpMesh is valid
+  checkMPMeshValid(p_mpmesh);
+  auto p_mesh = ((polyMPO::MPMesh*)p_mpmesh)->p_mesh;
+
+  //check the size
+  PMT_ALWAYS_ASSERT(p_mesh->getNumElements()==nCells); 
+
+  //copy the host array to the device
+  auto coordsArray = p_mesh->getMeshField<polyMPO::MeshF_ElmMass>();
+  auto h_coordsArray = Kokkos::create_mirror_view(coordsArray);
+  for(int i=0; i<nCells; i++){
+    h_coordsArray(i,0) = elmMass[i];
+  }
+  Kokkos::deep_copy(coordsArray, h_coordsArray);
+}
+
+void polympo_getMeshVel_f(MPMesh_ptr p_mpmesh, const int nCells, double* elmMass){
+  //check mpMesh is valid
+  checkMPMeshValid(p_mpmesh);
+  auto p_mesh = ((polyMPO::MPMesh*)p_mpmesh)->p_mesh;
+
+  //check the size
+  PMT_ALWAYS_ASSERT(p_mesh->getNumElements() == nCells); 
+
+  //copy the device array to the host
+  auto coordsArray = p_mesh->getMeshField<polyMPO::MeshF_ElmMass>();
+  auto h_coordsArray = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(),coordsArray);
+  for(int i=0; i<nCells; i++){
+    elmMass[i] = h_coordsArray(i,0);
+  }
+}
+
 void polympo_setMeshOnSurfVeloIncr_f(MPMesh_ptr p_mpmesh, const int nComps, const int nVertices, const double* array) {
   //check mpMesh is valid
   checkMPMeshValid(p_mpmesh);
@@ -808,39 +841,6 @@ void polympo_getMeshOnSurfDispIncr_f(MPMesh_ptr p_mpmesh, const int nComps, cons
 void polympo_push_f(MPMesh_ptr p_mpmesh){
   checkMPMeshValid(p_mpmesh);
   ((polyMPO::MPMesh*)p_mpmesh) ->push();
-}
-
-void polympo_setMeshElmMass_f(MPMesh_ptr p_mpmesh, const int nCells, const double* elmMass){
-  //check mpMesh is valid
-  checkMPMeshValid(p_mpmesh);
-  auto p_mesh = ((polyMPO::MPMesh*)p_mpmesh)->p_mesh;
-
-  //check the size
-  PMT_ALWAYS_ASSERT(p_mesh->getNumElements()==nCells); 
-
-  //copy the host array to the device
-  auto coordsArray = p_mesh->getMeshField<polyMPO::MeshF_ElmMass>();
-  auto h_coordsArray = Kokkos::create_mirror_view(coordsArray);
-  for(int i=0; i<nCells; i++){
-    h_coordsArray(i,0) = elmMass[i];
-  }
-  Kokkos::deep_copy(coordsArray, h_coordsArray);
-}
-
-void polympo_getMeshVel_f(MPMesh_ptr p_mpmesh, const int nCells, double* elmMass){
-  //check mpMesh is valid
-  checkMPMeshValid(p_mpmesh);
-  auto p_mesh = ((polyMPO::MPMesh*)p_mpmesh)->p_mesh;
-
-  //check the size
-  PMT_ALWAYS_ASSERT(p_mesh->getNumElements() == nCells); 
-
-  //copy the device array to the host
-  auto coordsArray = p_mesh->getMeshField<polyMPO::MeshF_ElmMass>();
-  auto h_coordsArray = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(),coordsArray);
-  for(int i=0; i<nCells; i++){
-    elmMass[i] = h_coordsArray(i,0);
-  }
 }
 
 //TODO skeleton of reconstruction functions

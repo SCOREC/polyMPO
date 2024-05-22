@@ -30,7 +30,7 @@ DoubleView MPMesh::assemblyV0(){
 }
 
 template <MeshFieldIndex meshFieldIndex>
-void MPMesh::assembly(bool basisWeightFlag, bool massWeightFlag){
+void MPMesh::assemblyOrder1(bool basisWeightFlag, bool massWeightFlag){
     if(basisWeightFlag || massWeightFlag) {
       std::cerr << "WARNING: basis and mass weight flags ignored\n";
     }
@@ -64,6 +64,53 @@ void MPMesh::assembly(bool basisWeightFlag, bool massWeightFlag){
         }
     };
     p_MPs->parallel_for(assemble, "assembly");
+}
+
+template <MeshFieldIndex meshFieldIndex>
+void MPMesh::assemblyOrder0(bool basisWeightFlag, bool massWeightFlag){
+    if(basisWeightFlag || massWeightFlag) {
+      std::cerr << "WARNING: basis and mass weight flags ignored\n";
+    }
+    auto elm2VtxConn = p_mesh->getElm2VtxConn();
+   
+    constexpr MaterialPointSlice mpfIndex = meshFieldIndexToMPSlice<meshFieldIndex>;
+    auto mpData = p_MPs->getData<mpfIndex>();
+    auto massWeight = p_MPs->getData<MPF_Mass>();
+    //TODO:massWeight is not used in the loop
+    //if(!massWeightFlag){
+        //massWeight =  
+    //}
+    auto basis = p_MPs->getData<MPF_Basis_Vals>();
+    //if(!basisWeightFlag){
+    //}
+    const int numEntries = mpSliceToNumEntries<mpfIndex>();
+    auto meshField = p_mesh->getMeshField<meshFieldIndex>(); 
+    //auto meshField = p_mesh->getMeshField<Mesh_Field_Cur_Pos_XYZ>(); 
+    auto assemble = PS_LAMBDA(const int& elm, const int& mp, const int& mask) {
+        if(mask) { //if material point is 'active'/'enabled'
+            int nVtxE = elm2VtxConn(elm,0); //number of vertices bounding the element
+            double mpMass = massWeight(mp,0);
+            for(int i=0; i<nVtxE; i++){
+                int vID = elm2VtxConn(elm,i+1)-1; //vID = vertex id
+                double fieldComponentVal;
+                for(int j=0;j<numEntries;j++){
+                    fieldComponentVal = mpData(mp,j)*basis(mp,i)*mpMass;
+                    Kokkos::atomic_add(&meshField(vID,j),fieldComponentVal);
+                }
+            }
+        }
+    };
+    p_MPs->parallel_for(assemble, "assembly");
+}
+
+template <MeshFieldIndex meshFieldIndex>
+void MPMesh::assembly(int order, bool basisWeightFlag, bool massWeightFlag){
+  if (order == 0) assemblyOrder0<meshFieldIndex>(basisWeightFlag, massWeightFlag);
+  else if (order == 1) assemblyOrder1<meshFieldIndex>(basisWeightFlag, massWeightFlag);
+  else{
+    std::cerr << "Error: Assembly order is not supported\n";
+    exit(1);
+  }
 }
 
 // (HDT) weighted assembly of scalar field
@@ -164,8 +211,8 @@ Vec2dView MPMesh::wtVec2Assembly(){
 } // wtVec2Assembly
 
 template<MeshFieldIndex meshFieldIndex>
-void MPMesh::setReconstructSlice() {
-  auto function = [this](){ assembly<meshFieldIndex>(false, false); };
+void MPMesh::setReconstructSlice(int order) {
+  auto function = [this, order](){ assembly<meshFieldIndex>(order, false, false); };
   const auto [iter, success] = reconstructSlice.insert({meshFieldIndex, function});
   if (!success){
     std::cerr << "Error: Slice is already being reconstructed\n";

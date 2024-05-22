@@ -18,9 +18,11 @@ enum MeshFieldIndex{
     MeshF_VtxCoords,
     MeshF_VtxRotLat,
     MeshF_Vel,
+    MeshF_VtxMass,
     MeshF_OnSurfVeloIncr,
     MeshF_OnSurfDispIncr,
-    MeshF_RotLatLonIncr
+    MeshF_RotLatLonIncr,
+    MeshF_ElmMass
 };
 enum MeshFieldType{
     MeshFType_Invalid = -2,
@@ -33,9 +35,11 @@ template <MeshFieldIndex> struct meshFieldToType;
 template <> struct meshFieldToType < MeshF_VtxCoords         > { using type = Kokkos::View<vec3d_t*>; };
 template <> struct meshFieldToType < MeshF_VtxRotLat         > { using type = DoubleView; };
 template <> struct meshFieldToType < MeshF_Vel               > { using type = Kokkos::View<vec2d_t*>; };
+template <> struct meshFieldToType < MeshF_VtxMass           > { using type = Kokkos::View<double*>; };
 template <> struct meshFieldToType < MeshF_OnSurfVeloIncr    > { using type = Kokkos::View<vec2d_t*>; };
 template <> struct meshFieldToType < MeshF_OnSurfDispIncr    > { using type = Kokkos::View<vec2d_t*>; };
 template <> struct meshFieldToType < MeshF_RotLatLonIncr     > { using type = Kokkos::View<vec2d_t*>; };
+template <> struct meshFieldToType < MeshF_ElmMass           > { using type = Kokkos::View<double*>; };
 
 template <MeshFieldIndex index>
 using MeshFView = typename meshFieldToType<index>::type;
@@ -47,9 +51,11 @@ const std::map<MeshFieldIndex, std::pair<MeshFieldType,
                {MeshF_VtxCoords,        {MeshFType_VtxBased,"MeshField_VerticesCoords"}},
                {MeshF_VtxRotLat,        {MeshFType_VtxBased,"MeshField_VerticesLatitude"}},
                {MeshF_Vel,              {MeshFType_VtxBased,"MeshField_Velocity"}},
+               {MeshF_VtxMass,          {MeshFType_VtxBased,"MeshField_VerticesMass"}},
                {MeshF_OnSurfVeloIncr,   {MeshFType_VtxBased,"MeshField_OnSurfaceVelocityIncrement"}},
                {MeshF_OnSurfDispIncr,   {MeshFType_VtxBased,"MeshField_OnSurfaceDisplacementIncrement"}},
-               {MeshF_RotLatLonIncr,    {MeshFType_VtxBased,"MeshField_RotationalLatitudeLongitudeIncreasement"}}};
+               {MeshF_RotLatLonIncr,    {MeshFType_VtxBased,"MeshField_RotationalLatitudeLongitudeIncreasement"}},
+               {MeshF_ElmMass,          {MeshFType_ElmBased,"MeshField_ElementsMass"}}};
 
 enum mesh_type {mesh_unrecognized_lower = -1,
                 mesh_general_polygonal, //other meshes
@@ -78,9 +84,11 @@ class Mesh {
     MeshFView<MeshF_VtxCoords> vtxCoords_;
     MeshFView<MeshF_VtxRotLat> vtxRotLat_;
     MeshFView<MeshF_Vel> vtxVel_;
+    MeshFView<MeshF_VtxMass> vtxMass_;
     MeshFView<MeshF_OnSurfVeloIncr> vtxOnSurfVeloIncr_;
     MeshFView<MeshF_OnSurfDispIncr> vtxOnSurfDispIncr_;
     MeshFView<MeshF_RotLatLonIncr> vtxRotLatLonIncr_;
+    MeshFView<MeshF_ElmMass> elmMass_;
     //DoubleMat2DView vtxStress_;
 
   public:
@@ -102,6 +110,7 @@ class Mesh {
           elm2ElmConn_(elm2ElmConn){
             meshEdit_ = true;
             setMeshVtxBasedFieldSize();
+            setMeshElmBasedFieldSize();
             meshEdit_ = false;
             vtxCoords_ = vtxCoords;
         }
@@ -119,6 +128,7 @@ class Mesh {
     IntElm2ElmView getElm2ElmConn() { return elm2ElmConn_; }
     template<MeshFieldIndex index> auto getMeshField();
     void setMeshVtxBasedFieldSize();
+    void setMeshElmBasedFieldSize();
 
     void setMeshEdit(bool meshEdit) { meshEdit_ = meshEdit; }
     //onec MeshType/GeomType is set to valid types, we can't change them anymore
@@ -159,6 +169,9 @@ auto Mesh::getMeshField(){
     else if constexpr (index==MeshF_Vel){
         return vtxVel_;
     }
+    else if constexpr (index==MeshF_VtxMass){
+        return vtxMass_;
+    }
     else if constexpr (index==MeshF_OnSurfVeloIncr){
         return vtxOnSurfVeloIncr_;
     }
@@ -167,6 +180,9 @@ auto Mesh::getMeshField(){
     }
     else if constexpr (index==MeshF_RotLatLonIncr){
         return vtxRotLatLonIncr_;
+    }
+    else if constexpr (index==MeshF_ElmMass){
+        return elmMass_;
     }
     fprintf(stderr,"Mesh Field Index error!\n");
     exit(1);

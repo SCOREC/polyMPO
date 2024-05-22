@@ -26,6 +26,10 @@ namespace polyMPO{
         PMT_ALWAYS_ASSERT(vtxVelMapEntry.first == MeshFType_VtxBased);
         vtxVel_ = MeshFView<MeshF_Vel>(vtxVelMapEntry.second,numVtxs_);
 
+        auto vtxMassMapEntry = meshFields2TypeAndString.at(MeshF_VtxMass);
+        PMT_ALWAYS_ASSERT(vtxMassMapEntry.first == MeshFType_VtxBased);
+        vtxMass_ = MeshFView<MeshF_VtxMass>(vtxMassMapEntry.second,numVtxs_);
+
         auto vtxOnSurfVeloIncrMapEntry = meshFields2TypeAndString.at(MeshF_OnSurfVeloIncr);
         PMT_ALWAYS_ASSERT(vtxOnSurfVeloIncrMapEntry.first == MeshFType_VtxBased);
         vtxOnSurfVeloIncr_ = MeshFView<MeshF_OnSurfVeloIncr>(vtxOnSurfVeloIncrMapEntry.second,numVtxs_);
@@ -37,6 +41,14 @@ namespace polyMPO{
         auto vtxRotLatLonIncrMapEntry = meshFields2TypeAndString.at(MeshF_RotLatLonIncr);
         PMT_ALWAYS_ASSERT(vtxRotLatLonIncrMapEntry.first == MeshFType_VtxBased);
         vtxRotLatLonIncr_ = MeshFView<MeshF_RotLatLonIncr>(vtxRotLatLonIncrMapEntry.second,numVtxs_);
+    }
+    
+    void Mesh::setMeshElmBasedFieldSize(){
+        PMT_ALWAYS_ASSERT(meshEdit_);
+        
+        auto elmMassMapEntry = meshFields2TypeAndString.at(MeshF_ElmMass);
+        PMT_ALWAYS_ASSERT(elmMassMapEntry.first == MeshFType_ElmBased);
+        elmMass_ = MeshFView<MeshF_ElmMass>(elmMassMapEntry.second,numElms_);
     }
     
     void Mesh::computeRotLatLonIncr(){

@@ -503,6 +503,32 @@ module polympo
     type(c_ptr), value :: uVel, vVel
   end subroutine
   !---------------------------------------------------------------------------
+  !> @brief set the vertices mass from a host array
+  !> @param mpmesh(in/out) MPMesh object
+  !> @param nVertices(in) numVertices
+  !> @param vtxMass(in) vertices mass 1D array (numVtx)
+  !---------------------------------------------------------------------------
+  subroutine polympo_setMeshVtxMass(mpMesh, nVertices, vtxMass) &
+             bind(C, NAME='polympo_setMeshVtxMass_f')
+    use :: iso_c_binding
+    type(c_ptr), value :: mpMesh
+    integer(c_int), value :: nVertices
+    type(c_ptr), intent(in), value :: vtxMass
+  end subroutine
+  !---------------------------------------------------------------------------
+  !> @brief get the vertices mass from polyMPO
+  !> @param mpmesh(in/out) MPMesh object
+  !> @param nVertices(in) numVertices
+  !> @param vtxMass(in/out) vertices mass 1D array (numVtx), allocated by user
+  !---------------------------------------------------------------------------
+  subroutine polympo_getMeshVtxMass(mpMesh, nVertices, vtxMass) &
+             bind(C, NAME='polympo_getMeshVtxMass_f')
+    use :: iso_c_binding
+    type(c_ptr), value :: mpMesh
+    integer(c_int), value :: nVertices
+    type(c_ptr), value :: vtxMass
+  end subroutine
+  !---------------------------------------------------------------------------
   !> @brief set the spherical velocity increment mesh array 
   !>        from a host array
   !> @param mpmesh(in/out) MPMesh object
@@ -563,6 +589,32 @@ module polympo
     type(c_ptr), value :: mpMesh
     integer(c_int), value :: nComps, nVertices
     type(c_ptr), value :: array
+  end subroutine
+  !---------------------------------------------------------------------------
+  !> @brief set the mesh elements mass from a host array
+  !> @param mpmesh(in/out) MPMesh object
+  !> @param nCells(in) length of array (numElms)
+  !> @param elmMass(in) elements mass 1D array (numElms)
+  !---------------------------------------------------------------------------
+  subroutine polympo_setMeshElmMass(mpMesh, nCells, elmMass) &
+             bind(C, NAME='polympo_setMeshElmMass_f')
+    use :: iso_c_binding
+    type(c_ptr), value :: mpMesh
+    integer(c_int), value :: nCells
+    type(c_ptr), intent(in), value :: elmMass
+  end subroutine
+  !---------------------------------------------------------------------------
+  !> @brief get the mesh element mass from polyMPO
+  !> @param mpmesh(in/out) MPMesh object
+  !> @param nCells(in) length of array (numElms)
+  !> @param elmMass(in/out) elements mass 1D array (numElms), allocated by user
+  !---------------------------------------------------------------------------
+  subroutine polympo_getMeshElmMass(mpMesh, nCells, elmMass) &
+             bind(C, NAME='polympo_getMeshElmMass_f')
+    use :: iso_c_binding
+    type(c_ptr), value :: mpMesh
+    integer(c_int), value :: nCells
+    type(c_ptr), value :: elmMass
   end subroutine
   !---------------------------------------------------------------------------
   !> @brief calculate the MPs from given mesh vertices rotational latitude

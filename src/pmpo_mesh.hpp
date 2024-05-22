@@ -35,11 +35,11 @@ template <MeshFieldIndex> struct meshFieldToType;
 template <> struct meshFieldToType < MeshF_VtxCoords         > { using type = Kokkos::View<vec3d_t*>; };
 template <> struct meshFieldToType < MeshF_VtxRotLat         > { using type = DoubleView; };
 template <> struct meshFieldToType < MeshF_Vel               > { using type = Kokkos::View<vec2d_t*>; };
-template <> struct meshFieldToType < MeshF_VtxMass           > { using type = Kokkos::View<double*>; };
+template <> struct meshFieldToType < MeshF_VtxMass           > { using type = Kokkos::View<double*[1]>; };
 template <> struct meshFieldToType < MeshF_OnSurfVeloIncr    > { using type = Kokkos::View<vec2d_t*>; };
 template <> struct meshFieldToType < MeshF_OnSurfDispIncr    > { using type = Kokkos::View<vec2d_t*>; };
 template <> struct meshFieldToType < MeshF_RotLatLonIncr     > { using type = Kokkos::View<vec2d_t*>; };
-template <> struct meshFieldToType < MeshF_ElmMass           > { using type = Kokkos::View<double*>; };
+template <> struct meshFieldToType < MeshF_ElmMass           > { using type = Kokkos::View<double*[1]>; };
 
 template <MeshFieldIndex index>
 using MeshFView = typename meshFieldToType<index>::type;

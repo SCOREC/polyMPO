@@ -9,6 +9,8 @@ namespace polyMPO{
 
 template <MeshFieldIndex> const MaterialPointSlice meshFieldIndexToMPSlice;
 template <> const MaterialPointSlice meshFieldIndexToMPSlice < MeshF_Vel            > = MPF_Vel;
+template <> const MaterialPointSlice meshFieldIndexToMPSlice < MeshF_VtxMass        > = MPF_Mass;
+template <> const MaterialPointSlice meshFieldIndexToMPSlice < MeshF_ElmMass        > = MPF_Mass;
 template <> const MaterialPointSlice meshFieldIndexToMPSlice < MeshF_RotLatLonIncr  > = MPF_Rot_Lat_Lon_Incr;
 
 #define maxMPsPerElm 8
@@ -40,10 +42,14 @@ class MPMesh{
     template <MaterialPointSlice index>
     Vec2dView wtVec2Assembly();
     template <MeshFieldIndex meshFieldIndex>
-    void assembly(bool basisWeightFlag, bool massWeightFlag);
+    void assembly(int order, bool basisWeightFlag, bool massWeightFlag);
+    template <MeshFieldIndex meshFieldIndex>
+    void assemblyOrder0(bool basisWeightFlag, bool massWeightFlag);
+    template <MeshFieldIndex meshFieldIndex>
+    void assemblyOrder1(bool basisWeightFlag, bool massWeightFlag);
 
     template<MeshFieldIndex meshFieldIndex>
-    void setReconstructSlice();
+    void setReconstructSlice(int order);
     void reconstructSlices();
 
     void printVTP_mesh(int printVTPIndex);

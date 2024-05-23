@@ -25,6 +25,7 @@ namespace polyMPO{
 typedef double vec2d_t[vec2d_nEntries];
 #define vec3d_nEntries 3
 typedef double vec3d_t[vec3d_nEntries];
+typedef double doubleSclr_t[1];
 
 class Vec2d;
 class Vec3d;

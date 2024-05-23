@@ -843,17 +843,27 @@ void polympo_push_f(MPMesh_ptr p_mpmesh){
   ((polyMPO::MPMesh*)p_mpmesh) ->push();
 }
 
+int polympo_getMeshEntType(bool elmBased, bool vtxBased) {
+  if (elmBased) return polyMPO::MeshFType_ElmBased;
+  if (vtxBased) return polyMPO::MeshFType_VtxBased;
+  return polyMPO::MeshFType_Invalid;
+}
+
 //TODO skeleton of reconstruction functions
 void polympo_setReconstructionOfMass_f(MPMesh_ptr p_mpmesh, const int order, const int meshEntType){
   checkMPMeshValid(p_mpmesh);
-  // auto mpmesh = ((polyMPO::MPMesh*)p_mpmesh);
-  // mpmesh->setReconstructSlice<polyMPO::MPF_Mass>();
+  auto mpmesh = ((polyMPO::MPMesh*)p_mpmesh);
+  polyMPO::MeshFieldType type = static_cast<polyMPO::MeshFieldType>(meshEntType);
+  if (type == polyMPO::MeshFType_VtxBased)
+    mpmesh->setReconstructSlice<polyMPO::MeshF_VtxMass>(order);
+  if (type == polyMPO::MeshFType_ElmBased)
+    mpmesh->setReconstructSlice<polyMPO::MeshF_ElmMass>(order);
 }
 
 void polympo_setReconstructionOfVel_f(MPMesh_ptr p_mpmesh, const int order, const int meshEntType){
   checkMPMeshValid(p_mpmesh);
   auto mpmesh = ((polyMPO::MPMesh*)p_mpmesh);
-  mpmesh->setReconstructSlice<polyMPO::MeshF_Vel>();
+  mpmesh->setReconstructSlice<polyMPO::MeshF_Vel>(order);
 }
 
 void polympo_setReconstructionOfStrainRate_f(MPMesh_ptr p_mpmesh, const int order, const int meshEntType){

@@ -96,7 +96,7 @@ program main
   call polympo_setMeshOnSurfVeloIncr(mpMesh, numCompsVel, nverts, c_loc(Mesharray))
   call polympo_setMeshOnSurfDispIncr(mpMesh, numCompsVel, nverts, c_loc(Mesharray))
 
-  ! check mesh Fields
+  ! check mesh Fields vtxBased
   Mesharray = -1
   call polympo_getMeshOnSurfVeloIncr(mpMesh, numCompsVel, nverts, c_loc(Mesharray))
   do i = 1,numCompsVel
@@ -138,7 +138,29 @@ program main
   do i = 1, nverts
     call assert((xArray(i) .eq. i+value1), "Assert MeshVel u-component Velocity Fail")
     call assert((yArray(i) .eq. value2-i), "Assert MeshVel v-component Velocity Fail")
+  end do
+  
+  call polympo_setMeshVtxMass(mpMesh, nverts, c_loc(xArray))
+  xArray = -1 
+  call polympo_getMeshVtxMass(mpMesh, nverts, c_loc(xArray))
+  do i = 1, nverts
+    call assert((xArray(i) .eq. i+value1), "Assert MeshVtxMass Mass Fail")
+  end do
+
+  ! check mesh Fields vtxBased
+  deallocate(xArray)
+  allocate(xArray(numElms))
+  
+  do i = 1, numElms
+    xArray(i) = i + value1
   end do 
+  
+  call polympo_setMeshElmMass(mpMesh, numElms, c_loc(xArray))
+  xArray = -1 
+  call polympo_getMeshElmMass(mpMesh, numElms, c_loc(xArray))
+  do i = 1, numElms
+    call assert((xArray(i) .eq. i+value1), "Assert MeshVtxMass Mass Fail")
+  end do
 
   deallocate(MParray)
   deallocate(Mesharray)

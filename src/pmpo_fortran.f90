@@ -537,6 +537,32 @@ module polympo
     type(c_ptr), value :: array
   end subroutine
   !---------------------------------------------------------------------------
+  !> @brief set the verte strain rate from a host array
+  !> @param mpmesh(in/out) MPMesh object
+  !> @param nVertices(in) numVertices
+  !> @param x/y/zNormal(in) input mesh normal strain rate 1D array (numVtx)
+  !> @param xy/xz/yzShear(in) input mesh shear strain rate 1D array (numVtx)
+  subroutine polympo_setMeshVtxStrainRate(mpMesh, nVertices, xNormal, yNormal, zNormal, xyShear, xzShear, yzShear) &
+             bind(C, NAME='polympo_setMeshVtxStrainRate_f')
+    use :: iso_c_binding
+    type(c_ptr), value :: mpMesh
+    integer(c_int), value :: nVertices
+    type(c_ptr), intent(in), value :: xNormal, yNormal, zNormal, xyShear, xzShear, yzShear
+  end subroutine
+  !---------------------------------------------------------------------------
+  !> @brief get the verte strain rate from polyMPO
+  !> @param mpmesh(in/out) MPMesh object
+  !> @param nVertices(in) numVertices
+  !> @param x/y/zNormal(in/out) output mesh normal strain rate 1D array (numVtx), allocated by user
+  !> @param xy/xz/yzShear(in/out) output mesh shear strain rate 1D array (numVtx), allocated by user
+  subroutine polympo_getMeshVtxStrainRate(mpMesh, nVertices, xNormal, yNormal, zNormal, xyShear, xzShear, yzShear) &
+             bind(C, NAME='polympo_getMeshVtxStrainRate_f')
+    use :: iso_c_binding
+    type(c_ptr), value :: mpMesh
+    integer(c_int), value :: nVertices
+    type(c_ptr), value :: xNormal, yNormal, zNormal, xyShear, xzShear, yzShear
+  end subroutine
+  !---------------------------------------------------------------------------
   !> @brief calculate the MPs from given mesh vertices rotational latitude
   !>        longitude, update the MP slices
   !>        MPs MUST have rotated flag set to True(>0)

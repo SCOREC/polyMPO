@@ -19,10 +19,10 @@ enum MeshFieldIndex{
     MeshF_VtxRotLat,
     MeshF_Vel,
     MeshF_VtxMass,
+    MeshF_ElmMass,
     MeshF_OnSurfVeloIncr,
     MeshF_OnSurfDispIncr,
-    MeshF_RotLatLonIncr,
-    MeshF_ElmMass
+    MeshF_RotLatLonIncr
 };
 enum MeshFieldType{
     MeshFType_Invalid = -2,

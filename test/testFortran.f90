@@ -139,6 +139,23 @@ program main
     call assert((xArray(i) .eq. i+value1), "Assert MeshVel u-component Velocity Fail")
     call assert((yArray(i) .eq. value2-i), "Assert MeshVel v-component Velocity Fail")
   end do 
+  
+  !VtxStrainRate needs 6 arrays, using x,y,zArray for all
+  do i = 1, nverts
+    xArray(i) = i + value1
+    yArray(i) = value2 - i
+    zArray(i) = i + (value1 * value2)
+  end do
+  call polympo_setMeshVtxStrainRate(mpMesh, nverts, c_loc(xArray),c_loc(yArray),c_loc(zArray),c_loc(xArray),c_loc(yArray),c_loc(zArray))
+  xArray = -1
+  yArray = -1
+  zArray = -1
+  call polympo_getMeshVtxStrainRate(mpMesh, nverts, c_loc(xArray),c_loc(yArray),c_loc(zArray),c_loc(xArray),c_loc(yArray),c_loc(zArray))
+  do i = 1, nverts
+    call assert((xArray(i) .eq. i+value1), "Assert MeshVtxStrainRate xx-component Velocity Fail")
+    call assert((yArray(i) .eq. value2-i), "Assert MeshVtxStrainRate yy-component Velocity Fail")
+    call assert((zArray(i) .eq. i+(value1*value2)), "Assert MeshVtxStrainRate zz-component Velocity Fail")
+  end do
 
   deallocate(MParray)
   deallocate(Mesharray)

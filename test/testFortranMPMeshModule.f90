@@ -74,15 +74,15 @@ program main
   call assert(all(abs(MPPositions(3,:) - 1.1) .lt. test_epsilon), "Assert zPositions for MP array Fail")
 
   Mesharray = value1
-  call polympo_setMeshOnSurfVeloIncr(mpMesh, numCompsVel, nverts, c_loc(Mesharray))
+  call polympo_setMeshVtxOnSurfVeloIncr(mpMesh, numCompsVel, nverts, c_loc(Mesharray))
   Mesharray = value2
-  call polympo_setMeshOnSurfDispIncr(mpMesh, numCompsVel, nverts, c_loc(Mesharray))
+  call polympo_setMeshVtxOnSurfDispIncr(mpMesh, numCompsVel, nverts, c_loc(Mesharray))
 
   Mesharray = 1
-  call polympo_getMeshOnSurfVeloIncr(mpMesh, numCompsVel, nverts, c_loc(Mesharray))
+  call polympo_getMeshVtxOnSurfVeloIncr(mpMesh, numCompsVel, nverts, c_loc(Mesharray))
   call assert(all(abs( Mesharray - value1) .lt. test_epsilon), "Assert zPositions for MP array Fail")
   Mesharray = 1
-  call polympo_getMeshOnSurfDispIncr(mpMesh, numCompsVel, nverts, c_loc(Mesharray))
+  call polympo_getMeshVtxOnSurfDispIncr(mpMesh, numCompsVel, nverts, c_loc(Mesharray))
   call assert(all(abs( Mesharray - value2) .lt. test_epsilon), "Assert zPositions for MP array Fail")
 
   deallocate(Mesharray)

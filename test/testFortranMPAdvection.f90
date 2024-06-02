@@ -158,13 +158,13 @@ program main
     dispIncr(1,i) = sphereRadius*cos(latVertex(i))*deltaLon
     dispIncr(2,i) = 0.0_MPAS_RKIND
   end do
-  call polympo_setMeshOnSurfDispIncr(mpMesh,nCompsDisp,nVertices,c_loc(dispIncr))
+  call polympo_setMeshVtxOnSurfDispIncr(mpMesh,nCompsDisp,nVertices,c_loc(dispIncr))
   call polympo_push(mpMesh)
   do i = 1,nVertices
     dispIncr(1,i) = sphereRadius*cos(latVertex(i))*2*deltaLon
     dispIncr(2,i) = 0.0_MPAS_RKIND
   end do
-  call polympo_setMeshOnSurfDispIncr(mpMesh,nCompsDisp,nVertices,c_loc(dispIncr))
+  call polympo_setMeshVtxOnSurfDispIncr(mpMesh,nCompsDisp,nVertices,c_loc(dispIncr))
   call polympo_push(mpMesh)
   call polympo_deleteMPMesh(mpMesh)
   call polympo_finalize()

@@ -479,8 +479,8 @@ module polympo
   !> @param uVel(in) vertices u-component velocity 1D array (numVtx)
   !> @param vVel(in) vertices v-component velocity 1D array (numVtx)
   !---------------------------------------------------------------------------
-  subroutine polympo_setMeshVel(mpMesh, nVertices, uVel, vVel) &
-             bind(C, NAME='polympo_setMeshVel_f')
+  subroutine polympo_setMeshVtxVel(mpMesh, nVertices, uVel, vVel) &
+             bind(C, NAME='polympo_setMeshVtxVel_f')
     use :: iso_c_binding
     type(c_ptr), value :: mpMesh
     integer(c_int), value :: nVertices
@@ -495,8 +495,8 @@ module polympo
   !> @param vVel(in/out) output vertices v-component velocity
   !>        1D array (numVtx), allocated by user
   !---------------------------------------------------------------------------
-  subroutine polympo_getMeshVel(mpMesh, nVertices, uVel, vVel) &
-             bind(C, NAME='polympo_getMeshVel_f')
+  subroutine polympo_getMeshVtxVel(mpMesh, nVertices, uVel, vVel) &
+             bind(C, NAME='polympo_getMeshVtxVel_f')
     use :: iso_c_binding
     type(c_ptr), value :: mpMesh
     integer(c_int), value :: nVertices
@@ -562,8 +562,8 @@ module polympo
   !> @param nVertices(in) numVertices
   !> @param array(in) input mesh velocity 2D array (2,numVtx)
   !---------------------------------------------------------------------------
-  subroutine polympo_setMeshOnSurfVeloIncr(mpMesh, nComps, nVertices, array) &
-             bind(C, NAME='polympo_setMeshOnSurfVeloIncr_f')
+  subroutine polympo_setMeshVtxOnSurfVeloIncr(mpMesh, nComps, nVertices, array) &
+             bind(C, NAME='polympo_setMeshVtxOnSurfVeloIncr_f')
     use :: iso_c_binding
     type(c_ptr), value :: mpMesh
     integer(c_int), value :: nComps, nVertices
@@ -578,8 +578,8 @@ module polympo
   !> @param array(in/out) output mesh spherical velocity increment
   !>        2D array (2,numVtx), allocated by user
   !---------------------------------------------------------------------------
-  subroutine polympo_getMeshOnSurfVeloIncr(mpMesh, nComps, nVertices, array) &
-             bind(C, NAME='polympo_getMeshOnSurfVeloIncr_f')
+  subroutine polympo_getMeshVtxOnSurfVeloIncr(mpMesh, nComps, nVertices, array) &
+             bind(C, NAME='polympo_getMeshVtxOnSurfVeloIncr_f')
     use :: iso_c_binding
     type(c_ptr), value :: mpMesh
     integer(c_int), value :: nComps, nVertices
@@ -593,8 +593,8 @@ module polympo
   !> @param nVertices(in) numVertices
   !> @param array(in) input mesh velocity 2D array (2,numVtx)
   !---------------------------------------------------------------------------
-  subroutine polympo_setMeshOnSurfDispIncr(mpMesh, nComps, nVertices, array) &
-             bind(C, NAME='polympo_setMeshOnSurfDispIncr_f')
+  subroutine polympo_setMeshVtxOnSurfDispIncr(mpMesh, nComps, nVertices, array) &
+             bind(C, NAME='polympo_setMeshVtxOnSurfDispIncr_f')
     use :: iso_c_binding
     type(c_ptr), value :: mpMesh
     integer(c_int), value :: nComps, nVertices
@@ -609,8 +609,8 @@ module polympo
   !> @param array(in/out) output mesh spherical displacement increment 
   !>        2D array (2,numVtx), allocated by user
   !---------------------------------------------------------------------------
-  subroutine polympo_getMeshOnSurfDispIncr(mpMesh, nComps, nVertices, array) &
-             bind(C, NAME='polympo_getMeshOnSurfDispIncr_f')
+  subroutine polympo_getMeshVtxOnSurfDispIncr(mpMesh, nComps, nVertices, array) &
+             bind(C, NAME='polympo_getMeshVtxOnSurfDispIncr_f')
     use :: iso_c_binding
     type(c_ptr), value :: mpMesh
     integer(c_int), value :: nComps, nVertices

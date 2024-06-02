@@ -125,8 +125,8 @@ program main
 
   meshVelU = -1
   meshVelV = -1
-  !call polympo_getMeshVel(mpMesh,nCells,c_loc(meshMass)) todo
-  call polympo_getMeshVel(mpMesh,nVertices,c_loc(meshVelU), c_loc(meshVelV))
+  !call polympo_getMeshVtxVel(mpMesh,nCells,c_loc(meshMass)) todo
+  call polympo_getMeshVtxVel(mpMesh,nVertices,c_loc(meshVelU), c_loc(meshVelV))
   do i = 1,numMPs
     j = verticesOnCell(1,i)
     write(*,*) mpVel(1,i), meshVelU(j)

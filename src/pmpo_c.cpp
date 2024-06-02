@@ -843,10 +843,12 @@ void polympo_push_f(MPMesh_ptr p_mpmesh){
   ((polyMPO::MPMesh*)p_mpmesh) ->push();
 }
 
-int polympo_getMeshEntType(bool elmBased, bool vtxBased) {
-  if (elmBased) return polyMPO::MeshFType_ElmBased;
-  if (vtxBased) return polyMPO::MeshFType_VtxBased;
-  return polyMPO::MeshFType_Invalid;
+int polympo_elmBased() {
+  return polyMPO::MeshFType_ElmBased;
+}
+
+int polympo_vtxBased() {
+  return polyMPO::MeshFType_ElmBased;
 }
 
 //TODO skeleton of reconstruction functions

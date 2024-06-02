@@ -77,6 +77,9 @@ void polympo_getMeshOnSurfDispIncr_f(MPMesh_ptr p_mpmesh, const int nComps, cons
 void polympo_push_f(MPMesh_ptr p_mpmesh);
 
 // Reconstruction of variables from MPs to mesh vertices
+
+int polympo_elmBased();
+int polympo_vtxBased();
 void polympo_setReconstructionOfMass_f(MPMesh_ptr p_mpmesh, const int order, const int meshEntType);
 void polympo_setReconstructionOfVel_f(MPMesh_ptr p_mpmesh, const int order, const int meshEntType);
 void polympo_setReconstructionOfStrainRate_f(MPMesh_ptr p_mpmesh, const int order, const int meshEntType);

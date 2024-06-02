@@ -628,6 +628,20 @@ module polympo
     type(c_ptr), value :: mpMesh
   end subroutine
   !---------------------------------------------------------------------------
+  !> @brief get enum for vertex reconstruction
+  !---------------------------------------------------------------------------
+  integer function polympo_getMeshVtxType() &
+             bind(C, NAME='polympo_getMeshVtxType_f')
+    use :: iso_c_binding
+  end function
+  !---------------------------------------------------------------------------
+  !> @brief get enum for vertex reconstruction
+  !---------------------------------------------------------------------------
+  integer function polympo_getMeshElmType() &
+             bind(C, NAME='polympo_getMeshElmType_f')
+    use :: iso_c_binding
+  end function
+  !---------------------------------------------------------------------------
   !> @brief start the reconstruction of MP Mass to Mesh Vertices
   !> @param mpmesh(in/out) MPMesh object
   !> @param order Order of the reconstruction field

@@ -843,11 +843,11 @@ void polympo_push_f(MPMesh_ptr p_mpmesh){
   ((polyMPO::MPMesh*)p_mpmesh) ->push();
 }
 
-int polympo_getMeshVtxType() {
+int polympo_getMeshVtxType_f() {
   return polyMPO::MeshFType_VtxBased;
 }
 
-int polympo_getMeshElmType() {
+int polympo_getMeshElmType_f() {
   return polyMPO::MeshFType_ElmBased;
 }
 

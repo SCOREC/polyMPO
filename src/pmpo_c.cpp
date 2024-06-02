@@ -746,7 +746,7 @@ void polympo_setMeshElmMass_f(MPMesh_ptr p_mpmesh, const int nCells, const doubl
   Kokkos::deep_copy(coordsArray, h_coordsArray);
 }
 
-void polympo_getMeshVel_f(MPMesh_ptr p_mpmesh, const int nCells, double* elmMass){
+void polympo_getMeshElmMass_f(MPMesh_ptr p_mpmesh, const int nCells, double* elmMass){
   //check mpMesh is valid
   checkMPMeshValid(p_mpmesh);
   auto p_mesh = ((polyMPO::MPMesh*)p_mpmesh)->p_mesh;

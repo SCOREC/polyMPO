@@ -30,7 +30,7 @@ DoubleView MPMesh::assemblyV0(){
 }
 
 template <MeshFieldIndex meshFieldIndex>
-void MPMesh::assembly(int order, bool basisWeightFlag, bool massWeightFlag){
+void MPMesh::assembly(int order, MeshFieldType type, bool basisWeightFlag, bool massWeightFlag){
   if(basisWeightFlag || massWeightFlag) {
     std::cerr << "WARNING: basis and mass weight flags ignored\n";
   }
@@ -50,7 +50,7 @@ void MPMesh::assembly(int order, bool basisWeightFlag, bool massWeightFlag){
   auto meshField = p_mesh->getMeshField<meshFieldIndex>(); 
   //auto meshField = p_mesh->getMeshField<Mesh_Field_Cur_Pos_XYZ>(); 
 
-  if (order == 0) {
+  if (order == 0 && type == MeshFType_VtxBased) {
     auto assemble = PS_LAMBDA(const int& elm, const int& mp, const int& mask) {
       if(mask) { //if material point is 'active'/'enabled'
         int nVtxE = elm2VtxConn(elm,0); //number of vertices bounding the element
@@ -67,7 +67,21 @@ void MPMesh::assembly(int order, bool basisWeightFlag, bool massWeightFlag){
     };
     p_MPs->parallel_for(assemble, "assembly");
   }
-  else if (order == 1) {
+  else if (order == 0 && type == MeshFType_ElmBased) {
+    auto assemble = PS_LAMBDA(const int& elm, const int& mp, const int& mask) {
+      if(mask) { //if material point is 'active'/'enabled'
+        double mpMass = massWeight(mp,0);
+        double mpBasis = basis(mp,0);
+        double fieldComponentVal;
+        for(int j=0;j<numEntries;j++){
+          fieldComponentVal = mpData(mp,j)*mpBasis*mpMass;
+          Kokkos::atomic_add(&meshField(elm,j),fieldComponentVal);
+        }
+      }
+    };
+    p_MPs->parallel_for(assemble, "assembly");
+  }
+  else if (order == 1 && type == MeshFType_VtxBased) {
     auto assemble = PS_LAMBDA(const int& elm, const int& mp, const int& mask) {
       if(mask) { //if material point is 'active'/'enabled'
         int nVtxE = elm2VtxConn(elm,0); //number of vertices bounding the element
@@ -188,8 +202,8 @@ Vec2dView MPMesh::wtVec2Assembly(){
 } // wtVec2Assembly
 
 template<MeshFieldIndex meshFieldIndex>
-void MPMesh::setReconstructSlice(int order) {
-  auto function = [this, order](){ assembly<meshFieldIndex>(order, false, false); };
+void MPMesh::setReconstructSlice(int order, MeshFieldType type) {
+  auto function = [=](){ assembly<meshFieldIndex>(order, type, false, false); };
   const auto [iter, success] = reconstructSlice.insert({meshFieldIndex, function});
   if (!success){
     std::cerr << "Error: Slice is already being reconstructed\n";

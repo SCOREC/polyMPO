@@ -42,10 +42,10 @@ class MPMesh{
     template <MaterialPointSlice index>
     Vec2dView wtVec2Assembly();
     template <MeshFieldIndex meshFieldIndex>
-    void assembly(int order, bool basisWeightFlag, bool massWeightFlag);
+    void assembly(int order, MeshFieldType type, bool basisWeightFlag, bool massWeightFlag);
 
     template<MeshFieldIndex meshFieldIndex>
-    void setReconstructSlice(int order);
+    void setReconstructSlice(int order, MeshFieldType type);
     void reconstructSlices();
 
     void printVTP_mesh(int printVTPIndex);

@@ -88,11 +88,10 @@ program main
 
   isMPActive = MP_ACTIVE !all active MPs and some changed below
   mpsPerElm = 1 !all elements have 1 MP and some changed below
+  mpMass = 1.1
+  mpVel = 1.1
   do i = 1,numMPs
     mp2Elm(i) = i
-    mpMass(1,i) = real(i,MPAS_RKIND) + 1.0_MPAS_RKIND
-    mpVel(1,i) = real(i,MPAS_RKIND)*2.0_MPAS_RKIND 
-    mpVel(2,i) = real(i,MPAS_RKIND)*2.0_MPAS_RKIND + 1.0_MPAS_RKIND 
     j = verticesOnCell(1,i)
     mpLatLon(1,j) = latVertex(j)
     mpLatLon(2,j) = lonVertex(j) 
@@ -120,13 +119,13 @@ program main
   !call polympo_getMPVel(mpMesh,2,numMPs,c_loc(mpVel))
   !write(*,*) mpVel 
 
-  call polympo_setReconstructionOfVel(mpMesh,0, polympo_getMeshFVtxType())
+  call polympo_setReconstructionOfVel(mpMesh,0,polympo_getMeshFVtxType())
   call polympo_applyReconstruction(mpMesh)
 
   meshVelU = -1
   meshVelV = -1
   !call polympo_getMeshVtxVel(mpMesh,nCells,c_loc(meshMass)) todo
-  call polympo_getMeshVtxVel(mpMesh,nVertices,c_loc(meshVelU), c_loc(meshVelV))
+  call polympo_getMeshVtxVel(mpMesh,nVertices,c_loc(meshVelU),c_loc(meshVelV))
   do i = 1,numMPs
     j = verticesOnCell(1,i)
     write(*,*) mpVel(1,i), meshVelU(j)

@@ -421,6 +421,20 @@ module polympo
     type(c_ptr), intent(in), value :: cellsOnCell
   end subroutine
   !---------------------------------------------------------------------------
+  !> @brief get enum for vertex mesh fields
+  !---------------------------------------------------------------------------
+  integer function polympo_getMeshFVtxType() &
+             bind(C, NAME='polympo_getMeshFVtxType_f')
+    use :: iso_c_binding
+  end function
+  !---------------------------------------------------------------------------
+  !> @brief get enum for element mesh fields
+  !---------------------------------------------------------------------------
+  integer function polympo_getMeshFElmType() &
+             bind(C, NAME='polympo_getMeshFElmType_f')
+    use :: iso_c_binding
+  end function
+  !---------------------------------------------------------------------------
   !> @brief set the polympo mesh vertices coordinates
   !> @param mpmesh(in/out) MPMesh object
   !> @param nVertices(in) length of array in 
@@ -627,20 +641,6 @@ module polympo
     use :: iso_c_binding
     type(c_ptr), value :: mpMesh
   end subroutine
-  !---------------------------------------------------------------------------
-  !> @brief get enum for vertex mesh fields
-  !---------------------------------------------------------------------------
-  integer function polympo_getMeshFVtxType() &
-             bind(C, NAME='polympo_getMeshFVtxType_f')
-    use :: iso_c_binding
-  end function
-  !---------------------------------------------------------------------------
-  !> @brief get enum for element mesh fields
-  !---------------------------------------------------------------------------
-  integer function polympo_getMeshFElmType() &
-             bind(C, NAME='polympo_getMeshFElmType_f')
-    use :: iso_c_binding
-  end function
   !---------------------------------------------------------------------------
   !> @brief start the reconstruction of MP Mass to Mesh Vertices
   !> @param mpmesh(in/out) MPMesh object

@@ -38,28 +38,18 @@ void MPMesh::assembly(int order, MeshFieldType type, bool basisWeightFlag, bool 
   
   constexpr MaterialPointSlice mpfIndex = meshFieldIndexToMPSlice<meshFieldIndex>;
   auto mpData = p_MPs->getData<mpfIndex>();
-  auto massWeight = p_MPs->getData<MPF_Mass>();
-  //TODO:massWeight is not used in the loop
-  //if(!massWeightFlag){
-      //massWeight =  
-  //}
-  auto basis = p_MPs->getData<MPF_Basis_Vals>();
-  //if(!basisWeightFlag){
-  //}
   const int numEntries = mpSliceToNumEntries<mpfIndex>();
-  auto meshField = p_mesh->getMeshField<meshFieldIndex>(); 
-  //auto meshField = p_mesh->getMeshField<Mesh_Field_Cur_Pos_XYZ>(); 
+  auto meshField = p_mesh->getMeshField<meshFieldIndex>();
 
   if (order == 0 && type == MeshFType_VtxBased) {
     auto assemble = PS_LAMBDA(const int& elm, const int& mp, const int& mask) {
       if(mask) { //if material point is 'active'/'enabled'
         int nVtxE = elm2VtxConn(elm,0); //number of vertices bounding the element
-        double mpMass = massWeight(mp,0);
         for(int i=0; i<nVtxE; i++){
           int vID = elm2VtxConn(elm,i+1)-1; //vID = vertex id
           double fieldComponentVal;
           for(int j=0;j<numEntries;j++){
-            fieldComponentVal = mpData(mp,j)*basis(mp,i)*mpMass;
+            fieldComponentVal = mpData(mp,j);
             Kokkos::atomic_add(&meshField(vID,j),fieldComponentVal);
           }
         }
@@ -70,11 +60,9 @@ void MPMesh::assembly(int order, MeshFieldType type, bool basisWeightFlag, bool 
   else if (order == 0 && type == MeshFType_ElmBased) {
     auto assemble = PS_LAMBDA(const int& elm, const int& mp, const int& mask) {
       if(mask) { //if material point is 'active'/'enabled'
-        double mpMass = massWeight(mp,0);
-        double mpBasis = basis(mp,0);
         double fieldComponentVal;
         for(int j=0;j<numEntries;j++){
-          fieldComponentVal = mpData(mp,j)*mpBasis*mpMass;
+          fieldComponentVal = mpData(mp,j);
           Kokkos::atomic_add(&meshField(elm,j),fieldComponentVal);
         }
       }
@@ -85,12 +73,11 @@ void MPMesh::assembly(int order, MeshFieldType type, bool basisWeightFlag, bool 
     auto assemble = PS_LAMBDA(const int& elm, const int& mp, const int& mask) {
       if(mask) { //if material point is 'active'/'enabled'
         int nVtxE = elm2VtxConn(elm,0); //number of vertices bounding the element
-        double mpMass = massWeight(mp,0);
         for(int i=0; i<nVtxE; i++){
           int vID = elm2VtxConn(elm,i+1)-1; //vID = vertex id
           double fieldComponentVal;
           for(int j=0;j<numEntries;j++){
-            fieldComponentVal = mpData(mp,j)*basis(mp,i)*mpMass;
+            fieldComponentVal = mpData(mp,j);
             Kokkos::atomic_add(&meshField(vID,j),fieldComponentVal);
           }
         }

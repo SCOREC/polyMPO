@@ -628,17 +628,17 @@ module polympo
     type(c_ptr), value :: mpMesh
   end subroutine
   !---------------------------------------------------------------------------
-  !> @brief get enum for vertex reconstruction
+  !> @brief get enum for vertex mesh fields
   !---------------------------------------------------------------------------
-  integer function polympo_getMeshVtxType() &
-             bind(C, NAME='polympo_getMeshVtxType_f')
+  integer function polympo_getMeshFVtxType() &
+             bind(C, NAME='polympo_getMeshFVtxType_f')
     use :: iso_c_binding
   end function
   !---------------------------------------------------------------------------
-  !> @brief get enum for vertex reconstruction
+  !> @brief get enum for element mesh fields
   !---------------------------------------------------------------------------
-  integer function polympo_getMeshElmType() &
-             bind(C, NAME='polympo_getMeshElmType_f')
+  integer function polympo_getMeshFElmType() &
+             bind(C, NAME='polympo_getMeshFElmType_f')
     use :: iso_c_binding
   end function
   !---------------------------------------------------------------------------

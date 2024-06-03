@@ -120,7 +120,7 @@ program main
   !call polympo_getMPVel(mpMesh,2,numMPs,c_loc(mpVel))
   !write(*,*) mpVel 
 
-  call polympo_setReconstructionOfVel(mpMesh,0, polympo_getMeshVtxType())
+  call polympo_setReconstructionOfVel(mpMesh,0, polympo_getMeshFVtxType())
   call polympo_applyReconstruction(mpMesh)
 
   meshVelU = -1

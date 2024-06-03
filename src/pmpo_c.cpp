@@ -589,6 +589,14 @@ void polympo_setMeshElm2ElmConn_f(MPMesh_ptr p_mpmesh, const int maxEdges, const
   });
 }
 
+int polympo_getMeshFVtxType_f() {
+  return polyMPO::MeshFType_VtxBased;
+}
+
+int polympo_getMeshFElmType_f() {
+  return polyMPO::MeshFType_ElmBased;
+}
+
 void polympo_setMeshVtxCoords_f(MPMesh_ptr p_mpmesh, const int nVertices, const double* xArray, const double* yArray, const double* zArray){
   //chech validity
   checkMPMeshValid(p_mpmesh);
@@ -841,14 +849,6 @@ void polympo_getMeshVtxOnSurfDispIncr_f(MPMesh_ptr p_mpmesh, const int nComps, c
 void polympo_push_f(MPMesh_ptr p_mpmesh){
   checkMPMeshValid(p_mpmesh);
   ((polyMPO::MPMesh*)p_mpmesh) ->push();
-}
-
-int polympo_getMeshVtxType_f() {
-  return polyMPO::MeshFType_VtxBased;
-}
-
-int polympo_getMeshElmType_f() {
-  return polyMPO::MeshFType_ElmBased;
 }
 
 //TODO skeleton of reconstruction functions

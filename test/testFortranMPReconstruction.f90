@@ -29,7 +29,7 @@ program main
   integer, dimension(:), pointer :: mpsPerElm, mp2Elm, isMPActive
   real(kind=MPAS_RKIND), dimension(:,:), pointer :: mpPosition, mpLatLon
   real(kind=MPAS_RKIND), dimension(:,:), pointer :: mpMass, mpVel
-  real(kind=MPAS_RKIND), dimension(:), pointer :: meshMass, meshVelU, meshVelV
+  real(kind=MPAS_RKIND), dimension(:), pointer :: meshVtxMass
   logical :: inBound
   integer, parameter :: MP_ACTIVE = 1
   integer, parameter :: MP_INACTIVE = 0
@@ -82,9 +82,7 @@ program main
   allocate(mpLatLon(2,numMPs))
   allocate(mpMass(1,numMPs))
   allocate(mpVel(2,numMPs))
-  allocate(meshMass(nVertices))
-  allocate(meshVelU(nVertices))
-  allocate(meshVelV(nVertices))
+  allocate(meshVtxMass(nVertices))
 
   isMPActive = MP_ACTIVE !all active MPs and some changed below
   mpsPerElm = 1 !all elements have 1 MP and some changed below
@@ -98,40 +96,25 @@ program main
     mpPosition(1,j) = xVertex(j)
     mpPosition(2,j) = yVertex(j)
     mpPosition(3,j) = zVertex(j)
-    !write(*,*) i, mpVel(1,i), mpVel(2,i)
   end do
-  !write(*,*) mpVel(1,1), mpVel(2,1)
-  !write(*,*) mpVel(1,2), mpVel(2,2)
-  !write(*,*) mpVel(1,3), mpVel(2,3)
 
   call polympo_createMPs(mpMesh,nCells,numMPs,c_loc(mpsPerElm),c_loc(mp2Elm),c_loc(isMPActive))
   call polympo_setMPRotLatLon(mpMesh,2,numMPs,c_loc(mpLatLon))
   call polympo_setMPPositions(mpMesh,3,numMPs,c_loc(mpPosition))
- 
-  !write(*,*) mpMass 
-  !write(*,*) mpVel
+
   call polympo_setMPMass(mpMesh,1,numMPs,c_loc(mpMass))
   call polympo_setMPVel(mpMesh,2,numMPs,c_loc(mpVel))
-  !mpMass = 0
-  !mpVel = -1
-  !call polympo_getMPMass(mpMesh,1,numMPs,c_loc(mpMass))
-  !write(*,*) mpMass 
-  !call polympo_getMPVel(mpMesh,2,numMPs,c_loc(mpVel))
-  !write(*,*) mpVel 
 
-  call polympo_setReconstructionOfVel(mpMesh,0,polympo_getMeshFVtxType())
+  meshVtxMass = 1.1
+
+  call polympo_setMeshVtxMass(mpMesh,nVertices,c_loc(meshVtxMass))
+  call polympo_setReconstructionOfMass(mpMesh,0,polympo_getMeshFVtxType())
   call polympo_applyReconstruction(mpMesh)
+  call polympo_getMeshVtxMass(mpMesh,nVertices,c_loc(meshVtxMass))
 
-  meshVelU = -1
-  meshVelV = -1
-  !call polympo_getMeshVtxVel(mpMesh,nCells,c_loc(meshMass)) todo
-  call polympo_getMeshVtxVel(mpMesh,nVertices,c_loc(meshVelU),c_loc(meshVelV))
-  do i = 1,numMPs
-    j = verticesOnCell(1,i)
-    write(*,*) mpVel(1,i), meshVelU(j)
-    write(*,*) mpVel(1,i), meshVelV(j)
+  do i = 1, nVertices
+    call assert(meshVtxMass(i) .eq. 1.1, "wrong vtx mass")
   end do
-
   
   call polympo_deleteMPMesh(mpMesh)
   call polympo_finalize()
@@ -154,9 +137,7 @@ program main
   deallocate(mpLatLon)
   deallocate(mpMass)
   deallocate(mpVel)
-  deallocate(meshMass)
-  deallocate(meshVelU)
-  deallocate(meshVelV)
+  deallocate(meshVtxMass)
 
   stop
 end program

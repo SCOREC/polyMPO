@@ -34,9 +34,8 @@ void MPMesh::assembly(int order, MeshFieldType type, bool basisWeightFlag, bool 
   if(basisWeightFlag || massWeightFlag) {
     std::cerr << "WARNING: basis and mass weight flags ignored\n";
   }
-  auto elm2VtxConn = p_mesh->getElm2VtxConn();
-  
   constexpr MaterialPointSlice mpfIndex = meshFieldIndexToMPSlice<meshFieldIndex>;
+  auto elm2VtxConn = p_mesh->getElm2VtxConn();  
   auto mpData = p_MPs->getData<mpfIndex>();
   const int numEntries = mpSliceToNumEntries<mpfIndex>();
   auto meshField = p_mesh->getMeshField<meshFieldIndex>();
@@ -49,7 +48,7 @@ void MPMesh::assembly(int order, MeshFieldType type, bool basisWeightFlag, bool 
           int vID = elm2VtxConn(elm,i+1)-1; //vID = vertex id
           double fieldComponentVal;
           for(int j=0;j<numEntries;j++){
-            fieldComponentVal = mpData(mp,j);
+            fieldComponentVal = mpData(mp,j)/numEntries;
             Kokkos::atomic_add(&meshField(vID,j),fieldComponentVal);
           }
         }

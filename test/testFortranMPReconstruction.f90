@@ -113,7 +113,7 @@ program main
   call polympo_getMeshVtxMass(mpMesh,nVertices,c_loc(meshVtxMass))
 
   do i = 1, nVertices
-    call assert(meshVtxMass(i) .eq. 1.1, "wrong vtx mass")
+    call assert(meshVtxMass(i) .eq. 1.1, "Error: wrong vtx mass")
   end do
   
   call polympo_deleteMPMesh(mpMesh)

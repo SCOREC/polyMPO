@@ -29,7 +29,7 @@ program main
   integer, dimension(:), pointer :: mpsPerElm, mp2Elm, isMPActive
   real(kind=MPAS_RKIND), dimension(:,:), pointer :: mpPosition, mpLatLon
   real(kind=MPAS_RKIND), dimension(:,:), pointer :: mpMass, mpVel
-  real(kind=MPAS_RKIND), dimension(:), pointer :: meshVtxMass
+  real(kind=MPAS_RKIND), dimension(:), pointer :: meshVtxMass, meshElmMass
   logical :: inBound
   integer, parameter :: MP_ACTIVE = 1
   integer, parameter :: MP_INACTIVE = 0
@@ -83,6 +83,7 @@ program main
   allocate(mpMass(1,numMPs))
   allocate(mpVel(2,numMPs))
   allocate(meshVtxMass(nVertices))
+  allocate(meshElmMass(nCells))
 
   isMPActive = MP_ACTIVE !all active MPs and some changed below
   mpsPerElm = 1 !all elements have 1 MP and some changed below
@@ -106,14 +107,22 @@ program main
   call polympo_setMPVel(mpMesh,2,numMPs,c_loc(mpVel))
 
   meshVtxMass = 1.1
+  meshElmMass = 1.1
 
   call polympo_setMeshVtxMass(mpMesh,nVertices,c_loc(meshVtxMass))
+  ! call polympo_setMeshElmMass(mpMesh,nCells,c_loc(meshElmMass))
   call polympo_setReconstructionOfMass(mpMesh,0,polympo_getMeshFVtxType())
+  call polympo_setReconstructionOfMass(mpMesh,0,polympo_getMeshFElmType())
   call polympo_applyReconstruction(mpMesh)
   call polympo_getMeshVtxMass(mpMesh,nVertices,c_loc(meshVtxMass))
+  call polympo_getMeshElmMass(mpMesh,nCells,c_loc(meshElmMass))
 
   do i = 1, nVertices
     call assert(meshVtxMass(i) .eq. 1.1, "Error: wrong vtx mass")
+  end do
+
+  do i = 1, nCells
+    ! call assert(meshElmMass(i) .eq. 1.1, "Error: wrong elm mass")
   end do
   
   call polympo_deleteMPMesh(mpMesh)
@@ -138,6 +147,7 @@ program main
   deallocate(mpMass)
   deallocate(mpVel)
   deallocate(meshVtxMass)
+  deallocate(meshElmMass)
 
   stop
 end program

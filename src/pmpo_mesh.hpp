@@ -172,6 +172,9 @@ auto Mesh::getMeshField(){
     else if constexpr (index==MeshF_VtxMass){
         return vtxMass_;
     }
+    else if constexpr (index==MeshF_ElmMass){
+        return elmMass_;
+    }
     else if constexpr (index==MeshF_OnSurfVeloIncr){
         return vtxOnSurfVeloIncr_;
     }
@@ -180,9 +183,6 @@ auto Mesh::getMeshField(){
     }
     else if constexpr (index==MeshF_RotLatLonIncr){
         return vtxRotLatLonIncr_;
-    }
-    else if constexpr (index==MeshF_ElmMass){
-        return elmMass_;
     }
     fprintf(stderr,"Mesh Field Index error!\n");
     exit(1);

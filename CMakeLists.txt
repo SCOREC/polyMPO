@@ -6,6 +6,7 @@ bob_begin_package()
 
 include(CTest)
 enable_testing()
+enable_language(C)
 
 macro(polyMPO_export_lib target headers)
   bob_export_target(${target})

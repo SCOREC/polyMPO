@@ -40,11 +40,11 @@ const std::map<MeshFieldIndex, std::pair<MeshFieldType,
                {MeshF_Unsupported,      {MeshFType_Unsupported,"MeshField_Unsupported"}},
                {MeshF_VtxCoords,        {MeshFType_VtxBased,"MeshField_VerticesCoords"}},
                {MeshF_VtxRotLat,        {MeshFType_VtxBased,"MeshField_VerticesLatitude"}},
-        {MeshF_Vel,              {MeshFType_VtxBased,"MeshField_Velocity"}},
+               {MeshF_Vel,              {MeshFType_VtxBased,"MeshField_Velocity"}},
                {MeshF_OnSurfVeloIncr,   {MeshFType_VtxBased,"MeshField_OnSurfaceVelocityIncrement"}},
                {MeshF_OnSurfDispIncr,   {MeshFType_VtxBased,"MeshField_OnSurfaceDisplacementIncrement"}},
                {MeshF_RotLatLonIncr,    {MeshFType_VtxBased,"MeshField_RotationalLatitudeLongitudeIncreasement"}},
-               {MeshF_VtxStrainRate,       {MeshFType_VtxBased,"MeshField_StrainRate"}}};
+               {MeshF_VtxStrainRate,    {MeshFType_VtxBased,"MeshField_StrainRate"}}};
 
 enum mesh_type {mesh_unrecognized_lower = -1,
                 mesh_general_polygonal, //other meshes

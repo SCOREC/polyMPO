@@ -699,7 +699,8 @@ void polympo_getMeshOnSurfDispIncr_f(MPMesh_ptr p_mpmesh, const int nComps, cons
   Kokkos::deep_copy(arrayHost, array_d);
 }
 
-void polympo_setMeshVtxStrainRate_f(MPMesh_ptr p_mpmesh, const int nVertices, const double *xNormal, const double *yNormal, const double *zNormal, const double *xyShear, const double *xzShear, const double *yzShear){
+void polympo_setMeshVtxStrainRate_f(MPMesh_ptr p_mpmesh, const int nVertices, const double** forceArray){
+  //forceArray has 6 entries, each entry must have nVertices values
   //check mpMesh is valid
   checkMPMeshValid(p_mpmesh);
   auto p_mesh = ((polyMPO::MPMesh*)p_mpmesh)->p_mesh;
@@ -710,17 +711,17 @@ void polympo_setMeshVtxStrainRate_f(MPMesh_ptr p_mpmesh, const int nVertices, co
   auto strainRate = p_mesh->getMeshField<polyMPO::MeshF_VtxStrainRate>();
   auto h_strainRate = Kokkos::create_mirror_view(strainRate);
   for(int i = 0; i < nVertices; i++){
-    h_strainRate(i,0) = xNormal[i];
-    h_strainRate(i,1) = yNormal[i];
-    h_strainRate(i,2) = zNormal[i];
-    h_strainRate(i,3) = xyShear[i];
-    h_strainRate(i,4) = xzShear[i];
-    h_strainRate(i,5) = yzShear[i];
+    h_strainRate(i,0) = forceArray[0][i];
+    h_strainRate(i,1) = forceArray[1][i];
+    h_strainRate(i,2) = forceArray[2][i];
+    h_strainRate(i,3) = forceArray[3][i];
+    h_strainRate(i,4) = forceArray[4][i];
+    h_strainRate(i,5) = forceArray[5][i];
   }
   Kokkos::deep_copy(strainRate, h_strainRate);
 }
 
-void polympo_getMeshVtxStrainRate_f(MPMesh_ptr p_mpmesh, const int nVertices, double *xNormal, double *yNormal, double *zNormal, double *xyShear, double *xzShear, double *yzShear){
+void polympo_getMeshVtxStrainRate_f(MPMesh_ptr p_mpmesh, const int nVertices, double** forceArray){
   //check mpMesh is valid
   checkMPMeshValid(p_mpmesh);
   auto p_mesh = ((polyMPO::MPMesh*)p_mpmesh)->p_mesh;
@@ -731,12 +732,12 @@ void polympo_getMeshVtxStrainRate_f(MPMesh_ptr p_mpmesh, const int nVertices, do
   auto strainRate = p_mesh->getMeshField<polyMPO::MeshF_VtxStrainRate>();
   auto h_strainRate = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), strainRate);
   for(int i = 0; i < nVertices; i++){
-    xNormal[i] = h_strainRate(i,0);
-    yNormal[i] = h_strainRate(i,1);
-    zNormal[i] = h_strainRate(i,2);
-    xyShear[i] = h_strainRate(i,3);
-    xzShear[i] = h_strainRate(i,4);
-    yzShear[i] = h_strainRate(i,5);
+    forceArray[0][i] = h_strainRate(i,0);
+    forceArray[1][i] = h_strainRate(i,1);
+    forceArray[2][i] = h_strainRate(i,2);
+    forceArray[3][i] = h_strainRate(i,3);
+    forceArray[4][i] = h_strainRate(i,4);
+    forceArray[5][i] = h_strainRate(i,5);
   }
 }
 

@@ -194,7 +194,6 @@ void Mesh::fillMeshField(double val){
     auto meshField = getMeshField<index>();
     int size = meshField.size();
     int rank = meshField.rank();
-    printf("size %d, rank %d\n", size, rank);
     Kokkos::MDRangePolicy<Kokkos::Rank<2>> policy({0,0},{size, rank});
     Kokkos::parallel_for("fill mesh field", policy, KOKKOS_LAMBDA(const int i, const int j){
         meshField(i, j) = val;

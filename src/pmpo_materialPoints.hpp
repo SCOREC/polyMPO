@@ -145,6 +145,8 @@ class MaterialPoints {
     void setAppIDFunc(IntFunc getAppIDIn);
     int getNextAppID();
 
+    void calcBasis();
+
     void rebuild() {
       IntView tgtElm("tgtElm", MPs->capacity());
       auto tgtMpElm = MPs->get<MPF_Tgt_Elm_ID>();

@@ -38,18 +38,21 @@ void MPMesh::assembly(int order, MeshFieldType type, bool basisWeightFlag, bool 
   auto elm2VtxConn = p_mesh->getElm2VtxConn();  
   auto mpData = p_MPs->getData<mpfIndex>();
   const int numEntries = mpSliceToNumEntries<mpfIndex>();
+
+  p_mesh->fillMeshField<meshFieldIndex>(0.0);
   auto meshField = p_mesh->getMeshField<meshFieldIndex>();
+  auto weight = p_MPs->getData<MPF_Basis_Vals>();
 
   if (order == 0 && type == MeshFType_VtxBased) {
     int numVtx = p_mesh->getNumVertices();
-    Kokkos::View<int*> numComponents("numComponents", numVtx);
+    Kokkos::View<double*> sumWeights("sumWeights", numVtx);
     auto assemble = PS_LAMBDA(const int& elm, const int& mp, const int& mask) {
       if(mask) { //if material point is 'active'/'enabled'
         int nVtxE = elm2VtxConn(elm,0); //number of vertices bounding the element
         for(int i=0; i<nVtxE; i++){
           int vID = elm2VtxConn(elm,i+1)-1; //vID = vertex id
           double fieldComponentVal;
-          Kokkos::atomic_add(&numComponents(vID),1);
+          Kokkos::atomic_add(&sumWeights(vID), weight(mp, 0));
           for(int j=0;j<numEntries;j++){
             fieldComponentVal = mpData(mp,j);
             Kokkos::atomic_add(&meshField(vID,j),fieldComponentVal);
@@ -59,13 +62,17 @@ void MPMesh::assembly(int order, MeshFieldType type, bool basisWeightFlag, bool 
     };
     p_MPs->parallel_for(assemble, "assembly");
     Kokkos::MDRangePolicy<Kokkos::Rank<2>> policy({0,0},{numVtx, numEntries});
-    Kokkos::parallel_for("assemble average", policy, KOKKOS_LAMBDA(const int vtx, const int entry){
-      meshField(vtx, entry) /= numComponents(vtx); 
+    Kokkos::parallel_for("assembly average", policy, KOKKOS_LAMBDA(const int vtx, const int entry){
+      if (sumWeights(vtx) > 0) 
+        meshField(vtx, entry) /= sumWeights(vtx);
     });
   }
   else if (order == 0 && type == MeshFType_ElmBased) {
+    int numElms=p_mesh->getNumElements();
+    Kokkos::View<int*> mpsPerElm("mpsPerElm", numElms);
     auto assemble = PS_LAMBDA(const int& elm, const int& mp, const int& mask) {
       if(mask) { //if material point is 'active'/'enabled'
+        Kokkos::atomic_add(&mpsPerElm(elm),1);
         double fieldComponentVal;
         for(int j=0;j<numEntries;j++){
           fieldComponentVal = mpData(mp,j);
@@ -74,6 +81,11 @@ void MPMesh::assembly(int order, MeshFieldType type, bool basisWeightFlag, bool 
       }
     };
     p_MPs->parallel_for(assemble, "assembly");
+    Kokkos::MDRangePolicy<Kokkos::Rank<2>> policy({0,0},{numElms, numEntries});
+    Kokkos::parallel_for("assembly average", policy, KOKKOS_LAMBDA(const int elm, const int entry){
+      if (mpsPerElm(elm) > 0) 
+        meshField(elm, entry) /= mpsPerElm(elm);
+    });
   }
   else if (order == 1 && type == MeshFType_VtxBased) {
     auto assemble = PS_LAMBDA(const int& elm, const int& mp, const int& mask) {

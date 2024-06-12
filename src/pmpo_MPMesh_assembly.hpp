@@ -45,7 +45,7 @@ void MPMesh::assembly(int order, MeshFieldType type, bool basisWeightFlag, bool 
 
   if (order == 0 && type == MeshFType_VtxBased) {
     int numVtx = p_mesh->getNumVertices();
-    const double tolerance = 0.00001;
+    const double tolerance = 0.0;
     Kokkos::View<double*> sumWeights("sumWeights", numVtx);
     auto assemble = PS_LAMBDA(const int& elm, const int& mp, const int& mask) {
       if(mask) { //if material point is 'active'/'enabled'
@@ -55,7 +55,7 @@ void MPMesh::assembly(int order, MeshFieldType type, bool basisWeightFlag, bool 
           double fieldComponentVal;
           Kokkos::atomic_add(&sumWeights(vID), weight(mp, 0));
           for(int j=0;j<numEntries;j++){
-            fieldComponentVal = mpData(mp,j);
+            fieldComponentVal = mpData(mp,j) * weight(mp, 0);
             Kokkos::atomic_add(&meshField(vID,j),fieldComponentVal);
           }
         }

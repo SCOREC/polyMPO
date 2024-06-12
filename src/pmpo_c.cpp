@@ -866,7 +866,12 @@ void polympo_setReconstructionOfVel_f(MPMesh_ptr p_mpmesh, const int order, cons
   checkMPMeshValid(p_mpmesh);
   auto mpmesh = ((polyMPO::MPMesh*)p_mpmesh);
   polyMPO::MeshFieldType type = static_cast<polyMPO::MeshFieldType>(meshEntType);
-  mpmesh->setReconstructSlice<polyMPO::MeshF_Vel>(order, type);
+  if (type == polyMPO::MeshFType_VtxBased)
+    mpmesh->setReconstructSlice<polyMPO::MeshF_Vel>(order, type);
+  else {
+    std::cerr << "Error: This reconstruction is not supported\n";
+    exit(1);
+  }
 }
 
 void polympo_setReconstructionOfStrainRate_f(MPMesh_ptr p_mpmesh, const int order, const int meshEntType){

@@ -522,6 +522,7 @@ void polympo_setMeshNumElms_f(MPMesh_ptr p_mpmesh, const int numElms){
   p_mesh->setNumElms(numElms);
   p_mesh->setElm2VtxConn(elm2Vtx);
   p_mesh->setElm2ElmConn(elm2Elm);
+  p_mesh->setMeshElmBasedFieldSize();
 }
 
 void polympo_getMeshNumElms_f(MPMesh_ptr p_mpmesh, int & numElms) {
@@ -748,8 +749,9 @@ void polympo_setMeshElmMass_f(MPMesh_ptr p_mpmesh, const int nCells, const doubl
   //copy the host array to the device
   auto coordsArray = p_mesh->getMeshField<polyMPO::MeshF_ElmMass>();
   auto h_coordsArray = Kokkos::create_mirror_view(coordsArray);
+  kkViewHostU<const double*> arrayHost(elmMass, nCells);
   for(int i=0; i<nCells; i++){
-    h_coordsArray(i,0) = elmMass[i];
+    h_coordsArray(i,0) = arrayHost[i];
   }
   Kokkos::deep_copy(coordsArray, h_coordsArray);
 }

@@ -81,10 +81,9 @@ void MPMesh::assemblyElm0() {
     auto assemble = PS_LAMBDA(const int& elm, const int& mp, const int& mask) {
       if(mask) { //if material point is 'active'/'enabled'
         Kokkos::atomic_add(&mpsPerElm(elm),1);
-        double fieldComponentVal;
         for(int j=0;j<numEntries;j++){
-          fieldComponentVal = mpData(mp,j);
-          Kokkos::atomic_add(&meshField(elm,j),fieldComponentVal);
+          printf("MPDATA %.2f\n", mpData(mp,j));
+          Kokkos::atomic_add(&meshField(elm,j), mpData(mp,0));
         }
       }
     };

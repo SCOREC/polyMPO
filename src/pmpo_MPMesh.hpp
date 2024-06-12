@@ -20,7 +20,6 @@ class MPMesh{
     Mesh* p_mesh;
     MaterialPoints* p_MPs;
 
-    int reconsOption;
     std::map<MeshFieldIndex, std::function<void()>> reconstructSlice = std::map<MeshFieldIndex, std::function<void()>>();
     
     MPMesh(Mesh* inMesh, MaterialPoints* inMPs):

@@ -259,7 +259,6 @@ void MPMesh::T2LTracking(Vec2dView dx){
 }
 
 void MPMesh::reconstructSlices() {
-    // if (!reconsOption) return;
     p_MPs->calcBasis();
     for (auto const& [index, reconstruct] : reconstructSlice) {
         if (reconstruct) reconstruct();

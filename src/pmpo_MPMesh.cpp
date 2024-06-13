@@ -7,6 +7,43 @@ namespace polyMPO{
 
 void printVTP_mesh(MPMesh& mpMesh, int printVTPIndex=-1);
 
+void MPMesh::calcBasis() {
+    auto MPsPosition = p_MPs->getPositions();
+    auto mp_basis_field = p_MPs->getData<MPF_Basis_Vals>(); // we can implement MPs->getBasisVals() like MPs->getPositions()
+    auto elm2VtxConn = p_mesh->getElm2VtxConn();
+    auto vtxCoords = p_mesh->getMeshField<MeshF_VtxCoords>();
+    double radius = p_mesh->getSphereRadius();
+
+    auto calcbasis = PS_LAMBDA(const int& elm, const int& mp, const int& mask) {
+        if(mask) { //if material point is 'active'/'enabled'
+            Vec3d position3d(MPsPosition(mp,0),MPsPosition(mp,1),MPsPosition(mp,2));
+            // formating
+            Vec3d v3d[maxVtxsPerElm+1];
+            int numVtx = elm2VtxConn(elm,0);
+            for(int i = 1; i<=numVtx; i++){
+                v3d[i-1][0] = vtxCoords(elm2VtxConn(elm,i)-1,0);
+                v3d[i-1][1] = vtxCoords(elm2VtxConn(elm,i)-1,1);
+                v3d[i-1][2] = vtxCoords(elm2VtxConn(elm,i)-1,2);
+            }
+            v3d[numVtx][0] = vtxCoords(elm2VtxConn(elm,1)-1,0);
+            v3d[numVtx][1] = vtxCoords(elm2VtxConn(elm,1)-1,1);
+            v3d[numVtx][2] = vtxCoords(elm2VtxConn(elm,1)-1,2);
+            
+            double basisByArea3d[maxVtxsPerElm] = {0.0};
+            initArray(basisByArea3d,maxVtxsPerElm,0.0);
+
+            // calc basis
+            getBasisByAreaGblFormSpherical2(position3d, numVtx, v3d, radius, basisByArea3d);
+            
+            // fill step
+            for(int i=0; i<= numVtx; i++){
+                mp_basis_field(mp,i) = basisByArea3d[i];
+            }
+        }
+    };
+    p_MPs->parallel_for(calcbasis, "calcbasis");
+}
+
 void MPMesh::CVTTrackingEdgeCenterBased(Vec2dView dx){
     int numElms = p_mesh->getNumElements();
 
@@ -259,7 +296,7 @@ void MPMesh::T2LTracking(Vec2dView dx){
 }
 
 void MPMesh::reconstructSlices() {
-    p_MPs->calcBasis();
+    calcBasis();
     for (auto const& [index, reconstruct] : reconstructSlice) {
         if (reconstruct) reconstruct();
     }

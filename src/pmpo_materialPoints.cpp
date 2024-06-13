@@ -101,14 +101,6 @@ void MaterialPoints::finishRebuild() {
   rebuildFields.ongoing = false;
 }
 
-void MaterialPoints::calcBasis() {
-  auto basisCalculation = PS_LAMBDA(const int& elm, const int& mp, const int& mask) {
-    if(mask) { //if material point is 'active'/'enabled'
-    }
-  };
-  parallel_for(basisCalculation, "basisCalculation");
-}
-
 bool MaterialPoints::rebuildOngoing() { return rebuildFields.ongoing; }
 
 void MaterialPoints::setAppIDFunc(IntFunc getAppIDIn) { getAppID = getAppIDIn; }

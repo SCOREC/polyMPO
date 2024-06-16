@@ -82,7 +82,6 @@ void MPMesh::assemblyElm0() {
       if(mask) { //if material point is 'active'/'enabled'
         Kokkos::atomic_add(&mpsPerElm(elm),1);
         for(int j=0;j<numEntries;j++){
-          printf("MPDATA %.2f\n", mpData(mp,j));
           Kokkos::atomic_add(&meshField(elm,j), mpData(mp,0));
         }
       }

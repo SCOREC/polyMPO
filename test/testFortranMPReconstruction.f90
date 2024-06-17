@@ -20,7 +20,7 @@ program main
   character (len=2048) :: filename
   real(kind=MPAS_RKIND), dimension(:,:), pointer :: dispIncr
   character (len=64) :: onSphere
-  real(kind=MPAS_RKIND) :: sphereRadius, xComputed, yComputed, zComputed, latComputed, lonComputed
+  real(kind=MPAS_RKIND) :: sphereRadius, xComputed, yComputed, zComputed, latComputed, lonComputed, tolerance
   integer, dimension(:), pointer :: nEdgesOnCell
   real(kind=MPAS_RKIND), dimension(:), pointer :: xVertex, yVertex, zVertex
   real(kind=MPAS_RKIND), dimension(:), pointer :: latVertex, lonVertex
@@ -117,12 +117,13 @@ program main
   call polympo_getMeshVtxMass(mpMesh,nVertices,c_loc(meshVtxMass))
   call polympo_getMeshElmMass(mpMesh,nCells,c_loc(meshElmMass))
 
+  tolerance = .0001
   do i = 1, nVertices
-    ! call assert(meshVtxMass(i) .eq. 1.1, "Error: wrong vtx mass")
+    call assert(meshVtxMass(i) < 1.1+tolerance .and. meshVtxMass(i) > 1.1-tolerance, "Error: wrong vtx mass")
   end do
 
   do i = 1, nCells
-    call assert(meshElmMass(i) .eq. 1.1, "Error: wrong elm mass")
+    call assert(meshElmMass(i) < 1.1+tolerance .and. meshElmMass(i) > 1.1-tolerance, "Error: wrong elm mass")
   end do
   
   call polympo_deleteMPMesh(mpMesh)

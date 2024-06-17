@@ -92,11 +92,11 @@ program main
   do i = 1,numMPs
     mp2Elm(i) = i
     j = verticesOnCell(1,i)
-    mpLatLon(1,j) = latVertex(j)
-    mpLatLon(2,j) = lonVertex(j) 
-    mpPosition(1,j) = xVertex(j)
-    mpPosition(2,j) = yVertex(j)
-    mpPosition(3,j) = zVertex(j)
+    mpLatLon(1,i) = latVertex(j)
+    mpLatLon(2,i) = lonVertex(j) 
+    mpPosition(1,i) = xVertex(j)
+    mpPosition(2,i) = yVertex(j)
+    mpPosition(3,i) = zVertex(j)
   end do
 
   call polympo_createMPs(mpMesh,nCells,numMPs,c_loc(mpsPerElm),c_loc(mp2Elm),c_loc(isMPActive))
@@ -122,7 +122,7 @@ program main
   end do
 
   do i = 1, nCells
-    ! call assert(meshElmMass(i) .eq. 1.1, "Error: wrong elm mass")
+    call assert(meshElmMass(i) .eq. 1.1, "Error: wrong elm mass")
   end do
   
   call polympo_deleteMPMesh(mpMesh)

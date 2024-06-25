@@ -106,27 +106,32 @@ program main
   call polympo_setMPMass(mpMesh,1,numMPs,c_loc(mpMass))
   call polympo_setMPVel(mpMesh,2,numMPs,c_loc(mpVel))
 
+  ! Test vtx reconstruction
+  
   meshVtxMass = 1.1
-  meshElmMass = 1.1
 
   call polympo_setMeshVtxMass(mpMesh,nVertices,c_loc(meshVtxMass))
-  call polympo_setMeshElmMass(mpMesh,nCells,c_loc(meshElmMass))
   call polympo_setReconstructionOfMass(mpMesh,0,polympo_getMeshFVtxType())
-  call polympo_setReconstructionOfMass(mpMesh,0,polympo_getMeshFElmType())
   call polympo_applyReconstruction(mpMesh)
   call polympo_getMeshVtxMass(mpMesh,nVertices,c_loc(meshVtxMass))
-  call polympo_getMeshElmMass(mpMesh,nCells,c_loc(meshElmMass))
 
   tolerance = .0001
   do i = 1, nVertices
     call assert(meshVtxMass(i) < 1.1+tolerance .and. meshVtxMass(i) > 1.1-tolerance, "Error: wrong vtx mass")
   end do
+  
+  ! Test elm push reconstruction
+
+  meshElmMass = 1.1
+  call polympo_setMeshElmMass(mpMesh,nCells,c_loc(meshElmMass))
+  call polympo_setReconstructionOfMass(mpMesh,0,polympo_getMeshFElmType())
+  call polympo_push(mpMesh)
+  call polympo_getMeshElmMass(mpMesh,nCells,c_loc(meshElmMass))
 
   do i = 1, nCells
     call assert(meshElmMass(i) < 1.1+tolerance .and. meshElmMass(i) > 1.1-tolerance, "Error: wrong elm mass")
   end do
   
-  call polympo_push(mpMesh)
   
   call polympo_deleteMPMesh(mpMesh)
   call polympo_finalize()

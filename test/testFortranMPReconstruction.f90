@@ -126,6 +126,8 @@ program main
     call assert(meshElmMass(i) < 1.1+tolerance .and. meshElmMass(i) > 1.1-tolerance, "Error: wrong elm mass")
   end do
   
+  call polympo_push(mpMesh)
+  
   call polympo_deleteMPMesh(mpMesh)
   call polympo_finalize()
 

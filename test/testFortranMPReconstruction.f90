@@ -18,10 +18,11 @@ program main
   integer :: mpi_comm_handle = MPI_COMM_WORLD
   real(kind=MPAS_RKIND) :: pi = 4.0_MPAS_RKIND*atan(1.0_MPAS_RKIND)
   real(kind=MPAS_RKIND) :: TEST_VAL = 1.1_MPAS_RKIND
+  real(kind=MPAS_RKIND) :: TOLERANCE = 0.0001_MPAS_RKIND
   character (len=2048) :: filename
   real(kind=MPAS_RKIND), dimension(:,:), pointer :: dispIncr
   character (len=64) :: onSphere
-  real(kind=MPAS_RKIND) :: sphereRadius, xComputed, yComputed, zComputed, latComputed, lonComputed, tolerance
+  real(kind=MPAS_RKIND) :: sphereRadius, xComputed, yComputed, zComputed, latComputed, lonComputed
   integer, dimension(:), pointer :: nEdgesOnCell
   real(kind=MPAS_RKIND), dimension(:), pointer :: xVertex, yVertex, zVertex
   real(kind=MPAS_RKIND), dimension(:), pointer :: latVertex, lonVertex
@@ -113,9 +114,8 @@ program main
   call polympo_applyReconstruction(mpMesh)
   call polympo_getMeshVtxMass(mpMesh,nVertices,c_loc(meshVtxMass))
 
-  tolerance = .0001
   do i = 1, nVertices
-    call assert(meshVtxMass(i) < TEST_VAL+tolerance .and. meshVtxMass(i) > TEST_VAL-tolerance, "Error: wrong vtx mass")
+    call assert(meshVtxMass(i) < TEST_VAL+TOLERANCE .and. meshVtxMass(i) > TEST_VAL-TOLERANCE, "Error: wrong vtx mass")
   end do
   
   ! Test elm push reconstruction
@@ -125,7 +125,7 @@ program main
   call polympo_getMeshElmMass(mpMesh,nCells,c_loc(meshElmMass))
 
   do i = 1, nCells
-    call assert(meshElmMass(i) < TEST_VAL+tolerance .and. meshElmMass(i) > TEST_VAL-tolerance, "Error: wrong elm mass")
+    call assert(meshElmMass(i) < TEST_VAL+TOLERANCE .and. meshElmMass(i) > TEST_VAL-TOLERANCE, "Error: wrong elm mass")
   end do
   
   

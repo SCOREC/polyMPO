@@ -17,6 +17,7 @@ program main
   integer :: nCompsDisp
   integer :: mpi_comm_handle = MPI_COMM_WORLD
   real(kind=MPAS_RKIND) :: pi = 4.0_MPAS_RKIND*atan(1.0_MPAS_RKIND)
+  real(kind=MPAS_RKIND) :: TEST_VAL = 1.1_MPAS_RKIND
   character (len=2048) :: filename
   real(kind=MPAS_RKIND), dimension(:,:), pointer :: dispIncr
   character (len=64) :: onSphere
@@ -87,8 +88,8 @@ program main
 
   isMPActive = MP_ACTIVE !all active MPs and some changed below
   mpsPerElm = 1 !all elements have 1 MP and some changed below
-  mpMass = 1.1
-  mpVel = 1.1
+  mpMass = TEST_VAL
+  mpVel = TEST_VAL
   do i = 1,numMPs
     mp2Elm(i) = i
     j = verticesOnCell(1,i)
@@ -108,28 +109,23 @@ program main
 
   ! Test vtx reconstruction
   
-  meshVtxMass = 1.1
-
-  call polympo_setMeshVtxMass(mpMesh,nVertices,c_loc(meshVtxMass))
   call polympo_setReconstructionOfMass(mpMesh,0,polympo_getMeshFVtxType())
   call polympo_applyReconstruction(mpMesh)
   call polympo_getMeshVtxMass(mpMesh,nVertices,c_loc(meshVtxMass))
 
   tolerance = .0001
   do i = 1, nVertices
-    call assert(meshVtxMass(i) < 1.1+tolerance .and. meshVtxMass(i) > 1.1-tolerance, "Error: wrong vtx mass")
+    call assert(meshVtxMass(i) < TEST_VAL+tolerance .and. meshVtxMass(i) > TEST_VAL-tolerance, "Error: wrong vtx mass")
   end do
   
   ! Test elm push reconstruction
 
-  meshElmMass = 1.1
-  call polympo_setMeshElmMass(mpMesh,nCells,c_loc(meshElmMass))
   call polympo_setReconstructionOfMass(mpMesh,0,polympo_getMeshFElmType())
   call polympo_push(mpMesh)
   call polympo_getMeshElmMass(mpMesh,nCells,c_loc(meshElmMass))
 
   do i = 1, nCells
-    call assert(meshElmMass(i) < 1.1+tolerance .and. meshElmMass(i) > 1.1-tolerance, "Error: wrong elm mass")
+    call assert(meshElmMass(i) < TEST_VAL+tolerance .and. meshElmMass(i) > TEST_VAL-tolerance, "Error: wrong elm mass")
   end do
   
   

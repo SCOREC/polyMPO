@@ -1,9 +1,60 @@
+
+module calculateDisplacement
+  use :: polympo
+  use iso_c_binding
+  implicit none
+  
+contains
+
+subroutine calculateSurfaceDisplacement(mpMesh, latVertex, lonVertex, nEdgesOnCell, verticesOnCell, nVertices, sphereRadius)
+  use :: polympo
+  use :: readMPAS
+  use :: iso_c_binding
+  implicit none
+
+  real(kind=MPAS_RKIND), dimension(:), pointer :: latVertex, lonVertex
+  real(kind=MPAS_RKIND) :: maxlon, minlon, deltaLon, sphereRadius
+  integer, dimension(:), pointer :: nEdgesOnCell
+  integer, dimension(:,:), pointer :: verticesOnCell
+  integer :: i, j, nVertices, nCompsDisp
+  real(kind=MPAS_RKIND), dimension(:,:), pointer :: dispIncr
+  type(c_ptr) :: mpMesh
+
+  nCompsDisp = 2
+  allocate(dispIncr(nCompsDisp,nVertices))
+
+  ! check first element/cell for delta
+  maxlon = minval(lonVertex)
+  minlon = maxval(lonVertex)
+  do i = 1, nEdgesOnCell(1)
+    j = verticesOnCell(i,1)
+    if(maxlon .lt. lonVertex(j)) then
+      maxlon = lonVertex(j)
+    endif
+    if(minlon .gt. lonVertex(j)) then
+      minlon = lonVertex(j)
+    endif
+  end do
+
+  deltaLon = maxlon - minlon
+
+  do i = 1,nVertices
+    dispIncr(1,i) = sphereRadius*cos(latVertex(i))*deltaLon
+    dispIncr(2,i) = 0.0_MPAS_RKIND
+  end do
+  call polympo_setMeshVtxOnSurfDispIncr(mpMesh,nCompsDisp,nVertices,c_loc(dispIncr))
+
+  deallocate(dispIncr)
+end subroutine
+end module
+
 !---------------------------------------------------------------------------
 !> todo add a discription
 !---------------------------------------------------------------------------
 program main
   use :: polympo
   use :: readMPAS
+  use :: calculateDisplacement
   use :: iso_c_binding
   implicit none
   include 'mpif.h'
@@ -14,12 +65,10 @@ program main
   integer :: argc, i, j, arglen, k
   integer :: setMeshOption, setMPOption
   integer :: maxEdges, vertexDegree, nCells, nVertices
-  integer :: nCompsDisp
   integer :: mpi_comm_handle = MPI_COMM_WORLD
-  real(kind=MPAS_RKIND) :: xc, yc, zc, radius, maxlon, minlon, deltaLon, lon
+  real(kind=MPAS_RKIND) :: xc, yc, zc, radius, lon
   real(kind=MPAS_RKIND) :: pi = 4.0_MPAS_RKIND*atan(1.0_MPAS_RKIND)
   character (len=2048) :: filename
-  real(kind=MPAS_RKIND), dimension(:,:), pointer :: dispIncr
   character (len=64) :: onSphere
   real(kind=MPAS_RKIND) :: sphereRadius, xComputed, yComputed, zComputed, latComputed, lonComputed
   integer, dimension(:), pointer :: nEdgesOnCell
@@ -68,9 +117,7 @@ program main
                         xVertex, yVertex, zVertex, &
                         latVertex, &
                         verticesOnCell, cellsOnCell)
- 
-  nCompsDisp = 2
-  allocate(dispIncr(nCompsDisp,nVertices))
+
   !createMPs
   numMPs = nCells
   allocate(mpsPerElm(nCells))
@@ -135,36 +182,12 @@ program main
       mpLatLon(2,i) = lon
     endif
   end do
-  ! check first element/cell for delta
-  maxlon = minval(lonVertex)
-  minlon = maxval(lonVertex)
-  do i = 1, nEdgesOnCell(1)
-    j = verticesOnCell(i,1)
-    if(maxlon .lt. lonVertex(j)) then
-      maxlon = lonVertex(j)
-    endif
-    if(minlon .gt. lonVertex(j)) then
-      minlon = lonVertex(j)
-    endif
-  end do
+
   call polympo_createMPs(mpMesh,nCells,numMPs,c_loc(mpsPerElm),c_loc(mp2Elm),c_loc(isMPActive))
   call polympo_setMPRotLatLon(mpMesh,2,numMPs,c_loc(mpLatLon))
   call polympo_setMPPositions(mpMesh,3,numMPs,c_loc(mpPosition))
 
-  
-  deltaLon = maxlon - minlon
-
-  do i = 1,nVertices
-    dispIncr(1,i) = sphereRadius*cos(latVertex(i))*deltaLon
-    dispIncr(2,i) = 0.0_MPAS_RKIND
-  end do
-  call polympo_setMeshVtxOnSurfDispIncr(mpMesh,nCompsDisp,nVertices,c_loc(dispIncr))
-  call polympo_push(mpMesh)
-  do i = 1,nVertices
-    dispIncr(1,i) = sphereRadius*cos(latVertex(i))*2*deltaLon
-    dispIncr(2,i) = 0.0_MPAS_RKIND
-  end do
-  call polympo_setMeshVtxOnSurfDispIncr(mpMesh,nCompsDisp,nVertices,c_loc(dispIncr))
+  call calculateSurfaceDisplacement(mpMesh, latVertex, lonVertex, nEdgesOnCell, verticesOnCell, nVertices, sphereRadius)
   call polympo_push(mpMesh)
   call polympo_deleteMPMesh(mpMesh)
   call polympo_finalize()
@@ -179,7 +202,6 @@ program main
   deallocate(lonVertex)
   deallocate(verticesOnCell)
   deallocate(cellsOnCell)
-  deallocate(dispIncr)
   deallocate(mpsPerElm)
   deallocate(mp2Elm)
   deallocate(isMPActive)

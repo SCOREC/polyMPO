@@ -27,7 +27,6 @@ program main
   integer :: numMPs 
   integer, dimension(:), pointer :: mpsPerElm, mp2Elm, isMPActive
   real(kind=MPAS_RKIND), dimension(:,:), pointer :: mpPosition, mpLatLon
-  logical :: inBound
   integer, parameter :: MP_ACTIVE = 1
   integer, parameter :: MP_INACTIVE = 0
   integer, parameter :: INVALID_ELM_ID = -1
@@ -87,46 +86,42 @@ program main
   end do
 
   do i = 1, numMPs
-    inBound = .true.
+    xc = 0.0_MPAS_RKIND
+    yc = 0.0_MPAS_RKIND
+    zc = 0.0_MPAS_RKIND
+    do k = 1, nEdgesOnCell(i)
+      j = verticesOnCell(k,i)
+      xc = xc + xVertex(j) 
+      yc = yc + yVertex(j) 
+      zc = zc + zVertex(j) 
+      xComputed = sphereRadius*cos(latVertex(j))*cos(lonVertex(j))
+      yComputed = sphereRadius*cos(latVertex(j))*sin(lonVertex(j))
+      zComputed = sphereRadius*sin(latVertex(j))
+      latComputed = asin(zVertex(j)/sphereRadius)
+      lonComputed = atan2(yVertex(j),xVertex(j))
+      if (lonComputed .le. 0.0_MPAS_RKIND) then ! lon[0,2pi]
+        lonComputed = lonComputed + 2.0_MPAS_RKIND*pi
+      endif
 
-    if (inBound) then ! TODO: inbound removable
-      xc = 0.0_MPAS_RKIND
-      yc = 0.0_MPAS_RKIND
-      zc = 0.0_MPAS_RKIND
-      do k = 1, nEdgesOnCell(i)
-        j = verticesOnCell(k,i)
-        xc = xc + xVertex(j) 
-        yc = yc + yVertex(j) 
-        zc = zc + zVertex(j) 
-        xComputed = sphereRadius*cos(latVertex(j))*cos(lonVertex(j))
-        yComputed = sphereRadius*cos(latVertex(j))*sin(lonVertex(j))
-        zComputed = sphereRadius*sin(latVertex(j))
-        latComputed = asin(zVertex(j)/sphereRadius)
-        lonComputed = atan2(yVertex(j),xVertex(j))
-        if (lonComputed .le. 0.0_MPAS_RKIND) then ! lon[0,2pi]
-          lonComputed = lonComputed + 2.0_MPAS_RKIND*pi
-        endif
-
-      end do
-      xc = xc/nEdgesOnCell(i)
-      yc = yc/nEdgesOnCell(i)
-      zc = zc/nEdgesOnCell(i)
-      ! normalize
-      ! TODO: change this to divide space into slices and evenly distrubute positions over the slice lines based on distance 
-      radius = sqrt(xc*xc + yc*yc + zc*zc)! assuming sphere center to be at origin
-      xc = xc/radius * sphereRadius
-      yc = yc/radius * sphereRadius
-      zc = zc/radius * sphereRadius
-      mpPosition(1,i) = xc
-      mpPosition(2,i) = yc
-      mpPosition(3,i) = zc
-      mpLatLon(1,i) = asin(zc/sphereRadius)
-      lon = atan2(yc,xc)
-      if (lon .le. 0.0_MPAS_RKIND) then ! lon[0,2pi]
-        lon = lon + 2.0_MPAS_RKIND*pi
-      endif 
-      mpLatLon(2,i) = lon
-    endif
+    end do
+    xc = xc/nEdgesOnCell(i)
+    yc = yc/nEdgesOnCell(i)
+    zc = zc/nEdgesOnCell(i)
+    ! normalize
+    ! TODO: change this to divide space into slices and evenly distrubute positions over the slice lines based on distance 
+    radius = sqrt(xc*xc + yc*yc + zc*zc)! assuming sphere center to be at origin
+    xc = xc/radius * sphereRadius
+    yc = yc/radius * sphereRadius
+    zc = zc/radius * sphereRadius
+    mpPosition(1,i) = xc
+    mpPosition(2,i) = yc
+    mpPosition(3,i) = zc
+    mpLatLon(1,i) = asin(zc/sphereRadius)
+    lon = atan2(yc,xc)
+    if (lon .le. 0.0_MPAS_RKIND) then ! lon[0,2pi]
+      lon = lon + 2.0_MPAS_RKIND*pi
+    endif 
+    mpLatLon(2,i) = lon
   end do
 
   call polympo_createMPs(mpMesh,nCells,numMPs,c_loc(mpsPerElm),c_loc(mp2Elm),c_loc(isMPActive))

@@ -24,7 +24,7 @@ program main
   real(kind=MPAS_RKIND), dimension(:), pointer :: xVertex, yVertex, zVertex
   real(kind=MPAS_RKIND), dimension(:), pointer :: latVertex, lonVertex
   integer, dimension(:,:), pointer :: verticesOnCell, cellsOnCell
-  integer :: numMPs 
+  integer :: numMPs, numMPs2 
   integer, dimension(:), pointer :: mpsPerElm, mp2Elm, isMPActive
   real(kind=MPAS_RKIND), dimension(:,:), pointer :: mpPosition, mpLatLon
   integer, parameter :: MP_ACTIVE = 1
@@ -77,13 +77,15 @@ program main
 
   isMPActive = MP_ACTIVE !all active MPs and some changed below
 
-  numMPs = 1
+  numMPs2 = 0
   do i = 1, nCells
     localNumMPs = nEdgesOnCell(i) * mpsScaleFactorPerVtx
-    mp2Elm(numMPs:numMPs+localNumMPs) = i
+    mp2Elm(numMPs2+1:numMPs2+localNumMPs) = i
     mpsPerElm(i) = localNumMPs
-    numMPs = numMPs + localNumMPs
+    numMPs2 = numMPs2 + localNumMPs
   end do
+
+  assert(numMPs2 <= numMPs)
 
   do i = 1, numMPs
     xc = 0.0_MPAS_RKIND

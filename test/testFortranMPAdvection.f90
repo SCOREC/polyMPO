@@ -11,7 +11,7 @@ program main
   !integer, parameter :: APP_RKIND = selected_real_kind(15)
   type(c_ptr) :: mpMesh
   integer :: ierr, self
-  integer :: argc, i, j, arglen, k, mpsPerEdge, localNumMPs
+  integer :: argc, i, j, arglen, k, mpsScaleFactorPerVtx, localNumMPs
   integer :: setMeshOption, setMPOption
   integer :: maxEdges, vertexDegree, nCells, nVertices
   integer :: mpi_comm_handle = MPI_COMM_WORLD
@@ -67,8 +67,8 @@ program main
                         verticesOnCell, cellsOnCell)
 
   !createMPs
-  mpsPerEdge = 5
-  numMPs = maxEdges * mpsPerEdge
+  mpsScaleFactorPerVtx = 5
+  numMPs = maxEdges * mpsScaleFactorPerVtx
   allocate(mpsPerElm(nCells))
   allocate(mp2Elm(numMPs))
   allocate(isMPActive(numMPs))
@@ -79,7 +79,7 @@ program main
 
   numMPs = 1
   do i = 1, nCells
-    localNumMPs = nEdgesOnCell(i) * mpsPerEdge
+    localNumMPs = nEdgesOnCell(i) * mpsScaleFactorPerVtx
     mp2Elm(numMPs:numMPs+localNumMPs) = i
     mpsPerElm(i) = localNumMPs
     numMPs = numMPs + localNumMPs
@@ -110,9 +110,9 @@ program main
 
     do k = 1, nEdgesOnCell(i)
       j = verticesOnCell(k,i)
-      radiusX = (mpsPerEdge+1) * (k - xc) / (xVertex(j) - xc)  ! linear interpolation
-      radiusY = (mpsPerEdge+1) * (k - yc) / (yVertex(j) - yc)  ! linear interpolation
-      radiusZ = (mpsPerEdge+1) * (k - zc) / (zVertex(j) - zc)  ! linear interpolation
+      radiusX = (mpsScaleFactorPerVtx+1) * (k - xc) / (xVertex(j) - xc)  ! linear interpolation
+      radiusY = (mpsScaleFactorPerVtx+1) * (k - yc) / (yVertex(j) - yc)  ! linear interpolation
+      radiusZ = (mpsScaleFactorPerVtx+1) * (k - zc) / (zVertex(j) - zc)  ! linear interpolation
       
       xc = xc/radiusX * sphereRadius
       yc = yc/radiusY * sphereRadius

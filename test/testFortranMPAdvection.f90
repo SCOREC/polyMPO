@@ -15,7 +15,7 @@ program main
   integer :: setMeshOption, setMPOption
   integer :: maxEdges, vertexDegree, nCells, nVertices
   integer :: mpi_comm_handle = MPI_COMM_WORLD
-  real(kind=MPAS_RKIND) :: xc, yc, zc, radius, lon
+  real(kind=MPAS_RKIND) :: xc, yc, zc, radiusX, radiusY, radiusZ, lon
   real(kind=MPAS_RKIND) :: pi = 4.0_MPAS_RKIND*atan(1.0_MPAS_RKIND)
   character (len=2048) :: filename
   character (len=64) :: onSphere
@@ -107,21 +107,26 @@ program main
     xc = xc/nEdgesOnCell(i)
     yc = yc/nEdgesOnCell(i)
     zc = zc/nEdgesOnCell(i)
-    ! normalize
-    ! TODO: change this to divide space into slices and evenly distrubute positions over the slice lines based on distance 
-    radius = sqrt(xc*xc + yc*yc + zc*zc)! assuming sphere center to be at origin
-    xc = xc/radius * sphereRadius
-    yc = yc/radius * sphereRadius
-    zc = zc/radius * sphereRadius
-    mpPosition(1,i) = xc
-    mpPosition(2,i) = yc
-    mpPosition(3,i) = zc
-    mpLatLon(1,i) = asin(zc/sphereRadius)
-    lon = atan2(yc,xc)
-    if (lon .le. 0.0_MPAS_RKIND) then ! lon[0,2pi]
-      lon = lon + 2.0_MPAS_RKIND*pi
-    endif 
-    mpLatLon(2,i) = lon
+
+    do k = 1, nEdgesOnCell(i)
+      j = verticesOnCell(k,i)
+      radiusX = (mpsPerEdge+1) * (k - xc) / (xVertex(j) - xc)  ! linear interpolation
+      radiusY = (mpsPerEdge+1) * (k - yc) / (yVertex(j) - yc)  ! linear interpolation
+      radiusZ = (mpsPerEdge+1) * (k - zc) / (zVertex(j) - zc)  ! linear interpolation
+      
+      xc = xc/radiusX * sphereRadius
+      yc = yc/radiusY * sphereRadius
+      zc = zc/radiusZ * sphereRadius
+      mpPosition(1,i) = xc
+      mpPosition(2,i) = yc
+      mpPosition(3,i) = zc
+      mpLatLon(1,i) = asin(zc/sphereRadius)
+      lon = atan2(yc,xc)
+      if (lon .le. 0.0_MPAS_RKIND) then ! lon[0,2pi]
+        lon = lon + 2.0_MPAS_RKIND*pi
+      endif 
+      mpLatLon(2,i) = lon
+    end do
   end do
 
   call polympo_createMPs(mpMesh,nCells,numMPs,c_loc(mpsPerElm),c_loc(mp2Elm),c_loc(isMPActive))

@@ -11,7 +11,7 @@ program main
   !integer, parameter :: APP_RKIND = selected_real_kind(15)
   type(c_ptr) :: mpMesh
   integer :: ierr, self
-  integer :: argc, i, j, arglen, k
+  integer :: argc, i, j, arglen, k, mpsPerEdge, localNumMPs
   integer :: setMeshOption, setMPOption
   integer :: maxEdges, vertexDegree, nCells, nVertices
   integer :: mpi_comm_handle = MPI_COMM_WORLD
@@ -68,7 +68,8 @@ program main
                         verticesOnCell, cellsOnCell)
 
   !createMPs
-  numMPs = nCells
+  mpsPerEdge = 5
+  numMPs = maxEdges * mpsPerEdge
   allocate(mpsPerElm(nCells))
   allocate(mp2Elm(numMPs))
   allocate(isMPActive(numMPs))
@@ -76,24 +77,19 @@ program main
   allocate(mpLatLon(2,numMPs))
 
   isMPActive = MP_ACTIVE !all active MPs and some changed below
-  mpsPerElm = 1 !all elements have 1 MP and some changed below
-  do i = 1,numMPs
-    mp2Elm(i) = i
+
+  numMPs = 1
+  do i = 1, nCells
+    localNumMPs = nEdgesOnCell(i) * mpsPerEdge
+    mp2Elm(numMPs:numMPs+localNumMPs) = i
+    mpsPerElm(i) = localNumMPs
+    numMPs = numMPs + localNumMPs
   end do
+
   do i = 1, numMPs
     inBound = .true.
-    do k = 1, nEdgesOnCell(i)
-      j = verticesOnCell(k,i)
-      if ((latVertex(j) .gt. 0.4*pi) .or. (latVertex(j) .lt. -0.4*pi)) then
-        inBound = .false.
-        isMPActive(i) = MP_INACTIVE
-        mpsPerElm(i) = 0
-        mp2Elm(i) = INVALID_ELM_ID
-        EXIT  
-      endif
-    end do
 
-    if (inBound) then
+    if (inBound) then ! TODO: inbound removable
       xc = 0.0_MPAS_RKIND
       yc = 0.0_MPAS_RKIND
       zc = 0.0_MPAS_RKIND
@@ -116,6 +112,7 @@ program main
       yc = yc/nEdgesOnCell(i)
       zc = zc/nEdgesOnCell(i)
       ! normalize
+      ! TODO: change this to divide space into slices and evenly distrubute positions over the slice lines based on distance 
       radius = sqrt(xc*xc + yc*yc + zc*zc)! assuming sphere center to be at origin
       xc = xc/radius * sphereRadius
       yc = yc/radius * sphereRadius
@@ -137,7 +134,8 @@ program main
   call polympo_setMPPositions(mpMesh,3,numMPs,c_loc(mpPosition))
 
   call calculateSurfaceDisplacement(mpMesh, latVertex, lonVertex, nEdgesOnCell, verticesOnCell, nVertices, sphereRadius)
-  call polympo_push(mpMesh)
+  call polympo_push(mpMesh) ! TODO: preform multiple times configurable (beta)
+  ! TODO: add timer 
   call polympo_deleteMPMesh(mpMesh)
   call polympo_finalize()
 

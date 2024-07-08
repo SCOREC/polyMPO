@@ -94,6 +94,8 @@ void MPMesh::assemblyElm0() {
     });
 }
 
+
+
 template <MeshFieldIndex meshFieldIndex>
 void MPMesh::assemblyVtx1() {
   constexpr MaterialPointSlice mpfIndex = meshFieldIndexToMPSlice<meshFieldIndex>;
@@ -105,18 +107,9 @@ void MPMesh::assemblyVtx1() {
   auto meshField = p_mesh->getMeshField<meshFieldIndex>();
 
   auto assemble = PS_LAMBDA(const int& elm, const int& mp, const int& mask) {
-      if(mask) { //if material point is 'active'/'enabled'
-        int nVtxE = elm2VtxConn(elm,0); //number of vertices bounding the element
-        for(int i=0; i<nVtxE; i++){
-          int vID = elm2VtxConn(elm,i+1)-1; //vID = vertex id
-          double fieldComponentVal;
-          for(int j=0;j<numEntries;j++){
-            fieldComponentVal = mpData(mp,j);
-            Kokkos::atomic_add(&meshField(vID,j),fieldComponentVal);
-          }
-        }
-      }
-    };
+  
+    
+  };
     p_MPs->parallel_for(assemble, "assembly");
 }
 
@@ -163,7 +156,7 @@ DoubleView MPMesh::wtScaAssembly(){
         // last component of eVtxCoords stores the firs vertex (to avoid if-condition in the Wachspress computation)
         eVtxCoords[nElmVtxs][0] = vtxCoords(elm2VtxConn(elm,1)-1,0);
         eVtxCoords[nElmVtxs][1] = vtxCoords(elm2VtxConn(elm,1)-1,1);
-        
+
         /* compute the values of basis functions at mp position */
         double basisByArea[maxElmsPerVtx];
         Vec2d mpCoord(mpPositions(mp,0), mpPositions(mp,1));

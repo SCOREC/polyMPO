@@ -19,7 +19,7 @@ program main
   real(kind=MPAS_RKIND) :: pi = 4.0_MPAS_RKIND*atan(1.0_MPAS_RKIND)
   character (len=2048) :: filename
   character (len=64) :: onSphere
-  real(kind=MPAS_RKIND) :: sphereRadius, xComputed, yComputed, zComputed, latComputed, lonComputed
+  real(kind=MPAS_RKIND) :: sphereRadius
   integer, dimension(:), pointer :: nEdgesOnCell
   real(kind=MPAS_RKIND), dimension(:), pointer :: xVertex, yVertex, zVertex
   real(kind=MPAS_RKIND), dimension(:), pointer :: latVertex, lonVertex
@@ -99,15 +99,6 @@ program main
       xc = xc + xVertex(j) 
       yc = yc + yVertex(j) 
       zc = zc + zVertex(j) 
-      xComputed = sphereRadius*cos(latVertex(j))*cos(lonVertex(j))
-      yComputed = sphereRadius*cos(latVertex(j))*sin(lonVertex(j))
-      zComputed = sphereRadius*sin(latVertex(j))
-      latComputed = asin(zVertex(j)/sphereRadius)
-      lonComputed = atan2(yVertex(j),xVertex(j))
-      if (lonComputed .le. 0.0_MPAS_RKIND) then ! lon[0,2pi]
-        lonComputed = lonComputed + 2.0_MPAS_RKIND*pi
-      endif
-
     end do
     xc = xc/nEdgesOnCell(i)
     yc = yc/nEdgesOnCell(i)

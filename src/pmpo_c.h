@@ -84,5 +84,10 @@ void polympo_setReconstructionOfVel_f(MPMesh_ptr p_mpmesh, const int order, cons
 void polympo_setReconstructionOfStrainRate_f(MPMesh_ptr p_mpmesh, const int order, const int meshEntType);
 void polympo_setReconstructionOfStress_f(MPMesh_ptr p_mpmesh, const int order, const int meshEntType);
 void polympo_applyReconstruction_f(MPMesh_ptr p_mpmesh);
+
+// Timing
+void polympo_enableTiming_f();
+void polympo_summarizeTime_f();
+
 }
 #endif

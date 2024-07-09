@@ -702,6 +702,18 @@ module polympo
     use :: iso_c_binding
     type(c_ptr), value :: mpMesh
   end subroutine
+  !---------------------------------------------------------------------------
+  !> @brief enable timing functions
+  !---------------------------------------------------------------------------
+  subroutine polympo_enableTiming() bind(C, NAME='polympo_enableTiming_f')
+    use :: iso_c_binding
+  end subroutine
+  !---------------------------------------------------------------------------
+  !> @brief print summary of timings collected
+  !---------------------------------------------------------------------------
+  subroutine polympo_summarizeTime() bind(C, NAME='polympo_summarizeTime_f')
+    use :: iso_c_binding
+  end subroutine
   end interface
   contains
   !---------------------------------------------------------------------------

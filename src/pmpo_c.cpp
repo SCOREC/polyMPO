@@ -893,3 +893,11 @@ void polympo_applyReconstruction_f(MPMesh_ptr p_mpmesh){
   auto mpmesh = ((polyMPO::MPMesh*)p_mpmesh);
   mpmesh->reconstructSlices();
 }
+
+void polympo_enableTiming_f(){
+  pumipic::EnableTiming();
+}
+
+void polympo_summarizeTime_f(){
+  pumipic::SummarizeTime();
+}

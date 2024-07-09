@@ -33,6 +33,7 @@ program main
 
   call mpi_init(ierr)
   call mpi_comm_rank(mpi_comm_handle, self, ierr)
+  call polympo_enableTiming()
 
   call polympo_setMPICommunicator(mpi_comm_handle)
   call polympo_initialize()
@@ -147,6 +148,8 @@ program main
     call calcSurfDispIncr(mpMesh, latVertex, lonVertex, nEdgesOnCell, verticesOnCell, nVertices, sphereRadius)
     call polympo_push(mpMesh)
   end do
+
+  call polympo_summarizeTime();
 
   call polympo_deleteMPMesh(mpMesh)
   call polympo_finalize()

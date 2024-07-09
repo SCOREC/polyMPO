@@ -68,7 +68,7 @@ program main
 
   !createMPs
   mpsScaleFactorPerVtx = 5
-  numMPs = maxEdges * mpsScaleFactorPerVtx
+  numMPs = nVertices * mpsScaleFactorPerVtx
   allocate(mpsPerElm(nCells))
   allocate(mp2Elm(numMPs))
   allocate(isMPActive(numMPs))
@@ -85,7 +85,7 @@ program main
     numMPs2 = numMPs2 + localNumMPs
   end do
 
-  assert(numMPs2 <= numMPs)
+  call assert(numMPs2 <= numMPs, "num mps miscounted")
 
   do i = 1, numMPs
     xc = 0.0_MPAS_RKIND

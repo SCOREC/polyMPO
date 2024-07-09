@@ -24,7 +24,7 @@ program main
   real(kind=MPAS_RKIND), dimension(:), pointer :: xVertex, yVertex, zVertex
   real(kind=MPAS_RKIND), dimension(:), pointer :: latVertex, lonVertex
   integer, dimension(:,:), pointer :: verticesOnCell, cellsOnCell
-  integer :: numMPs, numMPs2 
+  integer :: numMPs, numMPs2, numPush
   integer, dimension(:), pointer :: mpsPerElm, mp2Elm, isMPActive
   real(kind=MPAS_RKIND), dimension(:,:), pointer :: mpPosition, mpLatLon
   integer, parameter :: MP_ACTIVE = 1
@@ -67,8 +67,10 @@ program main
                         verticesOnCell, cellsOnCell)
 
   !createMPs
-  mpsScaleFactorPerVtx = 5
-  numMPs = nVertices * mpsScaleFactorPerVtx
+  numMPs = 0
+  do i = 1, nCells
+    numMPs = numMPs + nEdgesOnCell(i) * mpsScaleFactorPerVtx
+  end do
   allocate(mpsPerElm(nCells))
   allocate(mp2Elm(numMPs))
   allocate(isMPActive(numMPs))
@@ -77,6 +79,7 @@ program main
 
   isMPActive = MP_ACTIVE !all active MPs and some changed below
 
+  mpsScaleFactorPerVtx = 5
   numMPs2 = 0
   do i = 1, nCells
     localNumMPs = nEdgesOnCell(i) * mpsScaleFactorPerVtx

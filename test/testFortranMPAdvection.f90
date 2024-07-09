@@ -74,6 +74,9 @@ program main
     numMPs = numMPs + nEdgesOnCell(i) * mpsScaleFactorPerVtx
   end do
 
+  print *, "Scale Factor", mpsScaleFactorPerVtx
+  print *, "NUM MPs", numMPs
+
   allocate(mpsPerElm(nCells))
   allocate(mp2Elm(numMPs))
   allocate(isMPActive(numMPs))

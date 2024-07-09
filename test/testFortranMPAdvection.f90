@@ -137,9 +137,13 @@ program main
   call polympo_setMPRotLatLon(mpMesh,2,numMPs,c_loc(mpLatLon))
   call polympo_setMPPositions(mpMesh,3,numMPs,c_loc(mpPosition))
 
-  call calculateSurfaceDisplacement(mpMesh, latVertex, lonVertex, nEdgesOnCell, verticesOnCell, nVertices, sphereRadius)
-  call polympo_push(mpMesh) ! TODO: preform multiple times configurable (beta)
-  ! TODO: add timer 
+  numPush = 5
+  do i = 1, numPush
+    call calculateSurfaceDisplacement(mpMesh, latVertex, lonVertex, nEdgesOnCell, verticesOnCell, nVertices, sphereRadius)
+    call polympo_push(mpMesh)
+    ! TODO: add timer 
+  end do
+  
   call polympo_deleteMPMesh(mpMesh)
   call polympo_finalize()
 

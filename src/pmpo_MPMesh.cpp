@@ -111,6 +111,7 @@ void MPMesh::CVTTrackingEdgeCenterBased(Vec2dView dx){
 
 
 void MPMesh::CVTTrackingElmCenterBased(const int printVTPIndex){
+    Kokkos::Timer timer;
     int numVtxs = p_mesh->getNumVertices();
     int numElms = p_mesh->getNumElements();
     auto numMPs = p_MPs->getCount();
@@ -230,6 +231,7 @@ void MPMesh::CVTTrackingElmCenterBased(const int printVTPIndex){
         fprintf(pFile,"        </DataArray>\n      </Lines>\n    </Piece>\n  </PolyData>\n</VTKFile>\n");
         fclose(pFile);
     }
+    pumipic::RecordTime("PolyMPO_TrackingElmCenter", timer.seconds());
 }
 
 void MPMesh::T2LTracking(Vec2dView dx){
@@ -296,11 +298,13 @@ void MPMesh::T2LTracking(Vec2dView dx){
 }
 
 void MPMesh::reconstructSlices() {
+    Kokkos::Timer timer;
     calcBasis();
     for (auto const& [index, reconstruct] : reconstructSlice) {
         if (reconstruct) reconstruct();
     }
     reconstructSlice.clear();
+    pumipic::RecordTime("PolyMPO_Reconstruct", timer.seconds());
 }
 
 void MPMesh::push(){

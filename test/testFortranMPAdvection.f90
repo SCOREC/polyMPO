@@ -15,7 +15,7 @@ program main
   integer :: setMeshOption, setMPOption
   integer :: maxEdges, vertexDegree, nCells, nVertices
   integer :: mpi_comm_handle = MPI_COMM_WORLD
-  real(kind=MPAS_RKIND) :: xMP, yMP, zMP, radius, lon
+  real(kind=MPAS_RKIND) :: xc, yc, zc, xMP, yMP, zMP, radius, lon
   real(kind=MPAS_RKIND) :: pi = 4.0_MPAS_RKIND*atan(1.0_MPAS_RKIND)
   character (len=2048) :: filename
   character (len=64) :: onSphere
@@ -92,28 +92,32 @@ program main
 
   numMPsCount = 0
   do i = 1, nCells
-    xMP = 0.0_MPAS_RKIND
-    yMP = 0.0_MPAS_RKIND
-    zMP = 0.0_MPAS_RKIND
+    xc = 0.0_MPAS_RKIND
+    yc = 0.0_MPAS_RKIND
+    zc = 0.0_MPAS_RKIND
     do k = 1, nEdgesOnCell(i)
       j = verticesOnCell(k,i)
-      xMP = xMP + xVertex(j) 
-      yMP = yMP + yVertex(j) 
-      zMP = zMP + zVertex(j) 
+      xc = xc + xVertex(j) 
+      yc = yc + yVertex(j) 
+      zc = zc + zVertex(j) 
     end do
-    xMP = xMP/nEdgesOnCell(i)
-    yMP = yMP/nEdgesOnCell(i)
-    zMP = zMP/nEdgesOnCell(i)
+    xc = xc/nEdgesOnCell(i)
+    yc = yc/nEdgesOnCell(i)
+    zc = zc/nEdgesOnCell(i)
 
     do k = 1, nEdgesOnCell(i)
       j = verticesOnCell(k,i)
+      
+      ! note: m=0 not included but should lead to x_mp=xc and m=mpsScaleFactorPerVtx+1 is also not include but should lead to x_mp=xVertex(j)
+      ! so'mpsScaleFactorPerVtx+1' segments and  'mpsScaleFactorPerVtx+2' points along line from 'xc' to 'xVertex(j)'
+      ! taking only "inner" or interior 'mpsScaleFactorPerVtx' points (i.e., exclude end points of 'xc' and 'xVertex(j)') and same applies to y- and z-coordinates
       do m = 1, mpsScaleFactorPerVtx
         numMPsCount = numMPsCount + 1
-        xMP = (mpsScaleFactorPerVtx+1 - m) * xMP + m*xVertex(j) / (mpsScaleFactorPerVtx+1) ! linear interpolation
-        yMP = (mpsScaleFactorPerVtx+1 - m) * yMP + m*yVertex(j) / (mpsScaleFactorPerVtx+1) ! linear interpolation
-        zMP = (mpsScaleFactorPerVtx+1 - m) * zMP + m*zVertex(j) / (mpsScaleFactorPerVtx+1) ! linear interpolation
+        xMP = (mpsScaleFactorPerVtx+1 - m) * xc + m*xVertex(j) / (mpsScaleFactorPerVtx+1) ! linear interpolation
+        yMP = (mpsScaleFactorPerVtx+1 - m) * yc + m*yVertex(j) / (mpsScaleFactorPerVtx+1) ! linear interpolation
+        zMP = (mpsScaleFactorPerVtx+1 - m) * zc + m*zVertex(j) / (mpsScaleFactorPerVtx+1) ! linear interpolation
         
-        ! normalize
+        ! normalize to project each MP to be on sphere of radius 'sphereRadius'
         radius = sqrt(xMP*xMP + yMP*yMP + zMP*zMP) ! assuming sphere center to be at origin
         xMP = xMP/radius * sphereRadius
         yMP = yMP/radius * sphereRadius

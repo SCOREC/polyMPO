@@ -120,7 +120,7 @@ program main
   
   ! Test elm push reconstruction
 
-  call calculateSurfaceDisplacement(mpMesh, latVertex, lonVertex, nEdgesOnCell, verticesOnCell, nVertices, sphereRadius)
+  call calcSurfDispIncr(mpMesh, latVertex, lonVertex, nEdgesOnCell, verticesOnCell, nVertices, sphereRadius)
   call polympo_setReconstructionOfMass(mpMesh,0,polympo_getMeshFElmType())
   call polympo_push(mpMesh)
   call polympo_getMeshElmMass(mpMesh,nCells,c_loc(meshElmMass))

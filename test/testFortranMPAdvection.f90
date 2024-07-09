@@ -139,11 +139,11 @@ program main
 
   numPush = 5
   do i = 1, numPush
-    call calculateSurfaceDisplacement(mpMesh, latVertex, lonVertex, nEdgesOnCell, verticesOnCell, nVertices, sphereRadius)
+    call calcSurfDispIncr(mpMesh, latVertex, lonVertex, nEdgesOnCell, verticesOnCell, nVertices, sphereRadius)
     call polympo_push(mpMesh)
     ! TODO: add timer 
   end do
-  
+
   call polympo_deleteMPMesh(mpMesh)
   call polympo_finalize()
 

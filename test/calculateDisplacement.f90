@@ -1,4 +1,4 @@
-subroutine calculateSurfaceDisplacement(mpMesh, latVertex, lonVertex, nEdgesOnCell, verticesOnCell, nVertices, sphereRadius)
+subroutine calcSurfDispIncr(mpMesh, latVertex, lonVertex, nEdgesOnCell, verticesOnCell, nVertices, sphereRadius)
   use :: polympo
   use :: readMPAS
   use :: iso_c_binding

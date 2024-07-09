@@ -72,6 +72,7 @@ program main
   do i = 1, nCells
     numMPs = numMPs + nEdgesOnCell(i) * mpsScaleFactorPerVtx
   end do
+
   allocate(mpsPerElm(nCells))
   allocate(mp2Elm(numMPs))
   allocate(isMPActive(numMPs))
@@ -145,7 +146,6 @@ program main
   do i = 1, numPush
     call calcSurfDispIncr(mpMesh, latVertex, lonVertex, nEdgesOnCell, verticesOnCell, nVertices, sphereRadius)
     call polympo_push(mpMesh)
-    ! TODO: add timer 
   end do
 
   call polympo_deleteMPMesh(mpMesh)

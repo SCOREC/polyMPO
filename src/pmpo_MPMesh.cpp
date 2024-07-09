@@ -304,6 +304,7 @@ void MPMesh::reconstructSlices() {
 }
 
 void MPMesh::push(){
+  Kokkos::Timer timer;
   p_mesh->computeRotLatLonIncr();
   sphericalInterpolation<MeshF_RotLatLonIncr>(*this);
   p_MPs->updateRotLatLonAndXYZ2Tgt(p_mesh->getSphereRadius()); // set Tgt_XYZ
@@ -315,6 +316,7 @@ void MPMesh::push(){
   p_MPs->updateMPSlice<MPF_Cur_Pos_Rot_Lat_Lon, MPF_Tgt_Pos_Rot_Lat_Lon>(); // Tgt becomes Cur
   p_MPs->rebuild(); //rebuild pumi-pic
   p_MPs->updateMPElmID(); //update mpElm IDs slices
+  pumipic::RecordTime("PolyMPO_Push", timer.seconds());
 }
 
 void MPMesh::printVTP_mesh(int printVTPIndex){

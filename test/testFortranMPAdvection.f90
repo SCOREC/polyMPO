@@ -11,11 +11,11 @@ program main
   !integer, parameter :: APP_RKIND = selected_real_kind(15)
   type(c_ptr) :: mpMesh
   integer :: ierr, self
-  integer :: argc, i, j, arglen, k, mpsScaleFactorPerVtx, localNumMPs
+  integer :: argc, i, j, arglen, k, m, mpsScaleFactorPerVtx, localNumMPs
   integer :: setMeshOption, setMPOption
   integer :: maxEdges, vertexDegree, nCells, nVertices
   integer :: mpi_comm_handle = MPI_COMM_WORLD
-  real(kind=MPAS_RKIND) :: xc, yc, zc, radiusX, radiusY, radiusZ, lon
+  real(kind=MPAS_RKIND) :: xMP, yMP, zMP, radius, lon
   real(kind=MPAS_RKIND) :: pi = 4.0_MPAS_RKIND*atan(1.0_MPAS_RKIND)
   character (len=2048) :: filename
   character (len=64) :: onSphere
@@ -68,6 +68,7 @@ program main
 
   !createMPs
   numMPs = 0
+  mpsScaleFactorPerVtx = 5
   do i = 1, nCells
     numMPs = numMPs + nEdgesOnCell(i) * mpsScaleFactorPerVtx
   end do
@@ -79,7 +80,6 @@ program main
 
   isMPActive = MP_ACTIVE !all active MPs and some changed below
 
-  mpsScaleFactorPerVtx = 5
   numMPs2 = 0
   do i = 1, nCells
     localNumMPs = nEdgesOnCell(i) * mpsScaleFactorPerVtx
@@ -88,49 +88,53 @@ program main
     numMPs2 = numMPs2 + localNumMPs
   end do
 
-  call assert(numMPs2 <= numMPs, "num mps miscounted")
+  call assert(numMPs2 == numMPs, "num mps miscounted")
 
   do i = 1, numMPs
-    xc = 0.0_MPAS_RKIND
-    yc = 0.0_MPAS_RKIND
-    zc = 0.0_MPAS_RKIND
+    xMP = 0.0_MPAS_RKIND
+    yMP = 0.0_MPAS_RKIND
+    zMP = 0.0_MPAS_RKIND
     do k = 1, nEdgesOnCell(i)
       j = verticesOnCell(k,i)
-      xc = xc + xVertex(j) 
-      yc = yc + yVertex(j) 
-      zc = zc + zVertex(j) 
+      xMP = xMP + xVertex(j) 
+      yMP = yMP + yVertex(j) 
+      zMP = zMP + zVertex(j) 
     end do
-    xc = xc/nEdgesOnCell(i)
-    yc = yc/nEdgesOnCell(i)
-    zc = zc/nEdgesOnCell(i)
+    xMP = xMP/nEdgesOnCell(i)
+    yMP = yMP/nEdgesOnCell(i)
+    zMP = zMP/nEdgesOnCell(i)
 
     do k = 1, nEdgesOnCell(i)
       j = verticesOnCell(k,i)
-      radiusX = (mpsScaleFactorPerVtx+1) * (k - xc) / (xVertex(j) - xc)  ! linear interpolation
-      radiusY = (mpsScaleFactorPerVtx+1) * (k - yc) / (yVertex(j) - yc)  ! linear interpolation
-      radiusZ = (mpsScaleFactorPerVtx+1) * (k - zc) / (zVertex(j) - zc)  ! linear interpolation
-      
-      xc = xc/radiusX * sphereRadius
-      yc = yc/radiusY * sphereRadius
-      zc = zc/radiusZ * sphereRadius
-      mpPosition(1,i) = xc
-      mpPosition(2,i) = yc
-      mpPosition(3,i) = zc
-      mpLatLon(1,i) = asin(zc/sphereRadius)
-      lon = atan2(yc,xc)
-      if (lon .le. 0.0_MPAS_RKIND) then ! lon[0,2pi]
-        lon = lon + 2.0_MPAS_RKIND*pi
-      endif 
-      mpLatLon(2,i) = lon
+      do m = 1, mpsScaleFactorPerVtx
+        xMP = (mpsScaleFactorPerVtx+1 - m) * xMP + m*xVertex(j) / (mpsScaleFactorPerVtx+1) ! linear interpolation
+        yMP = (mpsScaleFactorPerVtx+1 - m) * yMP + m*yVertex(j) / (mpsScaleFactorPerVtx+1) ! linear interpolation
+        zMP = (mpsScaleFactorPerVtx+1 - m) * zMP + m*zVertex(j) / (mpsScaleFactorPerVtx+1) ! linear interpolation
+        
+        ! normalize
+        radius = sqrt(xMP*xMP + yMP*yMP + zMP*zMP) ! assuming sphere center to be at origin
+        xMP = xMP/radius * sphereRadius
+        yMP = yMP/radius * sphereRadius
+        zMP = zMP/radius * sphereRadius
+        mpPosition(1,i) = xMP
+        mpPosition(2,i) = yMP
+        mpPosition(3,i) = zMP
+        mpLatLon(1,i) = asin(zMP/sphereRadius)
+        lon = atan2(yMP,xMP)
+        if (lon .le. 0.0_MPAS_RKIND) then ! lon[0,2pi]
+          lon = lon + 2.0_MPAS_RKIND*pi
+        endif 
+        mpLatLon(2,i) = lon
+      end do
     end do
   end do
 
-  call polympo_createMPs(mpMesh,nCells,numMPs,c_loc(mpsPerElm),c_loc(mp2Elm),c_loc(isMPActive))
-  call polympo_setMPRotLatLon(mpMesh,2,numMPs,c_loc(mpLatLon))
-  call polympo_setMPPositions(mpMesh,3,numMPs,c_loc(mpPosition))
+  ! call polympo_createMPs(mpMesh,nCells,numMPs,c_loc(mpsPerElm),c_loc(mp2Elm),c_loc(isMPActive))
+  ! call polympo_setMPRotLatLon(mpMesh,2,numMPs,c_loc(mpLatLon))
+  ! call polympo_setMPPositions(mpMesh,3,numMPs,c_loc(mpPosition))
 
-  call calculateSurfaceDisplacement(mpMesh, latVertex, lonVertex, nEdgesOnCell, verticesOnCell, nVertices, sphereRadius)
-  call polympo_push(mpMesh) ! TODO: preform multiple times configurable (beta)
+  ! call calculateSurfaceDisplacement(mpMesh, latVertex, lonVertex, nEdgesOnCell, verticesOnCell, nVertices, sphereRadius)
+  ! call polympo_push(mpMesh) ! TODO: preform multiple times configurable (beta)
   ! TODO: add timer 
   call polympo_deleteMPMesh(mpMesh)
   call polympo_finalize()

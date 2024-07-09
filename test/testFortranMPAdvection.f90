@@ -90,6 +90,7 @@ program main
 
   call assert(numMPsCount == numMPs, "num mps miscounted")
 
+  numMPsCount = 0
   do i = 1, nCells
     xMP = 0.0_MPAS_RKIND
     yMP = 0.0_MPAS_RKIND
@@ -107,6 +108,7 @@ program main
     do k = 1, nEdgesOnCell(i)
       j = verticesOnCell(k,i)
       do m = 1, mpsScaleFactorPerVtx
+        numMPsCount = numMPsCount + 1
         xMP = (mpsScaleFactorPerVtx+1 - m) * xMP + m*xVertex(j) / (mpsScaleFactorPerVtx+1) ! linear interpolation
         yMP = (mpsScaleFactorPerVtx+1 - m) * yMP + m*yVertex(j) / (mpsScaleFactorPerVtx+1) ! linear interpolation
         zMP = (mpsScaleFactorPerVtx+1 - m) * zMP + m*zVertex(j) / (mpsScaleFactorPerVtx+1) ! linear interpolation
@@ -116,25 +118,27 @@ program main
         xMP = xMP/radius * sphereRadius
         yMP = yMP/radius * sphereRadius
         zMP = zMP/radius * sphereRadius
-        mpPosition(1,i) = xMP
-        mpPosition(2,i) = yMP
-        mpPosition(3,i) = zMP
-        mpLatLon(1,i) = asin(zMP/sphereRadius)
+        mpPosition(1,numMPsCount) = xMP
+        mpPosition(2,numMPsCount) = yMP
+        mpPosition(3,numMPsCount) = zMP
+        mpLatLon(1,numMPsCount) = asin(zMP/sphereRadius)
         lon = atan2(yMP,xMP)
         if (lon .le. 0.0_MPAS_RKIND) then ! lon[0,2pi]
           lon = lon + 2.0_MPAS_RKIND*pi
         endif 
-        mpLatLon(2,i) = lon
+        mpLatLon(2,numMPsCount) = lon
       end do
     end do
   end do
 
-  ! call polympo_createMPs(mpMesh,nCells,numMPs,c_loc(mpsPerElm),c_loc(mp2Elm),c_loc(isMPActive))
-  ! call polympo_setMPRotLatLon(mpMesh,2,numMPs,c_loc(mpLatLon))
-  ! call polympo_setMPPositions(mpMesh,3,numMPs,c_loc(mpPosition))
+  call assert(numMPsCount == numMPs, "num mps miscounted")
 
-  ! call calculateSurfaceDisplacement(mpMesh, latVertex, lonVertex, nEdgesOnCell, verticesOnCell, nVertices, sphereRadius)
-  ! call polympo_push(mpMesh) ! TODO: preform multiple times configurable (beta)
+  call polympo_createMPs(mpMesh,nCells,numMPs,c_loc(mpsPerElm),c_loc(mp2Elm),c_loc(isMPActive))
+  call polympo_setMPRotLatLon(mpMesh,2,numMPs,c_loc(mpLatLon))
+  call polympo_setMPPositions(mpMesh,3,numMPs,c_loc(mpPosition))
+
+  call calculateSurfaceDisplacement(mpMesh, latVertex, lonVertex, nEdgesOnCell, verticesOnCell, nVertices, sphereRadius)
+  call polympo_push(mpMesh) ! TODO: preform multiple times configurable (beta)
   ! TODO: add timer 
   call polympo_deleteMPMesh(mpMesh)
   call polympo_finalize()

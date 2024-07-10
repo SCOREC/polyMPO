@@ -17,7 +17,7 @@ program main
   integer :: mpi_comm_handle = MPI_COMM_WORLD
   real(kind=MPAS_RKIND) :: xc, yc, zc, xMP, yMP, zMP, radius, lon
   real(kind=MPAS_RKIND) :: pi = 4.0_MPAS_RKIND*atan(1.0_MPAS_RKIND)
-  character (len=2048) :: filename
+  character (len=2048) :: filename, input
   character (len=64) :: onSphere
   real(kind=MPAS_RKIND) :: sphereRadius
   integer, dimension(:), pointer :: nEdgesOnCell
@@ -40,10 +40,14 @@ program main
 
   call polympo_checkPrecisionForRealKind(MPAS_RKIND)
   argc = command_argument_count()
-  if(argc == 1) then
-    call get_command_argument(1, filename)
+  if(argc == 3) then
+    call get_command_argument(1, input)
+    read(input, '(I7)') mpsScaleFactorPerVtx
+    call get_command_argument(2, input)
+    read(input, '(I7)') numPush
+    call get_command_argument(3, filename)
   else
-    write(0, *) "Usage: ./testFortranInterpolatePush <path to the nc file>"
+    write(0, *) "Usage: ./testFortranMPAdvection <mpsScaleFactorPerVtx> <numPush> <path to the nc file>"
   end if
 
   call readMPASMeshFromNCFile(filename, maxEdges, vertexDegree, &
@@ -69,7 +73,6 @@ program main
 
   !createMPs
   numMPs = 0
-  mpsScaleFactorPerVtx = 5
   do i = 1, nCells
     numMPs = numMPs + nEdgesOnCell(i) * mpsScaleFactorPerVtx
   end do
@@ -146,7 +149,6 @@ program main
   call polympo_setMPRotLatLon(mpMesh,2,numMPs,c_loc(mpLatLon))
   call polympo_setMPPositions(mpMesh,3,numMPs,c_loc(mpPosition))
 
-  numPush = 5
   do i = 1, numPush
     call calcSurfDispIncr(mpMesh, latVertex, lonVertex, nEdgesOnCell, verticesOnCell, nVertices, sphereRadius)
     call polympo_push(mpMesh)

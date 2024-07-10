@@ -298,6 +298,7 @@ void MPMesh::T2LTracking(Vec2dView dx){
 }
 
 void MPMesh::reconstructSlices() {
+    if (reconstructSlice.size() == 0) return;
     Kokkos::Timer timer;
     calcBasis();
     for (auto const& [index, reconstruct] : reconstructSlice) {

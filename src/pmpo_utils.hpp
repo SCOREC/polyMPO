@@ -297,7 +297,7 @@ class Matrix {
     return Vec4d(x[0], x[1], x[2], x[3]);
   }
 
-}
+};
 
 KOKKOS_INLINE_FUNCTION
 void initArray(Vec2d* arr, int n, Vec2d fill){

@@ -61,7 +61,7 @@ void MPMesh::assemblyVtx0()
   p_MPs->parallel_for(assemble, "assembly");
   Kokkos::MDRangePolicy<Kokkos::Rank<2>> policy({0,0},{numVtx, numEntries});
   Kokkos::parallel_for("assembly average", policy, KOKKOS_LAMBDA(const int vtx, const int entry){
-    if (sumWeights(vtx) > tolerance) 
+    if (sumWeights(vtx) != tolerance) 
       meshField(vtx, entry) /= sumWeights(vtx);
   });
 }

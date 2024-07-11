@@ -69,7 +69,6 @@ void MPMesh::assemblyVtx0()
 template <MeshFieldIndex meshFieldIndex>
 void MPMesh::assemblyElm0() {
   constexpr MaterialPointSlice mpfIndex = meshFieldIndexToMPSlice<meshFieldIndex>;
-  auto elm2VtxConn = p_mesh->getElm2VtxConn();  
   auto mpData = p_MPs->getData<mpfIndex>();
   const int numEntries = mpSliceToNumEntries<mpfIndex>();
 
@@ -77,21 +76,21 @@ void MPMesh::assemblyElm0() {
   auto meshField = p_mesh->getMeshField<meshFieldIndex>();
 
   int numElms = p_mesh->getNumElements();
-    Kokkos::View<int*> mpsPerElm("mpsPerElm", numElms);
-    auto assemble = PS_LAMBDA(const int& elm, const int& mp, const int& mask) {
-      if(mask) { //if material point is 'active'/'enabled'
-        Kokkos::atomic_add(&mpsPerElm(elm),1);
-        for(int j=0;j<numEntries;j++){
-          Kokkos::atomic_add(&meshField(elm,j), mpData(mp,0));
-        }
+  Kokkos::View<int*> mpsPerElm("mpsPerElm", numElms);
+  auto assemble = PS_LAMBDA(const int& elm, const int& mp, const int& mask) {
+    if(mask) { //if material point is 'active'/'enabled'
+      Kokkos::atomic_add(&mpsPerElm(elm),1);
+      for(int j=0;j<numEntries;j++){
+        Kokkos::atomic_add(&meshField(elm,j), mpData(mp,0));
       }
-    };
-    p_MPs->parallel_for(assemble, "assembly");
-    Kokkos::MDRangePolicy<Kokkos::Rank<2>> policy({0,0},{numElms, numEntries});
-    Kokkos::parallel_for("assembly average", policy, KOKKOS_LAMBDA(const int elm, const int entry){
-      if (mpsPerElm(elm) > 0) 
-        meshField(elm, entry) /= mpsPerElm(elm);
-    });
+    }
+  };
+  p_MPs->parallel_for(assemble, "assembly");
+  Kokkos::MDRangePolicy<Kokkos::Rank<2>> policy({0,0},{numElms, numEntries});
+  Kokkos::parallel_for("assembly average", policy, KOKKOS_LAMBDA(const int elm, const int entry){
+    if (mpsPerElm(elm) > 0) 
+      meshField(elm, entry) /= mpsPerElm(elm);
+  });
 }
 
 template <MeshFieldIndex meshFieldIndex>
@@ -105,19 +104,19 @@ void MPMesh::assemblyVtx1() {
   auto meshField = p_mesh->getMeshField<meshFieldIndex>();
 
   auto assemble = PS_LAMBDA(const int& elm, const int& mp, const int& mask) {
-      if(mask) { //if material point is 'active'/'enabled'
-        int nVtxE = elm2VtxConn(elm,0); //number of vertices bounding the element
-        for(int i=0; i<nVtxE; i++){
-          int vID = elm2VtxConn(elm,i+1)-1; //vID = vertex id
-          double fieldComponentVal;
-          for(int j=0;j<numEntries;j++){
-            fieldComponentVal = mpData(mp,j);
-            Kokkos::atomic_add(&meshField(vID,j),fieldComponentVal);
-          }
+    if(mask) { //if material point is 'active'/'enabled'
+      int nVtxE = elm2VtxConn(elm,0); //number of vertices bounding the element
+      for(int i=0; i<nVtxE; i++){
+        int vID = elm2VtxConn(elm,i+1)-1; //vID = vertex id
+        double fieldComponentVal;
+        for(int j=0;j<numEntries;j++){
+          fieldComponentVal = mpData(mp,j);
+          Kokkos::atomic_add(&meshField(vID,j),fieldComponentVal);
         }
       }
-    };
-    p_MPs->parallel_for(assemble, "assembly");
+    }
+  };
+  p_MPs->parallel_for(assemble, "assembly");
 }
 
 template <MeshFieldIndex meshFieldIndex>

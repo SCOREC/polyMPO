@@ -37,6 +37,7 @@ program main
   call polympo_setMPICommunicator(mpi_comm_handle)
   call polympo_initialize()
   call polympo_enableTiming()
+  call polympo_setTimingVerbosity(1)
 
   call polympo_checkPrecisionForRealKind(MPAS_RKIND)
   argc = command_argument_count()

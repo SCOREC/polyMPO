@@ -714,6 +714,13 @@ module polympo
   subroutine polympo_summarizeTime() bind(C, NAME='polympo_summarizeTime_f')
     use :: iso_c_binding
   end subroutine
+  !---------------------------------------------------------------------------
+  !> @brief set verbosity of timings collected
+  !---------------------------------------------------------------------------
+  subroutine polympo_setTimingVerbosity(v) bind(C, NAME='polympo_setTimingVerbosity_f')
+    use :: iso_c_binding
+    integer(c_int), value :: v
+  end subroutine
   end interface
   contains
   !---------------------------------------------------------------------------

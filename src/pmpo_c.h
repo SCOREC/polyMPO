@@ -88,6 +88,6 @@ void polympo_applyReconstruction_f(MPMesh_ptr p_mpmesh);
 // Timing
 void polympo_enableTiming_f();
 void polympo_summarizeTime_f();
-
+void polympo_setTimingVerbosity_f(int v);
 }
 #endif

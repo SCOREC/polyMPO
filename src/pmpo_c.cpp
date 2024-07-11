@@ -901,3 +901,7 @@ void polympo_enableTiming_f(){
 void polympo_summarizeTime_f(){
   pumipic::SummarizeTime();
 }
+
+void polympo_setTimingVerbosity_f(int v){
+  pumipic::SetTimingVerbosity(v);
+}

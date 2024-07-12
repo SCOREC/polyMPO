@@ -1,3 +1,27 @@
+module advectionTesting
+  contains
+  include "calculateDisplacement.f90"
+  subroutine advectionTest(mpMesh, numPush, latVertex, lonVertex, nEdgesOnCell, verticesOnCell, nVertices, sphereRadius)
+    use :: polympo
+    use :: readMPAS
+    use :: iso_c_binding
+    implicit none
+
+    type(c_ptr) :: mpMesh
+    integer :: i, numPush, nVertices
+    real(kind=MPAS_RKIND), dimension(:), pointer :: latVertex, lonVertex
+    integer, dimension(:), pointer :: nEdgesOnCell
+    integer, dimension(:,:), pointer :: verticesOnCell
+    real(kind=MPAS_RKIND) :: sphereRadius
+
+
+    do i = 1, numPush
+      call calcSurfDispIncr(mpMesh, latVertex, lonVertex, nEdgesOnCell, verticesOnCell, nVertices, sphereRadius)
+      call polympo_push(mpMesh)
+    end do
+
+  end subroutine
+end module
 !---------------------------------------------------------------------------
 !> todo add a discription
 !---------------------------------------------------------------------------
@@ -5,6 +29,7 @@ program main
   use :: polympo
   use :: readMPAS
   use :: iso_c_binding
+  use :: advectionTesting
   implicit none
   include 'mpif.h'
 
@@ -37,7 +62,6 @@ program main
   call polympo_setMPICommunicator(mpi_comm_handle)
   call polympo_initialize()
   call polympo_enableTiming()
-  call polympo_setTimingVerbosity(1)
 
   call polympo_checkPrecisionForRealKind(MPAS_RKIND)
   argc = command_argument_count()
@@ -150,10 +174,7 @@ program main
   call polympo_setMPRotLatLon(mpMesh,2,numMPs,c_loc(mpLatLon))
   call polympo_setMPPositions(mpMesh,3,numMPs,c_loc(mpPosition))
 
-  do i = 1, numPush
-    call calcSurfDispIncr(mpMesh, latVertex, lonVertex, nEdgesOnCell, verticesOnCell, nVertices, sphereRadius)
-    call polympo_push(mpMesh)
-  end do
+  call advectionTest(mpMesh, numPush, latVertex, lonVertex, nEdgesOnCell, verticesOnCell, nVertices, sphereRadius)
 
   call polympo_summarizeTime();
 
@@ -177,8 +198,5 @@ program main
   deallocate(mpLatLon)
 
   stop
-
-  contains
-  include "calculateDisplacement.f90"
 
 end program

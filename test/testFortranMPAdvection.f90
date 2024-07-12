@@ -1,6 +1,7 @@
 module advectionTests
   contains
   include "calculateDisplacement.f90"
+
   subroutine runAdvectionTest(mpMesh, numPush, latVertex, lonVertex, nEdgesOnCell, verticesOnCell, nVertices, sphereRadius)
     use :: polympo
     use :: readMPAS
@@ -21,6 +22,73 @@ module advectionTests
     end do
 
   end subroutine
+
+  subroutine runReconstructionTest(mpMesh, numMPs, numPush, nCells, nVertices, mp2Elm, &
+                                  latVertex, lonVertex, nEdgesOnCell, verticesOnCell, sphereRadius)
+    use :: polympo
+    use :: readMPAS
+    use :: iso_c_binding
+    implicit none
+
+    type(c_ptr) :: mpMesh
+    integer :: i, j, k, vID, numMPs, numPush, nVertices, nCells
+    real(kind=MPAS_RKIND), dimension(:,:), pointer :: mpMass, mpVel
+    real(kind=MPAS_RKIND), dimension(:), pointer :: meshVtxMass, meshElmMass
+    real(kind=MPAS_RKIND), dimension(:), pointer :: latVertex, lonVertex
+    integer, dimension(:), pointer :: nEdgesOnCell
+    integer, dimension(:,:), pointer :: verticesOnCell
+    integer, dimension(:), pointer :: mp2Elm
+    real(kind=MPAS_RKIND) :: sphereRadius
+    real(kind=MPAS_RKIND) :: TEST_VAL = 1.1_MPAS_RKIND
+    real(kind=MPAS_RKIND) :: TOLERANCE = 0.0001_MPAS_RKIND
+
+    allocate(mpMass(1,numMPs))
+    allocate(mpVel(2,numMPs))
+    allocate(meshVtxMass(nVertices))
+    allocate(meshElmMass(nCells))
+
+    mpMass = TEST_VAL
+    mpVel = TEST_VAL
+
+    call polympo_setMPMass(mpMesh,1,numMPs,c_loc(mpMass))
+    call polympo_setMPVel(mpMesh,2,numMPs,c_loc(mpVel))
+
+    ! Test vtx reconstruction
+    
+    call polympo_setReconstructionOfMass(mpMesh,0,polympo_getMeshFVtxType())
+    call polympo_applyReconstruction(mpMesh)
+    call polympo_getMeshVtxMass(mpMesh,nVertices,c_loc(meshVtxMass))
+
+    do i = 1, nVertices
+      call assert(meshVtxMass(i) < TEST_VAL+TOLERANCE .and. meshVtxMass(i) > TEST_VAL-TOLERANCE, "Error: wrong vtx mass")
+    end do
+    
+    ! Test push reconstruction
+
+    do j = 1, 5
+      call calcSurfDispIncr(mpMesh, latVertex, lonVertex, nEdgesOnCell, verticesOnCell, nVertices, sphereRadius)
+      call polympo_setReconstructionOfMass(mpMesh,0,polympo_getMeshFElmType())
+      call polympo_setReconstructionOfMass(mpMesh,0,polympo_getMeshFVtxType())
+      call polympo_push(mpMesh)
+      call polympo_getMeshElmMass(mpMesh,nCells,c_loc(meshElmMass))
+      call polympo_getMeshVtxMass(mpMesh,nVertices,c_loc(meshVtxMass))
+      call polympo_getMPCurElmID(mpMesh,numMPs,c_loc(mp2Elm))
+
+      do i = 1, numMPs
+        vID = verticesOnCell(1,mp2Elm(i))
+        call assert(meshVtxMass(vID) < TEST_VAL+TOLERANCE .and. meshVtxMass(vID) > TEST_VAL-TOLERANCE, "Error: wrong vtx mass")
+
+        call assert(meshElmMass(mp2Elm(i)) < TEST_VAL+TOLERANCE &
+              .and. meshElmMass(mp2Elm(i)) > TEST_VAL-TOLERANCE, "Error: wrong elm mass")
+      end do
+    end do
+
+    deallocate(mpMass)
+    deallocate(mpVel)
+    deallocate(meshVtxMass)
+    deallocate(meshElmMass)
+  end subroutine
+
 end module
 !---------------------------------------------------------------------------
 !> todo add a discription
@@ -174,7 +242,10 @@ program main
   call polympo_setMPRotLatLon(mpMesh,2,numMPs,c_loc(mpLatLon))
   call polympo_setMPPositions(mpMesh,3,numMPs,c_loc(mpPosition))
 
-  call runAdvectionTest(mpMesh, numPush, latVertex, lonVertex, nEdgesOnCell, verticesOnCell, nVertices, sphereRadius)
+  ! call runAdvectionTest(mpMesh, numPush, latVertex, lonVertex, nEdgesOnCell, verticesOnCell, nVertices, sphereRadius)
+
+  call runReconstructionTest(mpMesh, numMPs, numPush, nCells, nVertices, mp2Elm, &
+                                  latVertex, lonVertex, nEdgesOnCell, verticesOnCell, sphereRadius)
 
   call polympo_summarizeTime();
 

@@ -1,7 +1,7 @@
-module advectionTesting
+module advectionTests
   contains
   include "calculateDisplacement.f90"
-  subroutine advectionTest(mpMesh, numPush, latVertex, lonVertex, nEdgesOnCell, verticesOnCell, nVertices, sphereRadius)
+  subroutine runAdvectionTest(mpMesh, numPush, latVertex, lonVertex, nEdgesOnCell, verticesOnCell, nVertices, sphereRadius)
     use :: polympo
     use :: readMPAS
     use :: iso_c_binding
@@ -29,7 +29,7 @@ program main
   use :: polympo
   use :: readMPAS
   use :: iso_c_binding
-  use :: advectionTesting
+  use :: advectionTests
   implicit none
   include 'mpif.h'
 
@@ -174,7 +174,7 @@ program main
   call polympo_setMPRotLatLon(mpMesh,2,numMPs,c_loc(mpLatLon))
   call polympo_setMPPositions(mpMesh,3,numMPs,c_loc(mpPosition))
 
-  call advectionTest(mpMesh, numPush, latVertex, lonVertex, nEdgesOnCell, verticesOnCell, nVertices, sphereRadius)
+  call runAdvectionTest(mpMesh, numPush, latVertex, lonVertex, nEdgesOnCell, verticesOnCell, nVertices, sphereRadius)
 
   call polympo_summarizeTime();
 

@@ -30,8 +30,8 @@ DoubleView MPMesh::assemblyV0(){
 }
 
 template <MeshFieldIndex meshFieldIndex>
-void MPMesh::assemblyVtx0()
-{
+void MPMesh::assemblyVtx0(){
+  Kokkos::Timer timer;
   constexpr MaterialPointSlice mpfIndex = meshFieldIndexToMPSlice<meshFieldIndex>;
   auto elm2VtxConn = p_mesh->getElm2VtxConn();  
   auto mpData = p_MPs->getData<mpfIndex>();
@@ -64,10 +64,12 @@ void MPMesh::assemblyVtx0()
     if (sumWeights(vtx) != zero) 
       meshField(vtx, entry) /= sumWeights(vtx);
   });
+  pumipic::RecordTime("PolyMPO_Reconstruct_Vtx0", timer.seconds());
 }
 
 template <MeshFieldIndex meshFieldIndex>
 void MPMesh::assemblyElm0() {
+  Kokkos::Timer timer;
   constexpr MaterialPointSlice mpfIndex = meshFieldIndexToMPSlice<meshFieldIndex>;
   auto mpData = p_MPs->getData<mpfIndex>();
   const int numEntries = mpSliceToNumEntries<mpfIndex>();
@@ -91,6 +93,7 @@ void MPMesh::assemblyElm0() {
     if (mpsPerElm(elm) > 0) 
       meshField(elm, entry) /= mpsPerElm(elm);
   });
+  pumipic::RecordTime("PolyMPO_Reconstruct_Elm0", timer.seconds());
 }
 
 template <MeshFieldIndex meshFieldIndex>

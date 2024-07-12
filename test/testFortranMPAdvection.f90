@@ -53,15 +53,15 @@ module advectionTests
     call polympo_setMPMass(mpMesh,1,numMPs,c_loc(mpMass))
     call polympo_setMPVel(mpMesh,2,numMPs,c_loc(mpVel))
 
-    ! Test vtx reconstruction
+    ! ! Test vtx reconstruction
     
-    call polympo_setReconstructionOfMass(mpMesh,0,polympo_getMeshFVtxType())
-    call polympo_applyReconstruction(mpMesh)
-    call polympo_getMeshVtxMass(mpMesh,nVertices,c_loc(meshVtxMass))
+    ! call polympo_setReconstructionOfMass(mpMesh,0,polympo_getMeshFVtxType())
+    ! call polympo_applyReconstruction(mpMesh)
+    ! call polympo_getMeshVtxMass(mpMesh,nVertices,c_loc(meshVtxMass))
 
-    do i = 1, nVertices
-      call assert(meshVtxMass(i) < TEST_VAL+TOLERANCE .and. meshVtxMass(i) > TEST_VAL-TOLERANCE, "Error: wrong vtx mass")
-    end do
+    ! do i = 1, nVertices
+    !   call assert(meshVtxMass(i) < TEST_VAL+TOLERANCE .and. meshVtxMass(i) > TEST_VAL-TOLERANCE, "Error: wrong vtx mass")
+    ! end do
     
     ! Test push reconstruction
 

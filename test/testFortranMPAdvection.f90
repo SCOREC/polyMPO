@@ -65,7 +65,7 @@ module advectionTests
     
     ! Test push reconstruction
 
-    do j = 1, 5
+    do j = 1, numPush
       call calcSurfDispIncr(mpMesh, latVertex, lonVertex, nEdgesOnCell, verticesOnCell, nVertices, sphereRadius)
       call polympo_setReconstructionOfMass(mpMesh,0,polympo_getMeshFElmType())
       call polympo_setReconstructionOfMass(mpMesh,0,polympo_getMeshFVtxType())

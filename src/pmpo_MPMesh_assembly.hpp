@@ -106,11 +106,42 @@ void MPMesh::assemblyVtx1() {
   p_mesh->fillMeshField<meshFieldIndex>(0.0);
   auto meshField = p_mesh->getMeshField<meshFieldIndex>();
 
+  Kokkos::View<double*[4][4]> VtxMatrices("VtxMatrices", p_mesh->getNumVertices());
+  auto vtxCoords = p_mesh->getMeshField<polyMPO::MeshF_VtxCoords>();
   auto assemble = PS_LAMBDA(const int& elm, const int& mp, const int& mask) {
-  
-    
+    if(mask){
+      int nVtxE = elm2VtxConn(elm,0); //number of vertices bounding the element
+      for(int i=0; i<nVtxE; i++){
+        int vID = elm2VtxConn(elm,i+1)-1; //vID = vertex id
+        for(int j=0;j<numEntries;j++){
+          double fieldComponentVal = mpData(mp,j) * weight(mp, 0);
+
+          double[4] CoordDiffs = {1, 
+                                  vtxCoords(vID,0) - mpPositions(mp,0), 
+                                  vtxCoords(vID,1) - mpPositions(mp,1),
+                                  vtxCoords(vID,2) - mpPositions(mp,2)};
+          //add to the matrix
+          for(int k=0;k<4;k++){
+            for(int l=0;l<4;l++){
+              Kokkos::atomic_add(&VtxMatrices(vID,k,l), CoordDiffs[k] * CoordDiffs[l] * fieldComponentVal);
+            }
+          }
+        }
+      }
+    }
   };
     p_MPs->parallel_for(assemble, "assembly");
+    Vec4d b = {1,0,0,0};
+    Kokkos::parallel_for("solving Ax=b", numVtx, KOKKOS_LAMBDA(const int vtx){
+      Vec4d v0 = {VtxMatrices(vtx,0,0), VtxMatrices(vtx,0,1), VtxMatrices(vtx,0,2), VtxMatrices(vtx,0,3)};
+      Vec4d v1 = {VtxMatrices(vtx,1,0), VtxMatrices(vtx,1,1), VtxMatrices(vtx,1,2), VtxMatrices(vtx,1,3)};
+      Vec4d v2 = {VtxMatrices(vtx,2,0), VtxMatrices(vtx,2,1), VtxMatrices(vtx,2,2), VtxMatrices(vtx,2,3)};
+      Vec4d v3 = {VtxMatrices(vtx,3,0), VtxMatrices(vtx,3,1), VtxMatrices(vtx,3,2), VtxMatrices(vtx,3,3)};
+      Matrix A = {v0,v1,v2,v3};
+      Vec4d x = A.solve(b);
+      //Evaluate the vector at the vertex to get the solution
+      meshField(vtx,0) = x[0]*vtxCoords(vtx,0) + x[1]*vtxCoords(vtx,1) + x[2]*vtxCoords(vtx,2) + x[3]*vtxCoords(vtx,3);
+    });
 }
 
 template <MeshFieldIndex meshFieldIndex>

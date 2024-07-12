@@ -216,86 +216,56 @@ class Matrix {
     | v3[0] v3[1] v3[2] v3[3] |
   */
   private:
-    std::vector<std::vector<double>> data_;
+    Kokkos::View<double**> data_;
     int rows_;
     int cols_;
 
   public:
-  Matrix(Vec2d v0, Vec2d v1){
-    data_ = std::vector<std::vector<double>>(2, std::vector<double>(2, 0.0));
-    rows_ = 2;
-    cols_ = 2;
-    
-    for (int i=0; i<2; i++){
-      data_[0][i] = v0[i];
-      data_[1][i] = v1[i];
-    }
-  }
-
-  Matrix(Vec3d v0, Vec3d v1, Vec3d v2){
-    data_ = std::vector<std::vector<double>>(3, std::vector<double>(3, 0.0));
-    rows_ = 3;
-    cols_ = 3;
-    
-    for (int i=0; i<3; i++){
-      data_[0][i] = v0[i];
-      data_[1][i] = v1[i];
-      data_[2][i] = v2[i];
-    }
-  }
-
+  
+  KOKKOS_INLINE_FUNCTION
   Matrix(Vec4d v0, Vec4d v1, Vec4d v2, Vec4d v3){
-    data_ = std::vector<std::vector<double>>(4, std::vector<double>(4, 0.0));
+    data_ = Kokkos::View<double**>("Matrix", 4, 4);
     rows_ = 4;
     cols_ = 4;
     
     for (int i=0; i<4; i++){
-      data_[0][i] = v0[i];
-      data_[1][i] = v1[i];
-      data_[2][i] = v2[i];
-      data_[3][i] = v3[i];
+      data_(0, i) = v0[i];
+      data_(1, i) = v1[i];
+      data_(2, i) = v2[i];
+      data_(3, i) = v3[i];
     }
   }
 
-  std::vector<double> solve_helper(std::vector<double> b){
-    std::vector<double> x(rows_, 0.0);
+  KOKKOS_INLINE_FUNCTION
+  Kokkos::View<double*> solve(Kokkos::View<double*> b){
+    //create a view to store the solution x, initialize to 0
+    Kokkos::View<double*> x("x", rows_);
+    for(int i=0; i<rows_; i++){
+      x(i) = 0;
+    }
     for (int i=0; i<rows_; i++){
-      double pivot = data_[i][i];
+      double pivot = data_(i, i);
       for( int j = i+1; j<rows_; j++){
-        double ratio = data_[j][i] / pivot;
+        double ratio = data_(j, i) / pivot;
         for(int k = i; k<cols_; k++){
-          data_[j][k] -= ratio * data_[i][k];
+          data_(j, k) -= ratio * data_(i, k);
         }
-        b[j] -= ratio * b[i];
+        b(j) -= ratio * b(i);
       }
     }
     for(int i = rows_-1; i>=0; i--){
       double sum = 0;
       for(int j = i+1; j<cols_; j++){
-        sum += data_[i][j] * x[j];
+        sum += data_(i, j) * x(j);
       }
-      x[i] = (b[i] - sum) / data_[i][i];
+      x(i) = (b(i) - sum) / data_(i, i);
     }
     return x;
   }
 
-  Vec2d solve(Vec2d b){
-    std::vector<double> b_vec = {b[0], b[1]};
-    std::vector<double> x = solve_helper(b_vec);
-    return Vec2d(x[0], x[1]);
-  }
-
-  Vec3d solve(Vec3d b){
-    std::vector<double> b_vec = {b[0], b[1], b[2]};
-    std::vector<double> x = solve_helper(b_vec);
-    return Vec3d(x[0], x[1], x[2]);
-  }
-
-  Vec4d solve(Vec4d b){
-    std::vector<double> b_vec = {b[0], b[1], b[2], b[3]};
-    std::vector<double> x = solve_helper(b_vec);
-    return Vec4d(x[0], x[1], x[2], x[3]);
-  }
+  KOKKOS_INLINE_FUNCTION
+  double operator()(int i, int j) const { return data_(i, j); }
+  
 
 };
 
@@ -308,6 +278,13 @@ void initArray(Vec2d* arr, int n, Vec2d fill){
 
 KOKKOS_INLINE_FUNCTION
 void initArray(Vec3d* arr, int n, Vec3d fill){
+    for(int i=0; i<n; i++){
+        arr[i] = fill;
+    }
+}
+
+KOKKOS_INLINE_FUNCTION
+void initArray(Vec4d* arr, int n, Vec4d fill){
     for(int i=0; i<n; i++){
         arr[i] = fill;
     }

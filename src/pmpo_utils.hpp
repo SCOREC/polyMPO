@@ -263,7 +263,8 @@ class Matrix {
   }
 
   Vec4d solve(Vec4d b){
-    std::vector<double> x = solve_helper(b);
+    std::vector<double> b_vec = {b[0], b[1], b[2], b[3]};
+    std::vector<double> x = solve_helper(b_vec);
     return Vec4d(x[0], x[1], x[2], x[3]);
   }
   

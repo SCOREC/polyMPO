@@ -157,7 +157,7 @@ void MPMesh::assemblyVtx1() {
     });
 
     Kokkos::parallel_for("averaging", numVtx, KOKKOS_LAMBDA(const int vtx){
-      int nElms = NumElmsPerVtx(vtx,0);
+      int nElms = NumElmsPerVtx(vtx);
       meshField(vtx, 0) = reconVals(vtx) / nElms;
     });
 }

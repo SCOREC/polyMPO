@@ -246,9 +246,9 @@ class Matrix {
     for (int i=0; i<rows_; i++){
       double pivot = data_[i][i];
       for( int j = i+1; j<rows_; j++){
-        double ratio = data_[j, i] / pivot;
+        double ratio = data_[j][i] / pivot;
         for(int k = i; k<cols_; k++){
-          data_[j, k] -= ratio * data_[i, k];
+          data_[j, k] -= ratio * data_[i][k];
         }
         b(j) -= ratio * b(i);
       }
@@ -256,15 +256,12 @@ class Matrix {
     for(int i = rows_-1; i>=0; i--){
       double sum = 0;
       for(int j = i+1; j<cols_; j++){
-        sum += data_[i, j] * x[j];
+        sum += data_[i][j] * x[j];
       }
-      x[i] = (b[i] - sum) / data_[i, i];
+      x[i] = (b[i] - sum) / data_[i][i];
     }
     return x;
   }
-
-  KOKKOS_INLINE_FUNCTION
-  double operator()(int i, int j) const { return data_[i][j];}
   
 
 };

@@ -239,7 +239,7 @@ class Matrix {
       data_[3][i] = v3[i];
     }
   }
-  //destructor
+  KOKKOS_INLINE_FUNCTION
   ~Matrix(){
     for (int i=0; i<4; i++){
       delete[] data_[i];
@@ -271,6 +271,7 @@ class Matrix {
     }
   }
 
+  KOKKOS_INLINE_FUNCTION
   Vec4d solve(Vec4d b){
     double x[4];
     double b_[4] = {b[0], b[1], b[2], b[3]};

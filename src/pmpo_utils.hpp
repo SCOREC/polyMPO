@@ -264,7 +264,7 @@ class Matrix {
 
   Vec4d solve(Vec4d b){
     std::vector<double> x = solve_helper(b);
-    return Vec4d(x.data());
+    return Vec4d(x[0], x[1], x[2], x[3]);
   }
   
   KOKKOS_INLINE_FUNCTION

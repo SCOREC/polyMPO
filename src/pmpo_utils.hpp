@@ -216,7 +216,7 @@ class Matrix {
     | v3[0] v3[1] v3[2] v3[3] |
   */
   private:
-    Kokkos::View<double**> data_;
+    std::vector<std::vector<double>> data_;
     int rows_;
     int cols_;
 
@@ -224,31 +224,31 @@ class Matrix {
   
   KOKKOS_INLINE_FUNCTION
   Matrix(Vec4d v0, Vec4d v1, Vec4d v2, Vec4d v3){
-    data_ = Kokkos::View<double**>("Matrix", 4, 4);
+    data_ = std::vector<std::vector<double>>(4, std::vector<double>(4, 0));
     rows_ = 4;
     cols_ = 4;
     
     for (int i=0; i<4; i++){
-      data_(0, i) = v0[i];
-      data_(1, i) = v1[i];
-      data_(2, i) = v2[i];
-      data_(3, i) = v3[i];
+      data_[0][i] = v0[i];
+      data_[1][i] = v1[i];
+      data_[2][i] = v2[i];
+      data_[3][i] = v3[i];
     }
   }
 
   KOKKOS_INLINE_FUNCTION
-  Kokkos::View<double*> solve(Kokkos::View<double*> b){
+  std::vector<double> solve(std::vector<double> b){
     //create a view to store the solution x, initialize to 0
-    Kokkos::View<double*> x("x", rows_);
+    std::vector<double> x(rows_, 0);
     for(int i=0; i<rows_; i++){
-      x(i) = 0;
+      x[i] = 0;
     }
     for (int i=0; i<rows_; i++){
-      double pivot = data_(i, i);
+      double pivot = data_[i][i];
       for( int j = i+1; j<rows_; j++){
-        double ratio = data_(j, i) / pivot;
+        double ratio = data_[j, i] / pivot;
         for(int k = i; k<cols_; k++){
-          data_(j, k) -= ratio * data_(i, k);
+          data_[j, k] -= ratio * data_[i, k];
         }
         b(j) -= ratio * b(i);
       }
@@ -256,15 +256,15 @@ class Matrix {
     for(int i = rows_-1; i>=0; i--){
       double sum = 0;
       for(int j = i+1; j<cols_; j++){
-        sum += data_(i, j) * x(j);
+        sum += data_[i, j] * x[j];
       }
-      x(i) = (b(i) - sum) / data_(i, i);
+      x[i] = (b[i] - sum) / data_[i, i];
     }
     return x;
   }
 
   KOKKOS_INLINE_FUNCTION
-  double operator()(int i, int j) const { return data_(i, j); }
+  double operator()(int i, int j) const { return data_[i][j];}
   
 
 };

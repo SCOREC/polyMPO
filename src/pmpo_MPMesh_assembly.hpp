@@ -102,6 +102,7 @@ void MPMesh::assemblyVtx1() {
   auto elm2VtxConn = p_mesh->getElm2VtxConn();  
   auto mpData = p_MPs->getData<mpfIndex>();
   const int numEntries = mpSliceToNumEntries<mpfIndex>();
+  auto weight = p_MPs->getData<MPF_Basis_Vals>();
 
   p_mesh->fillMeshField<meshFieldIndex>(0.0);
   auto meshField = p_mesh->getMeshField<meshFieldIndex>();

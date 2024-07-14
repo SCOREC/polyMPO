@@ -103,13 +103,13 @@ void MPMesh::assemblyVtx1() {
   auto mpData = p_MPs->getData<mpfIndex>();
   const int numEntries = mpSliceToNumEntries<mpfIndex>();
   auto weight = p_MPs->getData<MPF_Basis_Vals>();
+  auton numVtx = p_mesh->getNumVertices();
 
   p_mesh->fillMeshField<meshFieldIndex>(0.0);
   auto meshField = p_mesh->getMeshField<meshFieldIndex>();
 
   Kokkos::View<double*[4][4]> VtxMatrices("VtxMatrices", p_mesh->getNumVertices());
   auto vtxCoords = p_mesh->getMeshField<polyMPO::MeshF_VtxCoords>();
-  
   auto assemble = PS_LAMBDA(const int& elm, const int& mp, const int& mask) {
     if(mask){
       int nVtxE = elm2VtxConn(elm,0); //number of vertices bounding the element
@@ -145,7 +145,7 @@ void MPMesh::assemblyVtx1() {
       Kokkos::atomic_add(&reconVals(vtx), x[0]*vtxCoords(vtx,0) + x[1]*vtxCoords(vtx,1) + x[2]*vtxCoords(vtx,2) + x[3]*vtxCoords(vtx,3));
     });
     //find number of elements per vertex
-    Kokkos::View<int*> NumElmsPerVtx("NumElmsPerVtx", numVtx);
+    Kokkos::View<double*> NumElmsPerVtx("NumElmsPerVtx", numVtx);
     int numElms = p_mesh->getNumElements();
     Kokkos::parallel_for("counting", numElms, KOKKOS_LAMBDA(const int elm){
       int nVtxE = elm2VtxConn(elm,0); //number of vertices bounding the element

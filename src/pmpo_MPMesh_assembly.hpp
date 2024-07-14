@@ -104,6 +104,7 @@ void MPMesh::assemblyVtx1() {
   const int numEntries = mpSliceToNumEntries<mpfIndex>();
   auto weight = p_MPs->getData<MPF_Basis_Vals>();
   auto numVtx = p_mesh->getNumVertices();
+  auto mpPositions = p_MPs->getData<MPF_Cur_Pos_XYZ>();
 
   p_mesh->fillMeshField<meshFieldIndex>(0.0);
   auto meshField = p_mesh->getMeshField<meshFieldIndex>();

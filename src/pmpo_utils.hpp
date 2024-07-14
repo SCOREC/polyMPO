@@ -216,7 +216,7 @@ class Matrix {
     | v3[0] v3[1] v3[2] v3[3] |
   */
   private:
-    Kokkos::View<double**> data_;
+    double** data_;
     int rows_;
     int cols_;
 
@@ -224,9 +224,13 @@ class Matrix {
   
   KOKKOS_INLINE_FUNCTION
   Matrix(Vec4d v0, Vec4d v1, Vec4d v2, Vec4d v3){
-    data_ = Kokkos::View<double**>("Matrix", 4, 4);
     rows_ = 4;
     cols_ = 4;
+    data_ = new double*[4];
+    for (int i=0; i<4; i++){
+      data_[i] = new double[4];
+    }
+
     
     for (int i=0; i<4; i++){
       data_(0, i) = v0[i];
@@ -235,41 +239,44 @@ class Matrix {
       data_(3, i) = v3[i];
     }
   }
+  //destructor
+  ~Matrix(){
+    for (int i=0; i<4; i++){
+      delete[] data_[i];
+    }
+    delete[] data_;
+  }
 
   KOKKOS_INLINE_FUNCTION
-  Kokkos::View<double*> solve_helper(Kokkos::View<double*> b){
-    Kokkos::View<double*> x("x", rows_);
+  void solve_helper(double* b, double* x){
     for(int i=0; i<rows_; i++){
-      x(i) = 0;
+      x[i] = 0;
     }
     for (int i=0; i<rows_; i++){
       double pivot = data_(i,i);
       for( int j = i+1; j<rows_; j++){
         double ratio = data_(j,i) / pivot;
         for(int k = i; k<cols_; k++){
-          data_(j,k) -= ratio * data_(i,k);
+          data_[j][k] -= ratio * data_[i][k];
         }
-        b(j) -= ratio * b(i);
+        b[j] -= ratio * b[i];
       }
     }
     for(int i = rows_-1; i>=0; i--){
       double sum = 0;
       for(int j = i+1; j<cols_; j++){
-        sum += data_(i,j) * x(j);
+        sum += data_[i][j] * x[j];
       }
-      x(i) = (b[i] - sum) / data_(i,i);
+      x[i] = (b[i] - sum) / data_[i][i];
     }
     return x;
   }
 
   Vec4d solve(Vec4d b){
-    Kokkos::View<double*> b_view("b", 4);
-    for(int i=0; i<4; i++){
-      b_view(i) = b[i];
-    }
-    Kokkos::View<double*> x = solve_helper(b_view);
-    Vec4d x_vec(x(0), x(1), x(2), x(3));
-    return x_vec;
+    double x[4];
+    double b_[4] = {b[0], b[1], b[2], b[3]};
+    solve_helper(b_, x);
+    return Vec4d(x[0], x[1], x[2], x[3]);
   }
   
   KOKKOS_INLINE_FUNCTION

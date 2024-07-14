@@ -108,6 +108,7 @@ void MPMesh::assemblyVtx1() {
 
   Kokkos::View<double*[4][4]> VtxMatrices("VtxMatrices", p_mesh->getNumVertices());
   auto vtxCoords = p_mesh->getMeshField<polyMPO::MeshF_VtxCoords>();
+  
   auto assemble = PS_LAMBDA(const int& elm, const int& mp, const int& mask) {
     if(mask){
       int nVtxE = elm2VtxConn(elm,0); //number of vertices bounding the element
@@ -115,7 +116,6 @@ void MPMesh::assemblyVtx1() {
         int vID = elm2VtxConn(elm,i+1)-1; //vID = vertex id
         for(int j=0;j<numEntries;j++){
           double fieldComponentVal = mpData(mp,j) * weight(mp, 0);
-
           double[4] CoordDiffs = {1, 
                                   vtxCoords(vID,0) - mpPositions(mp,0), 
                                   vtxCoords(vID,1) - mpPositions(mp,1),
@@ -132,6 +132,7 @@ void MPMesh::assemblyVtx1() {
   };
     p_MPs->parallel_for(assemble, "assembly");
     Vec4d b = {1,0,0,0};
+    Kokkos::View<double*> reconVals("meshField", p_mesh->getNumVertices());
     Kokkos::parallel_for("solving Ax=b", numVtx, KOKKOS_LAMBDA(const int vtx){
       Vec4d v0 = {VtxMatrices(vtx,0,0), VtxMatrices(vtx,0,1), VtxMatrices(vtx,0,2), VtxMatrices(vtx,0,3)};
       Vec4d v1 = {VtxMatrices(vtx,1,0), VtxMatrices(vtx,1,1), VtxMatrices(vtx,1,2), VtxMatrices(vtx,1,3)};
@@ -140,7 +141,21 @@ void MPMesh::assemblyVtx1() {
       Matrix A = {v0,v1,v2,v3};
       Vec4d x = A.solve(b);
       //Evaluate the vector at the vertex to get the solution
-      meshField(vtx,0) = x[0]*vtxCoords(vtx,0) + x[1]*vtxCoords(vtx,1) + x[2]*vtxCoords(vtx,2) + x[3]*vtxCoords(vtx,3);
+      Kokkos::atomic_add(&reconVals(vtx), x[0]*vtxCoords(vtx,0) + x[1]*vtxCoords(vtx,1) + x[2]*vtxCoords(vtx,2) + x[3]*vtxCoords(vtx,3));
+    });
+    //find number of elements per vertex
+    Kokkos::View<int*> NumElmsPerVtx("NumElmsPerVtx", numVtx);
+    int numElms = p_mesh->getNumElements();
+    Kokkos::parallel_for("counting", numElms, KOKKOS_LAMBDA(const int elm){
+      int nVtxE = elm2VtxConn(elm,0); //number of vertices bounding the element
+      for(int i=0; i<nVtxE; i++){
+        int vID = elm2VtxConn(elm,i+1)-1; //vID = vertex id
+        Kokkos::atomic_add(&NumElmsPerVtx(vID), 1);
+      }
+    });
+    Kokkos::parallel_for("averaging", numVtx, KOKKOS_LAMBDA(const int vtx){
+      int nElms = NumElmsPerVtx(vtx,0);
+      meshField(vtx, 0) = reconVals(vtx) / nElms;
     });
 }
 

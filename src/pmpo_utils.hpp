@@ -237,8 +237,7 @@ class Matrix {
   }
 
   KOKKOS_INLINE_FUNCTION
-  std::vector<double> solve(std::vector<double> b){
-    //create a view to store the solution x, initialize to 0
+  std::vector<double> solve_helper(std::vector<double> b){
     std::vector<double> x(rows_, 0);
     for(int i=0; i<rows_; i++){
       x[i] = 0;
@@ -261,6 +260,11 @@ class Matrix {
       x[i] = (b[i] - sum) / data_[i][i];
     }
     return x;
+  }
+
+  Vec4d solve(Vec4d b){
+    std::vector<double> x = solve_helper(b);
+    return Vec4d(x.data());
   }
   
   KOKKOS_INLINE_FUNCTION

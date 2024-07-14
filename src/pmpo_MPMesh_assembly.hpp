@@ -117,7 +117,7 @@ void MPMesh::assemblyVtx1() {
         int vID = elm2VtxConn(elm,i+1)-1; //vID = vertex id
         for(int j=0;j<numEntries;j++){
           double fieldComponentVal = mpData(mp,j) * weight(mp, 0);
-          double[4] CoordDiffs = {1, 
+          double CoordDiffs[4] = {1, 
                                   vtxCoords(vID,0) - mpPositions(mp,0), 
                                   vtxCoords(vID,1) - mpPositions(mp,1),
                                   vtxCoords(vID,2) - mpPositions(mp,2)};

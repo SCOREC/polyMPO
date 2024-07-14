@@ -255,7 +255,7 @@ class Matrix {
     for (int i=0; i<rows_; i++){
       double pivot = data_[i][i];
       for( int j = i+1; j<rows_; j++){
-        double ratio = data_[j,i] / pivot;
+        double ratio = data_[j][i] / pivot;
         for(int k = i; k<cols_; k++){
           data_[j][k] -= ratio * data_[i][k];
         }

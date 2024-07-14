@@ -233,10 +233,10 @@ class Matrix {
 
     
     for (int i=0; i<4; i++){
-      data_(0, i) = v0[i];
-      data_(1, i) = v1[i];
-      data_(2, i) = v2[i];
-      data_(3, i) = v3[i];
+      data_[0][i] = v0[i];
+      data_[1][i] = v1[i];
+      data_[2][i] = v2[i];
+      data_[3][i] = v3[i];
     }
   }
   //destructor

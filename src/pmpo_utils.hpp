@@ -263,6 +263,9 @@ class Matrix {
     return x;
   }
   
+  KOKKOS_INLINE_FUNCTION
+  double operator()(int i, int j) const { return data_[i][j];}
+  
 
 };
 

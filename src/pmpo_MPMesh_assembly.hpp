@@ -146,7 +146,7 @@ void MPMesh::assemblyVtx1() {
       Kokkos::atomic_add(&reconVals(vtx), x[0]*vtxCoords(vtx,0) + x[1]*vtxCoords(vtx,1) + x[2]*vtxCoords(vtx,2) + x[3]*vtxCoords(vtx,3));
     });
     //find number of elements per vertex
-    Kokkos::View<double*> NumElmsPerVtx("NumElmsPerVtx", numVtx);
+    Kokkos::View<int*> NumElmsPerVtx("NumElmsPerVtx", numVtx);
     int numElms = p_mesh->getNumElements();
     Kokkos::parallel_for("counting", numElms, KOKKOS_LAMBDA(const int elm){
       int nVtxE = elm2VtxConn(elm,0); //number of vertices bounding the element
@@ -155,6 +155,7 @@ void MPMesh::assemblyVtx1() {
         Kokkos::atomic_add(&NumElmsPerVtx(vID), 1);
       }
     });
+
     Kokkos::parallel_for("averaging", numVtx, KOKKOS_LAMBDA(const int vtx){
       int nElms = NumElmsPerVtx(vtx,0);
       meshField(vtx, 0) = reconVals(vtx) / nElms;

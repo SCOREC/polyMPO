@@ -90,6 +90,41 @@ module advectionTests
     deallocate(meshElmMass)
   end subroutine
 
+  subroutine runApiTest(mpMesh, numMPs, nVertices, numPush, mpLatLon, mpPosition)
+    use :: polympo
+    use :: readMPAS
+    use :: iso_c_binding
+    implicit none
+    type(c_ptr) :: mpMesh
+    integer :: i, j, k, numMPs, numPush, nVertices, nCompsDisp
+    real(kind=MPAS_RKIND), dimension(:,:), pointer :: mpPosition, mpLatLon, mpMass, mpVel, dispIncr
+    real(kind=MPAS_RKIND) :: TEST_VAL = 1.1_MPAS_RKIND
+
+    nCompsDisp = 2
+    allocate(dispIncr(nCompsDisp,nVertices))
+    allocate(mpMass(1,numMPs))
+    allocate(mpVel(2,numMPs))
+
+    dispIncr = TEST_VAL
+    mpMass = TEST_VAL
+    mpVel = TEST_VAL
+    
+    do j = 1, numPush
+      ! call polympo_setMPRotLatLon(mpMesh,2,numMPs,c_loc(mpLatLon))
+      call polympo_setMPPositions(mpMesh,3,numMPs,c_loc(mpPosition))
+
+      call polympo_setMeshVtxOnSurfDispIncr(mpMesh,nCompsDisp,nVertices,c_loc(dispIncr))
+
+      call polympo_setMPMass(mpMesh,1,numMPs,c_loc(mpMass))
+      call polympo_setMPVel(mpMesh,2,numMPs,c_loc(mpVel))
+    end do
+
+    deallocate(dispIncr)
+    deallocate(mpMass)
+    deallocate(mpVel)
+
+  end subroutine
+
 end module
 !---------------------------------------------------------------------------
 !> todo add a discription
@@ -245,8 +280,10 @@ program main
 
   ! call runAdvectionTest(mpMesh, numPush, latVertex, lonVertex, nEdgesOnCell, verticesOnCell, nVertices, sphereRadius)
 
-  call runReconstructionTest(mpMesh, numMPs, numPush, nCells, nVertices, mp2Elm, &
-                                  latVertex, lonVertex, nEdgesOnCell, verticesOnCell, sphereRadius)
+  ! call runReconstructionTest(mpMesh, numMPs, numPush, nCells, nVertices, mp2Elm, &
+  !                                 latVertex, lonVertex, nEdgesOnCell, verticesOnCell, sphereRadius)
+
+  call runApiTest(mpMesh, numMPs, nVertices, numPush, mpLatLon, mpPosition)
 
   call polympo_summarizeTime();
 

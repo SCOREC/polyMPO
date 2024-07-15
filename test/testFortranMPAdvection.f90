@@ -90,38 +90,55 @@ module advectionTests
     deallocate(meshElmMass)
   end subroutine
 
-  subroutine runApiTest(mpMesh, numMPs, nVertices, numPush, mpLatLon, mpPosition)
+  subroutine runApiTest(mpMesh, numMPs, nVertices, nCells, numPush, mpLatLon, mpPosition, xVertex, yVertex, zVertex, latVertex)
     use :: polympo
     use :: readMPAS
     use :: iso_c_binding
     implicit none
     type(c_ptr) :: mpMesh
-    integer :: i, j, k, numMPs, numPush, nVertices, nCompsDisp
+    integer :: i, j, k, numMPs, nCells, numPush, nVertices, nCompsDisp
     real(kind=MPAS_RKIND), dimension(:,:), pointer :: mpPosition, mpLatLon, mpMass, mpVel, dispIncr
+    real(kind=MPAS_RKIND), dimension(:), pointer :: xVertex, yVertex, zVertex
+    real(kind=MPAS_RKIND), dimension(:), pointer :: meshVtxMass, meshElmMass, meshVtxVel
+    real(kind=MPAS_RKIND), dimension(:), pointer :: latVertex
     real(kind=MPAS_RKIND) :: TEST_VAL = 1.1_MPAS_RKIND
 
     nCompsDisp = 2
     allocate(dispIncr(nCompsDisp,nVertices))
     allocate(mpMass(1,numMPs))
     allocate(mpVel(2,numMPs))
+    allocate(meshVtxMass(nVertices))
+    allocate(meshElmMass(nCells))
+    allocate(meshVtxVel(nVertices))
 
     dispIncr = TEST_VAL
     mpMass = TEST_VAL
     mpVel = TEST_VAL
+    meshVtxMass = TEST_VAL
+    meshElmMass = TEST_VAL
+    meshVtxVel = TEST_VAL
     
     do j = 1, numPush
-      ! call polympo_setMPRotLatLon(mpMesh,2,numMPs,c_loc(mpLatLon))
       call polympo_setMPPositions(mpMesh,3,numMPs,c_loc(mpPosition))
-
       call polympo_setMeshVtxOnSurfDispIncr(mpMesh,nCompsDisp,nVertices,c_loc(dispIncr))
-
       call polympo_setMPMass(mpMesh,1,numMPs,c_loc(mpMass))
       call polympo_setMPVel(mpMesh,2,numMPs,c_loc(mpVel))
+      call polympo_setMeshVtxCoords(mpMesh, nVertices, c_loc(xVertex), c_loc(yVertex), c_loc(zVertex))
+      call polympo_setMeshVtxRotLat(mpMesh,nVertices,c_loc(latVertex))
+
+      call polympo_getMPMass(mpMesh, 1, numMPs, c_loc(mpMass))
+      call polympo_getMPVel(mpMesh, 2, numMPs, c_loc(mpVel))
+      call polympo_getMeshElmMass(mpMesh,nCells,c_loc(meshElmMass))
+      call polympo_getMeshVtxMass(mpMesh,nVertices,c_loc(meshVtxMass))
+      call polympo_getMeshVtxVel(mpMesh,nVertices, c_loc(xVertex),c_loc(yVertex))
     end do
 
     deallocate(dispIncr)
     deallocate(mpMass)
     deallocate(mpVel)
+    deallocate(meshVtxMass)
+    deallocate(meshElmMass)
+    deallocate(meshVtxVel)
 
   end subroutine
 
@@ -283,7 +300,7 @@ program main
   ! call runReconstructionTest(mpMesh, numMPs, numPush, nCells, nVertices, mp2Elm, &
   !                                 latVertex, lonVertex, nEdgesOnCell, verticesOnCell, sphereRadius)
 
-  call runApiTest(mpMesh, numMPs, nVertices, numPush, mpLatLon, mpPosition)
+  call runApiTest(mpMesh, numMPs, nVertices, nCells, numPush, mpLatLon, mpPosition, xVertex, yVertex, zVertex, latVertex)
 
   call polympo_summarizeTime();
 

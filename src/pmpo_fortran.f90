@@ -483,8 +483,8 @@ module polympo
   !> @param nVertices(in) numVertices
   !> @param array(in) input mesh velocity 2D array (2,numVtx)
   !---------------------------------------------------------------------------
-  subroutine polympo_setMeshOnSurfDispIncr(mpMesh, nComps, nVertices, array) &
-             bind(C, NAME='polympo_setMeshOnSurfDispIncr_f')
+  subroutine polympo_setMeshVtxOnSurfDispIncr(mpMesh, nComps, nVertices, array) &
+             bind(C, NAME='polympo_setMeshVtxOnSurfDispIncr_f')
     use :: iso_c_binding
     type(c_ptr), value :: mpMesh
     integer(c_int), value :: nComps, nVertices

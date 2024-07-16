@@ -75,7 +75,7 @@ program main
     end do
   end do
   call polympo_setMeshOnSurfVeloIncr(mpMesh, numCompsVel, nverts, c_loc(Mesharray))
-  call polympo_setMeshOnSurfDispIncr(mpMesh, numCompsVel, nverts, c_loc(Mesharray))
+  call polympo_setMeshVtxOnSurfDispIncr(mpMesh, numCompsVel, nverts, c_loc(Mesharray))
 
   Mesharray = 1
   call polympo_getMeshOnSurfVeloIncr(mpMesh, numCompsVel, nverts, c_loc(Mesharray))

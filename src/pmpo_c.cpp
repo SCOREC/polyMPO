@@ -656,3 +656,15 @@ void polympo_setOwningProc_f(MPMesh_ptr p_mpmesh, const int nCells, const int* a
   Kokkos::deep_copy(owningProc, arrayHost);
   p_mesh->setOwningProc(owningProc);
 }
+
+void polympo_enableTiming_f(){
+  pumipic::EnableTiming();
+}
+
+void polympo_summarizeTime_f(){
+  pumipic::SummarizeTime();
+}
+
+void polympo_setTimingVerbosity_f(int v){
+  pumipic::SetTimingVerbosity(v);
+}

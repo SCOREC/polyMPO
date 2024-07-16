@@ -63,7 +63,7 @@ program main
 
   call polympo_setMPICommunicator(mpi_comm_handle)
   call polympo_initialize()
-  ! call polympo_enableTiming()
+  call polympo_enableTiming()
 
   call polympo_checkPrecisionForRealKind(MPAS_RKIND)
   argc = command_argument_count()
@@ -75,6 +75,7 @@ program main
     call get_command_argument(3, filename)
   else
     write(0, *) "Usage: ./testFortranMPAdvection <mpsScaleFactorPerVtx> <numPush> <path to the nc file>"
+    call exit(1)
   end if
 
   call readMPASMeshFromNCFile(filename, maxEdges, vertexDegree, &
@@ -178,7 +179,7 @@ program main
 
   call runAdvectionTest(mpMesh, numPush, latVertex, lonVertex, nEdgesOnCell, verticesOnCell, nVertices, sphereRadius)
 
-  ! call polympo_summarizeTime();
+  call polympo_summarizeTime();
 
   call polympo_deleteMPMesh(mpMesh)
   call polympo_finalize()

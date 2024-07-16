@@ -2,6 +2,45 @@ module advectionTests
   contains
   include "calculateDisplacement.f90"
 
+  subroutine setProcWedges(mpMesh, nVertices, nCells, comm_size, nEdgesOnCell, verticesOnCell)
+    use :: polympo
+    use :: readMPAS
+    use :: iso_c_binding
+    implicit none
+
+    type(c_ptr) :: mpMesh
+    integer :: i, j, k, nVertices, nCells, comm_size
+    integer, dimension(:), pointer :: owningProc, nEdgesOnCell
+    integer, dimension(:,:), pointer :: verticesOnCell
+    real(kind=MPAS_RKIND), dimension(:), pointer :: elmLat, vtxRotLat
+    real(kind=MPAS_RKIND) :: normalizedLat, sum, min, max
+    
+    allocate(elmLat(nCells))
+    allocate(owningProc(nCells))
+    allocate(vtxRotLat(nVertices))
+
+    call polympo_getMeshVtxRotLat(mpMesh, nVertices, c_loc(vtxRotLat))
+    
+    min = 0
+    max = 0
+    do i = 1, nCells
+      sum = 0;
+      do  j = 1, nEdgesOnCell(i)
+        sum = sum + vtxRotLat(verticesOnCell(j,i))
+      end do
+      elmLat(i) = sum/nEdgesOnCell(i);
+      if (elmLat(i) < min) min = elmLat(i)
+      if (elmLat(i) > max) max = elmLat(i)
+    end do
+
+    do i = 1, nCells
+      normalizedLat = (elmLat(i) - min) / (max - min);
+      owningProc(i) = normalizedLat * comm_size;
+    end do
+
+    ! TODO SET OWNING PROC
+  end subroutine
+
   subroutine runAdvectionTest(mpMesh, numPush, latVertex, lonVertex, nEdgesOnCell, verticesOnCell, nVertices, sphereRadius)
     use :: polympo
     use :: readMPAS

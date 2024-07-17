@@ -38,7 +38,8 @@ module advectionTests
       owningProc(i) = normalizedLat * comm_size;
     end do
 
-    ! TODO SET OWNING PROC
+    call polympo_startMeshFill(mpMesh)
+    call polympo_setOwningProc(mpMesh, nCells, c_loc(owningProc))
   end subroutine
 
   subroutine runAdvectionTest(mpMesh, numPush, latVertex, lonVertex, nEdgesOnCell, verticesOnCell, nVertices, sphereRadius)
@@ -76,7 +77,7 @@ program main
 
   !integer, parameter :: APP_RKIND = selected_real_kind(15)
   type(c_ptr) :: mpMesh
-  integer :: ierr, self
+  integer :: ierr, self, comm_size
   integer :: argc, i, j, arglen, k, m, mpsScaleFactorPerVtx, localNumMPs
   integer :: setMeshOption, setMPOption
   integer :: maxEdges, vertexDegree, nCells, nVertices
@@ -99,6 +100,7 @@ program main
 
   call mpi_init(ierr)
   call mpi_comm_rank(mpi_comm_handle, self, ierr)
+  call mpi_comm_size(mpi_comm_handle, comm_size, ierr)
 
   call polympo_setMPICommunicator(mpi_comm_handle)
   call polympo_initialize()
@@ -216,6 +218,7 @@ program main
   call polympo_setMPRotLatLon(mpMesh,2,numMPs,c_loc(mpLatLon))
   call polympo_setMPPositions(mpMesh,3,numMPs,c_loc(mpPosition))
 
+  call setProcWedges(mpMesh, nVertices, nCells, comm_size, nEdgesOnCell, verticesOnCell)
   call runAdvectionTest(mpMesh, numPush, latVertex, lonVertex, nEdgesOnCell, verticesOnCell, nVertices, sphereRadius)
 
   call polympo_summarizeTime();

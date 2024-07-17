@@ -58,12 +58,12 @@ pmpo_add_fortran_exe(testFortranMPAdvection testFortranMPAdvection.f90)
 pmpo_add_fortran_exe(testFortranCreateRebuildMPs testFortranCreateRebuildMPs.f90)
 
 #add test
-find_program(MPIRUN_EXECUTABLE NAMES mpirun) 
+find_program(MPIRUN NAMES mpirun mpiexec srun) 
 
 function(pmpo_add_test testname procs command)
-  if(MPIRUN_EXECUTABLE)
+  if(MPIRUN)
     add_test(NAME ${testname} 
-             COMMAND mpirun --bind-to core -np ${procs} ${command} ${ARGN})
+             COMMAND ${MPIRUN} -n ${procs} ${command} ${ARGN})
   else()
     add_test(NAME ${testname} COMMAND ${command} ${ARGN})
   endif()
@@ -96,6 +96,6 @@ pmpo_add_test(testFortranCreateRebuildMPs 1 ./testFortranCreateRebuildMPs ${TEST
 
 pmpo_add_test(test_timing 1 ./timeAssmblyWachspress 1 ${TEST_NC_FILE})
 pmpo_add_test(test_wachspress 1 ./testWachspress ${TEST_NC_FILE})
-if(MPIRUN_EXECUTABLE)
+if(MPIRUN)
   pmpo_add_test(test_migration 8 ./testMigration ${TEST_NC_FILE})
 endif()

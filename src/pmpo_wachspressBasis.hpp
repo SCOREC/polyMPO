@@ -306,6 +306,7 @@ void getBasisByAreaGblForm_1(Vec2d MP, int numVtxs, Vec2d* vtxCoords, double* ba
 // spherical interpolation of values from mesh vertices to MPsi
 template <MeshFieldIndex mfIndex, MaterialPointSlice mpfIndex>
 void sphericalInterpolation(MPMesh& mpMesh){
+    Kokkos::Timer timer;
     auto p_mesh = mpMesh.p_mesh;
     auto vtxCoords = p_mesh->getMeshField<polyMPO::MeshF_VtxCoords>();
     int numVtxs = p_mesh->getNumVertices();
@@ -355,6 +356,7 @@ void sphericalInterpolation(MPMesh& mpMesh){
         }
     };
     p_MPs->parallel_for(interpolation, "interpolation");
+    pumipic::RecordTime("PolyMPO_Reconstruct", timer.seconds());
 }
 
 } //namespace polyMPO end

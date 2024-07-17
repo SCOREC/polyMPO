@@ -74,6 +74,7 @@ void MPMesh::CVTTrackingEdgeCenterBased(Vec2dView dx){
 
 
 void MPMesh::CVTTrackingElmCenterBased(const int printVTPIndex){
+    Kokkos::Timer timer;
     int numVtxs = p_mesh->getNumVertices();
     int numElms = p_mesh->getNumElements();
     auto numMPs = p_MPs->getCount();
@@ -197,6 +198,7 @@ void MPMesh::CVTTrackingElmCenterBased(const int printVTPIndex){
         fprintf(pFile,"        </DataArray>\n      </Lines>\n    </Piece>\n  </PolyData>\n</VTKFile>\n");
         fclose(pFile);
     }
+    pumipic::RecordTime("PolyMPO_CVTTrackingElmCenterBased", timer.seconds());
 }
 
 void MPMesh::T2LTracking(Vec2dView dx){
@@ -263,6 +265,7 @@ void MPMesh::T2LTracking(Vec2dView dx){
 }
 
 bool getAnyIsMigrating(bool isMigrating) {
+  Kokkos::Timer timer;
   int comm_rank;
   MPI_Comm_rank(MPI_COMM_WORLD, &comm_rank);
   int comm_size;
@@ -270,10 +273,12 @@ bool getAnyIsMigrating(bool isMigrating) {
 
   bool anyIsMigrating = false;
   MPI_Allreduce(&isMigrating, &anyIsMigrating, 1, MPI_C_BOOL, MPI_LOR, MPI_COMM_WORLD);
+  pumipic::RecordTime("PolyMPO_getAnyIsMigrating", timer.seconds());
   return anyIsMigrating;
 }
 
 void MPMesh::push(){
+  Kokkos::Timer timer;
   p_mesh->computeRotLatLonIncr();
   sphericalInterpolation<MeshF_RotLatLonIncr, MPF_Rot_Lat_Lon_Incr>(*this);
   p_MPs->updateRotLatLonAndXYZ2Tgt(p_mesh->getSphereRadius()); // set Tgt_XYZ
@@ -289,6 +294,7 @@ void MPMesh::push(){
 
   p_MPs->updateMPSlice<MPF_Cur_Pos_XYZ, MPF_Tgt_Pos_XYZ>(); // Tgt_XYZ becomes Cur_XYZ
   p_MPs->updateMPSlice<MPF_Cur_Pos_Rot_Lat_Lon, MPF_Tgt_Pos_Rot_Lat_Lon>(); // Tgt becomes Cur
+  pumipic::RecordTime("PolyMPO_push", timer.seconds());
 }
 
 void MPMesh::printVTP_mesh(int printVTPIndex){

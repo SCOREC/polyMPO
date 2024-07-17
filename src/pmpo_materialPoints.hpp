@@ -208,6 +208,7 @@ class MaterialPoints {
         updateMPSlice<MPF_Cur_Pos_XYZ,MPF_Tgt_Pos_XYZ>();
     }
     void updateRotLatLonAndXYZ2Tgt(const double radius){
+        Kokkos::Timer timer;
         auto curPosRotLatLon = MPs->get<MPF_Cur_Pos_Rot_Lat_Lon>();
         auto tgtPosRotLatLon = MPs->get<MPF_Tgt_Pos_Rot_Lat_Lon>();
         auto tgtPosXYZ = MPs->get<MPF_Tgt_Pos_XYZ>();
@@ -233,6 +234,7 @@ class MaterialPoints {
             PMT_ALWAYS_ASSERT(false);
         } 
         ps::parallel_for(MPs, updateRotLatLon,"updateRotationalLatitudeLongitude"); 
+        pumipic::RecordTime("PolyMPO_updateRotLatLonAndXYZ2Tgt", timer.seconds()); 
     } 
 
     template <int index>

@@ -2,6 +2,7 @@
 #define POLYMPO_MESH_H
 
 #include "pmpo_utils.hpp"
+#include <pumipic_kktypes.hpp>
 
 namespace polyMPO{
 

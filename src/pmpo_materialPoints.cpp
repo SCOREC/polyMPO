@@ -124,7 +124,7 @@ bool MaterialPoints::migrate() {
 
   if (getOpMode() == polyMPO::MP_DEBUG)
     printf("Material point migration: %f\n", timer.seconds());
-  
+  pumipic::RecordTime("PolyMPO_migrate", timer.seconds());
   return pumipic::getLastValue(isMigrating) > 0;
 }
 

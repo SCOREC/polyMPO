@@ -40,6 +40,7 @@ namespace polyMPO{
     }
     
     void Mesh::computeRotLatLonIncr(){
+        Kokkos::Timer timer;
         PMT_ALWAYS_ASSERT(geomType_ == geom_spherical_surf);
        
         auto dispIncr = getMeshField<MeshF_OnSurfDispIncr>();
@@ -53,6 +54,7 @@ namespace polyMPO{
             rotLatLonIncr(iVtx, 0) = dispIncr(iVtx, 1)/sphereRadius;
             rotLatLonIncr(iVtx, 1) = dispIncr(iVtx, 0)/(sphereRadius * std::cos(lat(iVtx)));
         });
+        pumipic::RecordTime("PolyMPO_computeRotLatLonIncr", timer.seconds());
     }
 
     IntView Mesh::getElm2Process() {

@@ -21,8 +21,8 @@ module advectionTests
 
     call polympo_getMeshVtxRotLat(mpMesh, nVertices, c_loc(vtxRotLat))
     
-    min = 0
-    max = 0
+    min = 1000
+    max = -1000
     do i = 1, nCells
       sum = 0;
       do  j = 1, nEdgesOnCell(i)
@@ -36,7 +36,7 @@ module advectionTests
     do i = 1, nCells
       normalizedLat = (elmLat(i) - min) / (max - min)
       owningProc(i) = normalizedLat * comm_size
-      owningProc(i) = 0
+      if (owningProc(i) == comm_size) owningProc(i) = comm_size-1
     end do
 
     call polympo_startMeshFill(mpMesh)

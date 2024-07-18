@@ -25,6 +25,7 @@ IntView procWedges(Mesh* mesh, int numElms, int comm_size) {
     Kokkos::parallel_for("setOwningProc", numElms, KOKKOS_LAMBDA(const int elm){
         double normalizedLat = (elmLat(elm) - min(0)) / (max(0) - min(0));
         owningProc(elm) = normalizedLat * comm_size;
+        if (owningProc(elm) == comm_size) owningProc(elm) = comm_size-1;
     });
     return owningProc;
 }

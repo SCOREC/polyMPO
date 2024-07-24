@@ -374,14 +374,13 @@ cmake --build ${polyMPO%%install} --target install -j4
 
 ## Perlmutter GPU Build Instructions
 
-The following instructions were succesfully tested on 7/17/2023 using the following default modules:
+The following instructions were succesfully tested on 7/23/2024 using the following default modules:
 
 ```
 Currently Loaded Modules:
-  1) craype-x86-milan                        5) PrgEnv-gnu/8.3.3        9) craype/2.7.20           13) xalt/2.10.2              17) craype-accel-nvidia80
-  2) libfabric/1.15.2.0                      6) cray-dsmml/0.2.2       10) gcc/11.2.0              14) Nsight-Compute/2022.1.1  18) gpu/1.0
-  3) craype-network-ofi                      7) cray-libsci/23.02.1.1  11) perftools-base/23.03.0  15) Nsight-Systems/2022.2.1
-  4) xpmem/2.5.2-2.4_3.44__gd0f7936.shasta   8) cray-mpich/8.1.25      12) cpe/23.03               16) cudatoolkit/11.7
+  1) craype-x86-milan     4) xpmem/2.6.2-2.5_2.38__gd067c3f.shasta   7) cray-libsci/23.12.5  10) gcc-native/12.3         13) cudatoolkit/12.2
+  2) libfabric/1.15.2.0   5) PrgEnv-gnu/8.5.0                        8) cray-mpich/8.1.28    11) perftools-base/23.12.0  14) craype-accel-nvidia80
+  3) craype-network-ofi   6) cray-dsmml/0.2.2                        9) craype/2.7.30        12) cpe/23.12               15) gpu/1.0
 ```
 
 `envPerlmutter.sh`

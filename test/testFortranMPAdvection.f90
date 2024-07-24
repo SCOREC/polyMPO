@@ -34,9 +34,8 @@ module advectionTests
     end do
 
     do i = 1, nCells
-      normalizedLat = (elmLat(i) - min) / (max - min)
+      normalizedLat = (elmLat(i) - min) / (max - min) * .99
       owningProc(i) = normalizedLat * comm_size
-      if (owningProc(i) == comm_size) owningProc(i) = comm_size-1
     end do
 
     call polympo_startMeshFill(mpMesh)

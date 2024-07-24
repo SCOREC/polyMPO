@@ -23,9 +23,8 @@ IntView procWedges(Mesh* mesh, int numElms, int comm_size) {
 
     IntView owningProc("owningProc", numElms);
     Kokkos::parallel_for("setOwningProc", numElms, KOKKOS_LAMBDA(const int elm){
-        double normalizedLat = (elmLat(elm) - min(0)) / (max(0) - min(0));
+        double normalizedLat = (elmLat(elm) - min(0)) / (max(0) - min(0)) * .9;
         owningProc(elm) = normalizedLat * comm_size;
-        if (owningProc(elm) == comm_size) owningProc(elm) = comm_size-1;
     });
     return owningProc;
 }
@@ -66,7 +65,8 @@ int main(int argc, char* argv[] ) {
         IntView owningProc = procWedges(mesh, numElms, comm_size);
         mesh->setMeshEdit(true);
         mesh->setOwningProc(owningProc);
-        mpmesh->push();
+        for (int i=0; i<5; i++)
+            mpmesh->push();
 
         auto MPs2Proc = p_MPs.getData<MPF_Tgt_Proc_ID>();
         auto checkPostBackMigrate = PS_LAMBDA(const int& e, const int& mp, const bool& mask) {

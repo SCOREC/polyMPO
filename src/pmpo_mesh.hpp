@@ -129,7 +129,7 @@ class Mesh {
     IntVtx2ElmView getElm2VtxConn() { return elm2VtxConn_; }
     IntElm2ElmView getElm2ElmConn() { return elm2ElmConn_; }
     template<MeshFieldIndex index> auto getMeshField();
-    template<MeshFieldIndex index> void fillMeshField(double val);
+    template<MeshFieldIndex index> void fillMeshField(int size, int numEntries, double val);
     void setMeshVtxBasedFieldSize();
     void setMeshElmBasedFieldSize();
 
@@ -192,11 +192,9 @@ auto Mesh::getMeshField(){
 }
 
 template<MeshFieldIndex index> 
-void Mesh::fillMeshField(double val){
+void Mesh::fillMeshField(int size, int numEntries, double val){
     auto meshField = getMeshField<index>();
-    int size = meshField.size();
-    int rank = meshField.rank();
-    Kokkos::MDRangePolicy<Kokkos::Rank<2>> policy({0,0},{size, rank});
+    Kokkos::MDRangePolicy<Kokkos::Rank<2>> policy({0,0},{size, numEntries});
     Kokkos::parallel_for("fill mesh field", policy, KOKKOS_LAMBDA(const int i, const int j){
         meshField(i, j) = val;
     });

@@ -37,11 +37,11 @@ void MPMesh::assemblyVtx0(){
   auto mpData = p_MPs->getData<mpfIndex>();
   const int numEntries = mpSliceToNumEntries<mpfIndex>();
 
-  p_mesh->fillMeshField<meshFieldIndex>(0.0);
+  int numVtx = p_mesh->getNumVertices();
+  p_mesh->fillMeshField<meshFieldIndex>(numVtx, numEntries, 0.0);
   auto meshField = p_mesh->getMeshField<meshFieldIndex>();
   auto weight = p_MPs->getData<MPF_Basis_Vals>();
 
-  int numVtx = p_mesh->getNumVertices();
   const double zero = 0.0;
   Kokkos::View<double*> sumWeights("sumWeights", numVtx);
   auto assemble = PS_LAMBDA(const int& elm, const int& mp, const int& mask) {
@@ -74,10 +74,10 @@ void MPMesh::assemblyElm0() {
   auto mpData = p_MPs->getData<mpfIndex>();
   const int numEntries = mpSliceToNumEntries<mpfIndex>();
 
-  p_mesh->fillMeshField<meshFieldIndex>(0.0);
+  int numElms = p_mesh->getNumElements();
+  p_mesh->fillMeshField<meshFieldIndex>(numElms, numEntries, 0.0);
   auto meshField = p_mesh->getMeshField<meshFieldIndex>();
 
-  int numElms = p_mesh->getNumElements();
   Kokkos::View<int*> mpsPerElm("mpsPerElm", numElms);
   auto assemble = PS_LAMBDA(const int& elm, const int& mp, const int& mask) {
     if(mask) { //if material point is 'active'/'enabled'
@@ -102,8 +102,9 @@ void MPMesh::assemblyVtx1() {
   auto elm2VtxConn = p_mesh->getElm2VtxConn();  
   auto mpData = p_MPs->getData<mpfIndex>();
   const int numEntries = mpSliceToNumEntries<mpfIndex>();
+  int numVtx = p_mesh->getNumVertices();
 
-  p_mesh->fillMeshField<meshFieldIndex>(0.0);
+  p_mesh->fillMeshField<meshFieldIndex>(numVtx, numEntries, 0.0);
   auto meshField = p_mesh->getMeshField<meshFieldIndex>();
 
   auto assemble = PS_LAMBDA(const int& elm, const int& mp, const int& mask) {

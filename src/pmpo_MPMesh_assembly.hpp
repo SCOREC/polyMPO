@@ -69,12 +69,21 @@ void MPMesh::assemblyVtx0(){
 
 template <MeshFieldIndex meshFieldIndex>
 void MPMesh::assemblyElm0() {
+  bool debug =true;
+  if (debug)
+    std::cout<<"Debugging "<<__FUNCTION__<<std::endl;
+  static int count=0;
+  if (debug) 
+    if(count>0) exit(0);
   Kokkos::Timer timer;
   constexpr MaterialPointSlice mpfIndex = meshFieldIndexToMPSlice<meshFieldIndex>;
   auto mpData = p_MPs->getData<mpfIndex>();
   const int numEntries = mpSliceToNumEntries<mpfIndex>();
 
   int numElms = p_mesh->getNumElements();
+
+  if (debug) printf("Mesh elements %d number of entries %d \n", numElms, numEntries);
+  
   p_mesh->fillMeshField<meshFieldIndex>(numElms, numEntries, 0.0);
   auto meshField = p_mesh->getMeshField<meshFieldIndex>();
 
@@ -94,6 +103,8 @@ void MPMesh::assemblyElm0() {
       meshField(elm, entry) /= mpsPerElm(elm);
   });
   pumipic::RecordTime("PolyMPO_Reconstruct_Elm0", timer.seconds());
+  count++;
+  std::cout<<"Done "<<__FUNCTION__<<std::endl;
 }
 
 template <MeshFieldIndex meshFieldIndex>

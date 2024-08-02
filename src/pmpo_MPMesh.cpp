@@ -196,33 +196,6 @@ void MPMesh::CVTTrackingElmCenterBased(const int printVTPIndex){
     };
     p_MPs->parallel_for(CVTElmCalc,"CVTTrackingElmCenterBasedCalc");
 
-    std::cout<<"Debugging: "<<__FUNCTION__<<std::endl;
-    Kokkos::View<int*>mpsPerElm_next("mpsPerElm_next", numElms);
-    auto check_next_elem = PS_LAMBDA(const int& elm, const int& mp, const int& mask) {
-      if(mask) { //if material point is 'active'/'enabled'
-        auto elm_mp=MPs2Elm(mp);
-        Kokkos::atomic_add(&mpsPerElm_next(elm_mp),1); 
-      }
-    };
-    p_MPs->parallel_for(check_next_elem, "assembly");
-  
-    Kokkos::View<int*>sum_elms_next("sumElms", 1);
-    Kokkos::View<int*>sum_mps_next("sumMPs", 1);
-    Kokkos::MDRangePolicy<Kokkos::Rank<2>> policy({0,0},{numElms, 1});
-    Kokkos::parallel_for("assembly average", policy, KOKKOS_LAMBDA(const int elm, const int entry){
-      if (mpsPerElm_next(elm) >= 1){ 
-        Kokkos::atomic_add(&sum_elms_next(0), 1);
-        Kokkos::atomic_add(&sum_mps_next(0), mpsPerElm_next(elm));
-      }
-    });
-    auto h_a = Kokkos::create_mirror_view(sum_elms_next);
-    Kokkos::deep_copy(h_a, sum_elms_next);
-    auto h_b = Kokkos::create_mirror_view(sum_elms_next);
-    Kokkos::deep_copy(h_b, sum_mps_next); 
-    printf("Elems with material points total no of elems wit material points %d %d \n", h_a(0), h_b(0));
- 
-
-
     if(printVTPIndex>=0){
         Vec3dView::HostMirror h_history = Kokkos::create_mirror_view(history);
         Vec3dView::HostMirror h_resultLeft = Kokkos::create_mirror_view(resultLeft);
@@ -335,13 +308,62 @@ void MPMesh::reconstructSlices() {
     pumipic::RecordTime("PolyMPO_Reconstruct", timer.seconds());
 }
 
+
+void MPMesh::calc_num_elms_MPs(){
+
+  int numElms = p_mesh->getNumElements();
+  Kokkos::View<int*>mpsPerElm("mpsPerElm", numElms);
+  auto assemble1 = PS_LAMBDA(const int& elm, const int& mp, const int& mask) {
+    if(mask) { //if material point is 'active'/'enabled'
+      Kokkos::atomic_add(&mpsPerElm(elm),1); 
+    }
+  };
+  p_MPs->parallel_for(assemble1, "assembly");
+  
+  int sum_mps_elems;
+  Kokkos::parallel_reduce("Loop1", numElms, KOKKOS_LAMBDA (const int& i, int& lsum) {
+    if (mpsPerElm[i]>0)
+      lsum +=1;
+  }, sum_mps_elems);
+  printf("Total no of elems wit material points %d\n", sum_mps_elems);
+
+}
+
 void MPMesh::push(){
   Kokkos::Timer timer;
   p_mesh->computeRotLatLonIncr();
   sphericalInterpolation<MeshF_RotLatLonIncr>(*this);
   p_MPs->updateRotLatLonAndXYZ2Tgt(p_mesh->getSphereRadius()); // set Tgt_XYZ
 
+  //Debugging before tracking
+  std::cout<<"Before tracking in: "<<__FUNCTION__<<std::endl;
+  calc_num_elms_MPs();
+ 
   CVTTrackingElmCenterBased(); // move to Tgt_XYZ
+  
+  //Debugging post tracking
+  std::cout<<"After tracking in: "<<__FUNCTION__<<std::endl;
+  calc_num_elms_MPs();
+  std::cout<<"Calculate no of elements with MPs after MPs moved to new elems:"<<std::endl;
+  int numElms = p_mesh->getNumElements();
+  auto MPs2Elm = p_MPs->getData<MPF_Tgt_Elm_ID>();//The new elemments to which the MPS are moved
+  Kokkos::View<int*>mpsPerElm_next("mpsPerElm", numElms);
+  auto assemble2 = PS_LAMBDA(const int& elm, const int& mp, const int& mask) {
+    if(mask) { //if material point is 'active'/'enabled'
+      auto elm_next=MPs2Elm(mp);
+      Kokkos::atomic_add(&mpsPerElm_next(elm_next),1);
+    }
+  };
+  p_MPs->parallel_for(assemble2, "assembly2");
+  
+  int sum_mps_elems_next;
+  Kokkos::parallel_reduce("Loop2", numElms, KOKKOS_LAMBDA (const int& i, int& lsum) {
+    if (mpsPerElm_next[i]>0)
+      lsum +=1;
+  }, sum_mps_elems_next);
+  printf("Total no of elems wit material points %d\n", sum_mps_elems_next);
+  std::cout<<"Done"<<std::endl;
+
 
   p_MPs->updateMPSlice<MPF_Cur_Pos_XYZ, MPF_Tgt_Pos_XYZ>(); // Tgt_XYZ becomes Cur_XYZ
   p_MPs->updateMPSlice<MPF_Cur_Pos_Rot_Lat_Lon, MPF_Tgt_Pos_Rot_Lat_Lon>(); // Tgt becomes Cur

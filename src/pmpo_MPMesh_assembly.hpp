@@ -110,9 +110,9 @@ void MPMesh::assemblyElm0() {
 	}	
       }
        
-      //Kokkos::atomic_add(&mpsPerElm(elm),1);
-      auto elm_mp=mpCurElmID(mp);
-      Kokkos::atomic_add(&mpsPerElm(elm_mp),1);
+      Kokkos::atomic_add(&mpsPerElm(elm),1);
+      //auto elm_mp=mpCurElmID(mp);
+      //Kokkos::atomic_add(&mpsPerElm(elm_mp),1);
 
       for(int j=0;j<numEntries;j++){
         Kokkos::atomic_add(&meshField(elm,j), mpData(mp,0));

@@ -17,6 +17,8 @@ program main
   integer :: nCompsDisp
   integer :: mpi_comm_handle = MPI_COMM_WORLD
   real(kind=MPAS_RKIND) :: pi = 4.0_MPAS_RKIND*atan(1.0_MPAS_RKIND)
+  real(kind=MPAS_RKIND) :: TEST_VAL = 1.1_MPAS_RKIND
+  real(kind=MPAS_RKIND) :: TOLERANCE = 0.0001_MPAS_RKIND
   character (len=2048) :: filename
   real(kind=MPAS_RKIND), dimension(:,:), pointer :: dispIncr
   character (len=64) :: onSphere
@@ -31,6 +33,8 @@ program main
   real(kind=MPAS_RKIND), dimension(:,:), pointer :: mpMass, mpVel
   real(kind=MPAS_RKIND), dimension(:), pointer :: meshVtxMass, meshElmMass
   logical :: inBound
+  character(len=40) :: err_string
+  character(len=20) :: num_string
   integer, parameter :: MP_ACTIVE = 1
   integer, parameter :: MP_INACTIVE = 0
   integer, parameter :: INVALID_ELM_ID = -1
@@ -86,9 +90,9 @@ program main
   allocate(meshElmMass(nCells))
 
   isMPActive = MP_ACTIVE !all active MPs and some changed below
-  mpsPerElm = 1 !all elements have 1 MP and some changed below
-  mpMass = 1.1
-  mpVel = 1.1
+  mpsPerElm = 1 !all elements have 1 MPs and some changed below
+  mpMass = TEST_VAL
+  mpVel = TEST_VAL
   do i = 1,numMPs
     mp2Elm(i) = i
     j = verticesOnCell(1,i)
@@ -106,19 +110,19 @@ program main
   call polympo_setMPMass(mpMesh,1,numMPs,c_loc(mpMass))
   call polympo_setMPVel(mpMesh,2,numMPs,c_loc(mpVel))
 
-  meshVtxMass = 1.1
-  meshElmMass = 1.1
 
-  call polympo_setMeshVtxMass(mpMesh,nVertices,c_loc(meshVtxMass))
-  call polympo_setMeshElmMass(mpMesh,nCells,c_loc(meshElmMass))
+  !call polympo_setMeshVtxMass(mpMesh,nVertices,c_loc(meshVtxMass))
+  !call polympo_setMeshElmMass(mpMesh,nCells,c_loc(meshElmMass))
   call polympo_setReconstructionOfMass(mpMesh,0,polympo_getMeshFVtxType())
-  call polympo_setReconstructionOfMass(mpMesh,0,polympo_getMeshFElmType())
+  !call polympo_setReconstructionOfMass(mpMesh,0,polympo_getMeshFElmType())
   call polympo_applyReconstruction(mpMesh)
   call polympo_getMeshVtxMass(mpMesh,nVertices,c_loc(meshVtxMass))
-  call polympo_getMeshElmMass(mpMesh,nCells,c_loc(meshElmMass))
+  !call polympo_getMeshElmMass(mpMesh,nCells,c_loc(meshElmMass))
 
   do i = 1, nVertices
-    ! call assert(meshVtxMass(i) .eq. 1.1, "Error: wrong vtx mass")
+     write(num_string, '(F10.5)') meshVtxMass(i)
+     err_string = 'Error: wrong vtx mass: ' // num_string
+     call assert(meshVtxMass(i) < TEST_VAL+TOLERANCE .and. meshVtxMass(i) > TEST_VAL-TOLERANCE, err_string)
   end do
 
   do i = 1, nCells

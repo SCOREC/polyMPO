@@ -1,0 +1,52 @@
+grep: input file ‘log’ is also the output
+test/testFortranMPReconstruction.f90:62:    call exit(1)
+test/testFortranMPMeshModule.f90:7:    call exit(1)
+test/readMPAS.f90:7:    call exit(1)
+test/testFortraAdjacency.f90:49:    call exit(1)
+test/queue.f90:84:    call exit
+test/queue.f90:111:    call exit
+test/testFortran.f90:7:    call exit(1)
+test/testFortranMPAdvection.f90:207:    call exit(1)
+.git/hooks/pre-commit.sample:5:# exit with non-zero status after issuing an appropriate message if
+.git/hooks/pre-commit.sample:45:	exit 1
+.git/hooks/update.sample:37:	exit 1
+.git/hooks/update.sample:42:	exit 1
+.git/hooks/update.sample:57:	exit 1
+.git/hooks/update.sample:77:			exit 1
+.git/hooks/update.sample:84:			exit 1
+.git/hooks/update.sample:93:			exit 1
+.git/hooks/update.sample:100:			exit 1
+.git/hooks/update.sample:107:			exit 1
+.git/hooks/update.sample:117:			exit 1
+.git/hooks/update.sample:123:		exit 1
+.git/hooks/update.sample:128:exit 0
+.git/hooks/push-to-checkout.sample:23:# It can exit with a non-zero status to refuse the push (when it does
+.git/hooks/push-to-checkout.sample:27:	exit 1
+.git/hooks/push-to-checkout.sample:32:# branch is updated to the new commit, and exit with a zero status.
+.git/hooks/applypatch-msg.sample:6:# The hook should exit with non-zero status after issuing an
+.git/hooks/pre-push.sample:5:# pushed.  If this script exits with a non-zero status nothing will be pushed.
+.git/hooks/pre-push.sample:48:			exit 1
+.git/hooks/pre-push.sample:53:exit 0
+.git/hooks/pre-applypatch.sample:6:# The hook should exit with non-zero status after issuing an
+.git/hooks/pre-rebase.sample:6:# its job, and can prevent the command from running by exiting with
+.git/hooks/pre-rebase.sample:25:	exit 0 ;# we do not interrupt rebasing detached HEAD
+.git/hooks/pre-rebase.sample:32:	exit 0 ;# we do not interrupt others.
+.git/hooks/pre-rebase.sample:42:	exit 1
+.git/hooks/pre-rebase.sample:50:	exit 1 ;# we could allow it, but there is no point.
+.git/hooks/pre-rebase.sample:62:		exit 1 ;# we could allow it, but there is no point.
+.git/hooks/pre-rebase.sample:64:		exit 0
+.git/hooks/pre-rebase.sample:88:	exit 1
+.git/hooks/pre-merge-commit.sample:5:# exit with non-zero status after issuing an appropriate message to
+.git/hooks/commit-msg.sample:5:# that has the commit message.  The hook should exit with non-zero
+.git/hooks/commit-msg.sample:23:	exit 1
+.git/hooks/pre-receive.sample:20:			exit 1
+src/pmpo_mesh.hpp:160:        exit(1);
+src/pmpo_mesh.hpp:164:        exit(1);
+src/pmpo_mesh.hpp:191:    exit(1);
+src/pmpo_c.cpp:101:    exit(1);
+src/pmpo_c.cpp:898:    exit(1);
+src/pmpo_fortran.f90:736:        call exit(1)
+src/pmpo_MPMesh_assembly.hpp:77:    if(count>100) exit(0);
+src/pmpo_MPMesh_assembly.hpp:194:    exit(1);
+src/pmpo_MPMesh_assembly.hpp:301:    exit(1);
+src/pmpo_createTestMPMesh.cpp:216:        exit(1);

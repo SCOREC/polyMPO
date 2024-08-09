@@ -154,20 +154,20 @@ void MPMesh::CVTTrackingElmCenterBased(const int printVTPIndex){
             Vec3d MPnew(mpTgtPos(mp,0),mpTgtPos(mp,1),mpTgtPos(mp,2));
             Vec3d dx = MPnew-MP;
             while(true){
-                int numVtx = elm2VtxConn(iElm,0);
+                int numConnElms = elm2ElmConn(iElm,0);
                 Vec3d delta = MPnew - elmCenter(iElm);
-                double minDistSq = delta[0]*delta[0] + delta[1]*delta[1];
+                double minDistSq = delta[0]*delta[0] + delta[1]*delta[1] + delta[2]*delta[2];
                 int closestElm = -1;
                 //go through all the connected elm, calc distance
-                for(int i=1; i<=numVtx; i++){
+                for(int i=1; i<=numConnElms; i++){
                     int elmID = elm2ElmConn(iElm,i);
                     delta = MPnew - elmCenter(elmID);
-                    double neighborDistSq = delta[0]*delta[0] + delta[1]*delta[1];
+                    double neighborDistSq = delta[0]*delta[0] + delta[1]*delta[1] + delta[2]*delta[2];
                     if(neighborDistSq < minDistSq){
                         closestElm = elmID;
                         minDistSq = neighborDistSq;
                     }
-                }
+                }    
                 if(closestElm<0){
                     MPs2Elm(mp) = iElm;
                     break;
@@ -336,15 +336,11 @@ void MPMesh::push(){
   p_MPs->updateRotLatLonAndXYZ2Tgt(p_mesh->getSphereRadius()); // set Tgt_XYZ
 
   //Debugging before tracking
-  std::cout<<"Before tracking in: "<<__FUNCTION__<<std::endl;
   calc_num_elms_MPs();
  
   CVTTrackingElmCenterBased(); // move to Tgt_XYZ
   
-  //Debugging post tracking
-  std::cout<<"After tracking in: "<<__FUNCTION__<<std::endl;
-  calc_num_elms_MPs();
-  std::cout<<"Calculate no of elements with MPs after MPs moved to new elems:"<<std::endl;
+  //Calculate no of material points after new elements of MPs found 
   int numElms = p_mesh->getNumElements();
   auto MPs2Elm = p_MPs->getData<MPF_Tgt_Elm_ID>();//The new elemments to which the MPS are moved
   Kokkos::View<int*>mpsPerElm_next("mpsPerElm", numElms);
@@ -361,10 +357,8 @@ void MPMesh::push(){
     if (mpsPerElm_next[i]>0)
       lsum +=1;
   }, sum_mps_elems_next);
-  printf("Total no of elems wit material points %d\n", sum_mps_elems_next);
-  std::cout<<"Done"<<std::endl;
-
-
+  printf("Total no of elems with material points after tracking %d\n", sum_mps_elems_next);
+ 
   p_MPs->updateMPSlice<MPF_Cur_Pos_XYZ, MPF_Tgt_Pos_XYZ>(); // Tgt_XYZ becomes Cur_XYZ
   p_MPs->updateMPSlice<MPF_Cur_Pos_Rot_Lat_Lon, MPF_Tgt_Pos_Rot_Lat_Lon>(); // Tgt becomes Cur
   p_MPs->rebuild(); //rebuild pumi-pic

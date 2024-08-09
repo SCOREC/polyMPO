@@ -69,6 +69,7 @@ pmpo_add_fortran_exe(testFortranMPAppIDs testFortranMPAppIDs.f90)
 pmpo_add_fortran_exe(testFortranMPAdvection testFortranMPAdvection.f90)
 pmpo_add_fortran_exe(testFortranCreateRebuildMPs testFortranCreateRebuildMPs.f90)
 pmpo_add_fortran_exe(testFortranMPReconstruction testFortranMPReconstruction.f90)
+pmpo_add_fortran_exe(testFortraAdjacency testFortraAdjacency.f90)
 
 #add test
 find_program(MPIRUN_EXECUTABLE NAMES mpirun) 

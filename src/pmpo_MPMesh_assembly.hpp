@@ -69,26 +69,16 @@ void MPMesh::assemblyVtx0(){
 
 template <MeshFieldIndex meshFieldIndex>
 void MPMesh::assemblyElm0() {
-  bool debug =true;
-  if (debug)
-    std::cout<<"Debugging "<<__FUNCTION__<<std::endl;
-  static int count=0;
-  if (debug) 
-    if(count>10) exit(0);
+  
   Kokkos::Timer timer;
   constexpr MaterialPointSlice mpfIndex = meshFieldIndexToMPSlice<meshFieldIndex>;
   auto mpData = p_MPs->getData<mpfIndex>();
-  auto mpCurElmID = p_MPs->getData<polyMPO::MPF_Cur_Elm_ID>();
-  auto num_mps = p_MPs->getCount();
   const int numEntries = mpSliceToNumEntries<mpfIndex>();
 
-  auto elm2VtxConn = p_mesh->getElm2VtxConn();
-  auto vtxCoords = p_mesh->getMeshField<MeshF_VtxCoords>();
-
-  int numElms = p_mesh->getNumElements();
-
-  if (debug) printf("Mesh elements %d number of MPs,entries %d %d \n", numElms, num_mps, numEntries);
+  //auto mpCurElmID = p_MPs->getData<polyMPO::MPF_Cur_Elm_ID>();
+  //auto num_mps = p_MPs->getCount();
   
+  int numElms = p_mesh->getNumElements();
   p_mesh->fillMeshField<meshFieldIndex>(numElms, numEntries, 0.0);
   auto meshField = p_mesh->getMeshField<meshFieldIndex>();
 
@@ -96,24 +86,9 @@ void MPMesh::assemblyElm0() {
   auto assemble = PS_LAMBDA(const int& elm, const int& mp, const int& mask) {
     if(mask) { //if material point is 'active'/'enabled'
     
-      if(false){
-        Vec3d v3d[maxVtxsPerElm+1];
-        int numVtx = elm2VtxConn(elm,0);
-        for(int i = 1; i<=numVtx; i++){
-          v3d[i-1][0] = vtxCoords(elm2VtxConn(elm,i)-1,0);
-          v3d[i-1][1] = vtxCoords(elm2VtxConn(elm,i)-1,1);
-          v3d[i-1][2] = vtxCoords(elm2VtxConn(elm,i)-1,2);
-        }
-	printf ("Vertices elem %d: \n", elm);
-        for (int i=0; i<numVtx; i++){
-	  printf("%.15e %.15e %.15e \n", v3d[i][0], v3d[i][1], v3d[i][2]);
-	}	
-      }
-       
       Kokkos::atomic_add(&mpsPerElm(elm),1);
       //auto elm_mp=mpCurElmID(mp);
       //Kokkos::atomic_add(&mpsPerElm(elm_mp),1);
-
       for(int j=0;j<numEntries;j++){
         Kokkos::atomic_add(&meshField(elm,j), mpData(mp,0));
       }
@@ -121,33 +96,13 @@ void MPMesh::assemblyElm0() {
   };
   p_MPs->parallel_for(assemble, "assembly");
   
-  int result;
-  Kokkos::parallel_reduce("Loop1", numElms, KOKKOS_LAMBDA (const int& i, int& lsum) {
-    lsum += mpsPerElm[i];
-  }, result);
-  printf("Number of all material points %d \n", result);
-  
-  Kokkos::View<double*>sum_mps("sumMPs", 1);
-  Kokkos::View<int*>sum_elms("sumElms", 1);
-
   Kokkos::MDRangePolicy<Kokkos::Rank<2>> policy({0,0},{numElms, numEntries});
   Kokkos::parallel_for("assembly average", policy, KOKKOS_LAMBDA(const int elm, const int entry){
-    if (mpsPerElm(elm) >= 1){ 
+    if (mpsPerElm(elm) > 0){ 
       meshField(elm, entry) /= mpsPerElm(elm);
-      Kokkos::atomic_add(&sum_mps(0), meshField(elm, entry));
-      Kokkos::atomic_add(&sum_elms(0), 1);
     }  
-  });
-
-  auto h_a = Kokkos::create_mirror_view(sum_mps);
-  Kokkos::deep_copy(h_a, sum_mps);
-  auto h_b = Kokkos::create_mirror_view(sum_elms);
-  Kokkos::deep_copy(h_b, sum_elms); 
-  printf("Sum of MPs is %.15e elems with material points %d \n", h_a(0), h_b(0));
-  
+  }); 
   pumipic::RecordTime("PolyMPO_Reconstruct_Elm0", timer.seconds());
-  count++;
-  std::cout<<"Done "<<__FUNCTION__<<std::endl;
 }
 
 template <MeshFieldIndex meshFieldIndex>

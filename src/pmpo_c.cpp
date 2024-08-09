@@ -595,7 +595,7 @@ void polympo_setMeshElm2ElmConn_f(MPMesh_ptr p_mpmesh, const int maxEdges, const
   auto elm2ElmConn = p_mesh->getElm2ElmConn();
   Kokkos::parallel_for("set elm2ElmConn", nCells, KOKKOS_LAMBDA(const int elm){
     for(int i=0; i<maxEdges; i++){
-        elm2ElmConn(elm,i+1) = elm2ElmArray(i,elm);
+        elm2ElmConn(elm,i+1) = elm2ElmArray(i,elm)-1;
     }  
   });
 }

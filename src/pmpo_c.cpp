@@ -586,6 +586,7 @@ void polympo_setMeshElm2ElmConn_f(MPMesh_ptr p_mpmesh, const int maxEdges, const
   auto p_mesh = ((polyMPO::MPMesh*)p_mpmesh)->p_mesh; 
   PMT_ALWAYS_ASSERT(p_mesh->meshEditable());
 
+  int offset = p_MPs->getElmIDoffset();
   //check the size
   PMT_ALWAYS_ASSERT(maxEdges <= maxVtxsPerElm);
   PMT_ALWAYS_ASSERT(nCells == p_mesh->getNumElements());
@@ -595,7 +596,7 @@ void polympo_setMeshElm2ElmConn_f(MPMesh_ptr p_mpmesh, const int maxEdges, const
   auto elm2ElmConn = p_mesh->getElm2ElmConn();
   Kokkos::parallel_for("set elm2ElmConn", nCells, KOKKOS_LAMBDA(const int elm){
     for(int i=0; i<maxEdges; i++){
-        elm2ElmConn(elm,i+1) = elm2ElmArray(i,elm)-1;
+        elm2ElmConn(elm,i+1) = elm2ElmArray(i,elm)-offset;
     }  
   });
 }

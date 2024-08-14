@@ -2,39 +2,30 @@ module advectionTests
   contains
   include "calculateDisplacement.f90"
 
-  subroutine setProcWedges(mpMesh, nVertices, nCells, comm_size, nEdgesOnCell, verticesOnCell)
+  subroutine setProcWedges(mpMesh, nCells, comm_size, nEdgesOnCell, verticesOnCell, lonCell)
     use :: polympo
     use :: readMPAS
     use :: iso_c_binding
     implicit none
 
     type(c_ptr) :: mpMesh
-    integer :: i, j, k, nVertices, nCells, comm_size
+    integer :: i, j, k, nCells, comm_size
     integer, dimension(:), pointer :: owningProc, nEdgesOnCell
     integer, dimension(:,:), pointer :: verticesOnCell
-    real(kind=MPAS_RKIND), dimension(:), pointer :: elmLat, vtxRotLat
-    real(kind=MPAS_RKIND) :: normalizedLat, sum, min, max
+    real(kind=MPAS_RKIND), dimension(:), pointer :: lonCell
+    real(kind=MPAS_RKIND) :: normalizedLat, min, max
     
-    allocate(elmLat(nCells))
     allocate(owningProc(nCells))
-    allocate(vtxRotLat(nVertices))
-
-    call polympo_getMeshVtxRotLat(mpMesh, nVertices, c_loc(vtxRotLat))
     
     min = 1000
     max = -1000
     do i = 1, nCells
-      sum = 0;
-      do  j = 1, nEdgesOnCell(i)
-        sum = sum + vtxRotLat(verticesOnCell(j,i))
-      end do
-      elmLat(i) = sum/nEdgesOnCell(i);
-      if (elmLat(i) < min) min = elmLat(i)
-      if (elmLat(i) > max) max = elmLat(i)
+      if (lonCell(i) < min) min = lonCell(i)
+      if (lonCell(i) > max) max = lonCell(i)
     end do
 
     do i = 1, nCells
-      normalizedLat = (elmLat(i) - min) / (max - min) * .99
+      normalizedLat = (lonCell(i) - min) / (max - min) * .99
       owningProc(i) = normalizedLat * comm_size
     end do
 
@@ -89,7 +80,7 @@ program main
   real(kind=MPAS_RKIND) :: sphereRadius
   integer, dimension(:), pointer :: nEdgesOnCell
   real(kind=MPAS_RKIND), dimension(:), pointer :: xVertex, yVertex, zVertex
-  real(kind=MPAS_RKIND), dimension(:), pointer :: latVertex, lonVertex
+  real(kind=MPAS_RKIND), dimension(:), pointer :: latVertex, lonVertex, lonCell
   integer, dimension(:,:), pointer :: verticesOnCell, cellsOnCell
   integer :: numMPs, numMPsCount, numPush
   integer, dimension(:), pointer :: mpsPerElm, mp2Elm, isMPActive
@@ -149,6 +140,7 @@ program main
   print *, "Scale Factor", mpsScaleFactorPerVtx
   print *, "NUM MPs", numMPs
 
+  allocate(lonCell(nCells))
   allocate(mpsPerElm(nCells))
   allocate(mp2Elm(numMPs))
   allocate(isMPActive(numMPs))
@@ -181,6 +173,11 @@ program main
     xc = xc/nEdgesOnCell(i)
     yc = yc/nEdgesOnCell(i)
     zc = zc/nEdgesOnCell(i)
+
+    lonCell(i) = atan2(yc,xc)
+    if (lonCell(i) .le. 0.0_MPAS_RKIND) then ! lon[0,2pi]
+      lonCell(i) = lonCell(i) + 2.0_MPAS_RKIND*pi
+    endif 
 
     do k = 1, nEdgesOnCell(i)
       j = verticesOnCell(k,i)
@@ -218,7 +215,7 @@ program main
   call polympo_setMPRotLatLon(mpMesh,2,numMPs,c_loc(mpLatLon))
   call polympo_setMPPositions(mpMesh,3,numMPs,c_loc(mpPosition))
 
-  call setProcWedges(mpMesh, nVertices, nCells, comm_size, nEdgesOnCell, verticesOnCell)
+  call setProcWedges(mpMesh, nCells, comm_size, nEdgesOnCell, verticesOnCell, lonCell)
   call runAdvectionTest(mpMesh, numPush, latVertex, lonVertex, nEdgesOnCell, verticesOnCell, nVertices, sphereRadius)
 
   call polympo_summarizeTime();

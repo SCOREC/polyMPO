@@ -286,14 +286,14 @@ void MPMesh::push(){
   bool anyIsMigrating = false;
   do {
     CVTTrackingElmCenterBased(); // move to Tgt_XYZ
+    p_MPs->updateMPSlice<MPF_Cur_Pos_XYZ, MPF_Tgt_Pos_XYZ>(); // Tgt_XYZ becomes Cur_XYZ
+    p_MPs->updateMPSlice<MPF_Cur_Pos_Rot_Lat_Lon, MPF_Tgt_Pos_Rot_Lat_Lon>(); // Tgt becomes Cur
+    p_MPs->updateMPElmID(); //update mpElm IDs slices
     bool isMigrating = p_MPs->migrate();
     anyIsMigrating = getAnyIsMigrating(isMigrating);
-    p_MPs->updateMPElmID(); //update mpElm IDs slices
   } 
   while (anyIsMigrating);
 
-  p_MPs->updateMPSlice<MPF_Cur_Pos_XYZ, MPF_Tgt_Pos_XYZ>(); // Tgt_XYZ becomes Cur_XYZ
-  p_MPs->updateMPSlice<MPF_Cur_Pos_Rot_Lat_Lon, MPF_Tgt_Pos_Rot_Lat_Lon>(); // Tgt becomes Cur
   pumipic::RecordTime("PolyMPO_push", timer.seconds());
 }
 

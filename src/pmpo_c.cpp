@@ -585,7 +585,6 @@ void polympo_setMeshElm2ElmConn_f(MPMesh_ptr p_mpmesh, const int maxEdges, const
   kkViewHostU<const int**> arrayHost(array,maxEdges,nCells); //Fortran is column-major
   auto p_mesh = ((polyMPO::MPMesh*)p_mpmesh)->p_mesh; 
   PMT_ALWAYS_ASSERT(p_mesh->meshEditable());
-  
 
   //check the size
   PMT_ALWAYS_ASSERT(maxEdges <= maxVtxsPerElm);
@@ -928,3 +927,4 @@ void polympo_summarizeTime_f(){
 void polympo_setTimingVerbosity_f(int v){
   pumipic::SetTimingVerbosity(v);
 }
+

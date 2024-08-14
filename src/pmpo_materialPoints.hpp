@@ -218,7 +218,7 @@ class MaterialPoints {
                 // x = cosLon cosLat, y = sinLon cosLat, z = sinLat
                 tgtPosXYZ(mp,0) = radius * std::cos(geoLon) * std::cos(geoLat);
                 tgtPosXYZ(mp,1) = radius * std::sin(geoLon) * std::cos(geoLat);
-                tgtPosXYZ(mp,2) = radius * std::sin(geoLat);
+                tgtPosXYZ(mp,2) = radius * std::sin(geoLat); 
             } 
         };
         if(isRotatedFlag){

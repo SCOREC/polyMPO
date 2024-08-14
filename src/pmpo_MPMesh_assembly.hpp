@@ -69,15 +69,11 @@ void MPMesh::assemblyVtx0(){
 
 template <MeshFieldIndex meshFieldIndex>
 void MPMesh::assemblyElm0() {
-  
   Kokkos::Timer timer;
   constexpr MaterialPointSlice mpfIndex = meshFieldIndexToMPSlice<meshFieldIndex>;
   auto mpData = p_MPs->getData<mpfIndex>();
   const int numEntries = mpSliceToNumEntries<mpfIndex>();
 
-  //auto mpCurElmID = p_MPs->getData<polyMPO::MPF_Cur_Elm_ID>();
-  //auto num_mps = p_MPs->getCount();
-  
   int numElms = p_mesh->getNumElements();
   p_mesh->fillMeshField<meshFieldIndex>(numElms, numEntries, 0.0);
   auto meshField = p_mesh->getMeshField<meshFieldIndex>();
@@ -87,8 +83,6 @@ void MPMesh::assemblyElm0() {
     if(mask) { //if material point is 'active'/'enabled'
     
       Kokkos::atomic_add(&mpsPerElm(elm),1);
-      //auto elm_mp=mpCurElmID(mp);
-      //Kokkos::atomic_add(&mpsPerElm(elm_mp),1);
       for(int j=0;j<numEntries;j++){
         Kokkos::atomic_add(&meshField(elm,j), mpData(mp,0));
       }

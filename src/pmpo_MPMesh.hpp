@@ -35,6 +35,7 @@ class MPMesh{
     void T2LTracking(Vec2dView dx);
     void push();
     void calcBasis();
+    void calc_num_elms_MPs();
 
     DoubleView assemblyV0();
     template <MaterialPointSlice index>

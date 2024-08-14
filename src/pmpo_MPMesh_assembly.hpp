@@ -88,11 +88,13 @@ void MPMesh::assemblyElm0() {
     }
   };
   p_MPs->parallel_for(assemble, "assembly");
+  
   Kokkos::MDRangePolicy<Kokkos::Rank<2>> policy({0,0},{numElms, numEntries});
   Kokkos::parallel_for("assembly average", policy, KOKKOS_LAMBDA(const int elm, const int entry){
-    if (mpsPerElm(elm) > 0) 
+    if (mpsPerElm(elm) > 0){ 
       meshField(elm, entry) /= mpsPerElm(elm);
-  });
+    }  
+  }); 
   pumipic::RecordTime("PolyMPO_Reconstruct_Elm0", timer.seconds());
 }
 

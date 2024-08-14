@@ -453,10 +453,22 @@ void polympo_setMPStrainRate_f(MPMesh_ptr p_mpmesh, const int nComps, const int 
   p_MPs->parallel_for(setMPStrainRate, "setMPStrainRate");
 }
 void polympo_getMPStrainRate_f(MPMesh_ptr p_mpmesh, const int nComps, const int numMPs, double* mpStrainRateHost){
+  (void)p_mpmesh;
+  (void)nComps;
+  (void)numMPs;
+  (void)mpStrainRateHost;
 }
 void polympo_setMPStress_f(MPMesh_ptr p_mpmesh, const int nComps, const int numMPs, const double* mpStressIn){
+  (void)p_mpmesh;
+  (void)nComps;
+  (void)numMPs;
+  (void)mpStressIn;
 }
 void polympo_getMPStress_f(MPMesh_ptr p_mpmesh, const int nComps, const int numMPs, double* mpStressHost){
+  (void)p_mpmesh;
+  (void)nComps;
+  (void)numMPs;
+  (void)mpStressHost;
 }
 
 void polympo_startMeshFill_f(MPMesh_ptr p_mpmesh){
@@ -900,14 +912,14 @@ void polympo_setReconstructionOfVel_f(MPMesh_ptr p_mpmesh, const int order, cons
 
 void polympo_setReconstructionOfStrainRate_f(MPMesh_ptr p_mpmesh, const int order, const int meshEntType){
   checkMPMeshValid(p_mpmesh);
-  // auto mpmesh = ((polyMPO::MPMesh*)p_mpmesh);
-  // mpmesh->setReconstructSlice<polyMPO::MPF_Strain_Rate>();
+  (void)order;
+  (void)meshEntType;
 }
 
 void polympo_setReconstructionOfStress_f(MPMesh_ptr p_mpmesh, const int order, const int meshEntType){
   checkMPMeshValid(p_mpmesh);
-  // auto mpmesh = ((polyMPO::MPMesh*)p_mpmesh);
-  // mpmesh->setReconstructSlice<polyMPO::MPF_Stress>();
+  (void)order;
+  (void)meshEntType;
 }
 
 void polympo_applyReconstruction_f(MPMesh_ptr p_mpmesh){

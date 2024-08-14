@@ -81,7 +81,6 @@ void MPMesh::assemblyElm0() {
   Kokkos::View<int*> mpsPerElm("mpsPerElm", numElms);
   auto assemble = PS_LAMBDA(const int& elm, const int& mp, const int& mask) {
     if(mask) { //if material point is 'active'/'enabled'
-    
       Kokkos::atomic_add(&mpsPerElm(elm),1);
       for(int j=0;j<numEntries;j++){
         Kokkos::atomic_add(&meshField(elm,j), mpData(mp,0));

@@ -308,57 +308,14 @@ void MPMesh::reconstructSlices() {
     pumipic::RecordTime("PolyMPO_Reconstruct", timer.seconds());
 }
 
-
-void MPMesh::calc_num_elms_MPs(){
-
-  int numElms = p_mesh->getNumElements();
-  Kokkos::View<int*>mpsPerElm("mpsPerElm", numElms);
-  auto assemble1 = PS_LAMBDA(const int& elm, const int& mp, const int& mask) {
-    if(mask) { //if material point is 'active'/'enabled'
-      Kokkos::atomic_add(&mpsPerElm(elm),1); 
-    }
-  };
-  p_MPs->parallel_for(assemble1, "assembly");
-  
-  int sum_mps_elems;
-  Kokkos::parallel_reduce("Loop1", numElms, KOKKOS_LAMBDA (const int& i, int& lsum) {
-    if (mpsPerElm[i]>0)
-      lsum +=1;
-  }, sum_mps_elems);
-  printf("Total no of elems wit material points %d\n", sum_mps_elems);
-
-}
-
 void MPMesh::push(){
   Kokkos::Timer timer;
   p_mesh->computeRotLatLonIncr();
   sphericalInterpolation<MeshF_RotLatLonIncr>(*this);
   p_MPs->updateRotLatLonAndXYZ2Tgt(p_mesh->getSphereRadius()); // set Tgt_XYZ
 
-  //Debugging before tracking
-  calc_num_elms_MPs();
- 
   CVTTrackingElmCenterBased(); // move to Tgt_XYZ
-  
-  //Calculate no of material points after new elements of MPs found 
-  int numElms = p_mesh->getNumElements();
-  auto MPs2Elm = p_MPs->getData<MPF_Tgt_Elm_ID>();//The new elemments to which the MPS are moved
-  Kokkos::View<int*>mpsPerElm_next("mpsPerElm", numElms);
-  auto assemble2 = PS_LAMBDA(const int& elm, const int& mp, const int& mask) {
-    if(mask) { //if material point is 'active'/'enabled'
-      auto elm_next=MPs2Elm(mp);
-      Kokkos::atomic_add(&mpsPerElm_next(elm_next),1);
-    }
-  };
-  p_MPs->parallel_for(assemble2, "assembly2");
-  
-  int sum_mps_elems_next;
-  Kokkos::parallel_reduce("Loop2", numElms, KOKKOS_LAMBDA (const int& i, int& lsum) {
-    if (mpsPerElm_next[i]>0)
-      lsum +=1;
-  }, sum_mps_elems_next);
-  printf("Total no of elems with material points after tracking %d\n", sum_mps_elems_next);
- 
+
   p_MPs->updateMPSlice<MPF_Cur_Pos_XYZ, MPF_Tgt_Pos_XYZ>(); // Tgt_XYZ becomes Cur_XYZ
   p_MPs->updateMPSlice<MPF_Cur_Pos_Rot_Lat_Lon, MPF_Tgt_Pos_Rot_Lat_Lon>(); // Tgt becomes Cur
   p_MPs->rebuild(); //rebuild pumi-pic

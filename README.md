@@ -30,14 +30,14 @@ cd polyMpoDev
 Create an environment script `setupEnvironment.sh` with the following contents.  **It contains SCOREC specific `module` commands that will have to be modified if you are building on a non-SCOREC system.**
 
 ```
-export root=$PWD
-module unuse /opt/scorec/spack/lmod/linux-rhel7-x86_64/Core
-module use /opt/scorec/spack/v0154_2/lmod/linux-rhel7-x86_64/Core
-module load gcc/10.1.0 cuda/11.4
-module load mpich/3.3.2
-module load cmake
-module load netcdf-c/4.7.3
-module load netcdf-fortran/4.5.2
+module use /opt/scorec/spack/rhel9/v0201_4/lmod/linux-rhel9-x86_64/Core/
+module load gcc/12.3.0-iil3lno 
+module load mpich/4.1.1-xpoyz4t 
+module load cuda/12.1.1-zxa4msk
+module load netcdf-c/4.9.2-2ilqxr3
+module load cmake/3.20.0
+module load hdf5
+module load netcdf-fortran
 
 function getname() {
   name=$1
@@ -45,6 +45,9 @@ function getname() {
   buildSuffix=${machine}-cuda
   echo "build-${name}-${buildSuffix}"
 }
+
+export root=$PWD
+
 export engpar=$root/`getname engpar`/install # This is where engpar will be (or is) installed
 export kk=$root/`getname kokkos`/install   # This is where kokkos will be (or is) installed
 export oh=$root/`getname omegah`/install  # This is where omega_h will be (or is) installed
@@ -63,7 +66,7 @@ Create a file named `buildAll.sh` with the following contents. **It contains com
 cd $root
 
 #kokkos
-git clone -b 4.1.00 https://github.com/kokkos/kokkos.git
+git clone -b 4.2.00 https://github.com/kokkos/kokkos.git
 mkdir -p $kk
 cmake -S kokkos -B ${kk%%install} \
   -DCMAKE_INSTALL_PREFIX=$kk \
@@ -94,7 +97,7 @@ export MPICH_CXX=$root/kokkos/bin/nvcc_wrapper #restore use of nvcc_wrapper
 
 #omegah
 mkdir -p $oh
-git clone https://github.com/SCOREC/omega_h.git
+git clone -b scorec-v10.8.4 https://github.com/SCOREC/omega_h.git
 cmake -S omega_h -B ${oh%%install} \
   -DCMAKE_INSTALL_PREFIX=$oh \
   -DCMAKE_BUILD_TYPE="Release" \
@@ -116,6 +119,7 @@ cmake -S cabana -B ${cab%%install} \
   -DCMAKE_INSTALL_PREFIX=$cab \
   -DCMAKE_BUILD_TYPE="Release" \
   -DCMAKE_CXX_COMPILER=$root/kokkos/bin/nvcc_wrapper \
+  -DCabana_REQUIRE_HDF5=OFF \
   -DCabana_ENABLE_TESTING=OFF \
   -DCabana_ENABLE_EXAMPLES=OFF
 cmake --build ${cab%%install} -j 24 --target install
@@ -125,7 +129,7 @@ mkdir -p $pumipic
 git clone -b 2.0.3 --recursive https://github.com/SCOREC/pumi-pic.git
 cmake -S pumi-pic -B ${pumipic%%install} \
   -DCMAKE_INSTALL_PREFIX=$pumipic \
-  -DCMAKE_BUILD_TYPE="Debug" \
+  -DCMAKE_BUILD_TYPE="Release" \
   -DCMAKE_CXX_COMPILER=mpicxx \
   -DENABLE_CABANA=ON \
   -DTEST_DATA_DIR=$root/pumi-pic/pumipic-data \
@@ -161,6 +165,7 @@ Run the build script:
 Create a file named `doConfigPolyMpo-GPU.sh` with the following contents:
 
 ```
+git clone -b cws/pumipicDps https://github.com/SCOREC/polyMPO.git
 cmake -S polyMPO -B ${polyMPO%%install} \
   -DKokkos_DIR=$kk/lib64/cmake/Kokkos \
   -DCMAKE_CXX_COMPILER=$kk/bin/nvcc_wrapper \

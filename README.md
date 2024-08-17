@@ -7,7 +7,7 @@
 
 The instructions in the 'install dependencies' section should be run once to get the dependencies installed.  The next section, 'Build PolyMPO', details how to do an initial build of polyMPO.  After that, the instructions in the 'develop and rebuild' section should be followed to rebuild polyMPO after making source code changes.
 
-An NVIDIA GPU is required for building and running the software.  CUDA flags for NVIDIA GPUs with the Turing architecture are included below.  For scorec users Turing GPUs are in the `cranium` and `blockade` workstations.  More info on how to set these flags for different NVIDIA architectures is below.
+An NVIDIA GPU is required for building and running the software.  CUDA flags for NVIDIA GPUs with the Turing architecture are included below.  For scorec users Turing GPUs are in the `checkers` workstations.  More info on how to set these flags for different NVIDIA architectures is below.
 
 The following assumes that a valid C and C++ compiler, and `cmake`, are in your PATH.  On SCOREC systems these are provided by `module` commands.  If you are not on a SCOREC system these must be edited accordingly.
 
@@ -31,8 +31,8 @@ Create an environment script `setupEnvironment.sh` with the following contents. 
 
 ```
 module use /opt/scorec/spack/rhel9/v0201_4/lmod/linux-rhel9-x86_64/Core/
-module load gcc/12.3.0-iil3lno 
-module load mpich/4.1.1-xpoyz4t 
+module load gcc/12.3.0-iil3lno
+module load mpich/4.1.1-xpoyz4t
 module load cuda/12.1.1-zxa4msk
 module load netcdf-c/4.9.2-2ilqxr3
 module load cmake/3.20.0
@@ -53,9 +53,13 @@ export kk=$root/`getname kokkos`/install   # This is where kokkos will be (or is
 export oh=$root/`getname omegah`/install  # This is where omega_h will be (or is) installed
 export cab=$root/`getname cabana`/install # This is where cabana will be (or is) installed
 export pumipic=$root/`getname pumipic`/install # This is where PumiPIC will be (or is) installed
-export polyMPO=$root/buildPolyMPO-GPU/install # This is where polyMPO will be (or is) installed
-export CMAKE_PREFIX_PATH=$engpar:$kk:$kk/lib64/cmake:$oh:$cab:$pumipic:$polyMPO:$CMAKE_PREFIX_PATH
+export polympo=$root/buildPolyMPO-GPU/install
+export CMAKE_PREFIX_PATH=$engpar:$kk:$kk/lib64/cmake:$oh:$cab:$pumipic:$polympo:$CMAKE_PREFIX_PATH
+
 export MPICH_CXX=$root/kokkos/bin/nvcc_wrapper
+export gpu_option=ON
+export kokkos_gpu=-DKokkos_ARCH_TURING75=ON
+export omegah_gpu=-DOmega_h_CUDA_ARCH=75
 ```
 
 Create a file named `buildAll.sh` with the following contents. **It contains compiler flags specific to NVIDIA GPUs with the Turing architecture (i.e., `-DKokkos_ARCH_TURING75=ON` and `-DOmega_h_CUDA_ARCH=75`) that need to be modified to match the architecture of the GPU in your system.**  See https://kokkos.github.io/kokkos-core-wiki/keywords.html#architecture-keywords for alternative settings.
@@ -70,13 +74,13 @@ git clone -b 4.2.00 https://github.com/kokkos/kokkos.git
 mkdir -p $kk
 cmake -S kokkos -B ${kk%%install} \
   -DCMAKE_INSTALL_PREFIX=$kk \
-  -DCMAKE_CXX_COMPILER=$root/kokkos/bin/nvcc_wrapper \
-  -DKokkos_ARCH_TURING75=ON \
+  -DCMAKE_CXX_COMPILER=$MPICH_CXX \
+  $kokkos_gpu \
   -DKokkos_ENABLE_SERIAL=ON \
   -DKokkos_ENABLE_OPENMP=off \
-  -DKokkos_ENABLE_CUDA=on \
-  -DKokkos_ENABLE_CUDA_LAMBDA=on \
-  -DKokkos_ENABLE_DEBUG=on
+  -DKokkos_ENABLE_CUDA=$gpu_option \
+  -DKokkos_ENABLE_CUDA_LAMBDA=$gpu_option \
+  -DKokkos_ENABLE_DEBUG=off
 cmake --build ${kk%%install} -j 24 --target install
 
 #engpar
@@ -85,9 +89,9 @@ mkdir -p $engpar
 git clone https://github.com/SCOREC/EnGPar.git
 cmake -S EnGPar -B ${engpar%%install} \
   -DCMAKE_INSTALL_PREFIX=$engpar \
-  -DCMAKE_BUILD_TYPE="Release" \
-  -DCMAKE_C_COMPILER="mpicc" \
-  -DCMAKE_CXX_COMPILER="mpicxx" \
+  -DCMAKE_BUILD_TYPE=Release \
+  -DCMAKE_C_COMPILER=mpicc \
+  -DCMAKE_CXX_COMPILER=mpicxx \
   -DCMAKE_CXX_FLAGS="-std=c++11" \
   -DENABLE_PARMETIS=OFF \
   -DENABLE_PUMI=OFF \
@@ -100,15 +104,15 @@ mkdir -p $oh
 git clone -b scorec-v10.8.4 https://github.com/SCOREC/omega_h.git
 cmake -S omega_h -B ${oh%%install} \
   -DCMAKE_INSTALL_PREFIX=$oh \
-  -DCMAKE_BUILD_TYPE="Release" \
+  -DCMAKE_BUILD_TYPE=Release \
   -DBUILD_SHARED_LIBS=OFF \
   -DOmega_h_USE_Kokkos=ON \
-  -DOmega_h_USE_CUDA=on \
-  -DOmega_h_CUDA_ARCH=75 \
+  -DOmega_h_USE_CUDA=$gpu_option \
+  $omegah_gpu \
   -DOmega_h_USE_MPI=on  \
   -DBUILD_TESTING=off  \
-  -DCMAKE_C_COMPILER=`which mpicc` \
-  -DCMAKE_CXX_COMPILER=`which mpicxx` \
+  -DCMAKE_C_COMPILER=mpicc \
+  -DCMAKE_CXX_COMPILER=mpicxx \
   -DKokkos_PREFIX=$kk/lib64/cmake
 cmake --build ${oh%%install} -j 24 --target install
 
@@ -117,8 +121,8 @@ mkdir -p $cab
 git clone -b 0.6.1 https://github.com/ECP-copa/Cabana.git cabana
 cmake -S cabana -B ${cab%%install} \
   -DCMAKE_INSTALL_PREFIX=$cab \
-  -DCMAKE_BUILD_TYPE="Release" \
-  -DCMAKE_CXX_COMPILER=$root/kokkos/bin/nvcc_wrapper \
+  -DCMAKE_BUILD_TYPE=Release \
+  -DCMAKE_CXX_COMPILER=$MPICH_CXX \
   -DCabana_REQUIRE_HDF5=OFF \
   -DCabana_ENABLE_TESTING=OFF \
   -DCabana_ENABLE_EXAMPLES=OFF
@@ -129,14 +133,14 @@ mkdir -p $pumipic
 git clone -b 2.0.3 --recursive https://github.com/SCOREC/pumi-pic.git
 cmake -S pumi-pic -B ${pumipic%%install} \
   -DCMAKE_INSTALL_PREFIX=$pumipic \
-  -DCMAKE_BUILD_TYPE="Release" \
+  -DCMAKE_BUILD_TYPE=Release \
   -DCMAKE_CXX_COMPILER=mpicxx \
   -DENABLE_CABANA=ON \
   -DTEST_DATA_DIR=$root/pumi-pic/pumipic-data \
   -DOmega_h_PREFIX=$oh \
   -DEnGPar_PREFIX=$engpar \
-  -DIS_TESTING=OFF \
-  -DPS_IS_TESTING=OFF
+  -DIS_TESTING=off \
+  -DPS_IS_TESTING=off
 cmake --build ${pumipic%%install} -j 24 --target install
 ```
 
@@ -167,8 +171,9 @@ Create a file named `doConfigPolyMpo-GPU.sh` with the following contents:
 ```
 git clone -b cws/pumipicDps https://github.com/SCOREC/polyMPO.git
 cmake -S polyMPO -B ${polyMPO%%install} \
+  -DCMAKE_BUILD_TYPE=Release \
   -DKokkos_DIR=$kk/lib64/cmake/Kokkos \
-  -DCMAKE_CXX_COMPILER=$kk/bin/nvcc_wrapper \
+  -DCMAKE_CXX_COMPILER=$MPICH_CXX \
   -DIS_TESTING=off \
   -DCMAKE_INSTALL_PREFIX=$polyMPO
 ```
@@ -250,21 +255,20 @@ rm -rf buildPolyMPO-GPU
 
 ## SCOREC CPU Build Instructions
 
-Following the approach described for the GPU, below are the environment and
-build scripts needed for building on the CPU.
+Following the approach described for the GPU, below is the environment script needed for building on the CPU.
 
 
 `setupEnvironmentCPU.sh`
 
 ```
-export root=$PWD
-module unuse /opt/scorec/spack/lmod/linux-rhel7-x86_64/Core
-module use /opt/scorec/spack/v0154_2/lmod/linux-rhel7-x86_64/Core
-module load gcc/10.1.0
-module load mpich/3.3.2
-module load cmake
-module load netcdf-c/4.7.3
-module load netcdf-fortran/4.5.2
+module use /opt/scorec/spack/rhel9/v0201_4/lmod/linux-rhel9-x86_64/Core/
+module load gcc/12.3.0-iil3lno
+module load mpich/4.1.1-xpoyz4t
+module load cuda/12.1.1-zxa4msk
+module load netcdf-c/4.9.2-2ilqxr3
+module load cmake/3.20.0
+module load hdf5
+module load netcdf-fortran
 
 function getname() {
   name=$1
@@ -272,107 +276,21 @@ function getname() {
   buildSuffix=${machine}-host
   echo "build-${name}-${buildSuffix}"
 }
+
+export root=$PWD
+
 export engpar=$root/`getname engpar`/install # This is where engpar will be (or is) installed
 export kk=$root/`getname kokkos`/install   # This is where kokkos will be (or is) installed
 export oh=$root/`getname omegah`/install  # This is where omega_h will be (or is) installed
 export cab=$root/`getname cabana`/install # This is where cabana will be (or is) installed
 export pumipic=$root/`getname pumipic`/install # This is where PumiPIC will be (or is) installed
-export polyMPO=$root/buildPolyMPO-CPU/install # This is where polyMPO will be (or is) installed
-export CMAKE_PREFIX_PATH=$engpar:$kk:$kk/lib64/cmake:$oh:$cab:$pumipic:$polyMPO:$CMAKE_PREFIX_PATH
+export polympo=$root/buildPolyMPO-CPU/install
+export CMAKE_PREFIX_PATH=$engpar:$kk:$kk/lib64/cmake:$oh:$cab:$pumipic:$polympo:$CMAKE_PREFIX_PATH
+
 export MPICH_CXX=g++
-```
-
-`buildAllCPU.sh`
-
-```
-#!/bin/bash -e
-
-cd $root
-
-##kokkos
-git clone -b 4.1.00 https://github.com/kokkos/kokkos.git
-mkdir -p $kk
-cmake -S kokkos -B ${kk%%install} \
-  -DCMAKE_INSTALL_PREFIX=$kk \
-  -DCMAKE_CXX_COMPILER=g++ \
-  -DKokkos_ENABLE_SERIAL=ON \
-  -DKokkos_ENABLE_OPENMP=off \
-  -DKokkos_ENABLE_CUDA=off \
-  -DKokkos_ENABLE_DEBUG=on
-cmake --build ${kk%%install} -j 24 --target install
-
-#engpar
-mkdir -p $engpar
-git clone https://github.com/SCOREC/EnGPar.git
-cmake -S EnGPar -B ${engpar%%install} \
-  -DCMAKE_INSTALL_PREFIX=$engpar \
-  -DCMAKE_BUILD_TYPE="Release" \
-  -DCMAKE_C_COMPILER="mpicc" \
-  -DCMAKE_CXX_COMPILER="mpicxx" \
-  -DCMAKE_CXX_FLAGS="-std=c++11" \
-  -DENABLE_PARMETIS=OFF \
-  -DENABLE_PUMI=OFF \
-  -DIS_TESTING=OFF
-cmake --build ${engpar%%install} -j 24 --target install
-
-#omegah
-mkdir -p $oh
-git clone https://github.com/SCOREC/omega_h.git
-cmake -S omega_h -B ${oh%%install} \
-  -DCMAKE_INSTALL_PREFIX=$oh \
-  -DCMAKE_BUILD_TYPE="Release" \
-  -DBUILD_SHARED_LIBS=OFF \
-  -DOmega_h_USE_Kokkos=ON \
-  -DOmega_h_USE_CUDA=off \
-  -DOmega_h_USE_MPI=on  \
-  -DBUILD_TESTING=off  \
-  -DCMAKE_C_COMPILER=`which mpicc` \
-  -DCMAKE_CXX_COMPILER=`which mpicxx` \
-  -DKokkos_PREFIX=$kk/lib64/cmake
-cmake --build ${oh%%install} -j 24 --target install
-
-#cabana
-mkdir -p $cab
-git clone -b 0.6.1 https://github.com/ECP-copa/Cabana.git cabana
-cmake -S cabana -B ${cab%%install} \
-  -DCMAKE_INSTALL_PREFIX=$cab \
-  -DCMAKE_BUILD_TYPE="Release" \
-  -DCMAKE_CXX_COMPILER=`which mpicxx` \
-  -DCabana_ENABLE_TESTING=OFF \
-  -DCabana_ENABLE_EXAMPLES=OFF
-cmake --build ${cab%%install} -j 24 --target install
-
-#pumipic
-mkdir -p $pumipic
-git clone -b 2.0.3 --recursive https://github.com/SCOREC/pumi-pic.git
-cmake -S pumi-pic -B ${pumipic%%install} \
-  -DCMAKE_INSTALL_PREFIX=$pumipic \
-  -DCMAKE_BUILD_TYPE="Debug" \
-  -DCMAKE_CXX_COMPILER=mpicxx \
-  -DENABLE_CABANA=ON \
-  -DTEST_DATA_DIR=$root/pumi-pic/pumipic-data \
-  -DOmega_h_PREFIX=$oh \
-  -DEnGPar_PREFIX=$engpar \
-  -DIS_TESTING=OFF \
-  -DPS_IS_TESTING=OFF
-cmake --build ${pumipic%%install} -j 24 --target install
-```
-
-`doConfigPolyMPO-CPU.sh`
-
-```
-cmake -S polyMPO -B ${polyMPO%%install} \
-  -DCMAKE_BUILD_TYPE=Debug \
-  -DKokkos_DIR=$kk/lib64/cmake/Kokkos \
-  -DCMAKE_CXX_COMPILER=mpicxx \
-  -DIS_TESTING=off \
-  -DCMAKE_INSTALL_PREFIX=$polyMPO
-```
-
-`buildPolyMPO-CPU.sh`
-
-```
-cmake --build ${polyMPO%%install} --target install -j4
+export gpu_option=ON
+export kokkos_gpu=""
+export omegah_gpu=""
 ```
 
 [Back To Top](#table-of-contents)

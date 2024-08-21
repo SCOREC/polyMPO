@@ -7,7 +7,7 @@
 
 The instructions in the 'install dependencies' section should be run once to get the dependencies installed.  The next section, 'Build PolyMPO', details how to do an initial build of polyMPO.  After that, the instructions in the 'develop and rebuild' section should be followed to rebuild polyMPO after making source code changes.
 
-An NVIDIA GPU is required for building and running the software.  CUDA flags for NVIDIA GPUs with the Turing architecture are included below.  For SCOREC users, a Turing GPU is in the `checkers` workstation.  More info on how to set these flags for different NVIDIA architectures is below.
+An NVIDIA GPU is required for building and running the software.  CUDA flags for NVIDIA GPUs with the Ampere architecture are included below.  For SCOREC users, an Ampere GPU is in the `checkers` workstation.  More info on how to set these flags for different NVIDIA architectures is below.
 
 The following assumes that a valid C and C++ compiler, and `cmake`, are in your PATH.  On SCOREC systems these are provided by `module` commands.  If you are not on a SCOREC system these must be edited accordingly.
 
@@ -27,7 +27,7 @@ mkdir polyMpoDev #this can be any name - just be consistent
 cd polyMpoDev
 ```
 
-Create an environment script `setupEnvironment.sh` with the following contents.  **It contains SCOREC specific `module` commands that will have to be modified if you are building on a non-SCOREC system. Also it contains compiler flags specific to NVIDIA GPUs with the Turing architecture (i.e., `-DKokkos_ARCH_TURING75=ON` and `-DOmega_h_CUDA_ARCH=75`) that need to be modified to match the architecture of the GPU in your system.**  See https://kokkos.github.io/kokkos-core-wiki/keywords.html#architecture-keywords for alternative settings.
+Create an environment script `setupEnvironment.sh` with the following contents.  **It contains SCOREC specific `module` commands that will have to be modified if you are building on a non-SCOREC system. Also it contains compiler flags specific to NVIDIA GPUs with the Ampere architecture (i.e., `-DKokkos_ARCH_AMPERE86=ON` and `-DOmega_h_CUDA_ARCH=86`) that need to be modified to match the architecture of the GPU in your system.**  See https://kokkos.github.io/kokkos-core-wiki/keywords.html#architecture-keywords for alternative settings.
 
 ```
 export root=$PWD
@@ -57,9 +57,8 @@ export CMAKE_PREFIX_PATH=$engpar:$kk:$kk/lib64/cmake:$oh:$cab:$pumipic:$polyMPO:
 
 export MPICH_CXX=$root/kokkos/bin/nvcc_wrapper
 export gpu_option=ON
-export kokkos_cpu=-DKokkos_ENABLE_OPENMP=OFF
-export kokkos_gpu=-DKokkos_ARCH_TURING75=ON
-export omegah_gpu=-DOmega_h_CUDA_ARCH=75
+export kokkos_gpu=-DKokkos_ARCH_AMPERE86=ON
+export omegah_gpu=-DOmega_h_CUDA_ARCH=86
 export ftn_compiler=gfortran
 export cxx_compiler=mpicxx
 export c_compiler=mpicc

@@ -47,7 +47,6 @@ function getname() {
   echo "build-${name}-${buildSuffix}"
 }
 
-
 export engpar=$root/`getname engpar`/install # This is where engpar will be (or is) installed
 export kk=$root/`getname kokkos`/install   # This is where kokkos will be (or is) installed
 export oh=$root/`getname omegah`/install  # This is where omega_h will be (or is) installed

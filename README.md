@@ -30,6 +30,7 @@ cd polyMpoDev
 Create an environment script `setupEnvironment.sh` with the following contents.  **It contains SCOREC specific `module` commands that will have to be modified if you are building on a non-SCOREC system. Also it contains compiler flags specific to NVIDIA GPUs with the Turing architecture (i.e., `-DKokkos_ARCH_TURING75=ON` and `-DOmega_h_CUDA_ARCH=75`) that need to be modified to match the architecture of the GPU in your system.**  See https://kokkos.github.io/kokkos-core-wiki/keywords.html#architecture-keywords for alternative settings.
 
 ```
+export root=$PWD
 module use /opt/scorec/spack/rhel9/v0201_4/lmod/linux-rhel9-x86_64/Core/
 module load gcc/12.3.0-iil3lno
 module load mpich/4.1.1-xpoyz4t
@@ -46,14 +47,13 @@ function getname() {
   echo "build-${name}-${buildSuffix}"
 }
 
-export root=$PWD
 
 export engpar=$root/`getname engpar`/install # This is where engpar will be (or is) installed
 export kk=$root/`getname kokkos`/install   # This is where kokkos will be (or is) installed
 export oh=$root/`getname omegah`/install  # This is where omega_h will be (or is) installed
 export cab=$root/`getname cabana`/install # This is where cabana will be (or is) installed
 export pumipic=$root/`getname pumipic`/install # This is where PumiPIC will be (or is) installed
-export polyMPO=$root/buildPolyMPO-GPU/install
+export polyMPO=$root/buildPolyMPO-GPU/install # This is where polyMPO will be (or is) installed
 export CMAKE_PREFIX_PATH=$engpar:$kk:$kk/lib64/cmake:$oh:$cab:$pumipic:$polyMPO:$CMAKE_PREFIX_PATH
 
 export MPICH_CXX=$root/kokkos/bin/nvcc_wrapper
@@ -143,8 +143,8 @@ cmake -S pumi-pic -B ${pumipic%%install} \
   -DTEST_DATA_DIR=$root/pumi-pic/pumipic-data \
   -DOmega_h_PREFIX=$oh \
   -DEnGPar_PREFIX=$engpar \
-  -DIS_TESTING=off \
-  -DPS_IS_TESTING=off
+  -DIS_TESTING=OFF \
+  -DPS_IS_TESTING=OFF
 cmake --build ${pumipic%%install} -j 24 --target install
 ```
 
@@ -265,6 +265,7 @@ Following the approach described for the GPU, below is the environment script ne
 `setupEnvironmentCPU.sh`
 
 ```
+export root=$PWD
 module use /opt/scorec/spack/rhel9/v0201_4/lmod/linux-rhel9-x86_64/Core/
 module load gcc/12.3.0-iil3lno
 module load mpich/4.1.1-xpoyz4t
@@ -280,8 +281,6 @@ function getname() {
   buildSuffix=${machine}-host
   echo "build-${name}-${buildSuffix}"
 }
-
-export root=$PWD
 
 export engpar=$root/`getname engpar`/install # This is where engpar will be (or is) installed
 export kk=$root/`getname kokkos`/install   # This is where kokkos will be (or is) installed
@@ -319,7 +318,7 @@ Currently Loaded Modules:
 ```
 export root=$PWD
 module load cmake/3.24.3
-module load cray-hdf5/1.12.2.9
+module load cray-hdf5
 module load cray-netcdf/4.9.0.9
 
 function getname() {
@@ -394,8 +393,6 @@ export cab=$root/`getname cabana`/install # This is where cabana will be (or is)
 export pumipic=$root/`getname pumipic`/install # This is where PumiPIC will be (or is) installed
 export polyMPO=$root/buildPolyMPO-CPU/install # This is where polyMPO will be (or is) installed
 export CMAKE_PREFIX_PATH=$engpar:$kk:$kk/lib64/cmake:$oh:$cab:$pumipic:$polyMPO:$CMAKE_PREFIX_PATH
-
-export MPICH_GPU_SUPPORT_ENABLED=0
 
 export MPICH_CXX=CC
 export gpu_option=OFF

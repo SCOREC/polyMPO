@@ -7,7 +7,7 @@
 
 The instructions in the 'install dependencies' section should be run once to get the dependencies installed.  The next section, 'Build PolyMPO', details how to do an initial build of polyMPO.  After that, the instructions in the 'develop and rebuild' section should be followed to rebuild polyMPO after making source code changes.
 
-An NVIDIA GPU is required for building and running the software.  CUDA flags for NVIDIA GPUs with the Turing architecture are included below.  For scorec users Turing GPUs are in the `checkers` workstations.  More info on how to set these flags for different NVIDIA architectures is below.
+An NVIDIA GPU is required for building and running the software.  CUDA flags for NVIDIA GPUs with the Turing architecture are included below.  For SCOREC users, a Turing GPU is in the `checkers` workstation.  More info on how to set these flags for different NVIDIA architectures is below.
 
 The following assumes that a valid C and C++ compiler, and `cmake`, are in your PATH.  On SCOREC systems these are provided by `module` commands.  If you are not on a SCOREC system these must be edited accordingly.
 

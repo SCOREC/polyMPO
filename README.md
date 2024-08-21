@@ -12,7 +12,7 @@ An NVIDIA GPU is required for building and running the software.  CUDA flags for
 The following assumes that a valid C and C++ compiler, and `cmake`, are in your PATH.  On SCOREC systems these are provided by `module` commands.  If you are not on a SCOREC system these must be edited accordingly.
 
 ## table of contents
-1. [SCOREC GPU Build](#scorec-gpu-build-instructions)
+1. [Full Instructions / SCOREC GPU Build](#scorec-gpu-build-instructions)
 2. [SCOREC CPU Build](#scorec-cpu-build-instructions)
 3. [Perlmutterr GPU Build](#perlmutter-gpu-build-instructions)
 4. [Perlmutterr CPU Build](#perlmutter-cpu-build-instructions)
@@ -27,7 +27,7 @@ mkdir polyMpoDev #this can be any name - just be consistent
 cd polyMpoDev
 ```
 
-Create an environment script `setupEnvironment.sh` with the following contents.  **It contains SCOREC specific `module` commands that will have to be modified if you are building on a non-SCOREC system.**
+Create an environment script `setupEnvironment.sh` with the following contents.  **It contains SCOREC specific `module` commands that will have to be modified if you are building on a non-SCOREC system. Also it contains compiler flags specific to NVIDIA GPUs with the Turing architecture (i.e., `-DKokkos_ARCH_TURING75=ON` and `-DOmega_h_CUDA_ARCH=75`) that need to be modified to match the architecture of the GPU in your system.**  See https://kokkos.github.io/kokkos-core-wiki/keywords.html#architecture-keywords for alternative settings.
 
 ```
 module use /opt/scorec/spack/rhel9/v0201_4/lmod/linux-rhel9-x86_64/Core/
@@ -66,7 +66,7 @@ export cxx_compiler=mpicxx
 export c_compiler=mpicc
 ```
 
-Create a file named `buildAll.sh` with the following contents. **It contains compiler flags specific to NVIDIA GPUs with the Turing architecture (i.e., `-DKokkos_ARCH_TURING75=ON` and `-DOmega_h_CUDA_ARCH=75`) that need to be modified to match the architecture of the GPU in your system.**  See https://kokkos.github.io/kokkos-core-wiki/keywords.html#architecture-keywords for alternative settings.
+Create a file named `buildAll.sh` with the following contents. 
 
 ```
 #!/bin/bash -e
@@ -173,7 +173,6 @@ Run the build script:
 Create a file named `doConfigPolyMpo-GPU.sh` with the following contents:
 
 ```
-git clone -b cws/pumipicDps https://github.com/SCOREC/polyMPO.git
 cmake -S polyMPO -B ${polyMPO%%install} \
   -DCMAKE_BUILD_TYPE=Release \
   -DKokkos_DIR=$kk/lib64/cmake/Kokkos \
@@ -347,26 +346,6 @@ export cxx_compiler=CC
 export c_compiler=cc
 ```
 
-`doConfigPolyMpo.sh`
-
-```
-git clone -b cws/pumipicDps https://github.com/SCOREC/polyMPO.git
-cmake -S polyMPO -B ${polyMPO%%install} \
-  -DCMAKE_BUILD_TYPE=Release \
-  -DKokkos_DIR=$kk/lib64/cmake/Kokkos \
-  -DCMAKE_CXX_COMPILER=$MPICH_CXX \
-  -DCMAKE_Fortran_COMPILER=$ftn_compiler \
-  -DIS_TESTING=on \
-  -DCMAKE_INSTALL_PREFIX=$polyMPO
-cmake --build ${polyMPO%%install} --target install -j4
-```
-
-`buildPolyMpo.sh`
-
-```
-cmake --build ${polyMPO%%install} --target install -j4
-```
-
 ### Running interactively
 
 Allocate an interactive node - be sure to set the `account` argument:
@@ -426,25 +405,6 @@ export omegah_gpu=""
 export ftn_compiler=ftn
 export cxx_compiler=CC
 export c_compiler=cc
-```
-
-`doConfigPolyMPO-CPU.sh`
-
-```
-git clone -b cws/pumipicDps https://github.com/SCOREC/polyMPO.git
-cmake -S polyMPO -B ${polyMPO%%install} \
-  -DCMAKE_BUILD_TYPE=Release \
-  -DKokkos_DIR=$kk/lib64/cmake/Kokkos \
-  -DCMAKE_CXX_COMPILER=$MPICH_CXX \
-  -DCMAKE_Fortran_COMPILER=$ftn_compiler \
-  -DIS_TESTING=on \
-  -DCMAKE_INSTALL_PREFIX=$polyMPO
-```
-
-`buildPolyMPO-CPU.sh`
-
-```
-cmake --build ${polyMPO%%install} --target install -j4
 ```
 
 ### Running interactively

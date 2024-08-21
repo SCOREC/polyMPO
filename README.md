@@ -35,7 +35,7 @@ module load gcc/12.3.0-iil3lno
 module load mpich/4.1.1-xpoyz4t
 module load cuda/12.1.1-zxa4msk
 module load netcdf-c/4.9.2-2ilqxr3
-module load cmake/3.20.0
+module load cmake/3.26.3-2duxfcd
 module load hdf5
 module load netcdf-fortran
 
@@ -134,7 +134,7 @@ cmake --build ${cab%%install} -j 24 --target install
 
 #pumipic
 mkdir -p $pumipic
-git clone -b 2.0.3 --recursive https://github.com/SCOREC/pumi-pic.git
+git clone -b 2.1.2 --recursive https://github.com/SCOREC/pumi-pic.git
 cmake -S pumi-pic -B ${pumipic%%install} \
   -DCMAKE_INSTALL_PREFIX=$pumipic \
   -DCMAKE_BUILD_TYPE=Release \
@@ -271,7 +271,7 @@ module load gcc/12.3.0-iil3lno
 module load mpich/4.1.1-xpoyz4t
 module load cuda/12.1.1-zxa4msk
 module load netcdf-c/4.9.2-2ilqxr3
-module load cmake/3.20.0
+module load cmake/3.26.3-2duxfcd
 module load hdf5
 module load netcdf-fortran
 

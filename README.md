@@ -12,12 +12,12 @@ An NVIDIA GPU is required for building and running the software.  CUDA flags for
 The following assumes that a valid C and C++ compiler, and `cmake`, are in your PATH.  On SCOREC systems these are provided by `module` commands.  If you are not on a SCOREC system these must be edited accordingly.
 
 ## table of contents
-1. [Full Instructions / SCOREC GPU Build](#scorec-gpu-build-instructions)
+1. [Full Instructions / SCOREC GPU Build](#full-instructions-/-scorec-gpu-build-instructions)
 2. [SCOREC CPU Build](#scorec-cpu-build-instructions)
 3. [Perlmutterr GPU Build](#perlmutter-gpu-build-instructions)
 4. [Perlmutterr CPU Build](#perlmutter-cpu-build-instructions)
 
-## SCOREC gpu build instructions
+## Full Instructions / SCOREC gpu build instructions
 ### install dependencies
 
 Create a directory to work from.  It will contain all source code and build directories.
@@ -170,7 +170,7 @@ Run the build script:
 ### Build polyMPO
 
 
-Create a file named `doConfigPolyMpo-GPU.sh` with the following contents:
+Create a file named `doConfigPolyMpo.sh` with the following contents:
 
 ```
 cmake -S polyMPO -B ${polyMPO%%install} \
@@ -182,7 +182,7 @@ cmake -S polyMPO -B ${polyMPO%%install} \
   -DCMAKE_INSTALL_PREFIX=$polyMPO
 ```
 
-Create a file named `buildPolyMpo-GPU.sh` with the following contents:
+Create a file named `buildPolyMpo.sh` with the following contents:
 
 ```
 cmake --build ${polyMPO%%install} --target install -j4
@@ -191,7 +191,7 @@ cmake --build ${polyMPO%%install} --target install -j4
 Make them executable:
 
 ```
-chmod +x doConfigPolyMpo-GPU.sh buildPolyMpo-GPU.sh
+chmod +x doConfigPolyMpo.sh buildPolyMpo.sh
 ```
 
 Clone the repo
@@ -203,8 +203,8 @@ git clone -b cws/pumipicDps https://github.com/SCOREC/polyMPO.git
 Run the configure script then run the build script:
 
 ```
-./doConfigPolyMpo-GPU.sh
-./buildPolyMpo-GPU.sh
+./doConfigPolyMpo.sh
+./buildPolyMpo.sh
 ```
 
 ## Run polyMPO tests
@@ -241,7 +241,7 @@ Note, `setupEnvironment.sh` **MUST** be sourced from the top-level work director
 Assuming changes existing polyMPO C++ source/header files were made you can just run make as follows:
 
 ```
-./buildPolyMpo-GPU.sh
+./buildPolyMpo.sh
 ```
 
 ### CMake changes
@@ -251,8 +251,8 @@ If CMake files were changed (i.e., to add new C++ source files) then you should 
 ```
 cd $root
 rm -rf buildPolyMPO-GPU
-./doConfigPolyMpo-GPU.sh
-./buildPolyMpo-GPU.sh
+./doConfigPolyMpo.sh
+./buildPolyMpo.sh
 ```
 
 [Back To Top](#table-of-contents)
@@ -369,7 +369,7 @@ ctest
 
 ## Perlmutter CPU Build Instructions
 
-Following the approach described for the CPU, below are the environment and
+Following the approach described for the GPU, below are the environment and
 build scripts needed for building on the CPU.
 
 

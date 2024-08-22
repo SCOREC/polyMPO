@@ -180,7 +180,7 @@ Create a file named `doConfigPolyMpo.sh` with the following contents:
 cmake -S polyMPO -B ${polyMPO%%install} \
   -DCMAKE_BUILD_TYPE=Release \
   -DKokkos_DIR=$kk/lib64/cmake/Kokkos \
-  -DCMAKE_CXX_COMPILER=$MPICH_CXX \
+  -DCMAKE_CXX_COMPILER=$root/kokkos/bin/nvcc_wrapper \
   -DCMAKE_Fortran_COMPILER=$ftn_compiler \
   -DIS_TESTING=off \
   -DCMAKE_INSTALL_PREFIX=$polyMPO
@@ -285,8 +285,8 @@ export kk=$root/`getname kokkos`/install   # This is where kokkos will be (or is
 export oh=$root/`getname omegah`/install  # This is where omega_h will be (or is) installed
 export cab=$root/`getname cabana`/install # This is where cabana will be (or is) installed
 export pumipic=$root/`getname pumipic`/install # This is where PumiPIC will be (or is) installed
-export polympo=$root/buildPolyMPO-CPU/install
-export CMAKE_PREFIX_PATH=$engpar:$kk:$kk/lib64/cmake:$oh:$cab:$pumipic:$polympo:$CMAKE_PREFIX_PATH
+export polyMPO=$root/buildPolyMPO-CPU/install
+export CMAKE_PREFIX_PATH=$engpar:$kk:$kk/lib64/cmake:$oh:$cab:$pumipic:$polyMPO:$CMAKE_PREFIX_PATH
 
 export MPICH_CXX=g++
 export gpu_option=ON

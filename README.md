@@ -63,6 +63,7 @@ export CMAKE_PREFIX_PATH=$engpar:$kk:$kk/lib64/cmake:$oh:$cab:$pumipic:$polyMPO:
 
 export MPICH_CXX=$root/kokkos/bin/nvcc_wrapper
 export gpu_option=ON
+export kokkos_cpu=-DKokkos_ENABLE_OPENMP=OFF
 export kokkos_gpu=-DKokkos_ARCH_AMPERE86=ON
 export omegah_gpu=-DOmega_h_CUDA_ARCH=86
 export ftn_compiler=gfortran

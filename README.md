@@ -27,6 +27,12 @@ mkdir polyMpoDev #this can be any name - just be consistent
 cd polyMpoDev
 ```
 
+Clone the repo
+
+```
+git clone -b cws/pumipicDps https://github.com/SCOREC/polyMPO.git
+```
+
 Create an environment script `setupEnvironment.sh` with the following contents.  **It contains SCOREC specific `module` commands that will have to be modified if you are building on a non-SCOREC system. Also it contains compiler flags specific to NVIDIA GPUs with the Ampere architecture (i.e., `-DKokkos_ARCH_AMPERE86=ON` and `-DOmega_h_CUDA_ARCH=86`) that need to be modified to match the architecture of the GPU in your system.**  See https://kokkos.github.io/kokkos-core-wiki/keywords.html#architecture-keywords for alternative settings.
 
 ```
@@ -190,12 +196,6 @@ Make them executable:
 
 ```
 chmod +x doConfigPolyMpo.sh buildPolyMpo.sh
-```
-
-Clone the repo
-
-```
-git clone -b cws/pumipicDps https://github.com/SCOREC/polyMPO.git
 ```
 
 Run the configure script then run the build script:

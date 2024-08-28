@@ -29,7 +29,8 @@ program main
   integer, dimension(:), pointer :: MPElmID
   real(kind=APP_RKIND), dimension(:,:), pointer :: MParray
   real(kind=APP_RKIND), dimension(:,:), pointer :: MPPositions
-  real(kind=APP_RKIND), dimension(:,:), pointer :: Mesharray
+  real(kind=APP_RKIND), dimension(:,:), pointer :: mesharray_vel
+  real(kind=APP_RKIND), dimension(:,:), pointer :: mesharray_strainrate
   real(kind=APP_RKIND), dimension(:), pointer :: xArray, yArray, zArray
   integer :: ierr, self
   type(c_ptr) :: mpMesh
@@ -52,10 +53,11 @@ program main
   numMPs = 49 !todo use getNumMPs from the MaterialPoints object
   numElms = 10
 
-  allocate(Mesharray(numCompsVel,nverts))
+  allocate(mesharray_vel(numCompsVel,nverts))
   allocate(MParray(numCompsVel,numMPs))
   allocate(MPElmID(numMPs))
   allocate(MPPositions(numCompsCoords,numMPs))
+  allocate(mesharray_strainrate(6,nverts))
   allocate(xArray(nverts))
   allocate(yArray(nverts))
   allocate(zArray(nverts))
@@ -90,25 +92,25 @@ program main
   ! set mesh Fields
   do i = 1,numCompsVel
     do j = 1,nverts 
-        Mesharray(i,j) = (i-1)*nverts + j
+        mesharray_vel(i,j) = (i-1)*nverts + j
     end do
   end do
-  call polympo_setMeshOnSurfVeloIncr(mpMesh, numCompsVel, nverts, c_loc(Mesharray))
-  call polympo_setMeshOnSurfDispIncr(mpMesh, numCompsVel, nverts, c_loc(Mesharray))
+  call polympo_setMeshOnSurfVeloIncr(mpMesh, numCompsVel, nverts, c_loc(mesharray_vel))
+  call polympo_setMeshOnSurfDispIncr(mpMesh, numCompsVel, nverts, c_loc(mesharray_vel))
 
   ! check mesh Fields
-  Mesharray = -1
-  call polympo_getMeshOnSurfVeloIncr(mpMesh, numCompsVel, nverts, c_loc(Mesharray))
+  mesharray_vel = -1
+  call polympo_getMeshOnSurfVeloIncr(mpMesh, numCompsVel, nverts, c_loc(mesharray_vel))
   do i = 1,numCompsVel
     do j = 1,nverts 
-        call assert((Mesharray(i,j) .eq. (i-1)*nverts+j), "Assert MeshOnSurfVeloIncr Fail")
+        call assert((mesharray_vel(i,j) .eq. (i-1)*nverts+j), "Assert MeshOnSurfVeloIncr Fail")
     end do
   end do
-  Mesharray = -1
-  call polympo_getMeshOnSurfDispIncr(mpMesh, numCompsVel, nverts, c_loc(Mesharray))
+  mesharray_vel = -1
+  call polympo_getMeshOnSurfDispIncr(mpMesh, numCompsVel, nverts, c_loc(mesharray_vel))
   do i = 1,numCompsVel
     do j = 1,nverts 
-        call assert((Mesharray(i,j) .eq. (i-1)*nverts+j), "Assert MeshOnSurfDispIncr Fail")
+        call assert((mesharray_vel(i,j) .eq. (i-1)*nverts+j), "Assert MeshOnSurfDispIncr Fail")
     end do
   end do
 
@@ -139,12 +141,28 @@ program main
     call assert((xArray(i) .eq. i+value1), "Assert MeshVel u-component Velocity Fail")
     call assert((yArray(i) .eq. value2-i), "Assert MeshVel v-component Velocity Fail")
   end do 
+  
+  !VtxStrainRate needs 6 arrays, using mesharray_strainrate to hold them
+  do i = 1, 6
+    do j = 1, nverts
+      mesharray_strainrate(i,j) = (i + j) * ((2 * i) + (3 * j))
+    end do
+  end do
+  call polympo_setMeshVtxStrainRate(mpMesh, nverts, c_loc(mesharray_strainrate))
+  mesharray_strainrate = -1
+  call polympo_getMeshVtxStrainRate(mpMesh, nverts, c_loc(mesharray_strainrate))
+  do i = 1, 6
+    do j = 1, nverts
+      call assert((mesharray_strainrate(i,j) .eq. (i + j) * ((2 * i) + (3 * j))), "Assert MeshVtxStrainRate Fail")
+    end do
+  end do
 
   deallocate(MParray)
-  deallocate(Mesharray)
+  deallocate(mesharray_vel)
   deallocate(xArray)
   deallocate(yArray)
   deallocate(zArray)
+  deallocate(mesharray_strainrate)
 
   call polympo_deleteMPMesh(mpMesh)
   call polympo_finalize()

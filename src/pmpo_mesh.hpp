@@ -24,7 +24,8 @@ enum MeshFieldIndex{
     MeshF_ElmMass,
     MeshF_OnSurfVeloIncr,
     MeshF_OnSurfDispIncr,
-    MeshF_RotLatLonIncr
+    MeshF_RotLatLonIncr,
+    MeshF_ElmCenterXYZ
 };
 enum MeshFieldType{
     MeshFType_Invalid = -2,
@@ -42,6 +43,7 @@ template <> struct meshFieldToType < MeshF_ElmMass           > { using type = Ko
 template <> struct meshFieldToType < MeshF_OnSurfVeloIncr    > { using type = Kokkos::View<vec2d_t*>; };
 template <> struct meshFieldToType < MeshF_OnSurfDispIncr    > { using type = Kokkos::View<vec2d_t*>; };
 template <> struct meshFieldToType < MeshF_RotLatLonIncr     > { using type = Kokkos::View<vec2d_t*>; };
+template <> struct meshFieldToType < MeshF_ElmCenterXYZ      > { using type = Kokkos::View<vec3d_t*>; };
 
 template <MeshFieldIndex index>
 using MeshFView = typename meshFieldToType<index>::type;
@@ -57,7 +59,8 @@ const std::map<MeshFieldIndex, std::pair<MeshFieldType,
                {MeshF_ElmMass,          {MeshFType_ElmBased,"MeshField_ElementsMass"}},
                {MeshF_OnSurfVeloIncr,   {MeshFType_VtxBased,"MeshField_OnSurfaceVelocityIncrement"}},
                {MeshF_OnSurfDispIncr,   {MeshFType_VtxBased,"MeshField_OnSurfaceDisplacementIncrement"}},
-               {MeshF_RotLatLonIncr,    {MeshFType_VtxBased,"MeshField_RotationalLatitudeLongitudeIncreasement"}}};
+               {MeshF_RotLatLonIncr,    {MeshFType_VtxBased,"MeshField_RotationalLatitudeLongitudeIncreasement"}},
+               {MeshF_ElmCenterXYZ,     {MeshFType_ElmBased,"MeshField_ElementCenterXYZ"}}};
 
 enum mesh_type {mesh_unrecognized_lower = -1,
                 mesh_general_polygonal, //other meshes
@@ -91,6 +94,7 @@ class Mesh {
     MeshFView<MeshF_OnSurfVeloIncr> vtxOnSurfVeloIncr_;
     MeshFView<MeshF_OnSurfDispIncr> vtxOnSurfDispIncr_;
     MeshFView<MeshF_RotLatLonIncr> vtxRotLatLonIncr_;
+    MeshFView<MeshF_ElmCenterXYZ>elmCenterXYZ_;
     //DoubleMat2DView vtxStress_;
 
   public:
@@ -186,6 +190,9 @@ auto Mesh::getMeshField(){
     }
     else if constexpr (index==MeshF_RotLatLonIncr){
         return vtxRotLatLonIncr_;
+    }
+    else if constexpr (index==MeshF_ElmCenterXYZ){
+        return elmCenterXYZ_;
     }
     fprintf(stderr,"Mesh Field Index error!\n");
     exit(1);

@@ -487,6 +487,32 @@ module polympo
     type(c_ptr), value :: latitude
   end subroutine
   !---------------------------------------------------------------------------
+  !> @brief set the polympo mesh elements/cells center
+  !> @param mpmesh(in/out) MPMesh object
+  !> @param nElements(in) length of array in, use for assertion 
+  !> @param x/y/zArray(in) the 1D arrays of element centers coords 
+  !---------------------------------------------------------------------------
+  subroutine polympo_setMeshElmCenter(mpMesh, nElements, xArray, yArray, zArray) &
+             bind(C, NAME='polympo_setMeshElmCenter_f')
+    use :: iso_c_binding
+    type(c_ptr), value :: mpMesh
+    integer(c_int), value :: nElements
+    type(c_ptr), intent(in), value :: xArray, yArray, zArray
+  end subroutine
+  !---------------------------------------------------------------------------
+  !> @brief get the polympo mesh elements/cells center
+  !> @param mpmesh(in/out) MPMesh object
+  !> @param nElements(in) length of array in, use for assertion
+  !> @param x/y/zArray(in/out) the 1D arrays of element centers coords
+  !---------------------------------------------------------------------------
+  subroutine polympo_getMeshElmCenter(mpMesh, nElements, xArray, yArray, zArray) &
+             bind(C, NAME='polympo_getMeshElmCenter_f')
+    use :: iso_c_binding
+    type(c_ptr), value :: mpMesh
+    integer(c_int), value :: nElements
+    type(c_ptr), value :: xArray, yArray, zArray
+  end subroutine
+  !---------------------------------------------------------------------------
   !> @brief set the vertices velocity from a host array
   !> @param mpmesh(in/out) MPMesh object
   !> @param nVertices(in) numVertices

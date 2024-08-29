@@ -168,6 +168,26 @@ program main
   deallocate(yArray)
   deallocate(zArray)
 
+  ! test elmcenter
+  allocate(xArray(numElms))
+  allocate(yArray(numElms))
+  allocate(zArray(numElms))
+  xArray = value1
+  yArray = value2
+  zArray = value1 + value2 
+  call polympo_setMeshElmCenter(mpMesh, numElms, c_loc(xArray), c_loc(yArray), c_loc(zArray))
+  xArray = -1
+  yArray = -1
+  zArray = -1
+  call polympo_getMeshElmCenter(mpMesh, numElms, c_loc(xArray), c_loc(yArray), c_loc(zArray))
+  call assert(all(xArray .eq. value1), "Assert xArray == value1 Failed!")
+  call assert(all(yArray .eq. value2), "Assert yArray == value2 Failed!")
+  call assert(all(zArray .eq. value1 + value2), "Assert zArray == value1 + value2 Failed!")
+  
+  deallocate(xArray)
+  deallocate(yArray)
+  deallocate(zArray)
+  
   call polympo_deleteMPMesh(mpMesh)
   call polympo_finalize()
 

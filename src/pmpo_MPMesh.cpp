@@ -143,17 +143,16 @@ void MPMesh::CVTTrackingElmCenterBased(const int printVTPIndex){
             while(true){
                 int numConnElms = elm2ElmConn(iElm,0);
                 
-                //New delta 
-	        Vec3d center(elmCenter(iElm, 0), elmCenter(iElm, 1), elmCenter(iElm, 2));
-	        Vec3d delta = MPnew - center;
+                Vec3d center(elmCenter(iElm, 0), elmCenter(iElm, 1), elmCenter(iElm, 2));
+                Vec3d delta = MPnew - center;
 		
-		double minDistSq = delta[0]*delta[0] + delta[1]*delta[1] + delta[2]*delta[2];
+                double minDistSq = delta[0]*delta[0] + delta[1]*delta[1] + delta[2]*delta[2];
                 int closestElm = -1;
                 //go through all the connected elm, calc distance
                 for(int i=1; i<=numConnElms; i++){
                     int elmID = elm2ElmConn(iElm,i)-1;
-                    //delta = MPnew - elmCenter(elmID);
-		    //New delta
+                    
+	            //New delta
 	            Vec3d center(elmCenter(elmID, 0), elmCenter(elmID, 1), elmCenter(elmID, 2));
                     delta = MPnew - center;
 

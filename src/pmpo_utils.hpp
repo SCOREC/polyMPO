@@ -210,6 +210,34 @@ double sphericalTriangleArea2(Vec3d &a, Vec3d &b, Vec3d &c, double radius){
 //this is a lazy comparison and shouldn't be relied on beyond simple testing
 bool isEqual(double a, double b, double tol=1e-9);
 
+
+KOKKOS_INLINE_FUNCTION
+Vec3d xyz_from_lat_lon(double lat, double lon, double r){
+    Vec3d xyz;
+    xyz[0] = r*cos(lat)*cos(lon);
+    xyz[1] = r*cos(lat)*sin(lon);
+    xyz[2] = r*sin(lat);
+
+    return xyz;
+}
+
+KOKKOS_INLINE_FUNCTION
+Vec3d grid_rotation_backward(Vec3d& xyz_input){
+    Vec3d xyz_output;
+    xyz_output[0] =  xyz_input[2];
+    xyz_output[1] =  xyz_input[1];
+    xyz_output[2] = -xyz_input[0];
+    
+    return xyz_output;
+}
+
+KOKKOS_INLINE_FUNCTION
+void lat_lon_from_xyz(double& lat, double& lon, Vec3d& xyz, double r){
+    lon = Kokkos::atan2(xyz[1], xyz[0]);
+    lat = Kokkos::asin(xyz[2]/r);
+} 
+
+
 }//namespace polyMPO end
 
 #endif

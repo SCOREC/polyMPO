@@ -2,7 +2,8 @@ module advectionTests
   contains
   include "calculateDisplacement.f90"
 
-  subroutine runAdvectionTest(mpMesh, numPush, latVertex, lonVertex, nEdgesOnCell, verticesOnCell, nVertices, sphereRadius)
+  subroutine runAdvectionTest(mpMesh, numPush, latVertex, lonVertex, nEdgesOnCell, verticesOnCell, nVertices, sphereRadius, &
+                  rotated_coords)
     use :: polympo
     use :: readMPAS
     use :: iso_c_binding
@@ -14,17 +15,18 @@ module advectionTests
     integer, dimension(:), pointer :: nEdgesOnCell
     integer, dimension(:,:), pointer :: verticesOnCell
     real(kind=MPAS_RKIND) :: sphereRadius
-
+    LOGICAL, INTENT(IN) :: rotated_coords
 
     do i = 1, numPush
-      call calcSurfDispIncr(mpMesh, latVertex, lonVertex, nEdgesOnCell, verticesOnCell, nVertices, sphereRadius)
+      call calcSurfDispIncr(mpMesh, latVertex, lonVertex, nEdgesOnCell, verticesOnCell, nVertices, sphereRadius, &
+              rotated_coords)
       call polympo_push(mpMesh)
     end do
 
   end subroutine
 
   subroutine runReconstructionTest(mpMesh, numMPs, numPush, nCells, nVertices, mp2Elm, &
-                                  latVertex, lonVertex, nEdgesOnCell, verticesOnCell, sphereRadius)
+                                  latVertex, lonVertex, nEdgesOnCell, verticesOnCell, sphereRadius, rotated_coords)
     use :: polympo
     use :: readMPAS
     use :: iso_c_binding
@@ -41,6 +43,7 @@ module advectionTests
     real(kind=MPAS_RKIND) :: sphereRadius
     real(kind=MPAS_RKIND) :: TEST_VAL = 1.1_MPAS_RKIND
     real(kind=MPAS_RKIND) :: TOLERANCE = 0.0001_MPAS_RKIND
+    LOGICAL, INTENT(IN) :: rotated_coords
 
     allocate(mpMass(1,numMPs))
     allocate(mpVel(2,numMPs))
@@ -66,7 +69,8 @@ module advectionTests
     ! Test push reconstruction
 
     do j = 1, numPush
-      call calcSurfDispIncr(mpMesh, latVertex, lonVertex, nEdgesOnCell, verticesOnCell, nVertices, sphereRadius)
+      call calcSurfDispIncr(mpMesh, latVertex, lonVertex, nEdgesOnCell, verticesOnCell, nVertices, sphereRadius, &
+              rotated_coords)
       call polympo_setReconstructionOfMass(mpMesh,0,polympo_getMeshFElmType())
       call polympo_setReconstructionOfMass(mpMesh,0,polympo_getMeshFVtxType())
       call polympo_setReconstructionOfVel(mpMesh,0,polympo_getMeshFVtxType())
@@ -90,7 +94,8 @@ module advectionTests
     deallocate(meshElmMass)
   end subroutine
 
-  subroutine runApiTest(mpMesh, numMPs, nVertices, nCells, numPush, mpLatLon, mpPosition, xVertex, yVertex, zVertex, latVertex)
+  subroutine runApiTest(mpMesh, numMPs, nVertices, nCells, numPush, mpLatLon, mpPosition, xVertex, yVertex, zVertex, latVertex, & 
+                  rotated_coords)
     use :: polympo
     use :: readMPAS
     use :: iso_c_binding
@@ -102,6 +107,7 @@ module advectionTests
     real(kind=MPAS_RKIND), dimension(:), pointer :: meshVtxMass, meshElmMass, meshVtxVel
     real(kind=MPAS_RKIND), dimension(:), pointer :: latVertex
     real(kind=MPAS_RKIND) :: TEST_VAL = 1.1_MPAS_RKIND
+    LOGICAL, INTENT(IN) :: rotated_coords
 
     nCompsDisp = 2
     allocate(dispIncr(nCompsDisp,nVertices))
@@ -176,6 +182,7 @@ program main
   integer, parameter :: MP_ACTIVE = 1
   integer, parameter :: MP_INACTIVE = 0
   integer, parameter :: INVALID_ELM_ID = -1
+  LOGICAL :: rotated_coords = .TRUE.
 
   call mpi_init(ierr)
   call mpi_comm_rank(mpi_comm_handle, self, ierr)
@@ -292,15 +299,25 @@ program main
   call assert(numMPsCount == numMPs, "num mps miscounted")
 
   call polympo_createMPs(mpMesh,nCells,numMPs,c_loc(mpsPerElm),c_loc(mp2Elm),c_loc(isMPActive))
+  
+  if (rotated_coords) then
+      call polympo_setMPLatLonRotatedFlag(mpMesh, 1)
+  else
+      call polympo_setMPLatLonRotatedFlag(mpMesh, 0)
+  endif
+
+  
   call polympo_setMPRotLatLon(mpMesh,2,numMPs,c_loc(mpLatLon))
   call polympo_setMPPositions(mpMesh,3,numMPs,c_loc(mpPosition))
 
-  ! call runAdvectionTest(mpMesh, numPush, latVertex, lonVertex, nEdgesOnCell, verticesOnCell, nVertices, sphereRadius)
+  call runAdvectionTest(mpMesh, numPush, latVertex, lonVertex, nEdgesOnCell, verticesOnCell, nVertices, sphereRadius, &
+          rotated_coords)
 
-  ! call runReconstructionTest(mpMesh, numMPs, numPush, nCells, nVertices, mp2Elm, &
-  !                                 latVertex, lonVertex, nEdgesOnCell, verticesOnCell, sphereRadius)
+  call runReconstructionTest(mpMesh, numMPs, numPush, nCells, nVertices, mp2Elm, &
+                                   latVertex, lonVertex, nEdgesOnCell, verticesOnCell, sphereRadius, rotated_coords)
 
-  call runApiTest(mpMesh, numMPs, nVertices, nCells, numPush, mpLatLon, mpPosition, xVertex, yVertex, zVertex, latVertex)
+  call runApiTest(mpMesh, numMPs, nVertices, nCells, numPush, mpLatLon, mpPosition, xVertex, yVertex, zVertex, latVertex, & 
+          rotated_coords)
 
   call polympo_summarizeTime();
 

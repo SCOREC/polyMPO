@@ -1,4 +1,5 @@
-subroutine calcSurfDispIncr(mpMesh, latVertex, lonVertex, nEdgesOnCell, verticesOnCell, nVertices, sphereRadius)
+subroutine calcSurfDispIncr(mpMesh, latVertex, lonVertex, nEdgesOnCell, verticesOnCell, nVertices, sphereRadius, &
+                rotated_coords)
   use :: polympo
   use :: readMPAS
   use :: iso_c_binding
@@ -11,7 +12,8 @@ subroutine calcSurfDispIncr(mpMesh, latVertex, lonVertex, nEdgesOnCell, vertices
   integer :: i, j, nVertices, nCompsDisp
   real(kind=MPAS_RKIND), dimension(:,:), pointer :: dispIncr
   type(c_ptr) :: mpMesh
-
+  LOGICAL, INTENT(IN) :: rotated_coords 
+  
   nCompsDisp = 2
   allocate(dispIncr(nCompsDisp,nVertices))
 
@@ -29,11 +31,17 @@ subroutine calcSurfDispIncr(mpMesh, latVertex, lonVertex, nEdgesOnCell, vertices
   end do
 
   deltaLon = maxlon - minlon
-
-  do i = 1,nVertices
-    dispIncr(1,i) = sphereRadius*cos(latVertex(i))*deltaLon
-    dispIncr(2,i) = 0.0_MPAS_RKIND
-  end do
+  IF (rotated_coords) THEN
+      do i = 1,nVertices
+          dispIncr(2,i) = sphereRadius*cos(latVertex(i))*deltaLon
+          dispIncr(1,i) = 0.0_MPAS_RKIND
+      end do
+  ELSE 
+      do i = 1,nVertices
+          dispIncr(1,i) = sphereRadius*cos(latVertex(i))*deltaLon
+          dispIncr(2,i) = 0.0_MPAS_RKIND
+      end do
+  END IF
   call polympo_setMeshVtxOnSurfDispIncr(mpMesh,nCompsDisp,nVertices,c_loc(dispIncr))
 
   deallocate(dispIncr)

@@ -36,6 +36,7 @@ program main
   integer, parameter :: MP_ACTIVE = 1
   integer, parameter :: MP_INACTIVE = 0
   integer, parameter :: INVALID_ELM_ID = -1
+  LOGICAL :: rotated_coords = .FALSE.
 
   call mpi_init(ierr)
   call mpi_comm_rank(mpi_comm_handle, self, ierr)
@@ -121,7 +122,8 @@ program main
   ! Test push reconstruction
 
   do j = 1, 5
-    call calcSurfDispIncr(mpMesh, latVertex, lonVertex, nEdgesOnCell, verticesOnCell, nVertices, sphereRadius)
+    call calcSurfDispIncr(mpMesh, latVertex, lonVertex, nEdgesOnCell, verticesOnCell, nVertices, sphereRadius, &
+            rotated_coords)
     call polympo_setReconstructionOfMass(mpMesh,0,polympo_getMeshFElmType())
     call polympo_setReconstructionOfMass(mpMesh,0,polympo_getMeshFVtxType())
     call polympo_push(mpMesh)

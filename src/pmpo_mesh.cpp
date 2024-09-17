@@ -49,7 +49,7 @@ namespace polyMPO{
         auto elmMassMapEntry = meshFields2TypeAndString.at(MeshF_ElmMass);
         PMT_ALWAYS_ASSERT(elmMassMapEntry.first == MeshFType_ElmBased);
         elmMass_      = MeshFView<MeshF_ElmMass>(elmMassMapEntry.second,numElms_);
-        elmCenterXYZ_ = MeshFView<MeshF_ElmCenterXYZ>(meshFields2TypeAndString.at(MeshF_ElmCenterXYZ).second, numElms_);
+        elmCenterXYZ_ = MeshFView<MeshF_ElmCenterXYZ>(meshFields2TypeAndString.at(MeshF_ElmCenterXYZ).second,numElms_);
     }
 
     void Mesh::computeRotLatLonIncr(){

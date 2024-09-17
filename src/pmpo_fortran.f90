@@ -492,11 +492,11 @@ module polympo
   !> @param nElements(in) length of array in, use for assertion 
   !> @param x/y/zArray(in) the 1D arrays of element centers coords 
   !---------------------------------------------------------------------------
-  subroutine polympo_setMeshElmCenter(mpMesh, nElements, xArray, yArray, zArray) &
+  subroutine polympo_setMeshElmCenter(mpMesh, nCells, xArray, yArray, zArray) &
              bind(C, NAME='polympo_setMeshElmCenter_f')
     use :: iso_c_binding
     type(c_ptr), value :: mpMesh
-    integer(c_int), value :: nElements
+    integer(c_int), value :: nCells
     type(c_ptr), intent(in), value :: xArray, yArray, zArray
   end subroutine
   !---------------------------------------------------------------------------
@@ -505,11 +505,11 @@ module polympo
   !> @param nElements(in) length of array in, use for assertion
   !> @param x/y/zArray(in/out) the 1D arrays of element centers coords
   !---------------------------------------------------------------------------
-  subroutine polympo_getMeshElmCenter(mpMesh, nElements, xArray, yArray, zArray) &
+  subroutine polympo_getMeshElmCenter(mpMesh, nCells, xArray, yArray, zArray) &
              bind(C, NAME='polympo_getMeshElmCenter_f')
     use :: iso_c_binding
     type(c_ptr), value :: mpMesh
-    integer(c_int), value :: nElements
+    integer(c_int), value :: nCells
     type(c_ptr), value :: xArray, yArray, zArray
   end subroutine
   !---------------------------------------------------------------------------

@@ -696,18 +696,18 @@ void polympo_getMeshVtxRotLat_f(MPMesh_ptr p_mpmesh, const int nVertices, double
   }
 }
 
-void polympo_setMeshElmCenter_f(MPMesh_ptr p_mpmesh, const int nElements, const double* xArray, const double* yArray, const double* zArray){
+void polympo_setMeshElmCenter_f(MPMesh_ptr p_mpmesh, const int nCells, const double* xArray, const double* yArray, const double* zArray){
   //chech validity
   checkMPMeshValid(p_mpmesh);
   auto p_mesh = ((polyMPO::MPMesh*)p_mpmesh)->p_mesh;
 
   //check the size
-  PMT_ALWAYS_ASSERT(p_mesh->getNumElements()==nElements); 
+  PMT_ALWAYS_ASSERT(p_mesh->getNumElements()==nCells); 
 
   //copy the host array to the device
   auto elmCenter = p_mesh->getMeshField<polyMPO::MeshF_ElmCenterXYZ>();
   auto h_elmCenter = Kokkos::create_mirror_view(elmCenter);
-  for(int i=0; i<nElements; i++){
+  for(int i=0; i<nCells; i++){
     h_elmCenter(i,0) = xArray[i];
     h_elmCenter(i,1) = yArray[i];
     h_elmCenter(i,2) = zArray[i];
@@ -715,18 +715,18 @@ void polympo_setMeshElmCenter_f(MPMesh_ptr p_mpmesh, const int nElements, const 
   Kokkos::deep_copy(elmCenter, h_elmCenter);
 }
 
-void polympo_getMeshElmCenter_f(MPMesh_ptr p_mpmesh, const int nElements, double* xArray, double* yArray, double* zArray){
+void polympo_getMeshElmCenter_f(MPMesh_ptr p_mpmesh, const int nCells, double* xArray, double* yArray, double* zArray){
   //chech validity
   checkMPMeshValid(p_mpmesh);
   auto p_mesh = ((polyMPO::MPMesh*)p_mpmesh)->p_mesh;
 
   //check the size
-  PMT_ALWAYS_ASSERT(p_mesh->getNumElements()==nElements); 
+  PMT_ALWAYS_ASSERT(p_mesh->getNumElements()==nCells); 
   
   //copy the device to host 
   auto elmCenter = p_mesh->getMeshField<polyMPO::MeshF_ElmCenterXYZ>();
   auto h_elmCenter = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), elmCenter);
-  for(int i=0; i<nElements; i++){
+  for(int i=0; i<nCells; i++){
     xArray[i] = h_elmCenter(i,0);
     yArray[i] = h_elmCenter(i,1);
     zArray[i] = h_elmCenter(i,2);

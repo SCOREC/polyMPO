@@ -116,7 +116,8 @@ void MPMesh::CVTTrackingElmCenterBased(const int printVTPIndex){
     int numElms = p_mesh->getNumElements();
     auto numMPs = p_MPs->getCount();
 
-    const auto vtxCoords = p_mesh->getMeshField<polyMPO::MeshF_VtxCoords>(); 
+    const auto elmCenter = p_mesh->getMeshField<polyMPO::MeshF_ElmCenterXYZ>();
+
     auto elm2VtxConn = p_mesh->getElm2VtxConn();
     auto elm2ElmConn = p_mesh->getElm2ElmConn();
 
@@ -127,20 +128,6 @@ void MPMesh::CVTTrackingElmCenterBased(const int printVTPIndex){
     if(printVTPIndex>=0) {
       printVTP_mesh(printVTPIndex);
     }
-
-    Vec3dView elmCenter("elementCenter",numElms);
-    Kokkos::parallel_for("calcElementCenter", numElms, KOKKOS_LAMBDA(const int elm){  
-        int numVtx = elm2VtxConn(elm,0);
-        double sum_x = 0.0, sum_y = 0.0, sum_z = 0.0;
-        for(int i=1; i<= numVtx; i++){
-            sum_x += vtxCoords(elm2VtxConn(elm,i)-1,0);
-            sum_y += vtxCoords(elm2VtxConn(elm,i)-1,1);
-            sum_z += vtxCoords(elm2VtxConn(elm,i)-1,2);
-        }
-        elmCenter(elm)[0] = sum_x/numVtx;
-        elmCenter(elm)[1] = sum_y/numVtx;
-        elmCenter(elm)[2] = sum_z/numVtx;
-    });
 
     Vec3dView history("positionHistory",numMPs);
     Vec3dView resultLeft("positionResult",numMPs);
@@ -155,19 +142,27 @@ void MPMesh::CVTTrackingElmCenterBased(const int printVTPIndex){
             Vec3d dx = MPnew-MP;
             while(true){
                 int numConnElms = elm2ElmConn(iElm,0);
-                Vec3d delta = MPnew - elmCenter(iElm);
+                
+                Vec3d center(elmCenter(iElm, 0), elmCenter(iElm, 1), elmCenter(iElm, 2));
+                Vec3d delta = MPnew - center;
+		
                 double minDistSq = delta[0]*delta[0] + delta[1]*delta[1] + delta[2]*delta[2];
                 int closestElm = -1;
                 //go through all the connected elm, calc distance
                 for(int i=1; i<=numConnElms; i++){
                     int elmID = elm2ElmConn(iElm,i)-1;
-                    delta = MPnew - elmCenter(elmID);
+                    
+	            //New delta
+	            Vec3d center(elmCenter(elmID, 0), elmCenter(elmID, 1), elmCenter(elmID, 2));
+                    delta = MPnew - center;
+
                     double neighborDistSq = delta[0]*delta[0] + delta[1]*delta[1] + delta[2]*delta[2];
                     if(neighborDistSq < minDistSq){
                         closestElm = elmID;
                         minDistSq = neighborDistSq;
                     }
                 }
+
                 if(closestElm<0){
                     MPs2Elm(mp) = iElm;
                     break;

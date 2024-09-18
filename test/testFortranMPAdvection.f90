@@ -43,7 +43,7 @@ module advectionTests
     end do
 
     PRINT *, "Backward: "
-    call calcSurfDispIncr(mpMesh, latVertex, lonVertex, nEdgesOnCell, verticesOnCell, nVertices, sphereRadius, -1)
+    call calcSurfDispIncr(mpMesh, latVertex, lonVertex, nEdgesOnCell, verticesOnCell, nVertices, sphereRadius, -numPush)
     call polympo_push(mpMesh)
    
   end subroutine
@@ -199,8 +199,8 @@ program main
   real(kind=MPAS_RKIND), dimension(:), pointer :: xCell, yCell, zCell
   integer, dimension(:,:), pointer :: verticesOnCell, cellsOnCell
   integer :: numMPs, numMPsCount, numPush
-  integer, dimension(:), pointer :: mpsPerElm, mp2Elm, isMPActive
-  real(kind=MPAS_RKIND), dimension(:,:), pointer :: mpPosition, mpLatLon
+  integer, dimension(:), pointer :: mpsPerElm, mp2Elm, isMPActive, mp2Elm_new
+  real(kind=MPAS_RKIND), dimension(:,:), pointer :: mpPosition, mpLatLon, mpPositions_new, mpLatLon_new
   integer, parameter :: MP_ACTIVE = 1
   integer, parameter :: MP_INACTIVE = 0
   integer, parameter :: INVALID_ELM_ID = -1
@@ -258,9 +258,13 @@ program main
 
   allocate(mpsPerElm(nCells))
   allocate(mp2Elm(numMPs))
+  allocate(mp2Elm_new(numMPs))
+
   allocate(isMPActive(numMPs))
   allocate(mpPosition(3,numMPs))
+  allocate(mpPositions_new(3, numMPs))
   allocate(mpLatLon(2,numMPs))
+  allocate(mpLatLon_new(2,numMPs))
 
   isMPActive = MP_ACTIVE !all active MPs and some changed below
 
@@ -325,10 +329,17 @@ program main
   call polympo_setMPRotLatLon(mpMesh,2,numMPs,c_loc(mpLatLon))
   call polympo_setMPPositions(mpMesh,3,numMPs,c_loc(mpPosition))
 
-  call runAdvectionTest(mpMesh, numPush, latVertex, lonVertex, nEdgesOnCell, verticesOnCell, nVertices, sphereRadius)
+  !call runAdvectionTest(mpMesh, numPush, latVertex, lonVertex, nEdgesOnCell, verticesOnCell, nVertices, sphereRadius)
 
   call runAdvectionTest2(mpMesh, numPush, latVertex, lonVertex, nEdgesOnCell, verticesOnCell, nVertices, sphereRadius)
 
+  call polympo_getMPPositions(mpMesh, 3, numMPs, c_loc(mpPositions_new))
+  call polympo_getMPRotLatLon(mpMesh, 2, numMPs, c_loc(mpLatLon_new))
+  call polympo_getMPCurElmID(mpMesh, numMPS, c_loc(mp2Elm_new))
+  do i = 1, numMPs
+    PRINT *, "Difference: ", i, mpLatLon_new(1,i)-mpLatLon(1,i), mpLatLon_new(2,i)-mpLatLon(2,i)
+  end do
+  
   call runReconstructionTest(mpMesh, numMPs, numPush, nCells, nVertices, mp2Elm, &
                                    latVertex, lonVertex, nEdgesOnCell, verticesOnCell, sphereRadius)
 

@@ -45,3 +45,4 @@ subroutine calcSurfDispIncr(mpMesh, latVertex, lonVertex, nEdgesOnCell, vertices
 
   deallocate(dispIncr)
 end subroutine
+

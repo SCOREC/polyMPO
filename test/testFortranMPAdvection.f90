@@ -204,6 +204,7 @@ program main
   integer, parameter :: MP_ACTIVE = 1
   integer, parameter :: MP_INACTIVE = 0
   integer, parameter :: INVALID_ELM_ID = -1
+  real(kind=MPAS_RKIND) :: max_push_diff=0
 
   call mpi_init(ierr)
   call mpi_comm_rank(mpi_comm_handle, self, ierr)
@@ -336,9 +337,14 @@ program main
   call polympo_getMPPositions(mpMesh, 3, numMPs, c_loc(mpPositions_new))
   call polympo_getMPRotLatLon(mpMesh, 2, numMPs, c_loc(mpLatLon_new))
   call polympo_getMPCurElmID(mpMesh, numMPS, c_loc(mp2Elm_new))
+
   do i = 1, numMPs
-    PRINT *, "Difference: ", i, mpLatLon_new(1,i)-mpLatLon(1,i), mpLatLon_new(2,i)-mpLatLon(2,i)
+    if ( abs(mpLatLon_new(2,i)-mpLatLon(2,i)) > max_push_diff ) then
+      max_push_diff = abs(mpLatLon_new(2,i)-mpLatLon(2,i))
+    end if
   end do
+  
+  PRINT *, "Max difference: ", max_push_diff
   
   call runReconstructionTest(mpMesh, numMPs, numPush, nCells, nVertices, mp2Elm, &
                                    latVertex, lonVertex, nEdgesOnCell, verticesOnCell, sphereRadius)

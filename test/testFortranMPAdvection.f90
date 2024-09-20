@@ -204,7 +204,8 @@ program main
   integer, parameter :: MP_ACTIVE = 1
   integer, parameter :: MP_INACTIVE = 0
   integer, parameter :: INVALID_ELM_ID = -1
-  real(kind=MPAS_RKIND) :: max_push_diff=0
+  real(kind=MPAS_RKIND) :: max_push_diff=0.0_MPAS_RKIND
+  real(kind=MPAS_RKIND) :: TOLERANCE_PUSH = 0.00000001_MPAS_RKIND ! 1e-8
 
   call mpi_init(ierr)
   call mpi_comm_rank(mpi_comm_handle, self, ierr)
@@ -345,7 +346,8 @@ program main
   end do
   
   PRINT *, "Max difference: ", max_push_diff
-  
+  call assert(max_push_diff.le.TOLERANCE_PUSH , "MPs donot come back check push!")
+
   call runReconstructionTest(mpMesh, numMPs, numPush, nCells, nVertices, mp2Elm, &
                                    latVertex, lonVertex, nEdgesOnCell, verticesOnCell, sphereRadius)
 

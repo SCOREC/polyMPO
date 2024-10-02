@@ -293,6 +293,8 @@ void MPMesh::T2LTracking(Vec2dView dx){
 }
 
 void MPMesh::reconstructSlices() {
+    
+    std::cout<<__FUNCTION__<<std::endl;
     if (reconstructSlice.size() == 0) return;
     Kokkos::Timer timer;
     calcBasis();
@@ -304,6 +306,7 @@ void MPMesh::reconstructSlices() {
 }
 
 void MPMesh::push(){
+  std::cout<<__FUNCTION__<<std::endl;
   Kokkos::Timer timer;
   p_mesh->computeRotLatLonIncr();
   sphericalInterpolation<MeshF_RotLatLonIncr>(*this);

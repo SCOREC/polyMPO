@@ -255,6 +255,8 @@ void polympo_setMPPositions_f(MPMesh_ptr p_mpmesh,
       mpPositions(mp,0) = mpPositionsIn_d(0, mpAppID(mp));
       mpPositions(mp,1) = mpPositionsIn_d(1, mpAppID(mp));
       mpPositions(mp,2) = mpPositionsIn_d(2, mpAppID(mp));
+      //printf("Mp %d Map mpAppID(mp) %d Pos %.15e %.15e %.15e \n", mp, mpAppID(mp), 
+        //mpPositions(mp,0), mpPositions(mp,1), mpPositions(mp,2));
     }
   };
   p_MPs->parallel_for(setPos, "setMPPositions");
@@ -926,6 +928,8 @@ void polympo_push_f(MPMesh_ptr p_mpmesh){
 
 //TODO skeleton of reconstruction functions
 void polympo_setReconstructionOfMass_f(MPMesh_ptr p_mpmesh, const int order, const int meshEntType){
+ 
+  std::cout<<__FUNCTION__<<std::endl;	
   checkMPMeshValid(p_mpmesh);
   auto mpmesh = ((polyMPO::MPMesh*)p_mpmesh);
   polyMPO::MeshFieldType type = static_cast<polyMPO::MeshFieldType>(meshEntType);

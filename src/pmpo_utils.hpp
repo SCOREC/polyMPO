@@ -231,10 +231,10 @@ class Matrix {
             for (int i=0; i<cols_; i++){
 	        data_[0][i] = v0[i];
                 data_[1][i] = v1[i];
-		data_[2][i] = v2[i];
-		data_[3][i] = v3[i];
+                data_[2][i] = v2[i];
+                data_[3][i] = v3[i];
 	    }
-	}
+        }
 	
 	KOKKOS_INLINE_FUNCTION
 	~Matrix(){
@@ -303,7 +303,7 @@ void CholeskySolve(Matrix& A, double* x){
     else 
        A(3,3)=0.0;
 
-    if(A(1,1)<EPSILON || A(2,2)<EPSILON || A(3,3)<EPSILON){
+    if(abs(A(1,1))<EPSILON || abs(A(2,2))<EPSILON || abs(A(3,3))<EPSILON){
        x[0]=1.0/a_00;
        x[1]=0.0;
        x[2]=0.0;
@@ -321,6 +321,34 @@ void CholeskySolve(Matrix& A, double* x){
        x[0] = ( x[0] - A(0,1)*x[1] - A(0,2)*x[2] - A(0,3)*x[3])/A(0,0);
 
     } 
+}
+
+KOKKOS_INLINE_FUNCTION
+void QR_decomp(Matrix& A, Matrix& Q, Matrix &R){
+  int m_size=4;
+  for (int i=0; i<m_size; i++){
+      Vec4d A_column;
+      Vec4d u_column;
+      for (int l=0; l<m_size; l++){
+         A_column[l] = A(l,i);
+	 u_column[l] = A(l,i);
+      }
+
+      for (int j=0; j<i; j++){
+         Vec4d q_column;
+	 for (int l=0; l<m_size; l++)
+	   q_column[l] = Q(l,j);
+	 double r=q_column.dot(A_column);
+	 R(j,i) = r;
+         for (int k=0; k<m_size; k++) u_column[k] -= r*Q(k,j);
+      }
+      double uNorm = std::sqrt(u_column.dot(u_column));
+      R(i,i)=uNorm;
+      for (int k=0; k<m_size; k++)
+          Q(k,i)= u_column[k]/uNorm; 
+
+  }
+
 }
 
 

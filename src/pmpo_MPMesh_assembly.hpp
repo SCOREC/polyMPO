@@ -106,23 +106,36 @@ template <MeshFieldIndex meshFieldIndex>
 void MPMesh::assemblyVtx1() {
 
   std::cout<<__FUNCTION__<<std::endl;
-  static int count=0;
-  constexpr MaterialPointSlice mpfIndex = meshFieldIndexToMPSlice<meshFieldIndex>;
+  static int count=0;  
+  double epsilon=1e-13;  
+  //Mesh Inforamtion
   auto elm2VtxConn = p_mesh->getElm2VtxConn();  
-  const int numEntries = mpSliceToNumEntries<mpfIndex>();
   int numVtx = p_mesh->getNumVertices();
+  auto vtxCoords = p_mesh->getMeshField<polyMPO::MeshF_VtxCoords>();
 
+  //Mesh Field
+  constexpr MaterialPointSlice mpfIndex = meshFieldIndexToMPSlice<meshFieldIndex>;
+  const int numEntries = mpSliceToNumEntries<mpfIndex>();
+  p_mesh->fillMeshField<meshFieldIndex>(numVtx, numEntries, 0.0);
+  auto meshField = p_mesh->getMeshField<meshFieldIndex>();
+
+  //Material Points
   auto mpData = p_MPs->getData<mpfIndex>();
   auto weight = p_MPs->getData<MPF_Basis_Vals>();
   auto mpPositions = p_MPs->getData<MPF_Cur_Pos_XYZ>();
   auto mpAppID = p_MPs->getData<polyMPO::MPF_MP_APP_ID>();
 
-  p_mesh->fillMeshField<meshFieldIndex>(numVtx, numEntries, 0.0);
-  auto meshField = p_mesh->getMeshField<meshFieldIndex>();
-
+  //Matrix for each vertex
   Kokkos::View<double*[4][4]> VtxMatrices("VtxMatrices", p_mesh->getNumVertices());
-  auto vtxCoords = p_mesh->getMeshField<polyMPO::MeshF_VtxCoords>();
 
+  //Reconstructed values
+  Kokkos::View<double*> reconVals("meshField", p_mesh->getNumVertices());
+  //Kokkos::deep_copy(reconVals, 0.0);
+  Kokkos::View<int*>mps_around_vertex("MPs_around_vertex", p_mesh->getNumVertices());
+  Kokkos::View<int*>ill_cond_vertex("ill_cond", p_mesh->getNumVertices());
+  
+
+  //Earth Radius
   double radius = p_mesh->getSphereRadius();
 
   //Assemble matrix for each vertex
@@ -138,12 +151,15 @@ void MPMesh::assemblyVtx1() {
         for (int k=0; k<4; k++)
           for(int l=0;l<4;l++)
             Kokkos::atomic_add(&VtxMatrices(vID,k,l), CoordDiffs[k] * CoordDiffs[l] * w_vtx);
+	
+	Kokkos::atomic_add(&mps_around_vertex[vID],1);
       }
     }
   };
   p_MPs->parallel_for(assemble, "assembly");
   
   //Solve Ax=b for each vertex  
+  printf("=====Count %d=========\n", count);
   Kokkos::View<double*[4]> VtxCoeffs("VtxMatrices", p_mesh->getNumVertices());
   Kokkos::parallel_for("solving Ax=b", numVtx, KOKKOS_LAMBDA(const int vtx){
     Vec4d v0 = {VtxMatrices(vtx,0,0), VtxMatrices(vtx,0,1), VtxMatrices(vtx,0,2), VtxMatrices(vtx,0,3)};
@@ -151,17 +167,60 @@ void MPMesh::assemblyVtx1() {
     Vec4d v2 = {VtxMatrices(vtx,2,0), VtxMatrices(vtx,2,1), VtxMatrices(vtx,2,2), VtxMatrices(vtx,2,3)};
     Vec4d v3 = {VtxMatrices(vtx,3,0), VtxMatrices(vtx,3,1), VtxMatrices(vtx,3,2), VtxMatrices(vtx,3,3)};
     Matrix A = {v0,v1,v2,v3};
+  
+    Vec4d v000={0, 0, 0, 0}; 
+    Matrix Q={v000, v000, v000, v000};
+    Matrix R={v000, v000, v000, v000};
+    QR_decomp(A, Q, R);
+     
+    /* 
+    //For checking QR on a  non illconditioned matrix
+    Vec4d v00={1, 0.2, 0.3, 0.4};
+    Vec4d v01={0.1, 1, 0.1, 0.1};
+    Vec4d v02={0.1, 0.1, 1, 0.1};
+    Vec4d v03={0.1, 0.1, 0.1, 1};
+    Matrix A_new={v00, v01, v02, v03}; 
+    QR_decomp(A,Q,R);
+    if(vtx==2050){
+      for (int i=0; i<4; i++){
+        for (int j=0; j<4; j++){
+          printf("%.15e  ", Q(i,j));    
+        }
+	printf ("\n");
+      }
+     
+      for (int i=0; i<4; i++){
+        for (int j=0; j<4; j++){
+          printf("%.15e  ", R(i,j));    
+        }
+        printf ("\n");
+      }
+    }
+    */
+    if(R(0,0)<epsilon || R(1,1)<epsilon || R(2,2)<epsilon || R(3,3)<epsilon) ill_cond_vertex(vtx)=1;
+
+
     double coeff[4]={0.0, 0.0, 0.0, 0.0};
     CholeskySolve(A, coeff);
     for (int i=0; i<4; i++) VtxCoeffs(vtx,i)=coeff[i];
     
-    if(vtx >= 20 && vtx<=24){
+    if(vtx ==2050){
+      printf("Matrix %.15e %.15e %.15e %.15e\n",VtxMatrices(vtx,0,0),VtxMatrices(vtx,0,1),VtxMatrices(vtx,0,2),VtxMatrices(vtx,0,3));
+      printf("Matrix %.15e %.15e %.15e \n", VtxMatrices(vtx,1,1),VtxMatrices(vtx,1,2),VtxMatrices(vtx,1,3));
+      printf("Matrix %.15e %.15e \n", VtxMatrices(vtx,2,2),VtxMatrices(vtx,2,3));
+      printf("Matrix %.15e \n", VtxMatrices(vtx,3,3));
       printf("Vtx %d coeff %.15e %.15e %.15e %.15e \n", vtx, coeff[0], coeff[1], coeff[2], coeff[3]);
-    }  
+    }
+    /*
+    if(mps_around_vertex(vtx)<4)
+      printf("Vtx %d Ill condition number %d and no of surrounding MPs %d \n", vtx, ill_cond_vertex(vtx), mps_around_vertex(vtx));
+    if(mps_around_vertex(vtx)>=4 && ill_cond_vertex(vtx)==1)
+      printf("Vertex %d Anomaly \n", vtx);
+    */
+
   });
  
   //Reconstruct
-  Kokkos::View<double*> reconVals("meshField", p_mesh->getNumVertices());
   auto reconstruct = PS_LAMBDA(const int& elm, const int& mp, const int& mask) {
     if(mask) { //if material point is 'active'/'enabled'
       int nVtxE = elm2VtxConn(elm,0); //number of vertices bounding the element
@@ -170,9 +229,10 @@ void MPMesh::assemblyVtx1() {
         double w_vtx=weight(mp,i); 
         double CoordDiffs[4] = {1, (vtxCoords(vID,0) - mpPositions(mp,0))/radius, (vtxCoords(vID,1) - mpPositions(mp,1))/radius, 
           (vtxCoords(vID,2) - mpPositions(mp,2))/radius};
-	auto val = w_vtx*(VtxCoeffs(vID,0) + VtxCoeffs(vID,1)*CoordDiffs[1] + VtxCoeffs(vID,2)*CoordDiffs[2] + VtxCoeffs(vID,3)*CoordDiffs[3])*mpData(mp,0) ;
+	auto val = w_vtx*(VtxCoeffs(vID,0) + VtxCoeffs(vID,1)*CoordDiffs[1] + VtxCoeffs(vID,2)*CoordDiffs[2] + 
+	  VtxCoeffs(vID,3)*CoordDiffs[3])*mpData(mp,0) ;
 	Kokkos::atomic_add(&reconVals(vID), val);
-        if(vID>=20 && vID<=24){
+        if(vID==2050){
            printf("Vtx %d coeff val %.15e value %.15e\n", vID, val, reconVals(vID));
         }
       }
@@ -181,28 +241,11 @@ void MPMesh::assemblyVtx1() {
   p_MPs->parallel_for(reconstruct, "reconstruct");
   
   Kokkos::parallel_for("averaging", numVtx, KOKKOS_LAMBDA(const int vtx){
+    if(mps_around_vertex(vtx)<4) reconVals(vtx)=-1;
+    if(ill_cond_vertex(vtx)==1)  reconVals(vtx)=-2; 
     meshField(vtx, 0) = reconVals(vtx);
   });
-  
-  count++; 
-  //if(count>1) exit(1);
-  //Debugging
-  bool debug=false;
-  if(!debug) return;
-  int numElms = p_mesh->getNumElements();
-  Kokkos::parallel_for("counting", numElms, KOKKOS_LAMBDA(const int elm){
-    int nVtxE = elm2VtxConn(elm,0);
-    if(elm==4 || elm==5){
-      for(int i=0; i<nVtxE; i++){
-        int vID = elm2VtxConn(elm,i+1)-1; //vID = vertex id
-        printf("Vertex id %d \n", vID);
-	printf("Matrix %.15e %.15e %.15e %.15e \n", VtxMatrices(vID,0,0),VtxMatrices(vID,0,1),VtxMatrices(vID,0,2),VtxMatrices(vID,0,3));
-        printf("Matrix %.15e %.15e %.15e \n", VtxMatrices(vID,1,1),VtxMatrices(vID,1,2),VtxMatrices(vID,1,3));
-        printf("Matrix %.15e %.15e \n", VtxMatrices(vID,2,2),VtxMatrices(vID,2,3));
-        printf("Matrix %.15e \n", VtxMatrices(vID,3,3));
-      }
-    }
-  });
+  count ++;
   
 }
 

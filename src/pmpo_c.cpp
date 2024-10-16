@@ -449,6 +449,7 @@ void polympo_setMeshNumElms_f(MPMesh_ptr p_mpmesh, const int numElms){
   p_mesh->setNumElms(numElms);
   p_mesh->setElm2VtxConn(elm2Vtx);
   p_mesh->setElm2ElmConn(elm2Elm);
+  p_mesh->setMeshElmBasedFieldSize();
 }
 
 void polympo_getMeshNumElms_f(MPMesh_ptr p_mpmesh, int & numElms) {
@@ -585,6 +586,44 @@ void polympo_getMeshVtxRotLat_f(MPMesh_ptr p_mpmesh, const int nVertices, double
                                                            coordsArray);
   for(int i=0; i<nVertices; i++){
     latitude[i] = h_coordsArray(i);
+  }
+}
+
+void polympo_setMeshElmCenter_f(MPMesh_ptr p_mpmesh, const int nElements, const double* xArray, const double* yArray, const double* zArray){
+  //chech validity
+  checkMPMeshValid(p_mpmesh);
+  auto p_mesh = ((polyMPO::MPMesh*)p_mpmesh)->p_mesh;
+
+  //check the size
+  PMT_ALWAYS_ASSERT(p_mesh->getNumElements()==nElements); 
+
+  //copy the host array to the device
+  auto coordsArray = p_mesh->getMeshField<polyMPO::MeshF_ElmCenterXYZ>();
+  auto h_coordsArray = Kokkos::create_mirror_view(coordsArray);
+  for(int i=0; i<nElements; i++){
+    h_coordsArray(i,0) = xArray[i];
+    h_coordsArray(i,1) = yArray[i];
+    h_coordsArray(i,2) = zArray[i];
+  }
+  Kokkos::deep_copy(coordsArray, h_coordsArray);
+}
+
+void polympo_getMeshElmCenter_f(MPMesh_ptr p_mpmesh, const int nElements, double* xArray, double* yArray, double* zArray){
+  //chech validity
+  checkMPMeshValid(p_mpmesh);
+  auto p_mesh = ((polyMPO::MPMesh*)p_mpmesh)->p_mesh;
+
+  //check the size
+  PMT_ALWAYS_ASSERT(p_mesh->getNumElements()==nElements); 
+  
+  //copy the device to host 
+  auto coordsArray = p_mesh->getMeshField<polyMPO::MeshF_ElmCenterXYZ>();
+  auto h_coordsArray = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(),
+                                                           coordsArray);
+  for(int i=0; i<nElements; i++){
+    xArray[i] = h_coordsArray(i,0);
+    yArray[i] = h_coordsArray(i,1);
+    zArray[i] = h_coordsArray(i,2);
   }
 }
 

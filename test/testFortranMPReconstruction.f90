@@ -19,7 +19,7 @@ program main
   real(kind=MPAS_RKIND) :: pi = 4.0_MPAS_RKIND*atan(1.0_MPAS_RKIND)
   real(kind=MPAS_RKIND) :: TEST_VAL = 1.1_MPAS_RKIND
   real(kind=MPAS_RKIND) :: TOLERANCE = 0.0001_MPAS_RKIND
-  real(kind=MPAS_RKIND) :: TOLERANCE1 = 0.000000000000001_MPAS_RKIND
+  real(kind=MPAS_RKIND) :: TOLERANCE1 = 0.0000000000001_MPAS_RKIND
   character (len=2048) :: filename
   real(kind=MPAS_RKIND), dimension(:,:), pointer :: dispIncr
   character (len=64) :: onSphere
@@ -130,7 +130,7 @@ program main
   call polympo_getMeshVtxMass(mpMesh,nVertices,c_loc(meshVtxMass1))
   do i = 1, nVertices
     write(*,*) TEST_VAL, meshVtxMass1(i)
-    call assert(meshVtxMass(i) < TEST_VAL+TOLERANCE1 .and. meshVtxMass(i) > TEST_VAL-TOLERANCE1, "Error: wrong vtx mass")
+    call assert(meshVtxMass1(i) < TEST_VAL+TOLERANCE1 .and. meshVtxMass1(i) > TEST_VAL-TOLERANCE1, "Error: wrong vtx mass")
   end do
  
 

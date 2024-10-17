@@ -241,8 +241,8 @@ void MPMesh::assemblyVtx1() {
   p_MPs->parallel_for(reconstruct, "reconstruct");
   
   Kokkos::parallel_for("averaging", numVtx, KOKKOS_LAMBDA(const int vtx){
-    if(mps_around_vertex(vtx)<4) reconVals(vtx)=-1;
-    if(ill_cond_vertex(vtx)==1)  reconVals(vtx)=-2; 
+    //if(mps_around_vertex(vtx)<4) reconVals(vtx)=-1;
+    //if(ill_cond_vertex(vtx)==1)  reconVals(vtx)=-2; 
     meshField(vtx, 0) = reconVals(vtx);
   });
   count ++;

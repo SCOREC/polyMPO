@@ -1,4 +1,4 @@
-subroutine calcSurfDispIncr(mpMesh, latVertex, lonVertex, nEdgesOnCell, verticesOnCell, nVertices, sphereRadius)
+subroutine calcSurfDispIncr(mpMesh, latVertex, lonVertex, nEdgesOnCell, verticesOnCell, nVertices, sphereRadius, scale)
   use :: polympo
   use :: readMPAS
   use :: iso_c_binding
@@ -8,9 +8,16 @@ subroutine calcSurfDispIncr(mpMesh, latVertex, lonVertex, nEdgesOnCell, vertices
   real(kind=MPAS_RKIND) :: maxlon, minlon, deltaLon, sphereRadius
   integer, dimension(:), pointer :: nEdgesOnCell
   integer, dimension(:,:), pointer :: verticesOnCell
-  integer :: i, j, nVertices, nCompsDisp
+  integer :: i, j, nVertices, nCompsDisp, scale_use
   real(kind=MPAS_RKIND), dimension(:,:), pointer :: dispIncr
   type(c_ptr) :: mpMesh
+  INTEGER, INTENT(IN), OPTIONAL :: scale
+  
+  IF (PRESENT(scale)) THEN
+    scale_use=scale
+  ELSE
+    scale_use=1
+  END IF
 
   nCompsDisp = 2
   allocate(dispIncr(nCompsDisp,nVertices))
@@ -31,10 +38,11 @@ subroutine calcSurfDispIncr(mpMesh, latVertex, lonVertex, nEdgesOnCell, vertices
   deltaLon = maxlon - minlon
 
   do i = 1,nVertices
-    dispIncr(1,i) = sphereRadius*cos(latVertex(i))*deltaLon
+    dispIncr(1,i) = scale_use*sphereRadius*cos(latVertex(i))*deltaLon
     dispIncr(2,i) = 0.0_MPAS_RKIND
   end do
   call polympo_setMeshVtxOnSurfDispIncr(mpMesh,nCompsDisp,nVertices,c_loc(dispIncr))
 
   deallocate(dispIncr)
 end subroutine
+

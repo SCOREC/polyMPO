@@ -23,6 +23,33 @@ module advectionTests
 
   end subroutine
 
+  subroutine runAdvectionTest2(mpMesh, numPush, latVertex, lonVertex, nEdgesOnCell, verticesOnCell, nVertices, sphereRadius)
+    use :: polympo
+    use :: readMPAS
+    use :: iso_c_binding
+    implicit none
+
+    type(c_ptr) :: mpMesh
+    integer :: i, numPush, nVertices
+    real(kind=MPAS_RKIND), dimension(:), pointer :: latVertex, lonVertex
+    integer, dimension(:), pointer :: nEdgesOnCell
+    integer, dimension(:,:), pointer :: verticesOnCell
+    real(kind=MPAS_RKIND) :: sphereRadius
+
+    PRINT *, "Foward: "
+    do i = 1, numPush
+      call calcSurfDispIncr(mpMesh, latVertex, lonVertex, nEdgesOnCell, verticesOnCell, nVertices, sphereRadius)
+      call polympo_push(mpMesh)
+    end do
+
+    PRINT *, "Backward: "
+    call calcSurfDispIncr(mpMesh, latVertex, lonVertex, nEdgesOnCell, verticesOnCell, nVertices, sphereRadius, -numPush)
+    call polympo_push(mpMesh)
+   
+  end subroutine
+
+
+
   subroutine runReconstructionTest(mpMesh, numMPs, numPush, nCells, nVertices, mp2Elm, &
                                   latVertex, lonVertex, nEdgesOnCell, verticesOnCell, sphereRadius)
     use :: polympo
@@ -172,11 +199,13 @@ program main
   real(kind=MPAS_RKIND), dimension(:), pointer :: xCell, yCell, zCell
   integer, dimension(:,:), pointer :: verticesOnCell, cellsOnCell
   integer :: numMPs, numMPsCount, numPush
-  integer, dimension(:), pointer :: mpsPerElm, mp2Elm, isMPActive
-  real(kind=MPAS_RKIND), dimension(:,:), pointer :: mpPosition, mpLatLon
+  integer, dimension(:), pointer :: mpsPerElm, mp2Elm, isMPActive, mp2Elm_new
+  real(kind=MPAS_RKIND), dimension(:,:), pointer :: mpPosition, mpLatLon, mpPositions_new, mpLatLon_new
   integer, parameter :: MP_ACTIVE = 1
   integer, parameter :: MP_INACTIVE = 0
   integer, parameter :: INVALID_ELM_ID = -1
+  real(kind=MPAS_RKIND) :: max_push_diff=0.0_MPAS_RKIND
+  real(kind=MPAS_RKIND) :: TOLERANCE_PUSH = 0.00000001_MPAS_RKIND ! 1e-8
 
   call mpi_init(ierr)
   call mpi_comm_rank(mpi_comm_handle, self, ierr)
@@ -231,9 +260,13 @@ program main
 
   allocate(mpsPerElm(nCells))
   allocate(mp2Elm(numMPs))
+  allocate(mp2Elm_new(numMPs))
+
   allocate(isMPActive(numMPs))
   allocate(mpPosition(3,numMPs))
+  allocate(mpPositions_new(3, numMPs))
   allocate(mpLatLon(2,numMPs))
+  allocate(mpLatLon_new(2,numMPs))
 
   isMPActive = MP_ACTIVE !all active MPs and some changed below
 
@@ -298,12 +331,27 @@ program main
   call polympo_setMPRotLatLon(mpMesh,2,numMPs,c_loc(mpLatLon))
   call polympo_setMPPositions(mpMesh,3,numMPs,c_loc(mpPosition))
 
-  ! call runAdvectionTest(mpMesh, numPush, latVertex, lonVertex, nEdgesOnCell, verticesOnCell, nVertices, sphereRadius)
+  !call runAdvectionTest(mpMesh, numPush, latVertex, lonVertex, nEdgesOnCell, verticesOnCell, nVertices, sphereRadius)
 
-  ! call runReconstructionTest(mpMesh, numMPs, numPush, nCells, nVertices, mp2Elm, &
-  !                                 latVertex, lonVertex, nEdgesOnCell, verticesOnCell, sphereRadius)
+  call runAdvectionTest2(mpMesh, numPush, latVertex, lonVertex, nEdgesOnCell, verticesOnCell, nVertices, sphereRadius)
 
-  call runApiTest(mpMesh, numMPs, nVertices, nCells, numPush, mpLatLon, mpPosition, xVertex, yVertex, zVertex, latVertex)
+  call polympo_getMPPositions(mpMesh, 3, numMPs, c_loc(mpPositions_new))
+  call polympo_getMPRotLatLon(mpMesh, 2, numMPs, c_loc(mpLatLon_new))
+  call polympo_getMPCurElmID(mpMesh, numMPS, c_loc(mp2Elm_new))
+
+  do i = 1, numMPs
+    if ( abs(mpLatLon_new(2,i)-mpLatLon(2,i)) > max_push_diff ) then
+      max_push_diff = abs(mpLatLon_new(2,i)-mpLatLon(2,i))
+    end if
+  end do
+  
+  PRINT *, "Max difference: ", max_push_diff
+  call assert(max_push_diff.le.TOLERANCE_PUSH , "MPs donot come back check push!")
+
+  call runReconstructionTest(mpMesh, numMPs, numPush, nCells, nVertices, mp2Elm, &
+                                   latVertex, lonVertex, nEdgesOnCell, verticesOnCell, sphereRadius)
+
+  !call runApiTest(mpMesh, numMPs, nVertices, nCells, numPush, mpLatLon, mpPosition, xVertex, yVertex, zVertex, latVertex)
 
   call polympo_summarizeTime();
 

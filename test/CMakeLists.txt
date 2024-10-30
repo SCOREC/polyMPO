@@ -101,7 +101,10 @@ if(EXISTS ${TEST_NC_FILE_SPHERICAL})
     message(STATUS "Found Spherical NC File: ${TEST_NC_FILE_SPHERICAL}") 
     set(TEST_NC_FILE ${TEST_NC_FILE_SPHERICAL})
     # this test only works for spherical NC files!
-    pmpo_add_test(testFortranMPAdvection 1 ./testFortranMPAdvection 5 5 ${TEST_NC_FILE}) 
+    pmpo_add_test(test_fortran_mp_advection_api 1 ./testFortranMPAdvection "API" 5 5 ${TEST_NC_FILE})
+    pmpo_add_test(test_fortran_mp_advection_migration 1 ./testFortranMPAdvection "MIGRATION" 5 5 ${TEST_NC_FILE})
+    pmpo_add_test(test_fortran_mp_advection_reconstruction 1 ./testFortranMPAdvection "RECONSTRUCTION" 5 5 ${TEST_NC_FILE})
+
 else()
     set(TEST_NC_FILE ${TEST_NC_FILE_PLANAR})
 endif()

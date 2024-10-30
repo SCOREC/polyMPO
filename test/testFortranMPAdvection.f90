@@ -83,16 +83,6 @@ module advectionTests
 
     call polympo_setMPMass(mpMesh,1,numMPs,c_loc(mpMass))
     call polympo_setMPVel(mpMesh,2,numMPs,c_loc(mpVel))
-
-    ! ! Test vtx reconstruction
-    
-    ! call polympo_setReconstructionOfMass(mpMesh,0,polympo_getMeshFVtxType())
-    ! call polympo_applyReconstruction(mpMesh)
-    ! call polympo_getMeshVtxMass(mpMesh,nVertices,c_loc(meshVtxMass))
-
-    ! do i = 1, nVertices
-    !   call assert(meshVtxMass(i) < TEST_VAL+TOLERANCE .and. meshVtxMass(i) > TEST_VAL-TOLERANCE, "Error: wrong vtx mass")
-    ! end do
     
     ! Test push reconstruction
 
@@ -194,7 +184,7 @@ program main
   integer :: mpi_comm_handle = MPI_COMM_WORLD
   real(kind=MPAS_RKIND) :: xc, yc, zc, xMP, yMP, zMP, radius, lon
   real(kind=MPAS_RKIND) :: pi = 4.0_MPAS_RKIND*atan(1.0_MPAS_RKIND)
-  character (len=2048) :: filename, input
+  character (len=2048) :: filename, input, testType
   character (len=64) :: onSphere
   real(kind=MPAS_RKIND) :: sphereRadius
   integer, dimension(:), pointer :: nEdgesOnCell
@@ -219,14 +209,16 @@ program main
 
   call polympo_checkPrecisionForRealKind(MPAS_RKIND)
   argc = command_argument_count()
-  if(argc == 3) then
-    call get_command_argument(1, input)
-    read(input, '(I7)') mpsScaleFactorPerVtx
+  if(argc == 4) then
+    call get_command_argument(1, testType)
     call get_command_argument(2, input)
+    read(input, '(I7)') mpsScaleFactorPerVtx
+    call get_command_argument(3, input)
     read(input, '(I7)') numPush
-    call get_command_argument(3, filename)
+    call get_command_argument(4, filename)
   else
-    write(0, *) "Usage: ./testFortranMPAdvection <mpsScaleFactorPerVtx> <numPush> <path to the nc file>"
+    write(0, *) "Usage: ./testFortranMPAdvection <API/MIGRATION/RECONSTRUCTION> &
+                <mpsScaleFactorPerVtx> <numPush> <path to the nc file>"
     call exit(1)
   end if
 
@@ -337,13 +329,19 @@ program main
   call polympo_setMPRotLatLon(mpMesh,2,numMPs,c_loc(mpLatLon))
   call polympo_setMPPositions(mpMesh,3,numMPs,c_loc(mpPosition))
 
-  ! call setProcWedges(mpMesh, nCells, comm_size, nEdgesOnCell, verticesOnCell, lonCell)
-  ! call runAdvectionTest(mpMesh, numPush, latVertex, lonVertex, nEdgesOnCell, verticesOnCell, nVertices, sphereRadius)
-
-  ! call runReconstructionTest(mpMesh, numMPs, numPush, nCells, nVertices, mp2Elm, &
-  !                                 latVertex, lonVertex, nEdgesOnCell, verticesOnCell, sphereRadius)
-
-  call runApiTest(mpMesh, numMPs, nVertices, nCells, numPush, mpLatLon, mpPosition, xVertex, yVertex, zVertex, latVertex)
+  if (testType == "API") then
+    call runApiTest(mpMesh, numMPs, nVertices, nCells, numPush, mpLatLon, mpPosition, xVertex, yVertex, zVertex, latVertex)
+  else if (testType == "MIGRATION") then
+    call setProcWedges(mpMesh, nCells, comm_size, nEdgesOnCell, verticesOnCell, lonCell)
+    call runAdvectionTest(mpMesh, numPush, latVertex, lonVertex, nEdgesOnCell, verticesOnCell, nVertices, sphereRadius)
+  else if (testType == "RECONSTRUCTION") then
+    call runReconstructionTest(mpMesh, numMPs, numPush, nCells, nVertices, mp2Elm, &
+                                latVertex, lonVertex, nEdgesOnCell, verticesOnCell, sphereRadius)
+  else
+    write(0, *) "Usage: ./testFortranMPAdvection <API/MIGRATION/RECONSTRUCTION> &
+                <mpsScaleFactorPerVtx> <numPush> <path to the nc file>"
+    call exit(1)
+  end if
 
   call polympo_summarizeTime();
 

@@ -105,7 +105,7 @@ if(EXISTS ${TEST_NC_FILE_SPHERICAL})
     pmpo_add_test(test_fortran_mp_advection_migration 1 ./testFortranMPAdvection "MIGRATION" 5 5 ${TEST_NC_FILE})
     if (MPIRUN)
       pmpo_add_test(test_fortran_mp_advection_migration_4 4 ./testFortranMPAdvection "MIGRATION" 5 5 ${TEST_NC_FILE})
-    endif
+    endif()
 
 else()
     set(TEST_NC_FILE ${TEST_NC_FILE_PLANAR})

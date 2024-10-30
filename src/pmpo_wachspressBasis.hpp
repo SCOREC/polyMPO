@@ -355,7 +355,7 @@ void sphericalInterpolation(MPMesh& mpMesh){
         }
     };
     p_MPs->parallel_for(interpolation, "interpolation");
-    pumipic::RecordTime("PolyMPO_SphericalInterpolation", timer.seconds());
+    pumipic::RecordTime("PolyMPO_sphericalInterpolation", timer.seconds());
 }
 
 } //namespace polyMPO end

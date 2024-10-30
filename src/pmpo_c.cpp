@@ -965,6 +965,20 @@ void polympo_applyReconstruction_f(MPMesh_ptr p_mpmesh){
   mpmesh->reconstructSlices();
 }
 
+void polympo_setOwningProc_f(MPMesh_ptr p_mpmesh, const int nCells, const int* array){
+  checkMPMeshValid(p_mpmesh);
+  auto p_mesh = ((polyMPO::MPMesh*)p_mpmesh)->p_mesh; 
+  PMT_ALWAYS_ASSERT(p_mesh->meshEditable());
+  kkViewHostU<const int*> arrayHost(array,nCells); 
+
+  //check the size
+  PMT_ALWAYS_ASSERT(nCells == p_mesh->getNumElements());
+
+  Kokkos::View<int*> owningProc("owningProc",nCells);
+  Kokkos::deep_copy(owningProc, arrayHost);
+  p_mesh->setOwningProc(owningProc);
+}
+
 void polympo_enableTiming_f(){
   pumipic::EnableTiming();
 }

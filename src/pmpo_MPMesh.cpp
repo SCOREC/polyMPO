@@ -123,7 +123,9 @@ void MPMesh::CVTTrackingElmCenterBased(const int printVTPIndex){
 
     auto mpPositions = p_MPs->getData<MPF_Cur_Pos_XYZ>();
     auto mpTgtPos = p_MPs->getData<MPF_Tgt_Pos_XYZ>();
-    auto MPs2Elm = p_MPs->getData<MPF_Tgt_Elm_ID>();;
+    auto MPs2Elm = p_MPs->getData<MPF_Tgt_Elm_ID>();
+    auto MPs2Proc = p_MPs->getData<MPF_Tgt_Proc_ID>();
+    auto elm2Process = p_mesh->getElm2Process();
     
     if(printVTPIndex>=0) {
       printVTP_mesh(printVTPIndex);
@@ -165,6 +167,8 @@ void MPMesh::CVTTrackingElmCenterBased(const int printVTPIndex){
 
                 if(closestElm<0){
                     MPs2Elm(mp) = iElm;
+                    if (elm2Process.size() > 0)
+                        MPs2Proc(mp) = elm2Process(iElm);
                     break;
                 }else{
                     iElm = closestElm;
@@ -226,7 +230,7 @@ void MPMesh::CVTTrackingElmCenterBased(const int printVTPIndex){
         fprintf(pFile,"        </DataArray>\n      </Lines>\n    </Piece>\n  </PolyData>\n</VTKFile>\n");
         fclose(pFile);
     }
-    pumipic::RecordTime("PolyMPO_TrackingElmCenter", timer.seconds());
+    pumipic::RecordTime("PolyMPO_CVTTrackingElmCenterBased", timer.seconds());
 }
 
 void MPMesh::T2LTracking(Vec2dView dx){
@@ -303,20 +307,41 @@ void MPMesh::reconstructSlices() {
     pumipic::RecordTime("PolyMPO_Reconstruct", timer.seconds());
 }
 
+bool getAnyIsMigrating(bool isMigrating) {
+  Kokkos::Timer timer;
+  int comm_rank;
+  MPI_Comm_rank(MPI_COMM_WORLD, &comm_rank);
+  int comm_size;
+  MPI_Comm_size(MPI_COMM_WORLD, &comm_size);
+
+  bool anyIsMigrating = false;
+  MPI_Allreduce(&isMigrating, &anyIsMigrating, 1, MPI_C_BOOL, MPI_LOR, MPI_COMM_WORLD);
+  pumipic::RecordTime("PolyMPO_getAnyIsMigrating", timer.seconds());
+  return anyIsMigrating;
+}
+
 void MPMesh::push(){
   Kokkos::Timer timer;
   p_mesh->computeRotLatLonIncr();
   sphericalInterpolation<MeshF_RotLatLonIncr>(*this);
   p_MPs->updateRotLatLonAndXYZ2Tgt(p_mesh->getSphereRadius()); // set Tgt_XYZ
+  auto elm2Process = p_mesh->getElm2Process();
 
-  CVTTrackingElmCenterBased(); // move to Tgt_XYZ
+  bool anyIsMigrating = false;
+  do {
+    CVTTrackingElmCenterBased(); // move to Tgt_XYZ
+    p_MPs->updateMPSlice<MPF_Cur_Pos_XYZ, MPF_Tgt_Pos_XYZ>(); // Tgt_XYZ becomes Cur_XYZ
+    p_MPs->updateMPSlice<MPF_Cur_Pos_Rot_Lat_Lon, MPF_Tgt_Pos_Rot_Lat_Lon>(); // Tgt becomes Cur
+    if (elm2Process.size() > 0)
+        anyIsMigrating = getAnyIsMigrating(p_MPs->migrate());
+    else
+        p_MPs->rebuild(); //rebuild pumi-pic
+    p_MPs->updateMPElmID(); //update mpElm IDs slices
+    reconstructSlices();
+  } 
+  while (anyIsMigrating);
 
-  p_MPs->updateMPSlice<MPF_Cur_Pos_XYZ, MPF_Tgt_Pos_XYZ>(); // Tgt_XYZ becomes Cur_XYZ
-  p_MPs->updateMPSlice<MPF_Cur_Pos_Rot_Lat_Lon, MPF_Tgt_Pos_Rot_Lat_Lon>(); // Tgt becomes Cur
-  p_MPs->rebuild(); //rebuild pumi-pic
-  p_MPs->updateMPElmID(); //update mpElm IDs slices
-  reconstructSlices();
-  pumipic::RecordTime("PolyMPO_Push", timer.seconds());
+  pumipic::RecordTime("PolyMPO_push", timer.seconds());
 }
 
 void MPMesh::printVTP_mesh(int printVTPIndex){

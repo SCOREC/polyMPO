@@ -2,6 +2,37 @@ module advectionTests
   contains
   include "calculateDisplacement.f90"
 
+  subroutine setProcWedges(mpMesh, nCells, comm_size, nEdgesOnCell, verticesOnCell, lonCell)
+    use :: polympo
+    use :: readMPAS
+    use :: iso_c_binding
+    implicit none
+
+    type(c_ptr) :: mpMesh
+    integer :: i, j, k, nCells, comm_size
+    integer, dimension(:), pointer :: owningProc, nEdgesOnCell
+    integer, dimension(:,:), pointer :: verticesOnCell
+    real(kind=MPAS_RKIND), dimension(:), pointer :: lonCell
+    real(kind=MPAS_RKIND) :: normalizedLat, min, max
+    
+    allocate(owningProc(nCells))
+    
+    min = 1000
+    max = -1000
+    do i = 1, nCells
+      if (lonCell(i) < min) min = lonCell(i)
+      if (lonCell(i) > max) max = lonCell(i)
+    end do
+
+    do i = 1, nCells
+      normalizedLat = (lonCell(i) - min) / (max - min) * .99
+      owningProc(i) = normalizedLat * comm_size
+    end do
+
+    call polympo_startMeshFill(mpMesh)
+    call polympo_setOwningProc(mpMesh, nCells, c_loc(owningProc))
+  end subroutine
+
   subroutine runAdvectionTest(mpMesh, numPush, latVertex, lonVertex, nEdgesOnCell, verticesOnCell, nVertices, sphereRadius)
     use :: polympo
     use :: readMPAS
@@ -156,7 +187,7 @@ program main
 
   !integer, parameter :: APP_RKIND = selected_real_kind(15)
   type(c_ptr) :: mpMesh
-  integer :: ierr, self
+  integer :: ierr, self, comm_size
   integer :: argc, i, j, arglen, k, m, mpsScaleFactorPerVtx, localNumMPs
   integer :: setMeshOption, setMPOption
   integer :: maxEdges, vertexDegree, nCells, nVertices
@@ -168,7 +199,7 @@ program main
   real(kind=MPAS_RKIND) :: sphereRadius
   integer, dimension(:), pointer :: nEdgesOnCell
   real(kind=MPAS_RKIND), dimension(:), pointer :: xVertex, yVertex, zVertex
-  real(kind=MPAS_RKIND), dimension(:), pointer :: latVertex, lonVertex
+  real(kind=MPAS_RKIND), dimension(:), pointer :: latVertex, lonVertex, lonCell
   real(kind=MPAS_RKIND), dimension(:), pointer :: xCell, yCell, zCell
   integer, dimension(:,:), pointer :: verticesOnCell, cellsOnCell
   integer :: numMPs, numMPsCount, numPush
@@ -180,6 +211,7 @@ program main
 
   call mpi_init(ierr)
   call mpi_comm_rank(mpi_comm_handle, self, ierr)
+  call mpi_comm_size(mpi_comm_handle, comm_size, ierr)
 
   call polympo_setMPICommunicator(mpi_comm_handle)
   call polympo_initialize()
@@ -195,6 +227,7 @@ program main
     call get_command_argument(3, filename)
   else
     write(0, *) "Usage: ./testFortranMPAdvection <mpsScaleFactorPerVtx> <numPush> <path to the nc file>"
+    call exit(1)
   end if
 
   call readMPASMeshFromNCFile(filename, maxEdges, vertexDegree, &
@@ -229,6 +262,7 @@ program main
   print *, "Scale Factor", mpsScaleFactorPerVtx
   print *, "NUM MPs", numMPs
 
+  allocate(lonCell(nCells))
   allocate(mpsPerElm(nCells))
   allocate(mp2Elm(numMPs))
   allocate(isMPActive(numMPs))
@@ -261,6 +295,11 @@ program main
     xc = xc/nEdgesOnCell(i)
     yc = yc/nEdgesOnCell(i)
     zc = zc/nEdgesOnCell(i)
+
+    lonCell(i) = atan2(yc,xc)
+    if (lonCell(i) .le. 0.0_MPAS_RKIND) then ! lon[0,2pi]
+      lonCell(i) = lonCell(i) + 2.0_MPAS_RKIND*pi
+    endif 
 
     do k = 1, nEdgesOnCell(i)
       j = verticesOnCell(k,i)
@@ -298,6 +337,7 @@ program main
   call polympo_setMPRotLatLon(mpMesh,2,numMPs,c_loc(mpLatLon))
   call polympo_setMPPositions(mpMesh,3,numMPs,c_loc(mpPosition))
 
+  ! call setProcWedges(mpMesh, nCells, comm_size, nEdgesOnCell, verticesOnCell, lonCell)
   ! call runAdvectionTest(mpMesh, numPush, latVertex, lonVertex, nEdgesOnCell, verticesOnCell, nVertices, sphereRadius)
 
   ! call runReconstructionTest(mpMesh, numMPs, numPush, nCells, nVertices, mp2Elm, &
@@ -318,6 +358,7 @@ program main
   deallocate(zVertex)
   deallocate(latVertex)
   deallocate(lonVertex)
+  deallocate(lonCell)
   deallocate(xCell)
   deallocate(yCell)
   deallocate(zCell)

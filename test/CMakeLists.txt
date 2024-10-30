@@ -61,7 +61,6 @@ pmpo_add_exe(testReconstruction testReconstruction.cpp)
 pmpo_add_exe(testTracking testTracking.cpp)
 pmpo_add_exe(testRebuild testRebuild.cpp)
 pmpo_add_exe(timeAssmblyWachspress testTiming.cpp)
-pmpo_add_exe(testMigration testMigration.cpp)
 pmpo_add_fortran_exe(testFortranInit testFortranInit.f90)
 pmpo_add_fortran_exe(testFortran testFortran.f90)
 pmpo_add_fortran_exe(testFortranReadMPAS testFortranReadMPAS.f90)
@@ -102,8 +101,11 @@ if(EXISTS ${TEST_NC_FILE_SPHERICAL})
     set(TEST_NC_FILE ${TEST_NC_FILE_SPHERICAL})
     # this test only works for spherical NC files!
     pmpo_add_test(test_fortran_mp_advection_api 1 ./testFortranMPAdvection "API" 5 5 ${TEST_NC_FILE})
-    pmpo_add_test(test_fortran_mp_advection_migration 1 ./testFortranMPAdvection "MIGRATION" 5 5 ${TEST_NC_FILE})
     pmpo_add_test(test_fortran_mp_advection_reconstruction 1 ./testFortranMPAdvection "RECONSTRUCTION" 5 5 ${TEST_NC_FILE})
+    pmpo_add_test(test_fortran_mp_advection_migration 1 ./testFortranMPAdvection "MIGRATION" 5 5 ${TEST_NC_FILE})
+    if (MPIRUN)
+      pmpo_add_test(test_fortran_mp_advection_migration_4 4 ./testFortranMPAdvection "MIGRATION" 5 5 ${TEST_NC_FILE})
+    endif
 
 else()
     set(TEST_NC_FILE ${TEST_NC_FILE_PLANAR})
@@ -114,6 +116,3 @@ pmpo_add_test(testFortranMPReconstruction 1 ./testFortranMPReconstruction ${TEST
 
 pmpo_add_test(test_timing 1 ./timeAssmblyWachspress 1 ${TEST_NC_FILE})
 pmpo_add_test(test_wachspress 1 ./testWachspress ${TEST_NC_FILE})
-if(MPIRUN)
-  pmpo_add_test(test_migration 8 ./testMigration ${TEST_NC_FILE})
-endif()

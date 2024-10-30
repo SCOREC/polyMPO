@@ -235,6 +235,7 @@ jobs:
         -DCMAKE_BUILD_TYPE="Debug"
         -DKokkos_DIR=${{ runner.temp }}/build-kokkos/install/lib64/cmake/Kokkos
         -DCMAKE_PREFIX_PATH=${{ runner.temp }}/build-pumi-pic/install
+        -DIS_TESTING=on
         -DCMAKE_CXX_COMPILER=mpicxx
         -DCMAKE_INSTALL_PREFIX=${{ runner.temp }}/build-polyMPO/install
     

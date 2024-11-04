@@ -70,13 +70,10 @@ void MPMesh::assemblyVtx0(){
 template <MeshFieldIndex meshFieldIndex>
 void MPMesh::assemblyElm0() {
   
-  std::cout<<__FUNCTION__<<std::endl;	
   Kokkos::Timer timer;
   constexpr MaterialPointSlice mpfIndex = meshFieldIndexToMPSlice<meshFieldIndex>;
   auto mpData = p_MPs->getData<mpfIndex>();
   const int numEntries = mpSliceToNumEntries<mpfIndex>();
-  auto mpPositions = p_MPs->getData<MPF_Cur_Pos_XYZ>();
-  auto mpAppID = p_MPs->getData<polyMPO::MPF_MP_APP_ID>();
 
   int numElms = p_mesh->getNumElements();
   p_mesh->fillMeshField<meshFieldIndex>(numElms, numEntries, 0.0);

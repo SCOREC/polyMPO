@@ -423,7 +423,7 @@ double arcLength(Vec3d &a, Vec3d &b){
 // implement from: https://github.com/MPAS-Seaice-MPM-Project/MPAS-Seaice-MPM/blob/9bb3b4f3a09ac59fbc93b8ab317ca0fa6a6f18bb/components/mpas-framework/src/operators/mpas_geometry_utils.F#L651-L671
 //TODO:check for more effcient calculation
 KOKKOS_INLINE_FUNCTION
-double sphericalTriangleArea(Vec3d a, Vec3d b, Vec3d c, double radius){
+double sphericalTriangleArea(Vec3d& a, Vec3d& b, Vec3d& c, double radius){
     double ab, bc, ca, semiperim, tanqe;
     Vec3d ablen, aclen, dlen;
 

@@ -155,97 +155,143 @@ class Vec3d{
 
 
 class Vec4d{
-    private:
-    vec4d_t coords_;
-    public:
-      
-      //constructors
-      KOKKOS_INLINE_FUNCTION
-      Vec4d():coords_{0.0, 0.0, 0.0, 0.0}{}
-      ~Vec4d() = default;
-               
-      KOKKOS_INLINE_FUNCTION
-      Vec4d(double x1, double x2, double x3, double x4):coords_{x1,x2,x3,x4}{}
-                          
-      KOKKOS_INLINE_FUNCTION
-      Vec4d(double x[4]):coords_{x[0], x[1], x[2], x[3]}{}
 
-      //operators
-      KOKKOS_INLINE_FUNCTION
-      double operator[](int i) const { return coords_[i]; }
-                                           
-      KOKKOS_INLINE_FUNCTION
-      double &operator[](int i) { return coords_[i]; }
+  private:
+    vec4d_t coords_;
+  
+  public:
+      
+    //constructors
+    KOKKOS_INLINE_FUNCTION
+    Vec4d():coords_{0.0, 0.0, 0.0, 0.0}{}
+    ~Vec4d() = default;
+             
+    KOKKOS_INLINE_FUNCTION
+    Vec4d(double x1, double x2, double x3, double x4):coords_{x1,x2,x3,x4}{}
+                         
+    KOKKOS_INLINE_FUNCTION
+    Vec4d(double x[4]):coords_{x[0], x[1], x[2], x[3]}{}
+
+    //operators
+    KOKKOS_INLINE_FUNCTION
+    double operator[](int i) const { return coords_[i]; }
+                                          
+    KOKKOS_INLINE_FUNCTION
+    double &operator[](int i) { return coords_[i]; }
                                                                 
-      KOKKOS_INLINE_FUNCTION
-      Vec4d operator+(const Vec4d& v) const {
-          return Vec4d(coords_[0] + v.coords_[0], coords_[1] + v.coords_[1], 
-              coords_[2] + v.coords_[2], coords_[3] + v.coords_[3]);
+    KOKKOS_INLINE_FUNCTION
+    Vec4d operator+(const Vec4d& v) const {
+      return Vec4d(coords_[0] + v.coords_[0], coords_[1] + v.coords_[1], 
+             coords_[2] + v.coords_[2], coords_[3] + v.coords_[3]);
       }
       
-      KOKKOS_INLINE_FUNCTION
-      Vec4d operator-(const Vec4d& v) const {
-          return Vec4d(coords_[0] - v.coords_[0], coords_[1] - v.coords_[1], 
-              coords_[2] - v.coords_[2], coords_[3] - v.coords_[3]);
-      }                                                                                                                                              
+    KOKKOS_INLINE_FUNCTION
+    Vec4d operator-(const Vec4d& v) const {
+      return Vec4d(coords_[0] - v.coords_[0], coords_[1] - v.coords_[1], 
+             coords_[2] - v.coords_[2], coords_[3] - v.coords_[3]);
+    }                                                                                                                                              
       
-      KOKKOS_INLINE_FUNCTION
-      Vec4d operator-() { return Vec4d(-coords_[0], -coords_[1], -coords_[2], -coords_[3]); }
+    KOKKOS_INLINE_FUNCTION
+    Vec4d operator-() { return Vec4d(-coords_[0], -coords_[1], -coords_[2], -coords_[3]); }
       
-      KOKKOS_INLINE_FUNCTION
-      Vec4d operator*(double scalar) const {
-          return Vec4d(coords_[0] * scalar, coords_[1] * scalar, coords_[2] * scalar, coords_[3] * scalar);
-      }
+    KOKKOS_INLINE_FUNCTION
+    Vec4d operator*(double scalar) const {
+      return Vec4d(coords_[0] * scalar, coords_[1] * scalar, coords_[2] * scalar, coords_[3] * scalar);
+    }
       
-      KOKKOS_INLINE_FUNCTION
-      double dot(const Vec4d& v) const {
-          return coords_[0] * v.coords_[0] + coords_[1] * v.coords_[1] + coords_[2] * v.coords_[2] + coords_[3] * v.coords_[3];
-      }
+    KOKKOS_INLINE_FUNCTION
+    double dot(const Vec4d& v) const {
+      return coords_[0] * v.coords_[0] + coords_[1] * v.coords_[1] + coords_[2] * v.coords_[2] + coords_[3] * v.coords_[3];
+    }
       
-      KOKKOS_INLINE_FUNCTION
-      double magnitude() const {
-         return std::sqrt(coords_[0] * coords_[0] + coords_[1] * coords_[1] + coords_[2] * coords_[2] + coords_[3] * coords_[3]);
-      }
+    KOKKOS_INLINE_FUNCTION
+    double magnitude() const {
+      return std::sqrt(coords_[0] * coords_[0] + coords_[1] * coords_[1] + coords_[2] * coords_[2] + coords_[3] * coords_[3]);
+    }
 };
 
 class Matrix {
     
-    private:
+  private:
   
-        double** data_;
-        int rows_;
-        int cols_;
+    double** data_;
+    int rows_;
+    int cols_;
    
-    public:
+  public:
 			        
-        KOKKOS_INLINE_FUNCTION
-        Matrix(Vec4d v0, Vec4d v1, Vec4d v2, Vec4d v3){
-            rows_ = 4;
-            cols_ = 4;
-            data_ = new double*[rows_];
-	    
-	    for (int i=0; i<rows_; i++){
-	        data_[i] = new double[cols_];
-            }
+    KOKKOS_INLINE_FUNCTION
+    Matrix(Vec4d v0, Vec4d v1, Vec4d v2, Vec4d v3){
+      rows_ = 4;
+      cols_ = 4;
+      data_ = new double*[rows_];
+  
+      for (int i=0; i<rows_; i++){
+        data_[i] = new double[cols_];
+      }
 
-            for (int i=0; i<cols_; i++){
-	        data_[0][i] = v0[i];
-                data_[1][i] = v1[i];
-                data_[2][i] = v2[i];
-                data_[3][i] = v3[i];
-	    }
-        }
-	
-	KOKKOS_INLINE_FUNCTION
-	~Matrix(){
-	    for (int i=0; i<4; i++){
-	        delete[] data_[i];
-            }
-	    delete[] data_;
-	}
+      for (int i=0; i<cols_; i++){
+        data_[0][i] = v0[i];
+        data_[1][i] = v1[i];
+        data_[2][i] = v2[i];
+        data_[3][i] = v3[i];
+      }
+    }
+
+    //Destructor    
+    KOKKOS_INLINE_FUNCTION
+    ~Matrix(){
+      for (int i=0; i<4; i++){
+        delete[] data_[i];
+      }
+      delete[] data_;
+    }
         
-	KOKKOS_INLINE_FUNCTION
-	double& operator()(int i, int j) { return data_[i][j];}
+    //Retrieval
+    KOKKOS_INLINE_FUNCTION
+    double& operator()(int i, int j) { return data_[i][j];}
+
+    //Scalar division operator overloading
+    KOKKOS_INLINE_FUNCTION
+    Matrix operator/(double scalar) const {
+      Matrix result(Vec4d(0, 0, 0, 0), Vec4d(0, 0, 0, 0), Vec4d(0, 0, 0, 0), Vec4d(0, 0, 0, 0));
+      for (int i = 0; i < rows_; i++) {
+        for (int j = 0; j < cols_; j++) {
+          result(i, j) = data_[i][j] / scalar;
+        }
+      }
+      return result;
+    }
+
+    // Function to calculate the Frobenius norm
+    KOKKOS_INLINE_FUNCTION
+    double frobeniusNorm() const {
+      double sum = 0.0; // Initialize sum of squares
+      for (int i = 0; i < rows_; i++) {
+        for (int j = 0; j < cols_; j++) {
+          sum += data_[i][j]* data_[i][j]; // Sum of squares
+        }
+      }
+      return std::sqrt(sum); // Return the square root of the sum
+    }
+
+    // Function to calculate the trace of the matrix
+    KOKKOS_INLINE_FUNCTION
+    double trace() const {
+      double traceSum = 0.0; // Initialize sum of diagonal elements
+      for (int i = 0; i < rows_; i++) {
+        traceSum += data_[i][i]; // Sum diagonal elements
+      }
+      return traceSum;
+    }
+    
+    //Function to regularize the matrix
+    KOKKOS_INLINE_FUNCTION
+    void regularize(double eps) {
+      for (int i = 1; i < rows_; i++) {
+        data_[i][i]=data_[i][i]+eps;
+      }
+    }
 				        
 };
 
@@ -377,7 +423,7 @@ double arcLength(Vec3d &a, Vec3d &b){
 // implement from: https://github.com/MPAS-Seaice-MPM-Project/MPAS-Seaice-MPM/blob/9bb3b4f3a09ac59fbc93b8ab317ca0fa6a6f18bb/components/mpas-framework/src/operators/mpas_geometry_utils.F#L651-L671
 //TODO:check for more effcient calculation
 KOKKOS_INLINE_FUNCTION
-double sphericalTriangleArea(Vec3d &a, Vec3d &b, Vec3d &c, double radius){
+double sphericalTriangleArea(Vec3d a, Vec3d b, Vec3d c, double radius){
     double ab, bc, ca, semiperim, tanqe;
     Vec3d ablen, aclen, dlen;
 
@@ -390,8 +436,8 @@ double sphericalTriangleArea(Vec3d &a, Vec3d &b, Vec3d &c, double radius){
                                            Kokkos::tan(0.5 * (semiperim - ab)) *
                                            Kokkos::tan(0.5 * (semiperim - bc)) * 
                                            Kokkos::tan(0.5 * (semiperim - ca))));
-
-    return 4.0 * Kokkos::atan(tanqe);
+    
+    return 4.0* radius*radius*Kokkos::atan(tanqe);
 }
 
 //implement from: https://www.maa.org/sites/default/files/Eriksson14108673.pdf 

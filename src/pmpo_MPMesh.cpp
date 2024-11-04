@@ -33,8 +33,8 @@ void MPMesh::calcBasis() {
             initArray(basisByArea3d,maxVtxsPerElm,0.0);
 
             // calc basis
-            getBasisByAreaGblFormSpherical2(position3d, numVtx, v3d, radius, basisByArea3d);
-            
+            //getBasisByAreaGblFormSpherical2(position3d, numVtx, v3d, radius, basisByArea3d);
+            getBasisByAreaGblFormSpherical(position3d, numVtx, v3d, radius, basisByArea3d); 
             // fill step
             for(int i=0; i<= numVtx; i++){
                 mp_basis_field(mp,i) = basisByArea3d[i];

@@ -127,8 +127,7 @@ program main
   call polympo_applyReconstruction(mpMesh)
   call polympo_getMeshVtxMass(mpMesh,nVertices,c_loc(meshVtxMass1))
   do i = 1, nVertices
-    write(*,*) TEST_VAL, meshVtxMass1(i)
-    !call assert(meshVtxMass1(i) < TEST_VAL+TOLERANCE .and. meshVtxMass1(i) > TEST_VAL-TOLERANCE, "Error: wrong vtx mass lINEAR")
+    call assert(meshVtxMass1(i) < TEST_VAL+TOLERANCE .and. meshVtxMass1(i) > TEST_VAL-TOLERANCE, "Error: wrong vtx mass lINEAR")
   end do
 
 

@@ -435,9 +435,8 @@ double sphericalTriangleArea(Vec3d& a, Vec3d& b, Vec3d& c, double radius){
     tanqe = Kokkos::sqrt(Kokkos::fmax(0.0, Kokkos::tan(0.5 * semiperim) * 
                                            Kokkos::tan(0.5 * (semiperim - ab)) *
                                            Kokkos::tan(0.5 * (semiperim - bc)) * 
-                                           Kokkos::tan(0.5 * (semiperim - ca))));
-    
-    return 4.0*Kokkos::atan(tanqe);
+                                           Kokkos::tan(0.5 * (semiperim - ca)))); 
+    return 4.0 * Kokkos::atan(tanqe);
 }
 
 //implement from: https://www.maa.org/sites/default/files/Eriksson14108673.pdf 

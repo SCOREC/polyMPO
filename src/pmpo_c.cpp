@@ -925,8 +925,7 @@ void polympo_push_f(MPMesh_ptr p_mpmesh){
 }
 
 //TODO skeleton of reconstruction functions
-void polympo_setReconstructionOfMass_f(MPMesh_ptr p_mpmesh, const int order, const int meshEntType){
- 
+void polympo_setReconstructionOfMass_f(MPMesh_ptr p_mpmesh, const int order, const int meshEntType){ 
   checkMPMeshValid(p_mpmesh);
   auto mpmesh = ((polyMPO::MPMesh*)p_mpmesh);
   polyMPO::MeshFieldType type = static_cast<polyMPO::MeshFieldType>(meshEntType);

@@ -35,7 +35,7 @@ void MPMesh::calcBasis() {
             // calc basis
             getBasisByAreaGblFormSpherical2(position3d, numVtx, v3d, radius, basisByArea3d);
             
-	    // fill step
+            // fill step
             for(int i=0; i<= numVtx; i++){
                 mp_basis_field(mp,i) = basisByArea3d[i];
             }
@@ -296,8 +296,7 @@ void MPMesh::T2LTracking(Vec2dView dx){
     p_MPs->parallel_for(T2LCalc,"T2lTrackingCalc");
 }
 
-void MPMesh::reconstructSlices() {
-    
+void MPMesh::reconstructSlices() {    
     if (reconstructSlice.size() == 0) return;
     Kokkos::Timer timer;
     calcBasis();

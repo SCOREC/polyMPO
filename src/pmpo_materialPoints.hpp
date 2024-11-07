@@ -38,7 +38,8 @@ enum MaterialPointSlice {
   MPF_Stress_Div,
   MPF_Shear_Traction,
   MPF_Constv_Mdl_Param,
-  MPF_MP_APP_ID
+  MPF_MP_APP_ID,
+  MPF_Tgt_Proc_ID
 };
 
 enum Operating_Mode{
@@ -66,6 +67,7 @@ template <> struct mpSliceToMeshField < MPF_Stress_Div          > { using type =
 template <> struct mpSliceToMeshField < MPF_Shear_Traction      > { using type = vec3d_t; };
 template <> struct mpSliceToMeshField < MPF_Constv_Mdl_Param    > { using type = double[12]; };
 template <> struct mpSliceToMeshField < MPF_MP_APP_ID           > { using type = int; };
+template <> struct mpSliceToMeshField < MPF_Tgt_Proc_ID         > { using type = int; };
 
 template <MaterialPointSlice slice> 
 static constexpr int mpSliceToNumEntries() {
@@ -100,7 +102,8 @@ typedef MemberTypes<mpSliceToMeshField < MPF_Status              >::type,
                     mpSliceToMeshField < MPF_Stress_Div          >::type,
                     mpSliceToMeshField < MPF_Shear_Traction      >::type,
                     mpSliceToMeshField < MPF_Constv_Mdl_Param    >::type,
-                    mpSliceToMeshField < MPF_MP_APP_ID           >::type
+                    mpSliceToMeshField < MPF_MP_APP_ID           >::type,
+                    mpSliceToMeshField < MPF_Tgt_Proc_ID         >::type
                     >MaterialPointTypes;
 typedef ps::ParticleStructure<MaterialPointTypes> PS;
 
@@ -133,7 +136,8 @@ class MaterialPoints {
     void startRebuild(IntView tgtElm, int addedNumMPs, IntView addedMP2elm, IntView addedMPAppID, Kokkos::View<const int*> addedMPMask);
     void finishRebuild();
     bool rebuildOngoing();
-    
+    bool migrate();
+
     template<int mpSliceIndex, typename mpSliceData>
     typename std::enable_if<mpSliceData::rank==1>::type
     setRebuildMPSlice(mpSliceData mpSliceIn);

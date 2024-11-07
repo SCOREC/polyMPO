@@ -1,11 +1,12 @@
 cmake_minimum_required(VERSION 3.19)
-project(polyMPO VERSION 0.0.3 LANGUAGES CXX Fortran)
+project(polyMPO VERSION 0.0.4 LANGUAGES CXX Fortran)
 
 include(cmake/bob.cmake)
 bob_begin_package()
 
 include(CTest)
 enable_testing()
+enable_language(C)
 
 macro(polyMPO_export_lib target headers)
   bob_export_target(${target})

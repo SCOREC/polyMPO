@@ -161,7 +161,7 @@ void MPMesh::assemblyVtx1() {
     A_new.regularize(A_trace*1e-8);
  
     double coeff[4]={0.0, 0.0, 0.0, 0.0};
-    CholeskySolve(A, coeff);
+    CholeskySolve(A_new, coeff);
     for (int i=0; i<4; i++) VtxCoeffs(vtx,i)=coeff[i];
   });
  

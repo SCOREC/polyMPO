@@ -19,6 +19,7 @@ program main
   real(kind=MPAS_RKIND) :: pi = 4.0_MPAS_RKIND*atan(1.0_MPAS_RKIND)
   real(kind=MPAS_RKIND) :: TEST_VAL = 1.1_MPAS_RKIND
   real(kind=MPAS_RKIND) :: TOLERANCE = 0.0001_MPAS_RKIND
+  real(kind=MPAS_RKIND) :: TOLERANCE1 = 0.000000000001_MPAS_RKIND
   character (len=2048) :: filename
   real(kind=MPAS_RKIND), dimension(:,:), pointer :: dispIncr
   character (len=64) :: onSphere
@@ -32,7 +33,7 @@ program main
   integer, dimension(:), pointer :: mpsPerElm, mp2Elm, isMPActive
   real(kind=MPAS_RKIND), dimension(:,:), pointer :: mpPosition, mpLatLon
   real(kind=MPAS_RKIND), dimension(:,:), pointer :: mpMass, mpVel
-  real(kind=MPAS_RKIND), dimension(:), pointer :: meshVtxMass, meshElmMass
+  real(kind=MPAS_RKIND), dimension(:), pointer :: meshVtxMass, meshElmMass, meshVtxMass1
   logical :: inBound
   integer, parameter :: MP_ACTIVE = 1
   integer, parameter :: MP_INACTIVE = 0
@@ -88,6 +89,7 @@ program main
   allocate(mpMass(1,numMPs))
   allocate(mpVel(2,numMPs))
   allocate(meshVtxMass(nVertices))
+  allocate(meshVtxMass1(nVertices))
   allocate(meshElmMass(nCells))
 
   isMPActive = MP_ACTIVE !all active MPs and some changed below
@@ -112,7 +114,6 @@ program main
   call polympo_setMPVel(mpMesh,2,numMPs,c_loc(mpVel))
 
   ! Test vtx reconstruction
-  
   call polympo_setReconstructionOfMass(mpMesh,0,polympo_getMeshFVtxType())
   call polympo_applyReconstruction(mpMesh)
   call polympo_getMeshVtxMass(mpMesh,nVertices,c_loc(meshVtxMass))
@@ -121,8 +122,17 @@ program main
     call assert(meshVtxMass(i) < TEST_VAL+TOLERANCE .and. meshVtxMass(i) > TEST_VAL-TOLERANCE, "Error: wrong vtx mass")
   end do
   
-  ! Test push reconstruction
+  !Test vtx order 1 reconstruction
+  call polympo_setReconstructionOfMass(mpMesh,1,polympo_getMeshFVtxType())
+  call polympo_applyReconstruction(mpMesh)
+  call polympo_getMeshVtxMass(mpMesh,nVertices,c_loc(meshVtxMass1))
+  do i = 1, nVertices
+    write(*,*) TEST_VAL, meshVtxMass1(i)
+    !call assert(meshVtxMass1(i) < TEST_VAL+TOLERANCE .and. meshVtxMass1(i) > TEST_VAL-TOLERANCE, "Error: wrong vtx mass lINEAR")
+  end do
 
+
+  ! Test push reconstruction
   do j = 1, 5
     call calcSurfDispIncr(mpMesh, latVertex, lonVertex, nEdgesOnCell, verticesOnCell, nVertices, sphereRadius)
     call polympo_setReconstructionOfMass(mpMesh,0,polympo_getMeshFElmType())
@@ -164,6 +174,7 @@ program main
   deallocate(mpMass)
   deallocate(mpVel)
   deallocate(meshVtxMass)
+  deallocate(meshVtxMass1)
   deallocate(meshElmMass)
 
   stop

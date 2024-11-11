@@ -11,13 +11,13 @@ subroutine calcSurfDispIncr(mpMesh, latVertex, lonVertex, nEdgesOnCell, vertices
   integer :: i, j, nVertices, nCompsDisp, scale_use
   real(kind=MPAS_RKIND), dimension(:,:), pointer :: dispIncr
   type(c_ptr) :: mpMesh
-  INTEGER, INTENT(IN), OPTIONAL :: scale
+  integer, intent(in), optional :: scale
   
-  IF (PRESENT(scale)) THEN
+  if (present(scale)) then
     scale_use=scale
-  ELSE
+  else
     scale_use=1
-  END IF
+  end if
 
   nCompsDisp = 2
   allocate(dispIncr(nCompsDisp,nVertices))

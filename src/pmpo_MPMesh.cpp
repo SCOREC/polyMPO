@@ -296,7 +296,7 @@ void MPMesh::T2LTracking(Vec2dView dx){
     p_MPs->parallel_for(T2LCalc,"T2lTrackingCalc");
 }
 
-void MPMesh::reconstructSlices() {    
+void MPMesh::reconstructSlices() {
     if (reconstructSlice.size() == 0) return;
     Kokkos::Timer timer;
     calcBasis();

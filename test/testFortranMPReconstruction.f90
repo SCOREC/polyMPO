@@ -101,9 +101,9 @@ program main
     j = verticesOnCell(1,i)
     mpLatLon(1,i) = latVertex(j)
     mpLatLon(2,i) = lonVertex(j) 
-    mpPosition(1,i) = xVertex(j)
-    mpPosition(2,i) = yVertex(j)
-    mpPosition(3,i) = zVertex(j)
+    mpPosition(1,i) = xCell(i) !xVertex(j)
+    mpPosition(2,i) = yCell(i) !yVertex(j)
+    mpPosition(3,i) = zCell(i) !zVertex(j)
   end do
 
   call polympo_createMPs(mpMesh,nCells,numMPs,c_loc(mpsPerElm),c_loc(mp2Elm),c_loc(isMPActive))
@@ -127,7 +127,7 @@ program main
   call polympo_applyReconstruction(mpMesh)
   call polympo_getMeshVtxMass(mpMesh,nVertices,c_loc(meshVtxMass1))
   do i = 1, nVertices
-    !call assert(meshVtxMass1(i) < TEST_VAL+TOLERANCE1 .and. meshVtxMass1(i) > TEST_VAL-TOLERANCE1, "Error: wrong vtx mass lINEAR")
+    call assert(meshVtxMass1(i) < TEST_VAL+TOLERANCE1 .and. meshVtxMass1(i) > TEST_VAL-TOLERANCE1, "Error: wrong vtx mass lINEAR")
   end do
 
 

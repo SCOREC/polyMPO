@@ -35,7 +35,7 @@ typedef double doubleSclr_t[1];
 class Vec2d;
 class Vec3d;
 class Vec4d;
-class Matrix;
+class Matrix4d;
 
 using Vec2dView = Kokkos::View<Vec2d*>;
 using Vec3dView = Kokkos::View<Vec3d*>;
@@ -210,20 +210,18 @@ class Vec4d{
     }
 };
 
-class Matrix {
+class Matrix4d {
     
   private:
   
     double** data_;
-    int rows_;
-    int cols_;
+    int rows_=4;
+    int cols_=4;
    
   public:
 			        
     KOKKOS_INLINE_FUNCTION
-    Matrix(Vec4d v0, Vec4d v1, Vec4d v2, Vec4d v3){
-      rows_ = 4;
-      cols_ = 4;
+    Matrix4d(Vec4d v0, Vec4d v1, Vec4d v2, Vec4d v3){
       data_ = new double*[rows_];
   
       for (int i=0; i<rows_; i++){
@@ -240,7 +238,7 @@ class Matrix {
 
     //Destructor    
     KOKKOS_INLINE_FUNCTION
-    ~Matrix(){
+    ~Matrix4d(){
       for (int i=0; i<4; i++){
         delete[] data_[i];
       }
@@ -253,8 +251,8 @@ class Matrix {
 
     //Scalar division operator overloading
     KOKKOS_INLINE_FUNCTION
-    Matrix operator/(double scalar) const {
-      Matrix result(Vec4d(0, 0, 0, 0), Vec4d(0, 0, 0, 0), Vec4d(0, 0, 0, 0), Vec4d(0, 0, 0, 0));
+    Matrix4d operator/(double scalar) const {
+      Matrix4d result(Vec4d(0, 0, 0, 0), Vec4d(0, 0, 0, 0), Vec4d(0, 0, 0, 0), Vec4d(0, 0, 0, 0));
       for (int i = 0; i < rows_; i++) {
         for (int j = 0; j < cols_; j++) {
           result(i, j) = data_[i][j] / scalar;
@@ -305,7 +303,7 @@ void initArray(Vec2d* arr, int n, Vec2d fill){
 
 
 KOKKOS_INLINE_FUNCTION
-void CholeskySolve(Matrix& A, double* x){
+void CholeskySolve4d(Matrix4d& A, double* x){
 
     double a_00=A(0,0);
     if (A(0,0)==0){
@@ -370,7 +368,7 @@ void CholeskySolve(Matrix& A, double* x){
 }
 
 KOKKOS_INLINE_FUNCTION
-void QR_decomp(Matrix& A, Matrix& Q, Matrix &R){
+void QR_decomp4d(Matrix4d& A, Matrix4d& Q, Matrix4d& R){
   int m_size=4;
   for (int i=0; i<m_size; i++){
       Vec4d A_column;

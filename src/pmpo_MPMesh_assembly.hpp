@@ -69,7 +69,6 @@ void MPMesh::assemblyVtx0(){
 
 template <MeshFieldIndex meshFieldIndex>
 void MPMesh::assemblyElm0() {
-  
   Kokkos::Timer timer;
   constexpr MaterialPointSlice mpfIndex = meshFieldIndexToMPSlice<meshFieldIndex>;
   auto mpData = p_MPs->getData<mpfIndex>();
@@ -84,7 +83,7 @@ void MPMesh::assemblyElm0() {
     if(mask) { //if material point is 'active'/'enabled'
       Kokkos::atomic_add(&mpsPerElm(elm),1);
       for(int j=0;j<numEntries;j++){
-        Kokkos::atomic_add(&meshField(elm,j), mpData(mp,0));
+        Kokkos::atomic_add(&meshField(elm,j), mpData(mp,j));
       }
     }
   };
@@ -101,7 +100,6 @@ void MPMesh::assemblyElm0() {
 
 template <MeshFieldIndex meshFieldIndex>
 void MPMesh::assemblyVtx1() {
-
   //Mesh Information
   auto elm2VtxConn = p_mesh->getElm2VtxConn();  
   int numVtx = p_mesh->getNumVertices();
@@ -117,16 +115,17 @@ void MPMesh::assemblyVtx1() {
   auto mpData = p_MPs->getData<mpfIndex>();
   auto weight = p_MPs->getData<MPF_Basis_Vals>();
   auto mpPositions = p_MPs->getData<MPF_Cur_Pos_XYZ>();
-  auto mpAppID = p_MPs->getData<polyMPO::MPF_MP_APP_ID>();
 
   //Matrix for each vertex
-  Kokkos::View<double*[4][4]> VtxMatrices("VtxMatrices", p_mesh->getNumVertices());
+  Kokkos::View<double*[vec4d_nEntries][vec4d_nEntries]> VtxMatrices("VtxMatrices", p_mesh->getNumVertices());
 
   //Reconstructed values
-  Kokkos::View<double*> reconVals("meshField", p_mesh->getNumVertices());
+  Kokkos::View<double**> reconVals("meshField", p_mesh->getNumVertices(), numEntries);
   
   //Earth Radius
-  double radius = p_mesh->getSphereRadius();
+  double radius = 1.0;
+  if(p_mesh->getGeomType() == geom_spherical_surf)
+    radius=p_mesh->getSphereRadius();
 
   //Assemble matrix for each vertex
   auto assemble = PS_LAMBDA(const int& elm, const int& mp, const int& mask) {
@@ -136,10 +135,11 @@ void MPMesh::assemblyVtx1() {
         int vID = elm2VtxConn(elm,i+1)-1; //vID = vertex id
         double w_vtx=weight(mp,i);
         
-        double CoordDiffs[4] = {1, (vtxCoords(vID,0) - mpPositions(mp,0))/radius, (vtxCoords(vID,1) - mpPositions(mp,1))/radius, 
-          (vtxCoords(vID,2) - mpPositions(mp,2))/radius};		            //add to the matrix
-        for (int k=0; k<4; k++)
-          for(int l=0;l<4;l++)
+        double CoordDiffs[vec4d_nEntries] = {1, (vtxCoords(vID,0) - mpPositions(mp,0))/radius, 
+                                                (vtxCoords(vID,1) - mpPositions(mp,1))/radius, 
+                                                (vtxCoords(vID,2) - mpPositions(mp,2))/radius};		 
+        for (int k=0; k<vec4d_nEntries; k++)
+          for (int l=0; l<vec4d_nEntries; l++)
             Kokkos::atomic_add(&VtxMatrices(vID,k,l), CoordDiffs[k] * CoordDiffs[l] * w_vtx);
       }
     }
@@ -147,22 +147,23 @@ void MPMesh::assemblyVtx1() {
   p_MPs->parallel_for(assemble, "assembly");
   
   //Solve Ax=b for each vertex  
-  Kokkos::View<double*[4]> VtxCoeffs("VtxMatrices", p_mesh->getNumVertices());
+  Kokkos::View<double*[vec4d_nEntries]> VtxCoeffs("VtxMatrices", p_mesh->getNumVertices());
   Kokkos::parallel_for("solving Ax=b", numVtx, KOKKOS_LAMBDA(const int vtx){
     Vec4d v0 = {VtxMatrices(vtx,0,0), VtxMatrices(vtx,0,1), VtxMatrices(vtx,0,2), VtxMatrices(vtx,0,3)};
     Vec4d v1 = {VtxMatrices(vtx,1,0), VtxMatrices(vtx,1,1), VtxMatrices(vtx,1,2), VtxMatrices(vtx,1,3)};
     Vec4d v2 = {VtxMatrices(vtx,2,0), VtxMatrices(vtx,2,1), VtxMatrices(vtx,2,2), VtxMatrices(vtx,2,3)};
     Vec4d v3 = {VtxMatrices(vtx,3,0), VtxMatrices(vtx,3,1), VtxMatrices(vtx,3,2), VtxMatrices(vtx,3,3)};
-    Matrix A = {v0,v1,v2,v3};
+    Matrix4d A = {v0,v1,v2,v3};
 
     //double f_norm=A.frobeniusNorm();
     double A_trace = A.trace();
-    Matrix A_new = {v0, v1, v2, v3};
+    Matrix4d A_new = {v0, v1, v2, v3};
     A_new.regularize(A_trace*1e-8);
  
-    double coeff[4]={0.0, 0.0, 0.0, 0.0};
-    CholeskySolve(A_new, coeff);
-    for (int i=0; i<4; i++) VtxCoeffs(vtx,i)=coeff[i];
+    double coeff[vec4d_nEntries]={0.0, 0.0, 0.0, 0.0};
+    CholeskySolve4d(A_new, coeff);
+    for (int i=0; i<vec4d_nEntries; i++) 
+      VtxCoeffs(vtx,i)=coeff[i];
   });
  
   //Reconstruct
@@ -172,18 +173,23 @@ void MPMesh::assemblyVtx1() {
       for(int i=0; i<nVtxE; i++){
         int vID = elm2VtxConn(elm,i+1)-1;
         double w_vtx=weight(mp,i); 
-        double CoordDiffs[4] = {1, (vtxCoords(vID,0) - mpPositions(mp,0))/radius, (vtxCoords(vID,1) - mpPositions(mp,1))/radius, 
-          (vtxCoords(vID,2) - mpPositions(mp,2))/radius};
-        auto val = w_vtx*(VtxCoeffs(vID,0) + VtxCoeffs(vID,1)*CoordDiffs[1] + VtxCoeffs(vID,2)*CoordDiffs[2] + 
-          VtxCoeffs(vID,3)*CoordDiffs[3])*mpData(mp,0) ;
-        Kokkos::atomic_add(&reconVals(vID), val);
+        double CoordDiffs[vec4d_nEntries] = {1, (vtxCoords(vID,0) - mpPositions(mp,0))/radius,
+                                   (vtxCoords(vID,1) - mpPositions(mp,1))/radius, 
+				   (vtxCoords(vID,2) - mpPositions(mp,2))/radius};
+        for (int k=0; k<numEntries; k++){
+          auto val = w_vtx*(VtxCoeffs(vID,0) + VtxCoeffs(vID,1)*CoordDiffs[1] + 
+                                               VtxCoeffs(vID,2)*CoordDiffs[2] + 
+                                               VtxCoeffs(vID,3)*CoordDiffs[3])*mpData(mp,k);
+          Kokkos::atomic_add(&reconVals(vID,k), val);
+        }
       }
     }
   };
   p_MPs->parallel_for(reconstruct, "reconstruct");
   
   Kokkos::parallel_for("assigning", numVtx, KOKKOS_LAMBDA(const int vtx){
-    meshField(vtx, 0) = reconVals(vtx);
+    for(int k=0; k<numEntries; k++)
+      meshField(vtx, k) = reconVals(vtx,k);
   });
 }
 

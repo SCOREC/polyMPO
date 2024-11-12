@@ -101,9 +101,9 @@ program main
     j = verticesOnCell(1,i)
     mpLatLon(1,i) = latVertex(j)
     mpLatLon(2,i) = lonVertex(j) 
-    mpPosition(1,i) = xCell(i) !xVertex(j)
-    mpPosition(2,i) = yCell(i) !yVertex(j)
-    mpPosition(3,i) = zCell(i) !zVertex(j)
+    mpPosition(1,i) = xCell(i)
+    mpPosition(2,i) = yCell(i)
+    mpPosition(3,i) = zCell(i)
   end do
 
   call polympo_createMPs(mpMesh,nCells,numMPs,c_loc(mpsPerElm),c_loc(mp2Elm),c_loc(isMPActive))

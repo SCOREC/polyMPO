@@ -67,13 +67,11 @@ module advectionTests
     integer, dimension(:,:), pointer :: verticesOnCell
     real(kind=MPAS_RKIND) :: sphereRadius
 
-    PRINT *, "Foward: "
     do i = 1, numPush
       call calcSurfDispIncr(mpMesh, latVertex, lonVertex, nEdgesOnCell, verticesOnCell, nVertices, sphereRadius)
       call polympo_push(mpMesh)
     end do
 
-    PRINT *, "Backward: "
     call calcSurfDispIncr(mpMesh, latVertex, lonVertex, nEdgesOnCell, verticesOnCell, nVertices, sphereRadius, -numPush)
     call polympo_push(mpMesh)
    

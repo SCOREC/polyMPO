@@ -157,11 +157,11 @@ void MPMesh::assemblyVtx1() {
 
     //double f_norm=A.frobeniusNorm();
     double A_trace = A.trace();
-    Matrix4d A_new = {v0, v1, v2, v3};
-    A_new.regularize(A_trace*1e-8);
+    Matrix4d A_regularized = {v0, v1, v2, v3};
+    A_regularized.addToDiag(A_trace*1e-8);
  
     double coeff[vec4d_nEntries]={0.0, 0.0, 0.0, 0.0};
-    CholeskySolve4d(A_new, coeff);
+    CholeskySolve4d_UnitRHS(A_regularized, coeff);
     for (int i=0; i<vec4d_nEntries; i++) 
       VtxCoeffs(vtx,i)=coeff[i];
   });
@@ -174,12 +174,15 @@ void MPMesh::assemblyVtx1() {
         int vID = elm2VtxConn(elm,i+1)-1;
         double w_vtx=weight(mp,i); 
         double CoordDiffs[vec4d_nEntries] = {1, (vtxCoords(vID,0) - mpPositions(mp,0))/radius,
-                                   (vtxCoords(vID,1) - mpPositions(mp,1))/radius, 
-				   (vtxCoords(vID,2) - mpPositions(mp,2))/radius};
+                                                (vtxCoords(vID,1) - mpPositions(mp,1))/radius, 
+                                                (vtxCoords(vID,2) - mpPositions(mp,2))/radius};
+        
+        auto factor = w_vtx*(VtxCoeffs(vID,0) + VtxCoeffs(vID,1)*CoordDiffs[1] + 
+                                                VtxCoeffs(vID,2)*CoordDiffs[2] + 
+                                                VtxCoeffs(vID,3)*CoordDiffs[3]);
+  
         for (int k=0; k<numEntries; k++){
-          auto val = w_vtx*(VtxCoeffs(vID,0) + VtxCoeffs(vID,1)*CoordDiffs[1] + 
-                                               VtxCoeffs(vID,2)*CoordDiffs[2] + 
-                                               VtxCoeffs(vID,3)*CoordDiffs[3])*mpData(mp,k);
+          auto val = factor*mpData(mp,k);
           Kokkos::atomic_add(&reconVals(vID,k), val);
         }
       }

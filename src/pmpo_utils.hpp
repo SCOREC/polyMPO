@@ -285,7 +285,7 @@ class Matrix4d {
     
     //Function to regularize the matrix
     KOKKOS_INLINE_FUNCTION
-    void regularize(double eps) {
+    void addToDiag(double eps) {
       for (int i = 1; i < rows_; i++) {
         data_[i][i]=data_[i][i]+eps;
       }
@@ -303,7 +303,7 @@ void initArray(Vec2d* arr, int n, Vec2d fill){
 
 
 KOKKOS_INLINE_FUNCTION
-void CholeskySolve4d(Matrix4d& A, double* x){
+void CholeskySolve4d_UnitRHS(Matrix4d& A, double* x){
 
     double a_00=A(0,0);
     if (A(0,0)==0){
@@ -355,20 +355,19 @@ void CholeskySolve4d(Matrix4d& A, double* x){
     }
     else{
        x[0]= 1.0/A(0,0);
-       x[1]= -A(0,1)*x[0]/A(1,1);                //- m12 % array(iVertex)*a0(iVertex)/m22 % array(iVertex)
-       x[2]= -(A(0,2)*x[0]+A(1,2)*x[1])/A(2,2);  //-(m13 % array(iVertex)*a0(iVertex) + m23 % array(iVertex)*a1(iVertex))/m33 % array(iVertex)
-       x[3]= -(A(0,3)*x[0]+A(1,3)*x[1]+A(2,3)*x[2])/A(3,3); //-(m14 % array(iVertex)*a0(iVertex) + m24 % array(iVertex)*a1(iVertex) + m34 % array(iVertex)*a2(iVertex))/m44 % array(iVertex)
+       x[1]= -A(0,1)*x[0]/A(1,1);                
+       x[2]= -(A(0,2)*x[0]+A(1,2)*x[1])/A(2,2);  
+       x[3]= -(A(0,3)*x[0]+A(1,3)*x[1]+A(2,3)*x[2])/A(3,3); 
 
        x[3] = x[3]/A(3,3);
        x[2] = ( x[2] - A(2,3)*x[3] )/A(2,2);
        x[1] = ( x[1] - A(1,2)*x[2] - A(1,3)*x[3])/A(1,1);
        x[0] = ( x[0] - A(0,1)*x[1] - A(0,2)*x[2] - A(0,3)*x[3])/A(0,0);
-
     } 
 }
 
 KOKKOS_INLINE_FUNCTION
-void QR_decomp4d(Matrix4d& A, Matrix4d& Q, Matrix4d& R){
+void QRDecomp4d(Matrix4d& A, Matrix4d& Q, Matrix4d& R){
   int m_size=4;
   for (int i=0; i<m_size; i++){
       Vec4d A_column;
@@ -462,6 +461,7 @@ Vec3d xyz_from_lat_lon(double lat, double lon, double r){
   return xyz;
 }
 
+//Rotate 90 degrees about Y axis
 KOKKOS_INLINE_FUNCTION
 Vec3d grid_rotation_backward(Vec3d& xyz_input){
   Vec3d xyz_output;

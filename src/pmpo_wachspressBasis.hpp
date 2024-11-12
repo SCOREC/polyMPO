@@ -347,8 +347,8 @@ void sphericalInterpolation(MPMesh& mpMesh){
             // interpolation step
             for(int entry=0; entry<numEntries; entry++){
                 double mpValue = 0.0;
-                for(int i=0; i<= numVtx; i++){
-                    mpValue += meshField(elm2VtxConn(elm,i),entry)*basisByArea3d[i];
+                for(int i=1; i<= numVtx; i++){
+                    mpValue += meshField(elm2VtxConn(elm,i)-1,entry)*basisByArea3d[i-1];
                 }
                 mpField(mp,entry) = mpValue;
             }

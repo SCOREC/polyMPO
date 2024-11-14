@@ -537,6 +537,30 @@ module polympo
     type(c_ptr), value :: array
   end subroutine
   !---------------------------------------------------------------------------
+  !> @brief set the verte strain rate from a host array
+  !> @param mpmesh(in/out) MPMesh object
+  !> @param nVertices(in) numVertices
+  !> @param forceArray(in) input mesh strain rate 2D array (6,numVtx)
+  subroutine polympo_setMeshVtxStrainRate(mpMesh, nVertices, forceArray) &
+             bind(C, NAME='polympo_setMeshVtxStrainRate_f')
+    use :: iso_c_binding
+    type(c_ptr), value :: mpMesh
+    integer(c_int), value :: nVertices
+    type(c_ptr), intent(in), value :: forceArray
+  end subroutine
+  !---------------------------------------------------------------------------
+  !> @brief get the verte strain rate from polyMPO
+  !> @param mpmesh(in/out) MPMesh object
+  !> @param nVertices(in) numVertices
+  !> @param forceArray(in/out) output mesh strain rate 2D array (6,numVtx)
+  subroutine polympo_getMeshVtxStrainRate(mpMesh, nVertices, forceArray) &
+             bind(C, NAME='polympo_getMeshVtxStrainRate_f')
+    use :: iso_c_binding
+    type(c_ptr), value :: mpMesh
+    integer(c_int), value :: nVertices
+    type(c_ptr), value :: forceArray
+  end subroutine
+  !---------------------------------------------------------------------------
   !> @brief calculate the MPs from given mesh vertices rotational latitude
   !>        longitude, update the MP slices
   !>        MPs MUST have rotated flag set to True(>0)

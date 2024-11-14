@@ -699,6 +699,49 @@ void polympo_getMeshOnSurfDispIncr_f(MPMesh_ptr p_mpmesh, const int nComps, cons
   Kokkos::deep_copy(arrayHost, array_d);
 }
 
+void polympo_setMeshVtxStrainRate_f(MPMesh_ptr p_mpmesh, const int nVertices, const double** forceArray){
+  //forceArray has 6 entries, each entry must have nVertices values
+  //check mpMesh is valid
+  checkMPMeshValid(p_mpmesh);
+  auto p_mesh = ((polyMPO::MPMesh*)p_mpmesh)->p_mesh;
+
+  //check the size
+  PMT_ALWAYS_ASSERT(p_mesh->getNumVertices()==nVertices);
+
+  auto strainRate = p_mesh->getMeshField<polyMPO::MeshF_VtxStrainRate>();
+  auto h_strainRate = Kokkos::create_mirror_view(strainRate);
+  for(int i = 0; i < nVertices; i++){
+    h_strainRate(i,0) = forceArray[0][i];
+    h_strainRate(i,1) = forceArray[1][i];
+    h_strainRate(i,2) = forceArray[2][i];
+    h_strainRate(i,3) = forceArray[3][i];
+    h_strainRate(i,4) = forceArray[4][i];
+    h_strainRate(i,5) = forceArray[5][i];
+  }
+  Kokkos::deep_copy(strainRate, h_strainRate);
+}
+
+void polympo_getMeshVtxStrainRate_f(MPMesh_ptr p_mpmesh, const int nVertices, double** forceArray){
+  //check mpMesh is valid
+  checkMPMeshValid(p_mpmesh);
+  auto p_mesh = ((polyMPO::MPMesh*)p_mpmesh)->p_mesh;
+
+  //check the size
+  PMT_ALWAYS_ASSERT(p_mesh->getNumVertices()==nVertices);
+  
+  auto strainRate = p_mesh->getMeshField<polyMPO::MeshF_VtxStrainRate>();
+  auto h_strainRate = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), strainRate);
+  for(int i = 0; i < nVertices; i++){
+    forceArray[0][i] = h_strainRate(i,0);
+    forceArray[1][i] = h_strainRate(i,1);
+    forceArray[2][i] = h_strainRate(i,2);
+    forceArray[3][i] = h_strainRate(i,3);
+    forceArray[4][i] = h_strainRate(i,4);
+    forceArray[5][i] = h_strainRate(i,5);
+  }
+}
+
+
 void polympo_push_f(MPMesh_ptr p_mpmesh){
   checkMPMeshValid(p_mpmesh);
   ((polyMPO::MPMesh*)p_mpmesh) ->push();

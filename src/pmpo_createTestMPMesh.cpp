@@ -149,7 +149,7 @@ MaterialPoints* initTestMPs(Mesh* mesh, int testMPOption){
         default:
             fprintf(stderr,"TestMPOption not avaiable! return an empty one!");
     }
-    auto vtxCoords = mesh->getMeshField<polyMPO::MeshF_VtxCoords>();   
+    auto vtxCoords = mesh->getMeshField<MeshF_VtxCoords>();   
     auto elm2VtxConn = mesh->getElm2VtxConn();
     auto geomType = mesh->getGeomType();
 
@@ -245,8 +245,8 @@ Mesh* replicateMesh(Mesh* mesh, int replicateFactor){
     const int nCells = nCells_size*replicateFactor;
     const int nVertices = nVertices_size*replicateFactor;
      
-    auto v_array = mesh->getMeshField<polyMPO::MeshF_VtxCoords>(); 
-    MeshFView<polyMPO::MeshF_VtxCoords> vtxCoords("verticesCoordinates", nVertices);
+    auto v_array = mesh->getMeshField<MeshF_VtxCoords>(); 
+    MeshFView<MeshF_VtxCoords> vtxCoords("verticesCoordinates", nVertices);
     Kokkos::parallel_for("set vtxCoords", nVertices_size, KOKKOS_LAMBDA(const int i){
         for(int f=0; f<replicateFactor; f++){
             vtxCoords(i+f*nVertices_size,0) = v_array(i,0); 

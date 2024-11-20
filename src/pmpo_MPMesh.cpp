@@ -8,6 +8,7 @@ namespace polyMPO{
 void printVTP_mesh(MPMesh& mpMesh, int printVTPIndex=-1);
 
 void MPMesh::calcBasis() {
+    assert(p_mesh->getGeomType() == geom_spherical_surf);
     auto MPsPosition = p_MPs->getPositions();
     auto mp_basis_field = p_MPs->getData<MPF_Basis_Vals>(); // we can implement MPs->getBasisVals() like MPs->getPositions()
     auto elm2VtxConn = p_mesh->getElm2VtxConn();

@@ -37,13 +37,13 @@ program main
   call mpi_init(ierr)
   call mpi_comm_rank(mpi_comm_handle, self, ierr)
 
-  call polympo_setMPICommunicator(mpi_comm_handle) !this is not supported yet! only for showing
   call polympo_initialize()
-
+  
   call polympo_checkPrecisionForRealKind(APP_RKIND)
   setMeshOption = 1 !create a hard coded planar test mesh
   setMPOption = 1 !create some random test MPs that based on the mesh option you give
   mpMesh = polympo_createMPMesh(setMeshOption,setMPOption) !creates test mesh
+  call polympo_setMPICommunicator(mpMesh, mpi_comm_handle) !this is not supported yet! only for showing
  
   !These are hard coded test mesh values 
   nverts = 19 !todo use getNumVtx from the Mesh object

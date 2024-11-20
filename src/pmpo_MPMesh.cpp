@@ -307,15 +307,16 @@ void MPMesh::reconstructSlices() {
     pumipic::RecordTime("PolyMPO_Reconstruct", timer.seconds());
 }
 
-bool getAnyIsMigrating(bool isMigrating) {
+bool getAnyIsMigrating(MaterialPoints* p_MPs, bool isMigrating) {
   Kokkos::Timer timer;
+  MPI_Comm comm = p_MPs->getMPIComm();
   int comm_rank;
-  MPI_Comm_rank(MPI_COMM_WORLD, &comm_rank);
+  MPI_Comm_rank(comm, &comm_rank);
   int comm_size;
-  MPI_Comm_size(MPI_COMM_WORLD, &comm_size);
+  MPI_Comm_size(comm, &comm_size);
 
   bool anyIsMigrating = false;
-  MPI_Allreduce(&isMigrating, &anyIsMigrating, 1, MPI_C_BOOL, MPI_LOR, MPI_COMM_WORLD);
+  MPI_Allreduce(&isMigrating, &anyIsMigrating, 1, MPI_C_BOOL, MPI_LOR, comm);
   pumipic::RecordTime("PolyMPO_getAnyIsMigrating", timer.seconds());
   return anyIsMigrating;
 }
@@ -333,7 +334,7 @@ void MPMesh::push(){
     p_MPs->updateMPSlice<MPF_Cur_Pos_XYZ, MPF_Tgt_Pos_XYZ>(); // Tgt_XYZ becomes Cur_XYZ
     p_MPs->updateMPSlice<MPF_Cur_Pos_Rot_Lat_Lon, MPF_Tgt_Pos_Rot_Lat_Lon>(); // Tgt becomes Cur
     if (elm2Process.size() > 0)
-        anyIsMigrating = getAnyIsMigrating(p_MPs->migrate());
+        anyIsMigrating = getAnyIsMigrating(p_MPs, p_MPs->migrate());
     else
         p_MPs->rebuild(); //rebuild pumi-pic
     p_MPs->updateMPElmID(); //update mpElm IDs slices

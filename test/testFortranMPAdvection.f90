@@ -230,7 +230,6 @@ program main
   call mpi_comm_rank(mpi_comm_handle, self, ierr)
   call mpi_comm_size(mpi_comm_handle, comm_size, ierr)
 
-  call polympo_setMPICommunicator(mpi_comm_handle)
   call polympo_initialize()
   call polympo_enableTiming()
 
@@ -271,6 +270,8 @@ program main
                         latVertex, &
                         xCell, yCell, zCell, &
                         verticesOnCell, cellsOnCell)
+
+  call polympo_setMPICommunicator(mpMesh, mpi_comm_handle);
 
   !createMPs
   numMPs = 0

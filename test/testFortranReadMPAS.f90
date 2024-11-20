@@ -28,7 +28,6 @@ program main
   call mpi_init(ierr)
   call mpi_comm_rank(mpi_comm_handle, self, ierr)
 
-  call polympo_setMPICommunicator(mpi_comm_handle)
   call polympo_initialize()
 
   argc = command_argument_count()
@@ -58,7 +57,7 @@ program main
                         verticesOnCell, cellsOnCell)
 
   !todo check the value using get functions. 
-  
+  call polympo_setMPICommunicator(mpMesh, mpi_comm_handle)
   call polympo_deleteMPMesh(mpMesh)
   call polympo_finalize()
 

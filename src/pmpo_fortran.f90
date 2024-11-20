@@ -45,9 +45,10 @@ module polympo
   !> @brief set the MPI communicator used by polympo
   !> @param comm(in) MPI communicator
   !---------------------------------------------------------------------------
-  subroutine polympo_setMPICommunicator(comm) &
+  subroutine polympo_setMPICommunicator(mpMesh, comm) &
              bind(C, NAME='polympo_setMPICommunicator_f')
     use :: iso_c_binding
+    type(c_ptr), value :: mpMesh
     integer(c_int), value :: comm    
   end subroutine
   !---------------------------------------------------------------------------

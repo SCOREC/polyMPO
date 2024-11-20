@@ -125,6 +125,7 @@ class MaterialPoints {
     Operating_Mode operating_mode;
     RebuildHelper rebuildFields;
     IntFunc getAppID;
+    MPI_Comm mpi_comm;
 
   public:
     MaterialPoints() : MPs(nullptr) {};
@@ -136,7 +137,10 @@ class MaterialPoints {
     void startRebuild(IntView tgtElm, int addedNumMPs, IntView addedMP2elm, IntView addedMPAppID, Kokkos::View<const int*> addedMPMask);
     void finishRebuild();
     bool rebuildOngoing();
+
     bool migrate();
+    MPI_Comm getMPIComm();
+    void setMPIComm(MPI_Comm comm);
 
     template<int mpSliceIndex, typename mpSliceData>
     typename std::enable_if<mpSliceData::rank==1>::type

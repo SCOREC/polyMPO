@@ -101,6 +101,14 @@ void MaterialPoints::finishRebuild() {
   rebuildFields.ongoing = false;
 }
 
+MPI_Comm MaterialPoints::getMPIComm() {
+  return mpi_comm;
+}
+
+void MaterialPoints::setMPIComm(MPI_Comm comm) {
+  mpi_comm = comm;
+}
+
 bool MaterialPoints::migrate() {
   Kokkos::Timer timer;
   auto MPs2Elm = getData<MPF_Tgt_Elm_ID>();
@@ -111,7 +119,7 @@ bool MaterialPoints::migrate() {
   IntView isMigrating("isMigrating", 1);
 
   int rank;
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  MPI_Comm_rank(mpi_comm, &rank);
   auto setMigrationFields = PS_LAMBDA(const int& e, const int& mp, const bool& mask) {
     if (mask) {
       new_elem(mp) = MPs2Elm(mp);

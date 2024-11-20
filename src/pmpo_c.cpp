@@ -52,10 +52,10 @@ void polympo_deleteMPMesh_f(MPMesh_ptr p_mpmesh) {
   delete (polyMPO::MPMesh*)p_mpmesh;
 }
 
-void polympo_setMPICommunicator_f(MPI_Fint fcomm){
+void polympo_setMPICommunicator_f(MPMesh_ptr p_mpmesh, MPI_Fint fcomm){
     MPI_Comm comm = MPI_Comm_f2c(fcomm);
-    int commSize;
-    MPI_Comm_size(comm,&commSize);
+    auto p_MPs = ((polyMPO::MPMesh*)p_mpmesh)->p_MPs;
+    p_MPs->setMPIComm(comm);
 }
 
 void polympo_createMPs_f(MPMesh_ptr p_mpmesh,

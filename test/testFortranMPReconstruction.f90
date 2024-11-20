@@ -42,7 +42,6 @@ program main
   call mpi_init(ierr)
   call mpi_comm_rank(mpi_comm_handle, self, ierr)
 
-  call polympo_setMPICommunicator(mpi_comm_handle)
   call polympo_initialize()
 
   call polympo_checkPrecisionForRealKind(MPAS_RKIND)
@@ -107,6 +106,7 @@ program main
   end do
 
   call polympo_createMPs(mpMesh,nCells,numMPs,c_loc(mpsPerElm),c_loc(mp2Elm),c_loc(isMPActive))
+  call polympo_setMPICommunicator(mpMesh, mpi_comm_handle)
   call polympo_setMPRotLatLon(mpMesh,2,numMPs,c_loc(mpLatLon))
   call polympo_setMPPositions(mpMesh,3,numMPs,c_loc(mpPosition))
 

@@ -261,7 +261,6 @@ program main
   call mpi_init(ierr)
   call mpi_comm_rank(mpi_comm_handle, self, ierr)
 
-  call polympo_setMPICommunicator(mpi_comm_handle)
   call polympo_initialize()
 
   argc = command_argument_count()
@@ -274,6 +273,7 @@ program main
   setMeshOption = 0 !create an empty mesh
   setMPOption = 0   !create an empty set of MPs
   mpMesh = polympo_createMPMesh(setMeshOption, setMPOption)
+  call polympo_setMPICommunicator(mpMesh, mpi_comm_handle)
 
   call readMPASMeshFromNCFile(filename, maxEdges, vertexDegree, &
                         nCells, nVertices, nEdgesOnCell, &

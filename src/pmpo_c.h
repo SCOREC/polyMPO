@@ -15,7 +15,7 @@ MPMesh_ptr polympo_createMPMesh_f(const int setMeshOption, const int setMPOption
 void polympo_deleteMPMesh_f(MPMesh_ptr p_mpmesh);
 
 //set MPI communicator
-void polympo_setMPICommunicator_f(MPI_Fint fcomm);//TODO:is MPI_Fint best? or something else
+void polympo_setMPICommunicator_f(MPMesh_ptr p_mpmesh, MPI_Fint fcomm);
 //TODO: add a function to get communicator
 
 //MP info

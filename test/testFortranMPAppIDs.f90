@@ -48,7 +48,6 @@ program main
     ! Initialize
     call mpi_init(ierr)
     call mpi_comm_rank(mpi_comm_handle, self, ierr)
-    call polympo_setMPICommunicator(mpi_comm_handle)
     call polympo_initialize()
     ! Create Queue
     call create_app_ids(queue)
@@ -67,7 +66,7 @@ program main
     mp2Elm = 1
     isMPActive = MP_ACTIVE
     call polympo_createMPs(mpMesh, nCells, numMPs, c_loc(mpsPerElm), c_loc(mp2Elm), c_loc(isMPActive))
-    
+    call polympo_setMPICommunicator(mpMesh, mpi_comm_handle)
     ! Set function and opaque data structure(list/queue) used to retrieve appIDS
     call polympo_setAppIDFunc(mpMesh, c_funloc(GetAppID), c_loc(queue));
     

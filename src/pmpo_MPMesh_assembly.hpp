@@ -245,13 +245,13 @@ DoubleView MPMesh::wtScaAssembly(){
         Vec2d mpCoord(mpPositions(mp,0), mpPositions(mp,1));
         getBasisByAreaGblForm(mpCoord, nElmVtxs, eVtxCoords, basisByArea);
 
-        /* get the mp's property that is assebled to vertices */
-        double assValue = mpData(mp, 0); // ??? for scalar mp data, is index 0 always?
+        /* get the mp's property that is assembled to vertices */
+        double assemVal = mpData(mp, 0); // ??? for scalar mp data, is index 0 always?
 
         /* accumulate the mp's property to vertices */
         for (int i = 0; i < nElmVtxs; i++) {
           int vID = elm2VtxConn(elm,i+1)-1;
-          Kokkos::atomic_add(&vField(vID), assValue * basisByArea[i]);
+          Kokkos::atomic_add(&vField(vID), assemVal * basisByArea[i]);
         }
       }
     };
@@ -295,15 +295,15 @@ Vec2dView MPMesh::wtVec2Assembly(){
         double mpVolume = 1.0; // TODO: change to mp's volume here
 
         /* get the mp's property to be assembled */
-        Vec2d assValue;
-        assValue[0] =  mpData(mp, 0) * mpVolume;
-        assValue[1] =  mpData(mp, 1) * mpVolume;
+        Vec2d assemVal;
+        assemVal[0] =  mpData(mp, 0) * mpVolume;
+        assemVal[1] =  mpData(mp, 1) * mpVolume;
 
         /* accumulate the mp's constructed quantities to the cell vertices */
         for (int i = 0; i < nElmVtxs; i++) {
           int vID = elm2VtxConn(elm,i+1)-1;
-          Kokkos::atomic_add(&(vField(vID)[0]), assValue[0] * basisByArea[i]);
-          Kokkos::atomic_add(&(vField(vID)[1]), assValue[1] * basisByArea[i]);
+          Kokkos::atomic_add(&(vField(vID)[0]), assemVal[0] * basisByArea[i]);
+          Kokkos::atomic_add(&(vField(vID)[1]), assemVal[1] * basisByArea[i]);
         }
       }
     };

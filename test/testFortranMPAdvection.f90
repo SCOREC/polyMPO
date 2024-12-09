@@ -13,7 +13,7 @@ module advectionTests
     integer, dimension(:), pointer :: owningProc, nEdgesOnCell
     integer, dimension(:,:), pointer :: verticesOnCell
     real(kind=MPAS_RKIND), dimension(:), pointer :: lonCell
-    real(kind=MPAS_RKIND) :: normalizedLat, min, max
+    real(kind=MPAS_RKIND) :: normalizedLong, min, max
     
     allocate(owningProc(nCells))
     
@@ -25,8 +25,8 @@ module advectionTests
     end do
 
     do i = 1, nCells
-      normalizedLat = (lonCell(i) - min) / (max - min) * .99
-      owningProc(i) = normalizedLat * comm_size
+      normalizedLong = (lonCell(i) - min) / (max - min) * .99
+      owningProc(i) = normalizedLong * comm_size
     end do
 
     call polympo_startMeshFill(mpMesh)

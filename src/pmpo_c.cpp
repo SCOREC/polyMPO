@@ -53,9 +53,10 @@ void polympo_deleteMPMesh_f(MPMesh_ptr p_mpmesh) {
 }
 
 void polympo_setMPICommunicator_f(MPMesh_ptr p_mpmesh, MPI_Fint fcomm){
-    MPI_Comm comm = MPI_Comm_f2c(fcomm);
-    auto p_MPs = ((polyMPO::MPMesh*)p_mpmesh)->p_MPs;
-    p_MPs->setMPIComm(comm);
+  checkMPMeshValid(p_mpmesh);
+  MPI_Comm comm = MPI_Comm_f2c(fcomm);
+  auto p_MPs = ((polyMPO::MPMesh*)p_mpmesh)->p_MPs;
+  p_MPs->setMPIComm(comm);
 }
 
 void polympo_createMPs_f(MPMesh_ptr p_mpmesh,
@@ -453,18 +454,27 @@ void polympo_setMPStrainRate_f(MPMesh_ptr p_mpmesh, const int nComps, const int 
   p_MPs->parallel_for(setMPStrainRate, "setMPStrainRate");
 }
 void polympo_getMPStrainRate_f(MPMesh_ptr p_mpmesh, const int nComps, const int numMPs, double* mpStrainRateHost){
+  checkMPMeshValid(p_mpmesh);
+  std::cerr << "Error: This routine is not implemented yet\n";
+  exit(1);
   (void)p_mpmesh;
   (void)nComps;
   (void)numMPs;
   (void)mpStrainRateHost;
 }
 void polympo_setMPStress_f(MPMesh_ptr p_mpmesh, const int nComps, const int numMPs, const double* mpStressIn){
+  checkMPMeshValid(p_mpmesh);
+  std::cerr << "Error: This routine is not implemented yet\n";
+  exit(1);
   (void)p_mpmesh;
   (void)nComps;
   (void)numMPs;
   (void)mpStressIn;
 }
 void polympo_getMPStress_f(MPMesh_ptr p_mpmesh, const int nComps, const int numMPs, double* mpStressHost){
+  checkMPMeshValid(p_mpmesh);
+  std::cerr << "Error: This routine is not implemented yet\n";
+  exit(1);
   (void)p_mpmesh;
   (void)nComps;
   (void)numMPs;
@@ -949,12 +959,16 @@ void polympo_setReconstructionOfVel_f(MPMesh_ptr p_mpmesh, const int order, cons
 
 void polympo_setReconstructionOfStrainRate_f(MPMesh_ptr p_mpmesh, const int order, const int meshEntType){
   checkMPMeshValid(p_mpmesh);
+  std::cerr << "Error: This routine is not implemented yet\n";
+  exit(1);
   (void)order;
   (void)meshEntType;
 }
 
 void polympo_setReconstructionOfStress_f(MPMesh_ptr p_mpmesh, const int order, const int meshEntType){
   checkMPMeshValid(p_mpmesh);
+  std::cerr << "Error: This routine is not implemented yet\n";
+  exit(1);
   (void)order;
   (void)meshEntType;
 }

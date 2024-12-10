@@ -1,5 +1,4 @@
 #include "pmpo_MPMesh.hpp"
-#include "pmpo_assembly.hpp"
 #include "pmpo_wachspressBasis.hpp"
 #include "pmpo_c.h"
 

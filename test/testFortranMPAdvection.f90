@@ -1,3 +1,194 @@
+module advectionTests
+  contains
+  include "calculateDisplacement.f90"
+
+  subroutine setProcWedges(mpMesh, nCells, comm_size, nEdgesOnCell, verticesOnCell, lonCell)
+    use :: polympo
+    use :: readMPAS
+    use :: iso_c_binding
+    implicit none
+
+    type(c_ptr) :: mpMesh
+    integer :: i, j, k, nCells, comm_size
+    integer, dimension(:), pointer :: owningProc, nEdgesOnCell
+    integer, dimension(:,:), pointer :: verticesOnCell
+    real(kind=MPAS_RKIND), dimension(:), pointer :: lonCell
+    real(kind=MPAS_RKIND) :: normalizedLong, min, max
+    
+    allocate(owningProc(nCells))
+    
+    min = 1000
+    max = -1000
+    do i = 1, nCells
+      if (lonCell(i) < min) min = lonCell(i)
+      if (lonCell(i) > max) max = lonCell(i)
+    end do
+
+    do i = 1, nCells
+      normalizedLong = (lonCell(i) - min) / (max - min) * .99
+      owningProc(i) = normalizedLong * comm_size
+    end do
+
+    call polympo_startMeshFill(mpMesh)
+    call polympo_setOwningProc(mpMesh, nCells, c_loc(owningProc))
+  end subroutine
+
+  subroutine runAdvectionTest(mpMesh, numPush, latVertex, lonVertex, nEdgesOnCell, verticesOnCell, nVertices, sphereRadius)
+    use :: polympo
+    use :: readMPAS
+    use :: iso_c_binding
+    implicit none
+
+    type(c_ptr) :: mpMesh
+    integer :: i, numPush, nVertices
+    real(kind=MPAS_RKIND), dimension(:), pointer :: latVertex, lonVertex
+    integer, dimension(:), pointer :: nEdgesOnCell
+    integer, dimension(:,:), pointer :: verticesOnCell
+    real(kind=MPAS_RKIND) :: sphereRadius
+
+
+    do i = 1, numPush
+      call calcSurfDispIncr(mpMesh, latVertex, lonVertex, nEdgesOnCell, verticesOnCell, nVertices, sphereRadius)
+      call polympo_push(mpMesh)
+    end do
+
+  end subroutine
+
+  subroutine runAdvectionTest2(mpMesh, numPush, latVertex, lonVertex, nEdgesOnCell, verticesOnCell, nVertices, sphereRadius)
+    use :: polympo
+    use :: readMPAS
+    use :: iso_c_binding
+    implicit none
+
+    type(c_ptr) :: mpMesh
+    integer :: i, numPush, nVertices
+    real(kind=MPAS_RKIND), dimension(:), pointer :: latVertex, lonVertex
+    integer, dimension(:), pointer :: nEdgesOnCell
+    integer, dimension(:,:), pointer :: verticesOnCell
+    real(kind=MPAS_RKIND) :: sphereRadius
+
+    do i = 1, numPush
+      call calcSurfDispIncr(mpMesh, latVertex, lonVertex, nEdgesOnCell, verticesOnCell, nVertices, sphereRadius)
+      call polympo_push(mpMesh)
+    end do
+
+    call calcSurfDispIncr(mpMesh, latVertex, lonVertex, nEdgesOnCell, verticesOnCell, nVertices, sphereRadius, -numPush)
+    call polympo_push(mpMesh)
+   
+  end subroutine
+
+
+
+  subroutine runReconstructionTest(mpMesh, numMPs, numPush, nCells, nVertices, mp2Elm, &
+                                  latVertex, lonVertex, nEdgesOnCell, verticesOnCell, sphereRadius)
+    use :: polympo
+    use :: readMPAS
+    use :: iso_c_binding
+    implicit none
+
+    type(c_ptr) :: mpMesh
+    integer :: i, j, k, vID, numMPs, numPush, nVertices, nCells
+    real(kind=MPAS_RKIND), dimension(:,:), pointer :: mpMass, mpVel
+    real(kind=MPAS_RKIND), dimension(:), pointer :: meshVtxMass, meshElmMass
+    real(kind=MPAS_RKIND), dimension(:), pointer :: latVertex, lonVertex
+    integer, dimension(:), pointer :: nEdgesOnCell
+    integer, dimension(:,:), pointer :: verticesOnCell
+    integer, dimension(:), pointer :: mp2Elm
+    real(kind=MPAS_RKIND) :: sphereRadius
+    real(kind=MPAS_RKIND) :: TEST_VAL = 1.1_MPAS_RKIND
+    real(kind=MPAS_RKIND) :: TOLERANCE = 0.0001_MPAS_RKIND
+
+    allocate(mpMass(1,numMPs))
+    allocate(mpVel(2,numMPs))
+    allocate(meshVtxMass(nVertices))
+    allocate(meshElmMass(nCells))
+
+    mpMass = TEST_VAL
+    mpVel = TEST_VAL
+
+    call polympo_setMPMass(mpMesh,1,numMPs,c_loc(mpMass))
+    call polympo_setMPVel(mpMesh,2,numMPs,c_loc(mpVel))
+    
+    ! Test push reconstruction
+
+    do j = 1, numPush
+      call calcSurfDispIncr(mpMesh, latVertex, lonVertex, nEdgesOnCell, verticesOnCell, nVertices, sphereRadius)
+      call polympo_setReconstructionOfMass(mpMesh,0,polympo_getMeshFElmType())
+      call polympo_setReconstructionOfMass(mpMesh,0,polympo_getMeshFVtxType())
+      call polympo_setReconstructionOfVel(mpMesh,0,polympo_getMeshFVtxType())
+      call polympo_push(mpMesh)
+      call polympo_getMeshElmMass(mpMesh,nCells,c_loc(meshElmMass))
+      call polympo_getMeshVtxMass(mpMesh,nVertices,c_loc(meshVtxMass))
+      call polympo_getMPCurElmID(mpMesh,numMPs,c_loc(mp2Elm))
+
+      do i = 1, numMPs
+        vID = verticesOnCell(1,mp2Elm(i))
+        call assert(meshVtxMass(vID) < TEST_VAL+TOLERANCE .and. meshVtxMass(vID) > TEST_VAL-TOLERANCE, "Error: wrong vtx mass")
+
+        call assert(meshElmMass(mp2Elm(i)) < TEST_VAL+TOLERANCE &
+              .and. meshElmMass(mp2Elm(i)) > TEST_VAL-TOLERANCE, "Error: wrong elm mass")
+      end do
+    end do
+
+    deallocate(mpMass)
+    deallocate(mpVel)
+    deallocate(meshVtxMass)
+    deallocate(meshElmMass)
+  end subroutine
+
+  subroutine runApiTest(mpMesh, numMPs, nVertices, nCells, numPush, mpLatLon, mpPosition, xVertex, yVertex, zVertex, latVertex)
+    use :: polympo
+    use :: readMPAS
+    use :: iso_c_binding
+    implicit none
+    type(c_ptr) :: mpMesh
+    integer :: i, j, k, numMPs, nCells, numPush, nVertices, nCompsDisp
+    real(kind=MPAS_RKIND), dimension(:,:), pointer :: mpPosition, mpLatLon, mpMass, mpVel, dispIncr
+    real(kind=MPAS_RKIND), dimension(:), pointer :: xVertex, yVertex, zVertex
+    real(kind=MPAS_RKIND), dimension(:), pointer :: meshVtxMass, meshElmMass, meshVtxVel
+    real(kind=MPAS_RKIND), dimension(:), pointer :: latVertex
+    real(kind=MPAS_RKIND) :: TEST_VAL = 1.1_MPAS_RKIND
+
+    nCompsDisp = 2
+    allocate(dispIncr(nCompsDisp,nVertices))
+    allocate(mpMass(1,numMPs))
+    allocate(mpVel(2,numMPs))
+    allocate(meshVtxMass(nVertices))
+    allocate(meshElmMass(nCells))
+    allocate(meshVtxVel(nVertices))
+
+    dispIncr = TEST_VAL
+    mpMass = TEST_VAL
+    mpVel = TEST_VAL
+    meshVtxMass = TEST_VAL
+    meshElmMass = TEST_VAL
+    meshVtxVel = TEST_VAL
+    
+    do j = 1, numPush
+      call polympo_setMPPositions(mpMesh,3,numMPs,c_loc(mpPosition))
+      call polympo_setMeshVtxOnSurfDispIncr(mpMesh,nCompsDisp,nVertices,c_loc(dispIncr))
+      call polympo_setMPMass(mpMesh,1,numMPs,c_loc(mpMass))
+      call polympo_setMPVel(mpMesh,2,numMPs,c_loc(mpVel))
+      call polympo_setMeshVtxCoords(mpMesh, nVertices, c_loc(xVertex), c_loc(yVertex), c_loc(zVertex))
+      call polympo_setMeshVtxRotLat(mpMesh,nVertices,c_loc(latVertex))
+
+      call polympo_getMPMass(mpMesh, 1, numMPs, c_loc(mpMass))
+      call polympo_getMPVel(mpMesh, 2, numMPs, c_loc(mpVel))
+      call polympo_getMeshElmMass(mpMesh,nCells,c_loc(meshElmMass))
+      call polympo_getMeshVtxMass(mpMesh,nVertices,c_loc(meshVtxMass))
+      call polympo_getMeshVtxVel(mpMesh,nVertices, c_loc(xVertex),c_loc(yVertex))
+    end do
+
+    deallocate(dispIncr)
+    deallocate(mpMass)
+    deallocate(mpVel)
+    deallocate(meshVtxMass)
+    deallocate(meshElmMass)
+    deallocate(meshVtxVel)
+
+  end subroutine
+
+end module
 !---------------------------------------------------------------------------
 !> todo add a discription
 !---------------------------------------------------------------------------
@@ -5,47 +196,56 @@ program main
   use :: polympo
   use :: readMPAS
   use :: iso_c_binding
+  use :: advectionTests
   implicit none
   include 'mpif.h'
 
   !integer, parameter :: APP_RKIND = selected_real_kind(15)
   type(c_ptr) :: mpMesh
-  integer :: ierr, self
-  integer :: argc, i, j, arglen, k
+  integer :: ierr, self, comm_size
+  integer :: argc, i, j, arglen, k, m, mpsScaleFactorPerVtx, localNumMPs
   integer :: setMeshOption, setMPOption
   integer :: maxEdges, vertexDegree, nCells, nVertices
-  integer :: nCompsDisp
   integer :: mpi_comm_handle = MPI_COMM_WORLD
-  real(kind=MPAS_RKIND) :: xc, yc, zc, radius, maxlon, minlon, deltaLon, lon
+  real(kind=MPAS_RKIND) :: xc, yc, zc, xMP, yMP, zMP, radius, lon
   real(kind=MPAS_RKIND) :: pi = 4.0_MPAS_RKIND*atan(1.0_MPAS_RKIND)
-  character (len=2048) :: filename
-  real(kind=MPAS_RKIND), dimension(:,:), pointer :: dispIncr
+  character (len=2048) :: filename, input, testType
   character (len=64) :: onSphere
-  real(kind=MPAS_RKIND) :: sphereRadius, xComputed, yComputed, zComputed, latComputed, lonComputed
+  real(kind=MPAS_RKIND) :: sphereRadius
   integer, dimension(:), pointer :: nEdgesOnCell
   real(kind=MPAS_RKIND), dimension(:), pointer :: xVertex, yVertex, zVertex
-  real(kind=MPAS_RKIND), dimension(:), pointer :: latVertex, lonVertex
+  real(kind=MPAS_RKIND), dimension(:), pointer :: latVertex, lonVertex, lonCell
+  real(kind=MPAS_RKIND), dimension(:), pointer :: xCell, yCell, zCell
   integer, dimension(:,:), pointer :: verticesOnCell, cellsOnCell
-  integer :: numMPs 
-  integer, dimension(:), pointer :: mpsPerElm, mp2Elm, isMPActive
-  real(kind=MPAS_RKIND), dimension(:,:), pointer :: mpPosition, mpLatLon
-  logical :: inBound
+  integer :: numMPs, numMPsCount, numPush
+  integer, dimension(:), pointer :: mpsPerElm, mp2Elm, isMPActive, mp2Elm_new
+  real(kind=MPAS_RKIND), dimension(:,:), pointer :: mpPosition, mpLatLon, mpPositions_new, mpLatLon_new
   integer, parameter :: MP_ACTIVE = 1
   integer, parameter :: MP_INACTIVE = 0
   integer, parameter :: INVALID_ELM_ID = -1
+  real(kind=MPAS_RKIND) :: max_push_diff=0.0_MPAS_RKIND
+  real(kind=MPAS_RKIND) :: TOLERANCE_PUSH = 0.00000001_MPAS_RKIND ! 1e-8
 
   call mpi_init(ierr)
   call mpi_comm_rank(mpi_comm_handle, self, ierr)
+  call mpi_comm_size(mpi_comm_handle, comm_size, ierr)
 
-  call polympo_setMPICommunicator(mpi_comm_handle)
   call polympo_initialize()
+  call polympo_enableTiming()
 
   call polympo_checkPrecisionForRealKind(MPAS_RKIND)
   argc = command_argument_count()
-  if(argc == 1) then
-    call get_command_argument(1, filename)
+  if(argc == 4) then
+    call get_command_argument(1, testType)
+    call get_command_argument(2, input)
+    read(input, '(I7)') mpsScaleFactorPerVtx
+    call get_command_argument(3, input)
+    read(input, '(I7)') numPush
+    call get_command_argument(4, filename)
   else
-    write(0, *) "Usage: ./testFortranInterpolatePush <path to the nc file>"
+    write(0, *) "Usage: ./testFortranMPAdvection <API/MIGRATION/RECONSTRUCTION> &
+                <mpsScaleFactorPerVtx> <numPush> <path to the nc file>"
+    call exit(1)
   end if
 
   call readMPASMeshFromNCFile(filename, maxEdges, vertexDegree, &
@@ -53,6 +253,7 @@ program main
                         onSphere, sphereRadius, &
                         xVertex, yVertex, zVertex, &
                         latVertex, lonVertex, &
+                        xCell, yCell, zCell, &
                         verticesOnCell, cellsOnCell)
   if (onSphere .ne. 'YES') then
     write (*,*) "The mesh is not spherical!"
@@ -67,105 +268,128 @@ program main
                         onSphere, sphereRadius, &
                         xVertex, yVertex, zVertex, &
                         latVertex, &
+                        xCell, yCell, zCell, &
                         verticesOnCell, cellsOnCell)
- 
-  nCompsDisp = 2
-  allocate(dispIncr(nCompsDisp,nVertices))
+
+  call polympo_setMPICommunicator(mpMesh, mpi_comm_handle);
+
   !createMPs
-  numMPs = nCells
+  numMPs = 0
+  do i = 1, nCells
+    numMPs = numMPs + nEdgesOnCell(i) * mpsScaleFactorPerVtx
+  end do
+
+  print *, "Scale Factor", mpsScaleFactorPerVtx
+  print *, "NUM MPs", numMPs
+
+  allocate(lonCell(nCells))
   allocate(mpsPerElm(nCells))
   allocate(mp2Elm(numMPs))
+  allocate(mp2Elm_new(numMPs))
+
   allocate(isMPActive(numMPs))
   allocate(mpPosition(3,numMPs))
+  allocate(mpPositions_new(3, numMPs))
   allocate(mpLatLon(2,numMPs))
+  allocate(mpLatLon_new(2,numMPs))
 
   isMPActive = MP_ACTIVE !all active MPs and some changed below
-  mpsPerElm = 1 !all elements have 1 MP and some changed below
-  do i = 1,numMPs
-    mp2Elm(i) = i
+
+  numMPsCount = 0
+  do i = 1, nCells
+    localNumMPs = nEdgesOnCell(i) * mpsScaleFactorPerVtx
+    mp2Elm(numMPsCount+1:numMPsCount+localNumMPs) = i
+    mpsPerElm(i) = localNumMPs
+    numMPsCount = numMPsCount + localNumMPs
   end do
-  do i = 1, numMPs
-    inBound = .true.
+
+  call assert(numMPsCount == numMPs, "num mps miscounted")
+
+  numMPsCount = 0
+  do i = 1, nCells
+    xc = 0.0_MPAS_RKIND
+    yc = 0.0_MPAS_RKIND
+    zc = 0.0_MPAS_RKIND
     do k = 1, nEdgesOnCell(i)
       j = verticesOnCell(k,i)
-      if ((latVertex(j) .gt. 0.4*pi) .or. (latVertex(j) .lt. -0.4*pi)) then
-        inBound = .false.
-        isMPActive(i) = MP_INACTIVE
-        mpsPerElm(i) = 0
-        mp2Elm(i) = INVALID_ELM_ID
-        EXIT  
-      endif
+      xc = xc + xVertex(j) 
+      yc = yc + yVertex(j) 
+      zc = zc + zVertex(j) 
     end do
+    xc = xc/nEdgesOnCell(i)
+    yc = yc/nEdgesOnCell(i)
+    zc = zc/nEdgesOnCell(i)
 
-    if (inBound) then
-      xc = 0.0_MPAS_RKIND
-      yc = 0.0_MPAS_RKIND
-      zc = 0.0_MPAS_RKIND
-      do k = 1, nEdgesOnCell(i)
-        j = verticesOnCell(k,i)
-        xc = xc + xVertex(j) 
-        yc = yc + yVertex(j) 
-        zc = zc + zVertex(j) 
-        xComputed = sphereRadius*cos(latVertex(j))*cos(lonVertex(j))
-        yComputed = sphereRadius*cos(latVertex(j))*sin(lonVertex(j))
-        zComputed = sphereRadius*sin(latVertex(j))
-        latComputed = asin(zVertex(j)/sphereRadius)
-        lonComputed = atan2(yVertex(j),xVertex(j))
-        if (lonComputed .le. 0.0_MPAS_RKIND) then ! lon[0,2pi]
-          lonComputed = lonComputed + 2.0_MPAS_RKIND*pi
-        endif
+    lonCell(i) = atan2(yc,xc)
+    if (lonCell(i) .le. 0.0_MPAS_RKIND) then ! lon[0,2pi]
+      lonCell(i) = lonCell(i) + 2.0_MPAS_RKIND*pi
+    endif 
 
+    do k = 1, nEdgesOnCell(i)
+      j = verticesOnCell(k,i)
+      
+      ! note: m=0 not included but should lead to x_mp=xc and m=mpsScaleFactorPerVtx+1 is also not include but should lead to x_mp=xVertex(j)
+      ! so'mpsScaleFactorPerVtx+1' segments and  'mpsScaleFactorPerVtx+2' points along line from 'xc' to 'xVertex(j)'
+      ! taking only "inner" or interior 'mpsScaleFactorPerVtx' points (i.e., exclude end points of 'xc' and 'xVertex(j)') and same applies to y- and z-coordinates
+      do m = 1, mpsScaleFactorPerVtx
+        numMPsCount = numMPsCount + 1
+        xMP = (mpsScaleFactorPerVtx+1 - m) * xc + m*xVertex(j) / (mpsScaleFactorPerVtx+1) ! linear interpolation
+        yMP = (mpsScaleFactorPerVtx+1 - m) * yc + m*yVertex(j) / (mpsScaleFactorPerVtx+1) ! linear interpolation
+        zMP = (mpsScaleFactorPerVtx+1 - m) * zc + m*zVertex(j) / (mpsScaleFactorPerVtx+1) ! linear interpolation
+        
+        ! normalize to project each MP to be on sphere of radius 'sphereRadius'
+        radius = sqrt(xMP*xMP + yMP*yMP + zMP*zMP) ! assuming sphere center to be at origin
+        xMP = xMP/radius * sphereRadius
+        yMP = yMP/radius * sphereRadius
+        zMP = zMP/radius * sphereRadius
+        mpPosition(1,numMPsCount) = xMP
+        mpPosition(2,numMPsCount) = yMP
+        mpPosition(3,numMPsCount) = zMP
+        mpLatLon(1,numMPsCount) = asin(zMP/sphereRadius)
+        lon = atan2(yMP,xMP)
+        if (lon .le. 0.0_MPAS_RKIND) then ! lon[0,2pi]
+          lon = lon + 2.0_MPAS_RKIND*pi
+        endif 
+        mpLatLon(2,numMPsCount) = lon
       end do
-      xc = xc/nEdgesOnCell(i)
-      yc = yc/nEdgesOnCell(i)
-      zc = zc/nEdgesOnCell(i)
-      ! normalize
-      radius = sqrt(xc*xc + yc*yc + zc*zc)! assuming sphere center to be at origin
-      xc = xc/radius * sphereRadius
-      yc = yc/radius * sphereRadius
-      zc = zc/radius * sphereRadius
-      mpPosition(1,i) = xc
-      mpPosition(2,i) = yc
-      mpPosition(3,i) = zc
-      mpLatLon(1,i) = asin(zc/sphereRadius)
-      lon = atan2(yc,xc)
-      if (lon .le. 0.0_MPAS_RKIND) then ! lon[0,2pi]
-        lon = lon + 2.0_MPAS_RKIND*pi
-      endif 
-      mpLatLon(2,i) = lon
-    endif
+    end do
   end do
-  ! check first element/cell for delta
-  maxlon = minval(lonVertex)
-  minlon = maxval(lonVertex)
-  do i = 1, nEdgesOnCell(1)
-    j = verticesOnCell(i,1)
-    if(maxlon .lt. lonVertex(j)) then
-      maxlon = lonVertex(j)
-    endif
-    if(minlon .gt. lonVertex(j)) then
-      minlon = lonVertex(j)
-    endif
-  end do
+
+  call assert(numMPsCount == numMPs, "num mps miscounted")
+
   call polympo_createMPs(mpMesh,nCells,numMPs,c_loc(mpsPerElm),c_loc(mp2Elm),c_loc(isMPActive))
   call polympo_setMPRotLatLon(mpMesh,2,numMPs,c_loc(mpLatLon))
   call polympo_setMPPositions(mpMesh,3,numMPs,c_loc(mpPosition))
 
-  
-  deltaLon = maxlon - minlon
+  !Another advection test to test if material poins come back to the same position
+  call runAdvectionTest2(mpMesh, numPush, latVertex, lonVertex, nEdgesOnCell, verticesOnCell, nVertices, sphereRadius)
+  call polympo_getMPPositions(mpMesh, 3, numMPs, c_loc(mpPositions_new))
+  call polympo_getMPRotLatLon(mpMesh, 2, numMPs, c_loc(mpLatLon_new))
+    call polympo_getMPCurElmID(mpMesh, numMPS, c_loc(mp2Elm_new))
 
-  do i = 1,nVertices
-    dispIncr(1,i) = sphereRadius*cos(latVertex(i))*deltaLon
-    dispIncr(2,i) = 0.0_MPAS_RKIND
+  do i = 1, numMPs
+    if ( abs(mpLatLon_new(2,i)-mpLatLon(2,i)) > max_push_diff ) then
+      max_push_diff = abs(mpLatLon_new(2,i)-mpLatLon(2,i))
+    end if
   end do
-  call polympo_setMeshOnSurfDispIncr(mpMesh,nCompsDisp,nVertices,c_loc(dispIncr))
-  call polympo_push(mpMesh)
-  do i = 1,nVertices
-    dispIncr(1,i) = sphereRadius*cos(latVertex(i))*2*deltaLon
-    dispIncr(2,i) = 0.0_MPAS_RKIND
-  end do
-  call polympo_setMeshOnSurfDispIncr(mpMesh,nCompsDisp,nVertices,c_loc(dispIncr))
-  call polympo_push(mpMesh)
+  call assert(max_push_diff.le.TOLERANCE_PUSH , "MPs donot come back check push!")
+
+  if (testType == "API") then
+    call runApiTest(mpMesh, numMPs, nVertices, nCells, numPush, mpLatLon, mpPosition, xVertex, yVertex, zVertex, latVertex)
+  else if (testType == "MIGRATION") then
+    call setProcWedges(mpMesh, nCells, comm_size, nEdgesOnCell, verticesOnCell, lonCell)
+    call runAdvectionTest(mpMesh, numPush, latVertex, lonVertex, nEdgesOnCell, verticesOnCell, nVertices, sphereRadius)
+  else if (testType == "RECONSTRUCTION") then
+    call runReconstructionTest(mpMesh, numMPs, numPush, nCells, nVertices, mp2Elm, &
+                                latVertex, lonVertex, nEdgesOnCell, verticesOnCell, sphereRadius)
+  else
+    write(0, *) "Usage: ./testFortranMPAdvection <API/MIGRATION/RECONSTRUCTION> &
+                <mpsScaleFactorPerVtx> <numPush> <path to the nc file>"
+    call exit(1)
+  end if
+
+  call polympo_summarizeTime();
+
   call polympo_deleteMPMesh(mpMesh)
   call polympo_finalize()
 
@@ -177,9 +401,12 @@ program main
   deallocate(zVertex)
   deallocate(latVertex)
   deallocate(lonVertex)
+  deallocate(lonCell)
+  deallocate(xCell)
+  deallocate(yCell)
+  deallocate(zCell)
   deallocate(verticesOnCell)
   deallocate(cellsOnCell)
-  deallocate(dispIncr)
   deallocate(mpsPerElm)
   deallocate(mp2Elm)
   deallocate(isMPActive)
@@ -187,4 +414,5 @@ program main
   deallocate(mpLatLon)
 
   stop
+
 end program

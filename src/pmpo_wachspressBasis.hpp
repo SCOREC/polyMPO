@@ -304,8 +304,9 @@ void getBasisByAreaGblForm_1(Vec2d MP, int numVtxs, Vec2d* vtxCoords, double* ba
 */
 
 // spherical interpolation of values from mesh vertices to MPsi
-template <MeshFieldIndex mfIndex, MaterialPointSlice mpfIndex>
+template <MeshFieldIndex meshFieldIndex>
 void sphericalInterpolation(MPMesh& mpMesh){
+    Kokkos::Timer timer;
     auto p_mesh = mpMesh.p_mesh;
     auto vtxCoords = p_mesh->getMeshField<polyMPO::MeshF_VtxCoords>();
     int numVtxs = p_mesh->getNumVertices();
@@ -315,13 +316,12 @@ void sphericalInterpolation(MPMesh& mpMesh){
     auto MPsPosition = p_MPs->getPositions();
     double radius = p_mesh->getSphereRadius();
     PMT_ALWAYS_ASSERT(radius >0);
+    constexpr MaterialPointSlice mpfIndex = meshFieldIndexToMPSlice<meshFieldIndex>;
     auto mpField = p_MPs->getData<mpfIndex>();
     
-    const int numEntries = mpSlice2MeshFieldIndex.at(mpfIndex).first;
+    const int numEntries = mpSliceToNumEntries<mpfIndex>();
     //check field correspondence
-    const MeshFieldIndex meshFieldIndex = mpSlice2MeshFieldIndex.at(mpfIndex).second;
-    PMT_ALWAYS_ASSERT(meshFieldIndex == mfIndex);
-    auto meshField = p_mesh->getMeshField<mfIndex>(); 
+    auto meshField = p_mesh->getMeshField<meshFieldIndex>(); 
 
     auto interpolation = PS_LAMBDA(const int& elm, const int& mp, const int& mask) {
         if(mask) { //if material point is 'active'/'enabled'
@@ -347,14 +347,15 @@ void sphericalInterpolation(MPMesh& mpMesh){
             // interpolation step
             for(int entry=0; entry<numEntries; entry++){
                 double mpValue = 0.0;
-                for(int i=0; i<= numVtx; i++){
-                    mpValue += meshField(elm2VtxConn(elm,i),entry)*basisByArea3d[i];
+                for(int i=1; i<= numVtx; i++){
+                    mpValue += meshField(elm2VtxConn(elm,i)-1,entry)*basisByArea3d[i-1];
                 }
                 mpField(mp,entry) = mpValue;
             }
         }
     };
     p_MPs->parallel_for(interpolation, "interpolation");
+    pumipic::RecordTime("PolyMPO_sphericalInterpolation", timer.seconds());
 }
 
 } //namespace polyMPO end

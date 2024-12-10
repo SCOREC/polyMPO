@@ -17,17 +17,6 @@ using particle_structs::MemberTypes;
 using hostSpace = Kokkos::HostSpace;
 using defaultSpace = Kokkos::DefaultExecutionSpace::memory_space;
 
-//typedef bool mp_flag_t;
-typedef int mp_flag_t;
-typedef int mp_id_t;
-typedef int  mp_elm_id_t;
-typedef double mp_sclr_t[1];//TODO
-typedef vec2d_t mp_vec2d_t;
-typedef double mp_vec3d_t[3];//TODO
-typedef double mp_sym_mat3d_t[6];//TODO
-typedef double mp_basis_t[maxVtxsPerElm];
-typedef double mp_basis_grad2d_t[maxVtxsPerElm*2];
-typedef double mp_constv_mdl_param_t[12];
 typedef std::function<int()> IntFunc;
 
 enum MaterialPointSlice {
@@ -49,7 +38,8 @@ enum MaterialPointSlice {
   MPF_Stress_Div,
   MPF_Shear_Traction,
   MPF_Constv_Mdl_Param,
-  MPF_MP_APP_ID
+  MPF_MP_APP_ID,
+  MPF_Tgt_Proc_ID
 };
 
 enum Operating_Mode{
@@ -57,51 +47,63 @@ enum Operating_Mode{
   MP_DEBUG
 };
 
-const static std::map<MaterialPointSlice, std::pair<int,MeshFieldIndex>> 
-      mpSlice2MeshFieldIndex = {{MPF_Status,     {1,MeshF_Invalid}},
-                           {MPF_Cur_Elm_ID,      {0,MeshF_Invalid}},
-                           {MPF_Tgt_Elm_ID,      {0,MeshF_Invalid}},
-                           {MPF_Cur_Pos_Rot_Lat_Lon, {2,MeshF_Invalid}},
-                           {MPF_Tgt_Pos_Rot_Lat_Lon, {2,MeshF_Invalid}},
-                           {MPF_Cur_Pos_XYZ,     {3,MeshF_Invalid}},
-                           {MPF_Tgt_Pos_XYZ,     {3,MeshF_Invalid}},
-                           {MPF_Flag_Basis_Vals, {1,MeshF_Invalid}},
-                           {MPF_Basis_Vals,      {maxVtxsPerElm,MeshF_Invalid}},
-                           {MPF_Basis_Grad_Vals, {maxVtxsPerElm*2,MeshF_Invalid}},
-                           {MPF_Mass,            {1,MeshF_Unsupported}},
-                           {MPF_Vel,             {2,MeshF_Vel}},
-                           {MPF_Rot_Lat_Lon_Incr,{2,MeshF_RotLatLonIncr}},
-                           {MPF_Strain_Rate,     {6,MeshF_Unsupported}},
-                           {MPF_Stress,          {6,MeshF_Unsupported}},
-                           {MPF_Stress_Div,      {3,MeshF_Unsupported}},
-                           {MPF_Shear_Traction,  {3,MeshF_Unsupported}},
-                           {MPF_Constv_Mdl_Param,{12,MeshF_Unsupported}},
-                           {MPF_MP_APP_ID,       {1,MeshF_Invalid}}};
+template <MaterialPointSlice> struct mpSliceToMeshField;
+template <> struct mpSliceToMeshField < MPF_Status              > { using type = int; };
+template <> struct mpSliceToMeshField < MPF_Cur_Elm_ID          > { using type = int; };
+template <> struct mpSliceToMeshField < MPF_Tgt_Elm_ID          > { using type = int; };
+template <> struct mpSliceToMeshField < MPF_Cur_Pos_Rot_Lat_Lon > { using type = vec2d_t; };
+template <> struct mpSliceToMeshField < MPF_Tgt_Pos_Rot_Lat_Lon > { using type = vec2d_t; };
+template <> struct mpSliceToMeshField < MPF_Cur_Pos_XYZ         > { using type = vec3d_t; };
+template <> struct mpSliceToMeshField < MPF_Tgt_Pos_XYZ         > { using type = vec3d_t; };
+template <> struct mpSliceToMeshField < MPF_Flag_Basis_Vals     > { using type = int; };
+template <> struct mpSliceToMeshField < MPF_Basis_Vals          > { using type = double[maxVtxsPerElm]; };
+template <> struct mpSliceToMeshField < MPF_Basis_Grad_Vals     > { using type = double[maxVtxsPerElm*2]; };
+template <> struct mpSliceToMeshField < MPF_Mass                > { using type = doubleSclr_t; };
+template <> struct mpSliceToMeshField < MPF_Vel                 > { using type = vec2d_t; };
+template <> struct mpSliceToMeshField < MPF_Rot_Lat_Lon_Incr    > { using type = vec2d_t; };
+template <> struct mpSliceToMeshField < MPF_Strain_Rate         > { using type = double[6]; };
+template <> struct mpSliceToMeshField < MPF_Stress              > { using type = double[6]; };
+template <> struct mpSliceToMeshField < MPF_Stress_Div          > { using type = vec3d_t; };
+template <> struct mpSliceToMeshField < MPF_Shear_Traction      > { using type = vec3d_t; };
+template <> struct mpSliceToMeshField < MPF_Constv_Mdl_Param    > { using type = double[12]; };
+template <> struct mpSliceToMeshField < MPF_MP_APP_ID           > { using type = int; };
+template <> struct mpSliceToMeshField < MPF_Tgt_Proc_ID         > { using type = int; };
+
+template <MaterialPointSlice slice> 
+static constexpr int mpSliceToNumEntries() {
+  if ( !std::is_array<typename mpSliceToMeshField<slice>::type>::value ) return 0;
+  typename mpSliceToMeshField<slice>::type constructed; 
+  return std::size(constructed);
+}
+
+template <MaterialPointSlice slice>
+using MPSView = Kokkos::View<typename mpSliceToMeshField<slice>::type*>;
 
 const static std::vector<std::pair<MaterialPointSlice, MaterialPointSlice>>
         mpSliceSwap = {{MPF_Cur_Elm_ID, MPF_Tgt_Elm_ID},
                        {MPF_Cur_Pos_Rot_Lat_Lon, MPF_Tgt_Pos_Rot_Lat_Lon},
                        {MPF_Cur_Pos_XYZ, MPF_Tgt_Pos_XYZ}};
 
-typedef MemberTypes<mp_flag_t,              //MP_Status
-                    mp_elm_id_t,            //MP_Cur_Elm_ID
-                    mp_elm_id_t,            //MP_Tgt_Elm_ID
-                    mp_vec2d_t,             //MP_Cur_Pos_Rot_Lat_Lon
-                    mp_vec2d_t,             //MP_Tgt_Pos_Rot_Lat_Lon
-                    mp_vec3d_t,             //MP_Cur_Pos_XYZ
-                    mp_vec3d_t,             //MP_Tgt_Pos_XYZ
-                    mp_flag_t,              //MP_Flag_Basis_Vals
-                    mp_basis_t,             //MP_Basis_Vals
-                    mp_basis_grad2d_t,      //MP_Basis_Grad_Vals
-                    mp_sclr_t,              //MP_Mass //TODO: test Mass in assembly
-                    mp_vec2d_t,             //MP_Vel
-                    mp_vec2d_t,             //MP_Rot_Lat_Lon_Incr
-                    mp_sym_mat3d_t,         //MP_Strain_Rate
-                    mp_sym_mat3d_t,         //MP_Stress
-                    mp_vec3d_t,             //MP_Stress_Div
-                    mp_vec3d_t,             //MP_Shear_Traction
-                    mp_constv_mdl_param_t,  //MP_Constv_Mdl_Param
-                    mp_id_t                 //MP_APP_ID
+typedef MemberTypes<mpSliceToMeshField < MPF_Status              >::type,
+                    mpSliceToMeshField < MPF_Cur_Elm_ID          >::type,
+                    mpSliceToMeshField < MPF_Tgt_Elm_ID          >::type,
+                    mpSliceToMeshField < MPF_Cur_Pos_Rot_Lat_Lon >::type,
+                    mpSliceToMeshField < MPF_Tgt_Pos_Rot_Lat_Lon >::type,
+                    mpSliceToMeshField < MPF_Cur_Pos_XYZ         >::type,
+                    mpSliceToMeshField < MPF_Tgt_Pos_XYZ         >::type,
+                    mpSliceToMeshField < MPF_Flag_Basis_Vals     >::type,
+                    mpSliceToMeshField < MPF_Basis_Vals          >::type,
+                    mpSliceToMeshField < MPF_Basis_Grad_Vals     >::type,
+                    mpSliceToMeshField < MPF_Mass                >::type,
+                    mpSliceToMeshField < MPF_Vel                 >::type,
+                    mpSliceToMeshField < MPF_Rot_Lat_Lon_Incr    >::type,
+                    mpSliceToMeshField < MPF_Strain_Rate         >::type,
+                    mpSliceToMeshField < MPF_Stress              >::type,
+                    mpSliceToMeshField < MPF_Stress_Div          >::type,
+                    mpSliceToMeshField < MPF_Shear_Traction      >::type,
+                    mpSliceToMeshField < MPF_Constv_Mdl_Param    >::type,
+                    mpSliceToMeshField < MPF_MP_APP_ID           >::type,
+                    mpSliceToMeshField < MPF_Tgt_Proc_ID         >::type
                     >MaterialPointTypes;
 typedef ps::ParticleStructure<MaterialPointTypes> PS;
 
@@ -123,10 +125,11 @@ class MaterialPoints {
     Operating_Mode operating_mode;
     RebuildHelper rebuildFields;
     IntFunc getAppID;
+    MPI_Comm mpi_comm;
 
   public:
     MaterialPoints() : MPs(nullptr) {};
-    MaterialPoints(int numElms, int numMPs, DoubleVec3dView positions, IntView mpsPerElm, IntView mp2elm);
+    MaterialPoints(int numElms, int numMPs, MPSView<MPF_Cur_Pos_XYZ> positions, IntView mpsPerElm, IntView mp2elm);
     MaterialPoints(int numElms, int numMPs, IntView mpsPerElm, IntView mp2elm, IntView mpAppID);
     ~MaterialPoints();
 
@@ -134,7 +137,11 @@ class MaterialPoints {
     void startRebuild(IntView tgtElm, int addedNumMPs, IntView addedMP2elm, IntView addedMPAppID, Kokkos::View<const int*> addedMPMask);
     void finishRebuild();
     bool rebuildOngoing();
-    
+
+    bool migrate();
+    MPI_Comm getMPIComm();
+    void setMPIComm(MPI_Comm comm);
+
     template<int mpSliceIndex, typename mpSliceData>
     typename std::enable_if<mpSliceData::rank==1>::type
     setRebuildMPSlice(mpSliceData mpSliceIn);
@@ -182,8 +189,8 @@ class MaterialPoints {
     void updateMPSlice(){
       auto curData = MPs->get<mpfIndexCur>();
       auto tgtData = MPs->get<mpfIndexTgt>();
-      const int numEntriesCur = mpSlice2MeshFieldIndex.at(mpfIndexCur).first;
-      const int numEntriesTgt = mpSlice2MeshFieldIndex.at(mpfIndexTgt).first;
+      const int numEntriesCur = mpSliceToNumEntries<mpfIndexCur>();
+      const int numEntriesTgt = mpSliceToNumEntries<mpfIndexTgt>();
       PMT_ALWAYS_ASSERT(numEntriesCur == numEntriesTgt);
       
       auto swap = PS_LAMBDA(const int&, const int& mp, const int& mask) {
@@ -202,31 +209,34 @@ class MaterialPoints {
         updateMPSlice<MPF_Cur_Pos_XYZ,MPF_Tgt_Pos_XYZ>();
     }
     void updateRotLatLonAndXYZ2Tgt(const double radius){
+        Kokkos::Timer timer;
         auto curPosRotLatLon = MPs->get<MPF_Cur_Pos_Rot_Lat_Lon>();
         auto tgtPosRotLatLon = MPs->get<MPF_Tgt_Pos_Rot_Lat_Lon>();
         auto tgtPosXYZ = MPs->get<MPF_Tgt_Pos_XYZ>();
         auto rotLatLonIncr = MPs->get<MPF_Rot_Lat_Lon_Incr>();
         
+        auto is_rotated = getRotatedFlag();
         auto updateRotLatLon = PS_LAMBDA(const int& elm, const int& mp, const int& mask){
             if(mask){
                 auto rotLat = curPosRotLatLon(mp,0) + rotLatLonIncr(mp,0); // phi
-                auto rotLon = curPosRotLatLon(mp,1) + rotLatLonIncr(mp,1); // lambda
+                auto rotLon = curPosRotLatLon(mp,1) + rotLatLonIncr(mp,1); // lambda   
+                tgtPosRotLatLon(mp,0) = rotLat;
+                tgtPosRotLatLon(mp,1) = rotLon;        
                 auto geoLat = rotLat;
                 auto geoLon = rotLon;
-                tgtPosRotLatLon(mp,0) = geoLat;
-                tgtPosRotLatLon(mp,1) = geoLon;
+                if(is_rotated){
+                  auto xyz_rot = xyz_from_lat_lon(rotLat, rotLon, radius);
+                  auto xyz_geo = grid_rotation_backward(xyz_rot);
+                  lat_lon_from_xyz(geoLat, geoLon, xyz_geo, radius);
+                }	
                 // x = cosLon cosLat, y = sinLon cosLat, z = sinLat
                 tgtPosXYZ(mp,0) = radius * std::cos(geoLon) * std::cos(geoLat);
                 tgtPosXYZ(mp,1) = radius * std::sin(geoLon) * std::cos(geoLat);
-                tgtPosXYZ(mp,2) = radius * std::sin(geoLat); 
+                tgtPosXYZ(mp,2) = radius * std::sin(geoLat);
             } 
         };
-        if(isRotatedFlag){
-            //TODO rotation lat lon calc
-            fprintf(stderr, "rotational lat lon in MP is not support yet!");
-            PMT_ALWAYS_ASSERT(false);
-        } 
         ps::parallel_for(MPs, updateRotLatLon,"updateRotationalLatitudeLongitude"); 
+        pumipic::RecordTime("PolyMPO_updateRotLatLonAndXYZ2Tgt", timer.seconds());
     } 
 
     template <int index>
@@ -272,7 +282,7 @@ class MaterialPoints {
 template <MaterialPointSlice index>
 void MaterialPoints::fillData(double value){
   auto mpData = getData<index>();
-  const int numEntries = mpSlice2MeshFieldIndex.at(index).first;
+  const int numEntries = mpSliceToNumEntries<index>();
   auto setValue = PS_LAMBDA(const int&, const int& mp, const int& mask){
     if(mask) { //if material point is 'active'/'enabled'
       for(int i=0; i<numEntries; i++){

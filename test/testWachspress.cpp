@@ -1,6 +1,6 @@
 #include "pmpo_MPMesh.hpp"
 #include "pmpo_wachspressBasis.hpp"
-#include "pmpo_assembly.hpp"
+#include "pmpo_MPMesh_assembly.hpp"
 #include "pmpo_createTestMPMesh.hpp"
 #include "testUtils.hpp"
 
@@ -19,7 +19,7 @@ int main(int argc, char** argv) {
         auto mpMesh = initTestMPMesh(mesh,testMPOption);
         
         //test assembly in assembly.hpp
-        polyMPO::assembly<MPF_Vel,MeshF_Vel>(mpMesh,false,false);
+        mpMesh.assembly<MeshF_Vel>(0, polyMPO::MeshFType_VtxBased, false,false);
         interpolateWachspress2DTest(mpMesh);
         interpolateWachspress3DTest(mpMesh,testMeshOption);
     }

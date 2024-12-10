@@ -37,13 +37,13 @@ program main
   call mpi_init(ierr)
   call mpi_comm_rank(mpi_comm_handle, self, ierr)
 
-  call polympo_setMPICommunicator(mpi_comm_handle) !this is not supported yet! only for showing
   call polympo_initialize()
-
+  
   call polympo_checkPrecisionForRealKind(APP_RKIND)
   setMeshOption = 1 !create a hard coded planar test mesh
   setMPOption = 1 !create some random test MPs that based on the mesh option you give
   mpMesh = polympo_createMPMesh(setMeshOption,setMPOption) !creates test mesh
+  call polympo_setMPICommunicator(mpMesh, mpi_comm_handle) !this is not supported yet! only for showing
  
   !These are hard coded test mesh values 
   nverts = 19 !todo use getNumVtx from the Mesh object
@@ -93,19 +93,19 @@ program main
         Mesharray(i,j) = (i-1)*nverts + j
     end do
   end do
-  call polympo_setMeshOnSurfVeloIncr(mpMesh, numCompsVel, nverts, c_loc(Mesharray))
-  call polympo_setMeshOnSurfDispIncr(mpMesh, numCompsVel, nverts, c_loc(Mesharray))
+  call polympo_setMeshVtxOnSurfVeloIncr(mpMesh, numCompsVel, nverts, c_loc(Mesharray))
+  call polympo_setMeshVtxOnSurfDispIncr(mpMesh, numCompsVel, nverts, c_loc(Mesharray))
 
-  ! check mesh Fields
+  ! check mesh Fields vtxBased
   Mesharray = -1
-  call polympo_getMeshOnSurfVeloIncr(mpMesh, numCompsVel, nverts, c_loc(Mesharray))
+  call polympo_getMeshVtxOnSurfVeloIncr(mpMesh, numCompsVel, nverts, c_loc(Mesharray))
   do i = 1,numCompsVel
     do j = 1,nverts 
         call assert((Mesharray(i,j) .eq. (i-1)*nverts+j), "Assert MeshOnSurfVeloIncr Fail")
     end do
   end do
   Mesharray = -1
-  call polympo_getMeshOnSurfDispIncr(mpMesh, numCompsVel, nverts, c_loc(Mesharray))
+  call polympo_getMeshVtxOnSurfDispIncr(mpMesh, numCompsVel, nverts, c_loc(Mesharray))
   do i = 1,numCompsVel
     do j = 1,nverts 
         call assert((Mesharray(i,j) .eq. (i-1)*nverts+j), "Assert MeshOnSurfDispIncr Fail")
@@ -131,14 +131,36 @@ program main
     xArray(i) = i + value1
     yArray(i) = value2 - i
   end do 
-  call polympo_setMeshVel(mpMesh, nverts, c_loc(xArray),c_loc(yArray))
+  call polympo_setMeshVtxVel(mpMesh, nverts, c_loc(xArray),c_loc(yArray))
   xArray = -1
   yArray = -1
-  call polympo_getMeshVel(mpMesh, nverts, c_loc(xArray),c_loc(yArray))
+  call polympo_getMeshVtxVel(mpMesh, nverts, c_loc(xArray),c_loc(yArray))
   do i = 1, nverts
     call assert((xArray(i) .eq. i+value1), "Assert MeshVel u-component Velocity Fail")
     call assert((yArray(i) .eq. value2-i), "Assert MeshVel v-component Velocity Fail")
+  end do
+  
+  call polympo_setMeshVtxMass(mpMesh, nverts, c_loc(xArray))
+  xArray = -1 
+  call polympo_getMeshVtxMass(mpMesh, nverts, c_loc(xArray))
+  do i = 1, nverts
+    call assert((xArray(i) .eq. i+value1), "Assert MeshVtxMass Mass Fail")
+  end do
+
+  ! check mesh Fields vtxBased
+  deallocate(xArray)
+  allocate(xArray(numElms))
+  
+  do i = 1, numElms
+    xArray(i) = i + value1
   end do 
+  
+  call polympo_setMeshElmMass(mpMesh, numElms, c_loc(xArray))
+  xArray = -1 
+  call polympo_getMeshElmMass(mpMesh, numElms, c_loc(xArray))
+  do i = 1, numElms
+    call assert((xArray(i) .eq. i+value1), "Assert MeshVtxMass Mass Fail")
+  end do
 
   deallocate(MParray)
   deallocate(Mesharray)
@@ -146,6 +168,26 @@ program main
   deallocate(yArray)
   deallocate(zArray)
 
+  ! test elmcenter
+  allocate(xArray(numElms))
+  allocate(yArray(numElms))
+  allocate(zArray(numElms))
+  xArray = value1
+  yArray = value2
+  zArray = value1 + value2 
+  call polympo_setMeshElmCenter(mpMesh, numElms, c_loc(xArray), c_loc(yArray), c_loc(zArray))
+  xArray = -1
+  yArray = -1
+  zArray = -1
+  call polympo_getMeshElmCenter(mpMesh, numElms, c_loc(xArray), c_loc(yArray), c_loc(zArray))
+  call assert(all(xArray .eq. value1), "Assert xArray == value1 Failed!")
+  call assert(all(yArray .eq. value2), "Assert yArray == value2 Failed!")
+  call assert(all(zArray .eq. value1 + value2), "Assert zArray == value1 + value2 Failed!")
+  
+  deallocate(xArray)
+  deallocate(yArray)
+  deallocate(zArray)
+  
   call polympo_deleteMPMesh(mpMesh)
   call polympo_finalize()
 

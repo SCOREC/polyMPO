@@ -1,5 +1,7 @@
 #pragma once
 
+#include "pmpo_utils.hpp"
+
 #define MP_ACTIVE 1
 #define MP_DELETE -1
 
@@ -23,7 +25,7 @@ using kkViewHostU = Kokkos::View<
           Kokkos::MemoryTraits<Kokkos::Unmanaged>>;
 
 typedef kkViewHostU<double*> kkDblViewHostU;//TODO:put it to mesh.hpp             
-typedef kkViewHostU<double*[vec2d_nEntries]> kkVec2dViewHostU;//TODO:put it to mesh.hpp
+typedef kkViewHostU<polyMPO::vec2d_t*> kkVec2dViewHostU;//TODO:put it to mesh.hpp
 typedef kkViewHostU<double**> kkDbl2dViewHostU;//TODO:put it somewhere else (maybe)
 typedef kkViewHostU<int**> kkInt2dViewHostU;//TODO:put it somewhere else (maybe)
 typedef kkViewHostU<int*> kkIntViewHostU;//TODO:put it somewhere else (maybe)

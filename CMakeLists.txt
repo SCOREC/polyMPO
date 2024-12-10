@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.19)
-project(polyMPO VERSION 0.0.5 LANGUAGES CXX Fortran)
+project(polyMPO VERSION 0.1.0 LANGUAGES CXX Fortran)
 
 include(cmake/bob.cmake)
 bob_begin_package()

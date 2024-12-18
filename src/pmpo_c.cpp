@@ -230,36 +230,68 @@ void polympo_setMPLatLonRotatedFlag_f(MPMesh_ptr p_mpmesh, const int isRotateFla
 
 }
 
+template <polyMPO::MaterialPointSlice mpSlice>
+void setMPData(MPMesh_ptr p_mpmesh,
+                const int nComps,
+                const int numMPs,
+                const double* mpDataIn){
+  Kokkos::Timer timer;
+  checkMPMeshValid(p_mpmesh);
+  auto p_MPs = ((polyMPO::MPMesh*)p_mpmesh)->p_MPs;
+  PMT_ALWAYS_ASSERT(nComps == polyMPO::mpSliceToNumEntries<mpSlice>());
+  PMT_ALWAYS_ASSERT(numMPs >= p_MPs->getCount());
+  PMT_ALWAYS_ASSERT(numMPs >= p_MPs->getMaxAppID());
+  
+  kkViewHostU<const double**> mpDataIn_h(mpDataIn,nComps,numMPs);
+
+  if (mpSlice == polyMPO::MPF_Cur_Pos_XYZ && p_MPs->rebuildOngoing()) {
+    p_MPs->setRebuildMPSlice<polyMPO::MPF_Cur_Pos_XYZ>(mpDataIn_h);
+    return;
+  }
+
+  auto mpData = p_MPs->getData<mpSlice>();
+  auto mpAppID = p_MPs->getData<polyMPO::MPF_MP_APP_ID>();
+  Kokkos::View<double**> mpData_d("mpData_d",vec3d_nEntries,numMPs);
+  Kokkos::deep_copy(mpData_d, mpDataIn_h);
+
+  auto setData = PS_LAMBDA(const int&, const int& mp, const int& mask){
+    if(mask){
+      for (int i=0; i<nComps; i++)
+        mpData(mp, i) = mpData_d(i, mpAppID(mp));
+    }
+  };
+  p_MPs->parallel_for(setData, "setMPData");
+  pumipic::RecordTime("PolyMPO_setMPData", timer.seconds());
+}
+
+using setMPFunc = void (*)(MPMesh_ptr, const int, const int, const double*);
+std::map<polyMPO::MaterialPointSlice, setMPFunc> setMPMap = {
+  {polyMPO::MPF_Cur_Pos_Rot_Lat_Lon, setMPData<polyMPO::MPF_Cur_Pos_Rot_Lat_Lon>},
+  {polyMPO::MPF_Tgt_Pos_Rot_Lat_Lon, setMPData<polyMPO::MPF_Tgt_Pos_Rot_Lat_Lon>},
+  {polyMPO::MPF_Cur_Pos_XYZ, setMPData<polyMPO::MPF_Cur_Pos_XYZ>},
+  {polyMPO::MPF_Tgt_Pos_XYZ, setMPData<polyMPO::MPF_Tgt_Pos_XYZ>},
+  {polyMPO::MPF_Mass, setMPData<polyMPO::MPF_Mass>},
+  {polyMPO::MPF_Vel, setMPData<polyMPO::MPF_Vel>},
+  {polyMPO::MPF_Rot_Lat_Lon_Incr, setMPData<polyMPO::MPF_Rot_Lat_Lon_Incr>},
+  {polyMPO::MPF_Strain_Rate, setMPData<polyMPO::MPF_Strain_Rate>},
+  {polyMPO::MPF_Stress, setMPData<polyMPO::MPF_Stress>},
+  {polyMPO::MPF_Stress_Div, setMPData<polyMPO::MPF_Stress_Div>}
+};
+
+void polympo_setMPData_f(MPMesh_ptr p_mpmesh,
+                            const int nComps,
+                            const int numMPs,
+                            const double* mpDataIn,
+                            const int mpDataType){
+  polyMPO::MaterialPointSlice type = static_cast<polyMPO::MaterialPointSlice>(mpDataType);
+  (*setMPMap[type])(p_mpmesh, nComps, numMPs, mpDataIn);
+}
+
 void polympo_setMPPositions_f(MPMesh_ptr p_mpmesh,
                             const int nComps,
                             const int numMPs,
                             const double* mpPositionsIn){
-  Kokkos::Timer timer;
-  checkMPMeshValid(p_mpmesh);
-  auto p_MPs = ((polyMPO::MPMesh*)p_mpmesh)->p_MPs;
-  PMT_ALWAYS_ASSERT(nComps == vec3d_nEntries);
-  PMT_ALWAYS_ASSERT(numMPs >= p_MPs->getCount());
-  PMT_ALWAYS_ASSERT(numMPs >= p_MPs->getMaxAppID());
-  kkViewHostU<const double**> mpPositionsIn_h(mpPositionsIn,nComps,numMPs);
-
-  if (p_MPs->rebuildOngoing()) {
-    p_MPs->setRebuildMPSlice<polyMPO::MPF_Cur_Pos_XYZ>(mpPositionsIn_h);
-    return;
-  }
-
-  auto mpPositions = p_MPs->getData<polyMPO::MPF_Cur_Pos_XYZ>();
-  auto mpAppID = p_MPs->getData<polyMPO::MPF_MP_APP_ID>();
-  Kokkos::View<double**> mpPositionsIn_d("mpPositionsDevice",vec3d_nEntries,numMPs);
-  Kokkos::deep_copy(mpPositionsIn_d, mpPositionsIn_h);
-  auto setPos = PS_LAMBDA(const int&, const int& mp, const int& mask){
-    if(mask){
-      mpPositions(mp,0) = mpPositionsIn_d(0, mpAppID(mp));
-      mpPositions(mp,1) = mpPositionsIn_d(1, mpAppID(mp));
-      mpPositions(mp,2) = mpPositionsIn_d(2, mpAppID(mp));
-    }
-  };
-  p_MPs->parallel_for(setPos, "setMPPositions");
-  pumipic::RecordTime("PolyMPO_setMPPositions", timer.seconds());
+  setMPData<polyMPO::MPF_Cur_Pos_XYZ>(p_mpmesh, nComps, numMPs, mpPositionsIn);
 }
 
 void polympo_getMPPositions_f(MPMesh_ptr p_mpmesh,

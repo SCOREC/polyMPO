@@ -251,7 +251,7 @@ void setMPData(MPMesh_ptr p_mpmesh,
 
   auto mpData = p_MPs->getData<mpSlice>();
   auto mpAppID = p_MPs->getData<polyMPO::MPF_MP_APP_ID>();
-  Kokkos::View<double**> mpData_d("mpData_d",vec3d_nEntries,numMPs);
+  Kokkos::View<double**> mpData_d("mpData_d",nComps,numMPs);
   Kokkos::deep_copy(mpData_d, mpDataIn_h);
 
   auto setData = PS_LAMBDA(const int&, const int& mp, const int& mask){
@@ -274,8 +274,7 @@ std::map<polyMPO::MaterialPointSlice, setMPFunc> setMPMap = {
   {polyMPO::MPF_Vel, setMPData<polyMPO::MPF_Vel>},
   {polyMPO::MPF_Rot_Lat_Lon_Incr, setMPData<polyMPO::MPF_Rot_Lat_Lon_Incr>},
   {polyMPO::MPF_Strain_Rate, setMPData<polyMPO::MPF_Strain_Rate>},
-  {polyMPO::MPF_Stress, setMPData<polyMPO::MPF_Stress>},
-  {polyMPO::MPF_Stress_Div, setMPData<polyMPO::MPF_Stress_Div>}
+  {polyMPO::MPF_Stress, setMPData<polyMPO::MPF_Stress>}
 };
 
 void polympo_setMPData_f(MPMesh_ptr p_mpmesh,
@@ -325,24 +324,7 @@ void polympo_setMPRotLatLon_f(MPMesh_ptr p_mpmesh,
                          const double* mpRotLatLonIn){
   static int callCount = 0;
   PMT_ALWAYS_ASSERT(callCount == 0);
-  checkMPMeshValid(p_mpmesh);
-  auto p_MPs = ((polyMPO::MPMesh*)p_mpmesh)->p_MPs;
-  PMT_ALWAYS_ASSERT(nComps == vec2d_nEntries);
-  PMT_ALWAYS_ASSERT(numMPs >= p_MPs->getCount());
-  PMT_ALWAYS_ASSERT(numMPs >= p_MPs->getMaxAppID());
-
-  auto mpRotLatLon = p_MPs->getData<polyMPO::MPF_Cur_Pos_Rot_Lat_Lon>();
-  auto mpAppID = p_MPs->getData<polyMPO::MPF_MP_APP_ID>();
-  kkViewHostU<const double**> mpRotLatLonIn_h(mpRotLatLonIn,nComps,numMPs);
-  Kokkos::View<double**> mpRotLatLonIn_d("mpRotLatLonDevice",vec2d_nEntries,numMPs);
-  Kokkos::deep_copy(mpRotLatLonIn_d, mpRotLatLonIn_h);
-  auto setPos = PS_LAMBDA(const int& elm, const int& mp, const int& mask){
-    if(mask){
-      mpRotLatLon(mp,0) = mpRotLatLonIn_d(0, mpAppID(mp));
-      mpRotLatLon(mp,1) = mpRotLatLonIn_d(1, mpAppID(mp));
-    }
-  };
-  p_MPs->parallel_for(setPos, "setMPRotLatLon");
+  setMPData<polyMPO::MPF_Cur_Pos_Rot_Lat_Lon>(p_mpmesh, nComps, numMPs, mpRotLatLonIn);
   callCount++;
 }
 
@@ -371,25 +353,7 @@ void polympo_getMPRotLatLon_f(MPMesh_ptr p_mpmesh,
 }
 
 void polympo_setMPMass_f(MPMesh_ptr p_mpmesh, const int nComps, const int numMPs, const double* mpMassIn) {
-  Kokkos::Timer timer;
-  checkMPMeshValid(p_mpmesh);
-  auto p_MPs = ((polyMPO::MPMesh*)p_mpmesh)->p_MPs;
-  PMT_ALWAYS_ASSERT(nComps == 1); //TODO mp_sclr_t
-  PMT_ALWAYS_ASSERT(numMPs >= p_MPs->getCount());
-  PMT_ALWAYS_ASSERT(numMPs >= p_MPs->getMaxAppID());
-
-  auto mpMass = p_MPs->getData<polyMPO::MPF_Mass>();
-  auto mpAppID = p_MPs->getData<polyMPO::MPF_MP_APP_ID>();
-  kkViewHostU<const double**> mpMassIn_h(mpMassIn,nComps,numMPs);
-  Kokkos::View<double**> mpMassIn_d("mpMassDevice",nComps,numMPs);
-  Kokkos::deep_copy(mpMassIn_d, mpMassIn_h);
-  auto setMPMass = PS_LAMBDA(const int& elm, const int& mp, const int& mask){
-    if(mask){
-      mpMass(mp,0) = mpMassIn_d(0, mpAppID(mp));
-    }
-  };
-  p_MPs->parallel_for(setMPMass, "setMPMass");
-  pumipic::RecordTime("PolyMPO_setMPMass", timer.seconds());
+  setMPData<polyMPO::MPF_Mass>(p_mpmesh, nComps, numMPs, mpMassIn);
 }
 
 void polympo_getMPMass_f(MPMesh_ptr p_mpmesh, const int nComps, const int numMPs, double* mpMassHost) {
@@ -415,26 +379,7 @@ void polympo_getMPMass_f(MPMesh_ptr p_mpmesh, const int nComps, const int numMPs
 }
 
 void polympo_setMPVel_f(MPMesh_ptr p_mpmesh, const int nComps, const int numMPs, const double* mpVelIn) {
-  Kokkos::Timer timer;
-  checkMPMeshValid(p_mpmesh);
-  auto p_MPs = ((polyMPO::MPMesh*)p_mpmesh)->p_MPs;
-  PMT_ALWAYS_ASSERT(nComps == vec2d_nEntries);
-  PMT_ALWAYS_ASSERT(numMPs >= p_MPs->getCount());
-  PMT_ALWAYS_ASSERT(numMPs >= p_MPs->getMaxAppID());
-
-  auto mpVel = p_MPs->getData<polyMPO::MPF_Vel>();
-  auto mpAppID = p_MPs->getData<polyMPO::MPF_MP_APP_ID>();
-  kkViewHostU<const double**> mpVelIn_h(mpVelIn,nComps,numMPs);
-  Kokkos::View<double**> mpVelIn_d("mpVelDevice",vec2d_nEntries,numMPs);
-  Kokkos::deep_copy(mpVelIn_d, mpVelIn_h);
-  auto setMPVel = PS_LAMBDA(const int& elm, const int& mp, const int& mask){
-    if(mask){
-      mpVel(mp,0) = mpVelIn_d(0, mpAppID(mp));
-      mpVel(mp,1) = mpVelIn_d(1, mpAppID(mp));
-    }
-  };
-  p_MPs->parallel_for(setMPVel, "setMPVel");
-  pumipic::RecordTime("PolyMPO_setMPVel", timer.seconds());
+  setMPData<polyMPO::MPF_Vel>(p_mpmesh, nComps, numMPs, mpVelIn);
 }
 
 void polympo_getMPVel_f(MPMesh_ptr p_mpmesh, const int nComps, const int numMPs, double* mpVelHost) {
@@ -460,30 +405,8 @@ void polympo_getMPVel_f(MPMesh_ptr p_mpmesh, const int nComps, const int numMPs,
   pumipic::RecordTime("PolyMPO_getMPVel", timer.seconds());
 }
 
-//TODO: implement these
 void polympo_setMPStrainRate_f(MPMesh_ptr p_mpmesh, const int nComps, const int numMPs, const double* mpStrainRateIn){
-  checkMPMeshValid(p_mpmesh);
-  auto p_MPs = ((polyMPO::MPMesh*)p_mpmesh)->p_MPs;
-  PMT_ALWAYS_ASSERT(nComps == 6); //TODO: mp_sym_mat3d_t
-  PMT_ALWAYS_ASSERT(numMPs >= p_MPs->getCount());
-  PMT_ALWAYS_ASSERT(numMPs >= p_MPs->getMaxAppID());
-
-  auto mpStrainRate = p_MPs->getData<polyMPO::MPF_Vel>();
-  auto mpAppID = p_MPs->getData<polyMPO::MPF_MP_APP_ID>();
-  kkViewHostU<const double**> mpStrainRateIn_h(mpStrainRateIn,nComps,numMPs);
-  Kokkos::View<double**> mpStrainRateIn_d("mpStrainRateDevice",nComps,numMPs);
-  Kokkos::deep_copy(mpStrainRateIn_d, mpStrainRateIn_h);
-  auto setMPStrainRate = PS_LAMBDA(const int& elm, const int& mp, const int& mask){
-    if(mask){
-      mpStrainRate(mp,0) = mpStrainRateIn_d(0, mpAppID(mp));
-      mpStrainRate(mp,1) = mpStrainRateIn_d(1, mpAppID(mp));
-      mpStrainRate(mp,2) = mpStrainRateIn_d(2, mpAppID(mp));
-      mpStrainRate(mp,3) = mpStrainRateIn_d(3, mpAppID(mp));
-      mpStrainRate(mp,4) = mpStrainRateIn_d(4, mpAppID(mp));
-      mpStrainRate(mp,5) = mpStrainRateIn_d(5, mpAppID(mp));
-    }
-  };
-  p_MPs->parallel_for(setMPStrainRate, "setMPStrainRate");
+  setMPData<polyMPO::MPF_Strain_Rate>(p_mpmesh, nComps, numMPs, mpStrainRateIn);
 }
 void polympo_getMPStrainRate_f(MPMesh_ptr p_mpmesh, const int nComps, const int numMPs, double* mpStrainRateHost){
   checkMPMeshValid(p_mpmesh);
@@ -495,13 +418,7 @@ void polympo_getMPStrainRate_f(MPMesh_ptr p_mpmesh, const int nComps, const int 
   (void)mpStrainRateHost;
 }
 void polympo_setMPStress_f(MPMesh_ptr p_mpmesh, const int nComps, const int numMPs, const double* mpStressIn){
-  checkMPMeshValid(p_mpmesh);
-  std::cerr << "Error: This routine is not implemented yet\n";
-  exit(1);
-  (void)p_mpmesh;
-  (void)nComps;
-  (void)numMPs;
-  (void)mpStressIn;
+  setMPData<polyMPO::MPF_Stress>(p_mpmesh, nComps, numMPs, mpStressIn);
 }
 void polympo_getMPStress_f(MPMesh_ptr p_mpmesh, const int nComps, const int numMPs, double* mpStressHost){
   checkMPMeshValid(p_mpmesh);

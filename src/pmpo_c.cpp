@@ -516,28 +516,33 @@ void setMeshData(MPMesh_ptr p_mpmesh, const int nComps, const int nVertices, con
   pumipic::RecordTime("PolyMPO_setMeshData", timer.seconds());
 }
 
+template<polyMPO::MeshFieldIndex fieldType>
+void getMeshData(MPMesh_ptr p_mpmesh, const int nComps, const int nVertices, double** meshDataOut_h){
+  Kokkos::Timer timer;
+  checkMPMeshValid(p_mpmesh);
+  auto p_mesh = ((polyMPO::MPMesh*)p_mpmesh)->p_mesh;
+
+  //check the size
+  // PMT_ALWAYS_ASSERT(p_mesh->getNumVertices()==nVertices);
+  // PMT_ALWAYS_ASSERT(p_mesh->getNumElements()==nCells);
+  
+  //copy the device to host 
+  auto meshData = p_mesh->getMeshField<fieldType>();
+  auto meshData_h = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), meshData);
+  for(int i=0; i<nVertices; i++)
+  for(int j=0; j<nComps; j++)
+    meshDataOut_h[j][i] = meshData_h(i,j);
+  pumipic::RecordTime("PolyMPO_getMeshData", timer.seconds());
+}
+
 void polympo_setMeshVtxCoords_f(MPMesh_ptr p_mpmesh, const int nVertices, const double* xArray, const double* yArray, const double* zArray){
   const double* dataIn[] = {xArray, yArray, zArray};
   setMeshData<polyMPO::MeshF_VtxCoords>(p_mpmesh, 3, nVertices, dataIn);
 }
 
 void polympo_getMeshVtxCoords_f(MPMesh_ptr p_mpmesh, const int nVertices, double* xArray, double* yArray, double* zArray){
-  //chech validity
-  checkMPMeshValid(p_mpmesh);
-  auto p_mesh = ((polyMPO::MPMesh*)p_mpmesh)->p_mesh;
-
-  //check the size
-  PMT_ALWAYS_ASSERT(p_mesh->getNumVertices()==nVertices); 
-  
-  //copy the device to host 
-  auto coordsArray = p_mesh->getMeshField<polyMPO::MeshF_VtxCoords>();
-  auto h_coordsArray = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(),
-                                                           coordsArray);
-  for(int i=0; i<nVertices; i++){
-    xArray[i] = h_coordsArray(i,0);
-    yArray[i] = h_coordsArray(i,1);
-    zArray[i] = h_coordsArray(i,2);
-  }
+  double* dataIn[] = {xArray, yArray, zArray};
+  getMeshData<polyMPO::MeshF_VtxCoords>(p_mpmesh, 3, nVertices, dataIn);
 }
 
 void polympo_setMeshVtxRotLat_f(MPMesh_ptr p_mpmesh, const int nVertices, const double* latitude){
@@ -582,21 +587,8 @@ void polympo_setMeshElmCenter_f(MPMesh_ptr p_mpmesh, const int nCells, const dou
 }
 
 void polympo_getMeshElmCenter_f(MPMesh_ptr p_mpmesh, const int nCells, double* xArray, double* yArray, double* zArray){
-  //chech validity
-  checkMPMeshValid(p_mpmesh);
-  auto p_mesh = ((polyMPO::MPMesh*)p_mpmesh)->p_mesh;
-
-  //check the size
-  PMT_ALWAYS_ASSERT(p_mesh->getNumElements()==nCells); 
-  
-  //copy the device to host 
-  auto elmCenter = p_mesh->getMeshField<polyMPO::MeshF_ElmCenterXYZ>();
-  auto h_elmCenter = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), elmCenter);
-  for(int i=0; i<nCells; i++){
-    xArray[i] = h_elmCenter(i,0);
-    yArray[i] = h_elmCenter(i,1);
-    zArray[i] = h_elmCenter(i,2);
-  }
+  double* dataIn[] = {xArray, yArray, zArray};
+  getMeshData<polyMPO::MeshF_ElmCenterXYZ>(p_mpmesh, 3, nCells, dataIn);
 }
 
 void polympo_setMeshVtxVel_f(MPMesh_ptr p_mpmesh, const int nVertices, const double* uVelIn, const double* vVelIn){
@@ -605,22 +597,8 @@ void polympo_setMeshVtxVel_f(MPMesh_ptr p_mpmesh, const int nVertices, const dou
 }
 
 void polympo_getMeshVtxVel_f(MPMesh_ptr p_mpmesh, const int nVertices, double* uVelOut, double* vVelOut){
-  Kokkos::Timer timer;
-  //check mpMesh is valid
-  checkMPMeshValid(p_mpmesh);
-  auto p_mesh = ((polyMPO::MPMesh*)p_mpmesh)->p_mesh;
-
-  //check the size
-  PMT_ALWAYS_ASSERT(p_mesh->getNumVertices() == nVertices); 
-
-  //copy the device array to the host
-  auto coordsArray = p_mesh->getMeshField<polyMPO::MeshF_Vel>();
-  auto h_coordsArray = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(),coordsArray);
-  for(int i=0; i<nVertices; i++){
-    uVelOut[i] = h_coordsArray(i,0);
-    vVelOut[i] = h_coordsArray(i,1);
-  }
-  pumipic::RecordTime("PolyMPO_getMeshVtxVel", timer.seconds());
+  double* dataIn[] = {uVelOut, vVelOut};
+  getMeshData<polyMPO::MeshF_Vel>(p_mpmesh, 2, nVertices, dataIn);
 }
 
 void polympo_setMeshVtxMass_f(MPMesh_ptr p_mpmesh, const int nVertices, const double* vtxMass){
@@ -629,21 +607,8 @@ void polympo_setMeshVtxMass_f(MPMesh_ptr p_mpmesh, const int nVertices, const do
 }
 
 void polympo_getMeshVtxMass_f(MPMesh_ptr p_mpmesh, const int nVertices, double* vtxMass){
-  Kokkos::Timer timer;
-  //check mpMesh is valid
-  checkMPMeshValid(p_mpmesh);
-  auto p_mesh = ((polyMPO::MPMesh*)p_mpmesh)->p_mesh;
-
-  //check the size
-  PMT_ALWAYS_ASSERT(p_mesh->getNumVertices() == nVertices); 
-
-  //copy the device array to the host
-  auto coordsArray = p_mesh->getMeshField<polyMPO::MeshF_VtxMass>();
-  auto h_coordsArray = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(),coordsArray);
-  for(int i=0; i<nVertices; i++){
-    vtxMass[i] = h_coordsArray(i,0);
-  }
-  pumipic::RecordTime("PolyMPO_getMeshVtxMass", timer.seconds());
+  double* dataIn[] = {vtxMass};
+  getMeshData<polyMPO::MeshF_VtxMass>(p_mpmesh, 1, nVertices, dataIn);
 }
 
 void polympo_setMeshElmMass_f(MPMesh_ptr p_mpmesh, const int nCells, const double* elmMass){
@@ -652,21 +617,8 @@ void polympo_setMeshElmMass_f(MPMesh_ptr p_mpmesh, const int nCells, const doubl
 }
 
 void polympo_getMeshElmMass_f(MPMesh_ptr p_mpmesh, const int nCells, double* elmMass){
-  Kokkos::Timer timer;
-  //check mpMesh is valid
-  checkMPMeshValid(p_mpmesh);
-  auto p_mesh = ((polyMPO::MPMesh*)p_mpmesh)->p_mesh;
-
-  //check the size
-  PMT_ALWAYS_ASSERT(p_mesh->getNumElements() == nCells); 
-
-  //copy the device array to the host
-  auto coordsArray = p_mesh->getMeshField<polyMPO::MeshF_ElmMass>();
-  auto h_coordsArray = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(),coordsArray);
-  for(int i=0; i<nCells; i++){
-    elmMass[i] = h_coordsArray(i,0);
-  }
-  pumipic::RecordTime("PolyMPO_getMeshElmMass", timer.seconds());
+  double* dataIn[] = {elmMass};
+  getMeshData<polyMPO::MeshF_ElmMass>(p_mpmesh, 1, nCells, dataIn);
 }
 
 void polympo_setMeshVtxOnSurfVeloIncr_f(MPMesh_ptr p_mpmesh, const int nComps, const int nVertices, const double* array) {

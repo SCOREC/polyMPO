@@ -508,7 +508,7 @@ void setMeshData(MPMesh_ptr p_mpmesh, const int nComps, const int nVertices, con
 
   //copy the host array to the device
   auto meshData = p_mesh->getMeshField<fieldType>();
-  auto meshData_h = Kokkos::create_mirror_view(meshData);
+  auto meshData_h = Kokkos::create_mirror_view(Kokkos::HostSpace(), meshData);
   for(int i=0; i<nVertices; i++)
   for(int j=0; j<nComps; j++)
     meshData_h(i, j) = meshDataIn[j][i];

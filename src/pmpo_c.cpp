@@ -541,69 +541,56 @@ void polympo_setMeshVtxCoords_f(MPMesh_ptr p_mpmesh, const int nVertices, const 
   const double* dataIn[] = {xArray, yArray, zArray};
   setMeshData<polyMPO::MeshF_VtxCoords>(p_mpmesh, 3, nVertices, dataIn);
 }
-
 void polympo_getMeshVtxCoords_f(MPMesh_ptr p_mpmesh, const int nVertices, double* xArray, double* yArray, double* zArray){
   double* dataIn[] = {xArray, yArray, zArray};
   getMeshData<polyMPO::MeshF_VtxCoords>(p_mpmesh, 3, nVertices, dataIn);
 }
-
 void polympo_setMeshVtxRotLat_f(MPMesh_ptr p_mpmesh, const int nVertices, const double* latitude){
   const double* dataIn[] = {latitude};
   setMeshData<polyMPO::MeshF_VtxRotLat>(p_mpmesh, 1, nVertices, dataIn);
 }
-
 void polympo_getMeshVtxRotLat_f(MPMesh_ptr p_mpmesh, const int nVertices, double* latitude){
   double* dataIn[] = {latitude};
   getMeshData<polyMPO::MeshF_VtxRotLat>(p_mpmesh, 1, nVertices, dataIn);
 }
-
 void polympo_setMeshElmCenter_f(MPMesh_ptr p_mpmesh, const int nCells, const double* xArray, const double* yArray, const double* zArray){
   const double* dataIn[] = {xArray, yArray, zArray};
   setMeshData<polyMPO::MeshF_ElmCenterXYZ>(p_mpmesh, 3, nCells, dataIn);
 }
-
 void polympo_getMeshElmCenter_f(MPMesh_ptr p_mpmesh, const int nCells, double* xArray, double* yArray, double* zArray){
   double* dataIn[] = {xArray, yArray, zArray};
   getMeshData<polyMPO::MeshF_ElmCenterXYZ>(p_mpmesh, 3, nCells, dataIn);
 }
-
 void polympo_setMeshVtxVel_f(MPMesh_ptr p_mpmesh, const int nVertices, const double* uVelIn, const double* vVelIn){
   const double* dataIn[] = {uVelIn, vVelIn};
   setMeshData<polyMPO::MeshF_Vel>(p_mpmesh, 2, nVertices, dataIn);
 }
-
 void polympo_getMeshVtxVel_f(MPMesh_ptr p_mpmesh, const int nVertices, double* uVelOut, double* vVelOut){
   double* dataIn[] = {uVelOut, vVelOut};
   getMeshData<polyMPO::MeshF_Vel>(p_mpmesh, 2, nVertices, dataIn);
 }
-
 void polympo_setMeshVtxMass_f(MPMesh_ptr p_mpmesh, const int nVertices, const double* vtxMass){
   const double* dataIn[] = {vtxMass};
   setMeshData<polyMPO::MeshF_VtxMass>(p_mpmesh, 1, nVertices, dataIn);
 }
-
 void polympo_getMeshVtxMass_f(MPMesh_ptr p_mpmesh, const int nVertices, double* vtxMass){
   double* dataIn[] = {vtxMass};
   getMeshData<polyMPO::MeshF_VtxMass>(p_mpmesh, 1, nVertices, dataIn);
 }
-
 void polympo_setMeshElmMass_f(MPMesh_ptr p_mpmesh, const int nCells, const double* elmMass){
   const double* dataIn[] = {elmMass};
   setMeshData<polyMPO::MeshF_ElmMass>(p_mpmesh, 1, nCells, dataIn);
 }
-
 void polympo_getMeshElmMass_f(MPMesh_ptr p_mpmesh, const int nCells, double* elmMass){
   double* dataIn[] = {elmMass};
   getMeshData<polyMPO::MeshF_ElmMass>(p_mpmesh, 1, nCells, dataIn);
 }
-
 void polympo_setMeshVtxOnSurfVeloIncr_f(MPMesh_ptr p_mpmesh, const int nComps, const int nVertices, const double* array) {
   const double* dataIn[nComps];
   for(int j=0; j<nComps; j++)
     dataIn[j] = &array[j * nVertices];
   setMeshData<polyMPO::MeshF_OnSurfVeloIncr>(p_mpmesh, nComps, nVertices, dataIn);
 }
-
 void polympo_getMeshVtxOnSurfVeloIncr_f(MPMesh_ptr p_mpmesh, const int nComps, const int nVertices, double* array) {
   double* dataIn[nComps];
   for(int j=0; j<nComps; j++)

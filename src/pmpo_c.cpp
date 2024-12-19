@@ -268,7 +268,7 @@ template <polyMPO::MaterialPointSlice mpSlice>
 void getMPData(MPMesh_ptr p_mpmesh,
                       const int nComps,
                       const int numMPs,
-                      double* mpDataHost){
+                      double* mpDataOut){
   checkMPMeshValid(p_mpmesh);
   auto p_MPs = ((polyMPO::MPMesh*)p_mpmesh)->p_MPs;
   PMT_ALWAYS_ASSERT(nComps == polyMPO::mpSliceToNumEntries<mpSlice>());
@@ -285,7 +285,7 @@ void getMPData(MPMesh_ptr p_mpmesh,
     }
   };
   p_MPs->parallel_for(getData, "getMPData");
-  kkDbl2dViewHostU arrayHost(mpDataHost,nComps,numMPs);
+  kkViewHostU<double**> arrayHost(mpDataOut,nComps,numMPs);
   Kokkos::deep_copy(arrayHost, mpDataCopy);
 }
 

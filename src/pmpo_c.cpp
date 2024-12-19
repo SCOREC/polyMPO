@@ -269,6 +269,7 @@ void getMPData(MPMesh_ptr p_mpmesh,
                       const int nComps,
                       const int numMPs,
                       double* mpDataOut){
+  Kokkos::Timer timer;
   checkMPMeshValid(p_mpmesh);
   auto p_MPs = ((polyMPO::MPMesh*)p_mpmesh)->p_MPs;
   PMT_ALWAYS_ASSERT(nComps == polyMPO::mpSliceToNumEntries<mpSlice>());
@@ -287,6 +288,7 @@ void getMPData(MPMesh_ptr p_mpmesh,
   p_MPs->parallel_for(getData, "getMPData");
   kkViewHostU<double**> arrayHost(mpDataOut,nComps,numMPs);
   Kokkos::deep_copy(arrayHost, mpDataCopy);
+  pumipic::RecordTime("PolyMPO_getMPData", timer.seconds());
 }
 
 using setMPFunc = void (*)(MPMesh_ptr, const int, const int, const double*);
@@ -596,36 +598,17 @@ void polympo_getMeshElmMass_f(MPMesh_ptr p_mpmesh, const int nCells, double* elm
 }
 
 void polympo_setMeshVtxOnSurfVeloIncr_f(MPMesh_ptr p_mpmesh, const int nComps, const int nVertices, const double* array) {
-  //check mpMesh is valid
-  checkMPMeshValid(p_mpmesh);
-  auto p_mesh = ((polyMPO::MPMesh*)p_mpmesh)->p_mesh;
-  kkViewHostU<const double*[vec2d_nEntries]> arrayHost(array,nVertices);
-
-  auto vtxField = p_mesh->getMeshField<polyMPO::MeshF_OnSurfVeloIncr>();
-
-  //check the size
-  PMT_ALWAYS_ASSERT(nComps == vec2d_nEntries);
-  PMT_ALWAYS_ASSERT(static_cast<size_t>(nVertices*vec2d_nEntries)==vtxField.size());
-
-  //copy the host array to the device
-  Kokkos::deep_copy(vtxField,arrayHost);
+  const double* dataIn[nComps];
+  for(int j=0; j<nComps; j++)
+    dataIn[j] = &array[j * nVertices];
+  setMeshData<polyMPO::MeshF_OnSurfVeloIncr>(p_mpmesh, nComps, nVertices, dataIn);
 }
 
 void polympo_getMeshVtxOnSurfVeloIncr_f(MPMesh_ptr p_mpmesh, const int nComps, const int nVertices, double* array) {
-  //check mpMesh is valid
-  checkMPMeshValid(p_mpmesh);
-  auto p_mesh = ((polyMPO::MPMesh*)p_mpmesh)->p_mesh;
-  kkVec2dViewHostU arrayHost(array,nVertices);
-
-  auto vtxField = p_mesh->getMeshField<polyMPO::MeshF_OnSurfVeloIncr>();
-
-  //check the size
-  PMT_ALWAYS_ASSERT(nComps == vec2d_nEntries);
-  PMT_ALWAYS_ASSERT(p_mesh->getNumVertices() == nVertices); 
-  PMT_ALWAYS_ASSERT(static_cast<size_t>(nVertices*vec2d_nEntries)==vtxField.size());
-
-  //copy the device array to the host
-  Kokkos::deep_copy(arrayHost, vtxField);
+  double* dataIn[nComps];
+  for(int j=0; j<nComps; j++)
+    dataIn[j] = &array[j * nVertices];
+  getMeshData<polyMPO::MeshF_OnSurfVeloIncr>(p_mpmesh, nComps, nVertices, dataIn);
 }
 
 void polympo_setMeshVtxOnSurfDispIncr_f(MPMesh_ptr p_mpmesh, const int nComps, const int nVertices, const double* array) {

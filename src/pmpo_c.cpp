@@ -499,7 +499,7 @@ int polympo_getMeshFElmType_f() {
 }
 
 template<polyMPO::MeshFieldIndex fieldType, typename... Args>
-void setMeshData(MPMesh_ptr p_mpmesh, const int nComps, const int size, Args... arrayArgs){
+void setMeshField1D(MPMesh_ptr p_mpmesh, const int nComps, const int size, Args... arrayArgs){
   Kokkos::Timer timer;
   checkMPMeshValid(p_mpmesh);
   auto p_mesh = ((polyMPO::MPMesh*)p_mpmesh)->p_mesh;
@@ -517,11 +517,11 @@ void setMeshData(MPMesh_ptr p_mpmesh, const int nComps, const int size, Args... 
   for(int j=0; j<nComps; j++)
     meshField_h(i, j) = arrayIn[j][i];
   Kokkos::deep_copy(meshField, meshField_h);
-  pumipic::RecordTime("PolyMPO_setMeshData", timer.seconds());
+  pumipic::RecordTime("PolyMPO_setMeshField1D", timer.seconds());
 }
 
 template<polyMPO::MeshFieldIndex fieldType, typename... Args>
-void getMeshData(MPMesh_ptr p_mpmesh, const int nComps, const int size, Args... arrayArgs){
+void getMeshField1D(MPMesh_ptr p_mpmesh, const int nComps, const int size, Args... arrayArgs){
   Kokkos::Timer timer;
   checkMPMeshValid(p_mpmesh);
   auto p_mesh = ((polyMPO::MPMesh*)p_mpmesh)->p_mesh;
@@ -538,11 +538,11 @@ void getMeshData(MPMesh_ptr p_mpmesh, const int nComps, const int size, Args... 
   for(int i=0; i<size; i++)
   for(int j=0; j<nComps; j++)
     arrayOut[j][i] = meshField_h(i,j);
-  pumipic::RecordTime("PolyMPO_getMeshData", timer.seconds());
+  pumipic::RecordTime("PolyMPO_getMeshField1D", timer.seconds());
 }
 
 template<polyMPO::MeshFieldIndex fieldType, typename T>
-void setMeshDataContiguous(MPMesh_ptr p_mpmesh, const int nComps, const int nVertices, const T* arrayIn){
+void setMeshField2D(MPMesh_ptr p_mpmesh, const int nComps, const int nVertices, const T* arrayIn){
   Kokkos::Timer timer;
   checkMPMeshValid(p_mpmesh);
   auto p_mesh = ((polyMPO::MPMesh*)p_mpmesh)->p_mesh;
@@ -561,11 +561,11 @@ void setMeshDataContiguous(MPMesh_ptr p_mpmesh, const int nComps, const int nVer
     for (int j=0; j<nComps; j++)
       vtxField(iVtx,j) = deviceView(j,iVtx);
   });
-  pumipic::RecordTime("PolyMPO_setMeshDataContiguous", timer.seconds());
+  pumipic::RecordTime("PolyMPO_setMeshField2D", timer.seconds());
 }
 
 template<polyMPO::MeshFieldIndex fieldType>
-void getMeshDataContiguous(MPMesh_ptr p_mpmesh, const int nComps, const int nVertices, double* arrayOut){
+void getMeshField2D(MPMesh_ptr p_mpmesh, const int nComps, const int nVertices, double* arrayOut){
   Kokkos::Timer timer;
   checkMPMeshValid(p_mpmesh);
   auto p_mesh = ((polyMPO::MPMesh*)p_mpmesh)->p_mesh;
@@ -585,56 +585,56 @@ void getMeshDataContiguous(MPMesh_ptr p_mpmesh, const int nComps, const int nVer
       deviceView(j,iVtx) = vtxField(iVtx,j);
   });
   Kokkos::deep_copy(hostViewOut, deviceView);
-  pumipic::RecordTime("PolyMPO_getMeshDataContiguous", timer.seconds());
+  pumipic::RecordTime("PolyMPO_getMeshField2D", timer.seconds());
 }
 
 void polympo_setMeshVtxCoords_f(MPMesh_ptr p_mpmesh, const int nVertices, const double* xArray, const double* yArray, const double* zArray){
-  setMeshData<polyMPO::MeshF_VtxCoords>(p_mpmesh, 3, nVertices, xArray, yArray, zArray);
+  setMeshField1D<polyMPO::MeshF_VtxCoords>(p_mpmesh, 3, nVertices, xArray, yArray, zArray);
 }
 void polympo_getMeshVtxCoords_f(MPMesh_ptr p_mpmesh, const int nVertices, double* xArray, double* yArray, double* zArray){
-  getMeshData<polyMPO::MeshF_VtxCoords>(p_mpmesh, 3, nVertices, xArray, yArray, zArray);
+  getMeshField1D<polyMPO::MeshF_VtxCoords>(p_mpmesh, 3, nVertices, xArray, yArray, zArray);
 }
 void polympo_setMeshVtxRotLat_f(MPMesh_ptr p_mpmesh, const int nVertices, const double* latitude){
-  setMeshData<polyMPO::MeshF_VtxRotLat>(p_mpmesh, 1, nVertices, latitude);
+  setMeshField1D<polyMPO::MeshF_VtxRotLat>(p_mpmesh, 1, nVertices, latitude);
 }
 void polympo_getMeshVtxRotLat_f(MPMesh_ptr p_mpmesh, const int nVertices, double* latitude){
-  getMeshData<polyMPO::MeshF_VtxRotLat>(p_mpmesh, 1, nVertices, latitude);
+  getMeshField1D<polyMPO::MeshF_VtxRotLat>(p_mpmesh, 1, nVertices, latitude);
 }
 void polympo_setMeshElmCenter_f(MPMesh_ptr p_mpmesh, const int nCells, const double* xArray, const double* yArray, const double* zArray){
-  setMeshData<polyMPO::MeshF_ElmCenterXYZ>(p_mpmesh, 3, nCells, xArray, yArray, zArray);
+  setMeshField1D<polyMPO::MeshF_ElmCenterXYZ>(p_mpmesh, 3, nCells, xArray, yArray, zArray);
 }
 void polympo_getMeshElmCenter_f(MPMesh_ptr p_mpmesh, const int nCells, double* xArray, double* yArray, double* zArray){
-  getMeshData<polyMPO::MeshF_ElmCenterXYZ>(p_mpmesh, 3, nCells, xArray, yArray, zArray);
+  getMeshField1D<polyMPO::MeshF_ElmCenterXYZ>(p_mpmesh, 3, nCells, xArray, yArray, zArray);
 }
 void polympo_setMeshVtxVel_f(MPMesh_ptr p_mpmesh, const int nVertices, const double* uVelIn, const double* vVelIn){
-  setMeshData<polyMPO::MeshF_Vel>(p_mpmesh, 2, nVertices, uVelIn, vVelIn);
+  setMeshField1D<polyMPO::MeshF_Vel>(p_mpmesh, 2, nVertices, uVelIn, vVelIn);
 }
 void polympo_getMeshVtxVel_f(MPMesh_ptr p_mpmesh, const int nVertices, double* uVelOut, double* vVelOut){
-  getMeshData<polyMPO::MeshF_Vel>(p_mpmesh, 2, nVertices, uVelOut, vVelOut);
+  getMeshField1D<polyMPO::MeshF_Vel>(p_mpmesh, 2, nVertices, uVelOut, vVelOut);
 }
 void polympo_setMeshVtxMass_f(MPMesh_ptr p_mpmesh, const int nVertices, const double* vtxMass){
-  setMeshData<polyMPO::MeshF_VtxMass>(p_mpmesh, 1, nVertices, vtxMass);
+  setMeshField1D<polyMPO::MeshF_VtxMass>(p_mpmesh, 1, nVertices, vtxMass);
 }
 void polympo_getMeshVtxMass_f(MPMesh_ptr p_mpmesh, const int nVertices, double* vtxMass){
-  getMeshData<polyMPO::MeshF_VtxMass>(p_mpmesh, 1, nVertices, vtxMass);
+  getMeshField1D<polyMPO::MeshF_VtxMass>(p_mpmesh, 1, nVertices, vtxMass);
 }
 void polympo_setMeshElmMass_f(MPMesh_ptr p_mpmesh, const int nCells, const double* elmMass){
-  setMeshData<polyMPO::MeshF_ElmMass>(p_mpmesh, 1, nCells, elmMass);
+  setMeshField1D<polyMPO::MeshF_ElmMass>(p_mpmesh, 1, nCells, elmMass);
 }
 void polympo_getMeshElmMass_f(MPMesh_ptr p_mpmesh, const int nCells, double* elmMass){
-  getMeshData<polyMPO::MeshF_ElmMass>(p_mpmesh, 1, nCells, elmMass);
+  getMeshField1D<polyMPO::MeshF_ElmMass>(p_mpmesh, 1, nCells, elmMass);
 }
 void polympo_setMeshVtxOnSurfVeloIncr_f(MPMesh_ptr p_mpmesh, const int nComps, const int nVertices, const double* array) {
-  setMeshDataContiguous<polyMPO::MeshF_OnSurfVeloIncr>(p_mpmesh, nComps, nVertices, array);
+  setMeshField2D<polyMPO::MeshF_OnSurfVeloIncr>(p_mpmesh, nComps, nVertices, array);
 }
 void polympo_getMeshVtxOnSurfVeloIncr_f(MPMesh_ptr p_mpmesh, const int nComps, const int nVertices, double* array) {
-  getMeshDataContiguous<polyMPO::MeshF_OnSurfVeloIncr>(p_mpmesh, nComps, nVertices, array);
+  getMeshField2D<polyMPO::MeshF_OnSurfVeloIncr>(p_mpmesh, nComps, nVertices, array);
 }
 void polympo_setMeshVtxOnSurfDispIncr_f(MPMesh_ptr p_mpmesh, const int nComps, const int nVertices, const double* array) {
-  setMeshDataContiguous<polyMPO::MeshF_OnSurfDispIncr>(p_mpmesh, nComps, nVertices, array);
+  setMeshField2D<polyMPO::MeshF_OnSurfDispIncr>(p_mpmesh, nComps, nVertices, array);
 }
 void polympo_getMeshVtxOnSurfDispIncr_f(MPMesh_ptr p_mpmesh, const int nComps, const int nVertices, double* array) {
-  getMeshDataContiguous<polyMPO::MeshF_OnSurfDispIncr>(p_mpmesh, nComps, nVertices, array);
+  getMeshField2D<polyMPO::MeshF_OnSurfDispIncr>(p_mpmesh, nComps, nVertices, array);
 }
 
 void polympo_push_f(MPMesh_ptr p_mpmesh){

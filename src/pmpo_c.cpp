@@ -211,7 +211,7 @@ void polympo_getMPCurElmID_f(MPMesh_ptr p_mpmesh,
   auto mpAppID = p_MPs->getData<polyMPO::MPF_MP_APP_ID>();
   auto elmIDoffset = p_MPs->getElmIDoffset();
 
-  kkIntViewHostU arrayHost(elmIDs,numMPs);
+  polyMPO::MPsViewHostU<polyMPO::MPF_Cur_Elm_ID> arrayHost(elmIDs,numMPs);
   polyMPO::IntView mpCurElmIDCopy("mpCurElmIDNewValue",numMPs);
 
   auto getElmId = PS_LAMBDA(const int&, const int& mp, const int& mask){
@@ -552,9 +552,10 @@ void setMeshField2D(MPMesh_ptr p_mpmesh, const int nComps, const int nVertices, 
 
   auto vtxField = p_mesh->getMeshField<fieldType>();
 
-  // //check the size
-  // PMT_ALWAYS_ASSERT(nComps == vec2d_nEntries);
-  // PMT_ALWAYS_ASSERT(static_cast<size_t>(nVertices*vec2d_nEntries)==vtxField.size());
+  //check the size
+  PMT_ALWAYS_ASSERT(nComps == vec2d_nEntries);
+  PMT_ALWAYS_ASSERT(p_mesh->getNumVertices() == nVertices);
+  PMT_ALWAYS_ASSERT(static_cast<size_t>(nVertices*vec2d_nEntries)==vtxField.size());
 
   //copy the host array to the device
   Kokkos::parallel_for("set mesh field", nVertices, KOKKOS_LAMBDA(const int iVtx){
@@ -564,20 +565,20 @@ void setMeshField2D(MPMesh_ptr p_mpmesh, const int nComps, const int nVertices, 
   pumipic::RecordTime("PolyMPO_setMeshField2D", timer.seconds());
 }
 
-template<polyMPO::MeshFieldIndex fieldType>
-void getMeshField2D(MPMesh_ptr p_mpmesh, const int nComps, const int nVertices, double* arrayOut){
+template<polyMPO::MeshFieldIndex fieldType, typename T>
+void getMeshField2D(MPMesh_ptr p_mpmesh, const int nComps, const int nVertices, T* arrayOut){
   Kokkos::Timer timer;
   checkMPMeshValid(p_mpmesh);
   auto p_mesh = ((polyMPO::MPMesh*)p_mpmesh)->p_mesh;
-  kkDbl2dViewHostU hostViewOut(arrayOut,nComps,nVertices);
-  Kokkos::View<double**> deviceView("meshDeviceView",nComps,nVertices);
+  kkViewHostU<T**> hostViewOut(arrayOut,nComps,nVertices);
+  Kokkos::View<T**> deviceView("meshDeviceView",nComps,nVertices);
 
   auto vtxField = p_mesh->getMeshField<fieldType>();
 
   //check the size
-  // PMT_ALWAYS_ASSERT(nComps == vec2d_nEntries);
-  // PMT_ALWAYS_ASSERT(p_mesh->getNumVertices() == nVertices); 
-  // PMT_ALWAYS_ASSERT(static_cast<size_t>(nVertices*vec2d_nEntries)==vtxField.size());
+  PMT_ALWAYS_ASSERT(nComps == vec2d_nEntries);
+  PMT_ALWAYS_ASSERT(p_mesh->getNumVertices() == nVertices);
+  PMT_ALWAYS_ASSERT(static_cast<size_t>(nVertices*vec2d_nEntries)==vtxField.size());
 
   //copy the device array to the host
   Kokkos::parallel_for("get mesh field", nVertices, KOKKOS_LAMBDA(const int iVtx){

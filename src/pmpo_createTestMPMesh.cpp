@@ -173,8 +173,8 @@ MaterialPoints* initTestMPs(Mesh* mesh, int testMPOption){
         iMP += numMPsPerElement(i); 
     },numMPs);
 
-    MPSView<MPF_Cur_Pos_XYZ> positions("MPpositions",numMPs);
-    MPSView<MPF_Cur_Pos_Rot_Lat_Lon> latLonPositions("MPRotLatLonPositions",numMPs); 
+    MPsView<MPF_Cur_Pos_XYZ> positions("MPpositions",numMPs);
+    MPsView<MPF_Cur_Pos_Rot_Lat_Lon> latLonPositions("MPRotLatLonPositions",numMPs); 
     if(geomType == geom_planar_surf){     
         Kokkos::parallel_for("intializeMPsPositionPlanar", numMPs, KOKKOS_LAMBDA(const int iMP){
             int ielm = MPToElement(iMP);

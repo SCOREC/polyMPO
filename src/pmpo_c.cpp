@@ -230,11 +230,11 @@ void polympo_setMPLatLonRotatedFlag_f(MPMesh_ptr p_mpmesh, const int isRotateFla
 
 }
 
-template <polyMPO::MaterialPointSlice mpSlice>
+template <polyMPO::MaterialPointSlice mpSlice, typename T>
 void setMPData(MPMesh_ptr p_mpmesh,
               const int nComps,
               const int numMPs,
-              const double* mpDataIn){
+              const T* mpDataIn){
   Kokkos::Timer timer;
   checkMPMeshValid(p_mpmesh);
   auto p_MPs = ((polyMPO::MPMesh*)p_mpmesh)->p_MPs;
@@ -242,7 +242,7 @@ void setMPData(MPMesh_ptr p_mpmesh,
   PMT_ALWAYS_ASSERT(numMPs >= p_MPs->getCount());
   PMT_ALWAYS_ASSERT(numMPs >= p_MPs->getMaxAppID());
   
-  kkViewHostU<const double**> mpDataIn_h(mpDataIn,nComps,numMPs);
+  kkViewHostU<const T**> mpDataIn_h(mpDataIn,nComps,numMPs);
 
   if (mpSlice == polyMPO::MPF_Cur_Pos_XYZ && p_MPs->rebuildOngoing()) {
     p_MPs->setRebuildMPSlice<polyMPO::MPF_Cur_Pos_XYZ>(mpDataIn_h);
@@ -251,7 +251,7 @@ void setMPData(MPMesh_ptr p_mpmesh,
 
   auto mpData = p_MPs->getData<mpSlice>();
   auto mpAppID = p_MPs->getData<polyMPO::MPF_MP_APP_ID>();
-  Kokkos::View<double**> mpData_d("mpData_d",nComps,numMPs);
+  Kokkos::View<T**> mpData_d("mpData_d",nComps,numMPs);
   Kokkos::deep_copy(mpData_d, mpDataIn_h);
 
   auto setData = PS_LAMBDA(const int&, const int& mp, const int& mask){
@@ -264,11 +264,11 @@ void setMPData(MPMesh_ptr p_mpmesh,
   pumipic::RecordTime("PolyMPO_setMPData", timer.seconds());
 }
 
-template <polyMPO::MaterialPointSlice mpSlice>
+template <polyMPO::MaterialPointSlice mpSlice, typename T>
 void getMPData(MPMesh_ptr p_mpmesh,
                       const int nComps,
                       const int numMPs,
-                      double* mpDataOut){
+                      T* mpDataOut){
   Kokkos::Timer timer;
   checkMPMeshValid(p_mpmesh);
   auto p_MPs = ((polyMPO::MPMesh*)p_mpmesh)->p_MPs;
@@ -278,7 +278,7 @@ void getMPData(MPMesh_ptr p_mpmesh,
 
   auto mpData = p_MPs->getData<mpSlice>();
   auto mpAppID = p_MPs->getData<polyMPO::MPF_MP_APP_ID>();
-  Kokkos::View<double**> mpDataCopy("mpDataCopy",nComps,numMPs);
+  Kokkos::View<T**> mpDataCopy("mpDataCopy",nComps,numMPs);
   auto getData = PS_LAMBDA(const int&, const int& mp, const int& mask){
     if(mask){
       for (int i=0; i<nComps; i++)
@@ -286,7 +286,7 @@ void getMPData(MPMesh_ptr p_mpmesh,
     }
   };
   p_MPs->parallel_for(getData, "getMPData");
-  kkViewHostU<double**> arrayHost(mpDataOut,nComps,numMPs);
+  kkViewHostU<T**> arrayHost(mpDataOut,nComps,numMPs);
   Kokkos::deep_copy(arrayHost, mpDataCopy);
   pumipic::RecordTime("PolyMPO_getMPData", timer.seconds());
 }
@@ -499,11 +499,12 @@ int polympo_getMeshFElmType_f() {
 }
 
 template<polyMPO::MeshFieldIndex fieldType, typename... Args>
-void setMeshData(MPMesh_ptr p_mpmesh, const int nComps, const int nVertices, Args... arrayArgs){
+void setMeshData(MPMesh_ptr p_mpmesh, const int nComps, const int size, Args... arrayArgs){
   Kokkos::Timer timer;
   checkMPMeshValid(p_mpmesh);
   auto p_mesh = ((polyMPO::MPMesh*)p_mpmesh)->p_mesh;
-  const double* arrayIn[] = {arrayArgs...};
+  using T = std::common_type_t<Args...>;
+  T arrayIn[] = {arrayArgs...};
 
   //check the size
   // PMT_ALWAYS_ASSERT(p_mesh->getNumVertices()==nVertices);
@@ -512,7 +513,7 @@ void setMeshData(MPMesh_ptr p_mpmesh, const int nComps, const int nVertices, Arg
   //copy the host array to the device
   auto meshField = p_mesh->getMeshField<fieldType>();
   auto meshField_h = Kokkos::create_mirror_view(Kokkos::HostSpace(), meshField);
-  for(int i=0; i<nVertices; i++)
+  for(int i=0; i<size; i++)
   for(int j=0; j<nComps; j++)
     meshField_h(i, j) = arrayIn[j][i];
   Kokkos::deep_copy(meshField, meshField_h);
@@ -520,11 +521,12 @@ void setMeshData(MPMesh_ptr p_mpmesh, const int nComps, const int nVertices, Arg
 }
 
 template<polyMPO::MeshFieldIndex fieldType, typename... Args>
-void getMeshData(MPMesh_ptr p_mpmesh, const int nComps, const int nVertices, Args... arrayArgs){
+void getMeshData(MPMesh_ptr p_mpmesh, const int nComps, const int size, Args... arrayArgs){
   Kokkos::Timer timer;
   checkMPMeshValid(p_mpmesh);
   auto p_mesh = ((polyMPO::MPMesh*)p_mpmesh)->p_mesh;
-  double* arrayOut[] = {arrayArgs...};
+  using T = std::common_type_t<Args...>;
+  T arrayOut[] = {arrayArgs...};
 
   //check the size
   // PMT_ALWAYS_ASSERT(p_mesh->getNumVertices()==nVertices);
@@ -533,19 +535,19 @@ void getMeshData(MPMesh_ptr p_mpmesh, const int nComps, const int nVertices, Arg
   //copy the device to host 
   auto meshField = p_mesh->getMeshField<fieldType>();
   auto meshField_h = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), meshField);
-  for(int i=0; i<nVertices; i++)
+  for(int i=0; i<size; i++)
   for(int j=0; j<nComps; j++)
     arrayOut[j][i] = meshField_h(i,j);
   pumipic::RecordTime("PolyMPO_getMeshData", timer.seconds());
 }
 
-template<polyMPO::MeshFieldIndex fieldType>
-void setMeshDataContiguous(MPMesh_ptr p_mpmesh, const int nComps, const int nVertices, const double* arrayIn){
+template<polyMPO::MeshFieldIndex fieldType, typename T>
+void setMeshDataContiguous(MPMesh_ptr p_mpmesh, const int nComps, const int nVertices, const T* arrayIn){
   Kokkos::Timer timer;
   checkMPMeshValid(p_mpmesh);
   auto p_mesh = ((polyMPO::MPMesh*)p_mpmesh)->p_mesh;
-  kkViewHostU<const double**> hostView(arrayIn,nComps,nVertices);
-  Kokkos::View<double**> deviceView("meshDeviceView",nComps,nVertices);
+  kkViewHostU<const T**> hostView(arrayIn,nComps,nVertices);
+  Kokkos::View<T**> deviceView("meshDeviceView",nComps,nVertices);
   Kokkos::deep_copy(deviceView, hostView);
 
   auto vtxField = p_mesh->getMeshField<fieldType>();

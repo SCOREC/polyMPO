@@ -150,7 +150,6 @@ void MPMesh::assemblyVtx1() {
   //Solve Ax=b for each vertex  
   Kokkos::View<double*[vec4d_nEntries]> VtxCoeffs("VtxCoeffs", p_mesh->getNumVertices());
   Kokkos::parallel_for("solving Ax=b", numVtx, KOKKOS_LAMBDA(const int vtx){
-
     Vec4d v0 = {VtxMatrices(vtx,0,0), VtxMatrices(vtx,0,1), VtxMatrices(vtx,0,2), VtxMatrices(vtx,0,3)};
     Vec4d v1 = {VtxMatrices(vtx,1,0), VtxMatrices(vtx,1,1), VtxMatrices(vtx,1,2), VtxMatrices(vtx,1,3)};
     Vec4d v2 = {VtxMatrices(vtx,2,0), VtxMatrices(vtx,2,1), VtxMatrices(vtx,2,2), VtxMatrices(vtx,2,3)};
@@ -165,18 +164,8 @@ void MPMesh::assemblyVtx1() {
     CholeskySolve4d_UnitRHS(A_regularized, coeff);
     for (int i=0; i<vec4d_nEntries; i++) 
       VtxCoeffs(vtx,i)=coeff[i];
-      
   });
   
-  /*
-  Kokkos::fence(); // Ensures synchronization
-  cudaError_t err = cudaGetLastError();
-  if (err != cudaSuccess) {
-    std::cerr << "CUDA error: " << cudaGetErrorString(err) << std::endl;
-  }
-  assert(cudaDeviceSynchronize() == cudaSuccess);
-  */
-
   //Reconstruct
   auto reconstruct = PS_LAMBDA(const int& elm, const int& mp, const int& mask) {
     if(mask) { //if material point is 'active'/'enabled'
@@ -205,7 +194,6 @@ void MPMesh::assemblyVtx1() {
     for(int k=0; k<numEntries; k++)
       meshField(vtx, k) = reconVals(vtx,k);
   });
-
 }
 
 template <MeshFieldIndex meshFieldIndex>

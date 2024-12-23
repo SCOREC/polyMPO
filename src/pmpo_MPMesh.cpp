@@ -339,8 +339,7 @@ void MPMesh::push(){
     else
         p_MPs->rebuild(); //rebuild pumi-pic
     p_MPs->updateMPElmID(); //update mpElm IDs slices
-    reconstructSlices();
-  
+    reconstructSlices(); 
   } 
   while (anyIsMigrating);
 

@@ -100,7 +100,6 @@ void MPMesh::assemblyElm0() {
 
 template <MeshFieldIndex meshFieldIndex>
 void MPMesh::assemblyVtx1() {
-  
   //Mesh Information
   auto elm2VtxConn = p_mesh->getElm2VtxConn();  
   int numVtx = p_mesh->getNumVertices();

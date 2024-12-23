@@ -342,7 +342,7 @@ void sphericalInterpolation(MPMesh& mpMesh){
             initArray(basisByArea3d,maxVtxsPerElm,0.0);
 
             // calc basis
-            getBasisByAreaGblFormSpherical2(position3d, numVtx, v3d, radius, basisByArea3d);
+            getBasisByAreaGblFormSpherical(position3d, numVtx, v3d, radius, basisByArea3d);
             
             // interpolation step
             for(int entry=0; entry<numEntries; entry++){

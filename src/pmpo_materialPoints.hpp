@@ -216,6 +216,7 @@ class MaterialPoints {
         auto rotLatLonIncr = MPs->get<MPF_Rot_Lat_Lon_Incr>();
         
         auto is_rotated = getRotatedFlag();
+        
         auto updateRotLatLon = PS_LAMBDA(const int& elm, const int& mp, const int& mask){
             if(mask){
                 auto rotLat = curPosRotLatLon(mp,0) + rotLatLonIncr(mp,0); // phi

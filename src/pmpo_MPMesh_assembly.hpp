@@ -100,6 +100,7 @@ void MPMesh::assemblyElm0() {
 
 template <MeshFieldIndex meshFieldIndex>
 void MPMesh::assemblyVtx1() {
+  
   //Mesh Information
   auto elm2VtxConn = p_mesh->getElm2VtxConn();  
   int numVtx = p_mesh->getNumVertices();
@@ -147,25 +148,35 @@ void MPMesh::assemblyVtx1() {
   p_MPs->parallel_for(assemble, "assembly");
   
   //Solve Ax=b for each vertex  
-  Kokkos::View<double*[vec4d_nEntries]> VtxCoeffs("VtxMatrices", p_mesh->getNumVertices());
+  Kokkos::View<double*[vec4d_nEntries]> VtxCoeffs("VtxCoeffs", p_mesh->getNumVertices());
   Kokkos::parallel_for("solving Ax=b", numVtx, KOKKOS_LAMBDA(const int vtx){
+
     Vec4d v0 = {VtxMatrices(vtx,0,0), VtxMatrices(vtx,0,1), VtxMatrices(vtx,0,2), VtxMatrices(vtx,0,3)};
     Vec4d v1 = {VtxMatrices(vtx,1,0), VtxMatrices(vtx,1,1), VtxMatrices(vtx,1,2), VtxMatrices(vtx,1,3)};
     Vec4d v2 = {VtxMatrices(vtx,2,0), VtxMatrices(vtx,2,1), VtxMatrices(vtx,2,2), VtxMatrices(vtx,2,3)};
     Vec4d v3 = {VtxMatrices(vtx,3,0), VtxMatrices(vtx,3,1), VtxMatrices(vtx,3,2), VtxMatrices(vtx,3,3)};
-    Matrix4d A = {v0,v1,v2,v3};
-
-    //double f_norm=A.frobeniusNorm();
+     
+    Matrix4d A = {v0,v1,v2,v3}; 
     double A_trace = A.trace();
     Matrix4d A_regularized = {v0, v1, v2, v3};
     A_regularized.addToDiag(A_trace*1e-8);
- 
+   
     double coeff[vec4d_nEntries]={0.0, 0.0, 0.0, 0.0};
     CholeskySolve4d_UnitRHS(A_regularized, coeff);
     for (int i=0; i<vec4d_nEntries; i++) 
       VtxCoeffs(vtx,i)=coeff[i];
+      
   });
- 
+  
+  /*
+  Kokkos::fence(); // Ensures synchronization
+  cudaError_t err = cudaGetLastError();
+  if (err != cudaSuccess) {
+    std::cerr << "CUDA error: " << cudaGetErrorString(err) << std::endl;
+  }
+  assert(cudaDeviceSynchronize() == cudaSuccess);
+  */
+
   //Reconstruct
   auto reconstruct = PS_LAMBDA(const int& elm, const int& mp, const int& mask) {
     if(mask) { //if material point is 'active'/'enabled'
@@ -189,11 +200,12 @@ void MPMesh::assemblyVtx1() {
     }
   };
   p_MPs->parallel_for(reconstruct, "reconstruct");
-  
+ 
   Kokkos::parallel_for("assigning", numVtx, KOKKOS_LAMBDA(const int vtx){
     for(int k=0; k<numEntries; k++)
       meshField(vtx, k) = reconVals(vtx,k);
   });
+
 }
 
 template <MeshFieldIndex meshFieldIndex>

@@ -214,37 +214,21 @@ class Matrix4d {
     
   private:
   
-    double** data_;
-    int rows_=4;
-    int cols_=4;
+    double data_[4][4];
    
   public:
 			        
     KOKKOS_INLINE_FUNCTION
     Matrix4d(Vec4d v0, Vec4d v1, Vec4d v2, Vec4d v3){
-      data_ = new double*[rows_];
   
-      for (int i=0; i<rows_; i++){
-        data_[i] = new double[cols_];
-      }
-
-      for (int i=0; i<cols_; i++){
+      for (int i=0; i<4; i++){
         data_[0][i] = v0[i];
         data_[1][i] = v1[i];
         data_[2][i] = v2[i];
         data_[3][i] = v3[i];
       }
     }
-
-    //Destructor    
-    KOKKOS_INLINE_FUNCTION
-    ~Matrix4d(){
-      for (int i=0; i<4; i++){
-        delete[] data_[i];
-      }
-      delete[] data_;
-    }
-        
+ 
     //Retrieval
     KOKKOS_INLINE_FUNCTION
     double& operator()(int i, int j) { return data_[i][j];}
@@ -253,8 +237,8 @@ class Matrix4d {
     KOKKOS_INLINE_FUNCTION
     Matrix4d operator/(double scalar) const {
       Matrix4d result(Vec4d(0, 0, 0, 0), Vec4d(0, 0, 0, 0), Vec4d(0, 0, 0, 0), Vec4d(0, 0, 0, 0));
-      for (int i = 0; i < rows_; i++) {
-        for (int j = 0; j < cols_; j++) {
+      for (int i = 0; i < 4; i++) {
+        for (int j = 0; j < 4; j++) {
           result(i, j) = data_[i][j] / scalar;
         }
       }
@@ -265,8 +249,8 @@ class Matrix4d {
     KOKKOS_INLINE_FUNCTION
     double frobeniusNorm() const {
       double sum = 0.0; // Initialize sum of squares
-      for (int i = 0; i < rows_; i++) {
-        for (int j = 0; j < cols_; j++) {
+      for (int i = 0; i < 4; i++) {
+        for (int j = 0; j < 4; j++) {
           sum += data_[i][j]* data_[i][j]; // Sum of squares
         }
       }
@@ -277,7 +261,7 @@ class Matrix4d {
     KOKKOS_INLINE_FUNCTION
     double trace() const {
       double traceSum = 0.0; // Initialize sum of diagonal elements
-      for (int i = 0; i < rows_; i++) {
+      for (int i = 0; i < 4; i++) {
         traceSum += data_[i][i]; // Sum diagonal elements
       }
       return traceSum;
@@ -286,7 +270,7 @@ class Matrix4d {
     //Function to regularize the matrix
     KOKKOS_INLINE_FUNCTION
     void addToDiag(double eps) {
-      for (int i = 1; i < rows_; i++) {
+      for (int i = 1; i < 4; i++) {
         data_[i][i]=data_[i][i]+eps;
       }
     }

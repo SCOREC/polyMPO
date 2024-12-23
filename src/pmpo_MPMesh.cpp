@@ -34,7 +34,7 @@ void MPMesh::calcBasis() {
             initArray(basisByArea3d,maxVtxsPerElm,0.0);
 
             // calc basis
-            getBasisByAreaGblFormSpherical2(position3d, numVtx, v3d, radius, basisByArea3d);
+            getBasisByAreaGblFormSpherical(position3d, numVtx, v3d, radius, basisByArea3d);
             
             // fill step
             for(int i=0; i<= numVtx; i++){
@@ -339,7 +339,7 @@ void MPMesh::push(){
     else
         p_MPs->rebuild(); //rebuild pumi-pic
     p_MPs->updateMPElmID(); //update mpElm IDs slices
-    reconstructSlices();
+    reconstructSlices(); 
   } 
   while (anyIsMigrating);
 

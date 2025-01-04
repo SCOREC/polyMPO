@@ -1,0 +1,32 @@
+name: Update CMAKE Version
+on: 
+  pull_request:
+
+jobs:
+  checkVersion:
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        shell: bash
+      
+    steps:
+
+    - name: Check out master
+      uses: actions/checkout@v4
+      with:
+        path: master
+        ref: ''
+
+    - name: Check out current
+      uses: actions/checkout@v4
+      with:
+        path: current
+
+    - name: Compare Version
+      run: |
+        version1=$(grep -oP '(?<=project\([^\)]+\sVERSION\s)[^\)]+(?=\))' /master/CMakeLists.txt)
+        version2=$(grep -oP '(?<=project\([^\)]+\sVERSION\s)[^\)]+(?=\))' /current/CMakeLists.txt)
+        echo $version1
+        echo $version2
+        

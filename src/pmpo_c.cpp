@@ -291,24 +291,6 @@ void getMPData(MPMesh_ptr p_mpmesh,
   pumipic::RecordTime("PolyMPO_getMPData", timer.seconds());
 }
 
-using setMPFunc = void (*)(MPMesh_ptr, const int, const int, const double*);
-std::map<polyMPO::MaterialPointSlice, setMPFunc> setMPMap = {
-  {polyMPO::MPF_Cur_Pos_Rot_Lat_Lon, setMPData<polyMPO::MPF_Cur_Pos_Rot_Lat_Lon>},
-  {polyMPO::MPF_Tgt_Pos_Rot_Lat_Lon, setMPData<polyMPO::MPF_Tgt_Pos_Rot_Lat_Lon>},
-  {polyMPO::MPF_Cur_Pos_XYZ, setMPData<polyMPO::MPF_Cur_Pos_XYZ>},
-  {polyMPO::MPF_Tgt_Pos_XYZ, setMPData<polyMPO::MPF_Tgt_Pos_XYZ>},
-  {polyMPO::MPF_Mass, setMPData<polyMPO::MPF_Mass>},
-  {polyMPO::MPF_Vel, setMPData<polyMPO::MPF_Vel>},
-  {polyMPO::MPF_Rot_Lat_Lon_Incr, setMPData<polyMPO::MPF_Rot_Lat_Lon_Incr>},
-  {polyMPO::MPF_Strain_Rate, setMPData<polyMPO::MPF_Strain_Rate>},
-  {polyMPO::MPF_Stress, setMPData<polyMPO::MPF_Stress>}
-};
-
-void polympo_setMPData_f(MPMesh_ptr p_mpmesh, const int nComps, const int numMPs, const double* mpDataIn, const int mpDataType){
-  polyMPO::MaterialPointSlice type = static_cast<polyMPO::MaterialPointSlice>(mpDataType);
-  (*setMPMap[type])(p_mpmesh, nComps, numMPs, mpDataIn);
-}
-
 void polympo_setMPPositions_f(MPMesh_ptr p_mpmesh, const int nComps, const int numMPs, const double* mpPositionsIn){
   setMPData<polyMPO::MPF_Cur_Pos_XYZ>(p_mpmesh, nComps, numMPs, mpPositionsIn);
 }

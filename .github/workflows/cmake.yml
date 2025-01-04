@@ -102,7 +102,7 @@ jobs:
       with:
         repo-name: 'pumi-pic'
         repo-path: 'SCOREC/pumi-pic'
-        repo-ref: '2.0.3'
+        repo-ref: '2.1.2'
         submodules: 'recursive'
         cache: true
         options: '-DCMAKE_CXX_COMPILER=mpicxx

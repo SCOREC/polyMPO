@@ -32,6 +32,8 @@ jobs:
     - name: Install NetCDF-Fortran
       run: sudo apt-get install libnetcdff-dev
 
+    - uses: actions/checkout@v4
+
 
     - name: build kokkos
       uses: ./.github/actions/install-repo

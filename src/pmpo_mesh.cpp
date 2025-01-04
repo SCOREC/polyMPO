@@ -65,7 +65,7 @@ namespace polyMPO{
             // Lat [iVtx,0] = dispIncrY [iVtx,1] /R
             // Lon [iVtx,1] = dispIncrX [iVtx,0] /(R*cos(lat))
             rotLatLonIncr(iVtx, 0) = dispIncr(iVtx, 1)/sphereRadius;
-            rotLatLonIncr(iVtx, 1) = dispIncr(iVtx, 0)/(sphereRadius * std::cos(lat(iVtx)));
+            rotLatLonIncr(iVtx, 1) = dispIncr(iVtx, 0)/(sphereRadius * std::cos(lat(iVtx, 0)));
         });
         pumipic::RecordTime("PolyMPO_computeRotLatLonIncr", timer.seconds());
     }

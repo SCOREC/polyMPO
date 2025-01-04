@@ -24,12 +24,6 @@ using kkViewHostU = Kokkos::View<
           Kokkos::DefaultHostExecutionSpace,
           Kokkos::MemoryTraits<Kokkos::Unmanaged>>;
 
-typedef kkViewHostU<double*> kkDblViewHostU;//TODO:put it to mesh.hpp             
-typedef kkViewHostU<polyMPO::vec2d_t*> kkVec2dViewHostU;//TODO:put it to mesh.hpp
-typedef kkViewHostU<double**> kkDbl2dViewHostU;//TODO:put it somewhere else (maybe)
-typedef kkViewHostU<int**> kkInt2dViewHostU;//TODO:put it somewhere else (maybe)
-typedef kkViewHostU<int*> kkIntViewHostU;//TODO:put it somewhere else (maybe)
-
 template <typename DataT>
 auto create_mirror_view_and_copy(DataT array, const int size){
   kkViewHostU<DataT> temp_host(array, size);

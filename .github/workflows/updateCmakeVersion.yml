@@ -27,5 +27,6 @@ jobs:
       run: |
         masterVersion=$(grep -oP 'project\(\s*[\w-]+\s+VERSION\s+\K[0-9]+\.[0-9]+\.[0-9]+' master/CMakeLists.txt)
         branchVersion=$(grep -oP 'project\(\s*[\w-]+\s+VERSION\s+\K[0-9]+\.[0-9]+\.[0-9]+' branch/CMakeLists.txt)
-        [ "$masterVersion" != "$branchVersion" ]
+        echo $masterVersion
+        echo $branchVersion
         

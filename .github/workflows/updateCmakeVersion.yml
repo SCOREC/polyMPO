@@ -25,8 +25,8 @@ jobs:
 
     - name: Compare Version
       run: |
-        version1=$(grep -oP '(?<=project\([^\)]+\sVERSION\s)[^\)]+(?=\))' /master/CMakeLists.txt)
-        version2=$(grep -oP '(?<=project\([^\)]+\sVERSION\s)[^\)]+(?=\))' /current/CMakeLists.txt)
+        version1=$(grep -oP 'project\(\s*[\w-]+\s+VERSION\s+\K[0-9]+\.[0-9]+\.[0-9]+' master/CMakeLists.txt)
+        version2=$(grep -oP 'project\(\s*[\w-]+\s+VERSION\s+\K[0-9]+\.[0-9]+\.[0-9]+' current/CMakeLists.txt)
         echo $version1
         echo $version2
         

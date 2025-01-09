@@ -274,6 +274,18 @@ class Matrix4d {
         data_[i][i]=data_[i][i]+eps;
       }
     }
+
+    KOKKOS_INLINE_FUNCTION
+    void scaleFirstRowAndColumn(double factor) {
+      // Scale the first row
+      for (int j = 0; j < 4; j++) {
+        data_[0][j] *= factor;
+      }
+      // Scale the first column
+      for (int i = 0; i < 4; i++) {
+        data_[i][0] *= factor;
+      }
+    }
 				        
 };
 

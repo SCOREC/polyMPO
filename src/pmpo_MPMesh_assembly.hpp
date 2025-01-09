@@ -111,6 +111,9 @@ void MPMesh::assemblyVtx1() {
   p_mesh->fillMeshField<meshFieldIndex>(numVtx, numEntries, 0.0);
   auto meshField = p_mesh->getMeshField<meshFieldIndex>();
 
+  //Dual Element Area for Regularization
+  auto dual_triangle_area=p_mesh->getMeshField<MeshF_DualTriangleArea>();
+
   //Material Points
   auto mpData = p_MPs->getData<mpfIndex>();
   auto weight = p_MPs->getData<MPF_Basis_Vals>();
@@ -146,6 +149,7 @@ void MPMesh::assemblyVtx1() {
   };
   p_MPs->parallel_for(assemble, "assembly");
   
+  bool regularize=true;
   //Solve Ax=b for each vertex  
   Kokkos::View<double*[vec4d_nEntries]> VtxCoeffs("VtxCoeffs", p_mesh->getNumVertices());
   Kokkos::parallel_for("solving Ax=b", numVtx, KOKKOS_LAMBDA(const int vtx){
@@ -154,13 +158,32 @@ void MPMesh::assemblyVtx1() {
     Vec4d v2 = {VtxMatrices(vtx,2,0), VtxMatrices(vtx,2,1), VtxMatrices(vtx,2,2), VtxMatrices(vtx,2,3)};
     Vec4d v3 = {VtxMatrices(vtx,3,0), VtxMatrices(vtx,3,1), VtxMatrices(vtx,3,2), VtxMatrices(vtx,3,3)};
      
-    Matrix4d A = {v0,v1,v2,v3}; 
-    double A_trace = A.trace();
+    Matrix4d A = {v0,v1,v2,v3};
     Matrix4d A_regularized = {v0, v1, v2, v3};
+
+    //Method 1 of rgularization
+    //Need some kind of option to choose regularization method
+    /* 
+    double A_trace = A.trace();
     A_regularized.addToDiag(A_trace*1e-8);
-   
+    */
+
+    //Method 2 of regularization
+    double mScale=1.0;
+    if(regularize){
+      mScale=sqrt(dual_triangle_area(vtx,0));
+      A_regularized.scaleFirstRowAndColumn(mScale);
+      double regParam=0.0*EPSILON*VtxMatrices(vtx,0,0) + VtxMatrices(vtx,1,1) + VtxMatrices(vtx,2,2) + VtxMatrices(vtx,3,3);
+      A_regularized.addToDiag(regParam);
+    }
     double coeff[vec4d_nEntries]={0.0, 0.0, 0.0, 0.0};
     CholeskySolve4d_UnitRHS(A_regularized, coeff);
+
+    // Undo scaling
+    coeff[0]=coeff[0]*mScale*mScale;
+    coeff[1]=coeff[1]*mScale;
+    coeff[2]=coeff[2]*mScale;
+    coeff[3]=coeff[3]*mScale;
     for (int i=0; i<vec4d_nEntries; i++) 
       VtxCoeffs(vtx,i)=coeff[i];
   });

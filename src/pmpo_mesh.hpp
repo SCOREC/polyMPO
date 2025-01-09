@@ -20,6 +20,7 @@ enum MeshFieldIndex{
     MeshF_VtxCoords,
     MeshF_VtxRotLat,
     MeshF_ElmCenterXYZ,
+    MeshF_DualTriangleArea,
     MeshF_Vel,
     MeshF_VtxMass,
     MeshF_ElmMass,
@@ -38,6 +39,7 @@ template <MeshFieldIndex> struct meshFieldToType;
 template <> struct meshFieldToType < MeshF_VtxCoords         > { using type = Kokkos::View<vec3d_t*>; };
 template <> struct meshFieldToType < MeshF_VtxRotLat         > { using type = DoubleView; };
 template <> struct meshFieldToType < MeshF_ElmCenterXYZ      > { using type = Kokkos::View<vec3d_t*>; };
+template <> struct meshFieldToType < MeshF_DualTriangleArea  > { using type = Kokkos::View<doubleSclr_t*>; };
 template <> struct meshFieldToType < MeshF_Vel               > { using type = Kokkos::View<vec2d_t*>; };
 template <> struct meshFieldToType < MeshF_VtxMass           > { using type = Kokkos::View<doubleSclr_t*>; };
 template <> struct meshFieldToType < MeshF_ElmMass           > { using type = Kokkos::View<doubleSclr_t*>; };
@@ -55,6 +57,7 @@ const std::map<MeshFieldIndex, std::pair<MeshFieldType,
                {MeshF_VtxCoords,        {MeshFType_VtxBased,"MeshField_VerticesCoords"}},
                {MeshF_VtxRotLat,        {MeshFType_VtxBased,"MeshField_VerticesLatitude"}},
                {MeshF_ElmCenterXYZ,     {MeshFType_ElmBased,"MeshField_ElementCenterXYZ"}},
+               {MeshF_DualTriangleArea, {MeshFType_VtxBased,"MeshField_DualTriangleArea"}},
                {MeshF_Vel,              {MeshFType_VtxBased,"MeshField_Velocity"}},
                {MeshF_VtxMass,          {MeshFType_VtxBased,"MeshField_VerticesMass"}},
                {MeshF_ElmMass,          {MeshFType_ElmBased,"MeshField_ElementsMass"}},
@@ -90,6 +93,7 @@ class Mesh {
     MeshFView<MeshF_VtxCoords> vtxCoords_;
     MeshFView<MeshF_VtxRotLat> vtxRotLat_;
     MeshFView<MeshF_ElmCenterXYZ> elmCenterXYZ_;
+    MeshFView<MeshF_DualTriangleArea> dualTriangleArea_;
     MeshFView<MeshF_Vel> vtxVel_;
     MeshFView<MeshF_VtxMass> vtxMass_;
     MeshFView<MeshF_ElmMass> elmMass_;
@@ -180,6 +184,9 @@ auto Mesh::getMeshField(){
     }
     else if constexpr (index==MeshF_ElmCenterXYZ){
         return elmCenterXYZ_;
+    }
+    else if constexpr (index==MeshF_DualTriangleArea){
+        return dualTriangleArea_;
     }
     else if constexpr (index==MeshF_Vel){
         return vtxVel_;

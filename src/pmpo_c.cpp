@@ -743,6 +743,42 @@ void polympo_getMeshElmCenter_f(MPMesh_ptr p_mpmesh, const int nCells, double* x
   }
 }
 
+void polympo_setMeshDualTriangleArea_f(MPMesh_ptr p_mpmesh, const int nVertices, const double* areaTriangle){
+
+  //chech validity
+  checkMPMeshValid(p_mpmesh);
+  auto p_mesh = ((polyMPO::MPMesh*)p_mpmesh)->p_mesh;
+
+  //check the size
+  PMT_ALWAYS_ASSERT(p_mesh->getNumVertices()==nVertices); 
+
+  //copy the host array to the device
+  auto dualArea = p_mesh->getMeshField<polyMPO::MeshF_DualTriangleArea>();
+  auto h_dualArea = Kokkos::create_mirror_view(dualArea);
+  for(int i=0; i<nVertices; i++)
+    h_dualArea(i,0) = areaTriangle[i];
+  Kokkos::deep_copy(dualArea, h_dualArea);
+
+}
+
+void polympo_getMeshDualTriangleArea_f(MPMesh_ptr p_mpmesh, const int nVertices, double* areaTriangle){
+  
+  //chech validity
+  checkMPMeshValid(p_mpmesh);
+  auto p_mesh = ((polyMPO::MPMesh*)p_mpmesh)->p_mesh;
+
+  //check the size
+  PMT_ALWAYS_ASSERT(p_mesh->getNumVertices()==nVertices); 
+
+  //copy the device to host 
+  auto dualArea = p_mesh->getMeshField<polyMPO::MeshF_DualTriangleArea>();
+  auto h_dualArea = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), dualArea);
+  for(int i=0; i<nVertices; i++)
+    areaTriangle[i] = h_dualArea(i,0);
+
+}
+
+
 void polympo_setMeshVtxVel_f(MPMesh_ptr p_mpmesh, const int nVertices, const double* uVelIn, const double* vVelIn){
   //check mpMesh is valid
   checkMPMeshValid(p_mpmesh);

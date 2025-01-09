@@ -513,6 +513,34 @@ module polympo
     integer(c_int), value :: nCells
     type(c_ptr), value :: xArray, yArray, zArray
   end subroutine
+
+  !---------------------------------------------------------------------------
+  !> @brief set the polympo dual mesh triangle area
+  !> @param mpmesh(in/out) MPMesh object
+  !> @param nVertices(in) length of array in, use for assertion 
+  !> @param Array(in) 1D array of area of dual triangle elements
+  !---------------------------------------------------------------------------
+  subroutine polympo_setMeshDualTriangleArea(mpMesh, nVertices, areaTriangle) &
+             bind(C, NAME='polympo_setMeshDualTriangleArea_f')
+    use :: iso_c_binding
+    type(c_ptr), value :: mpMesh
+    integer(c_int), value :: nVertices
+    type(c_ptr), intent(in), value :: areaTriangle
+  end subroutine
+  !---------------------------------------------------------------------------
+  !> @brief get the polympo mesh dual mesh triangle area
+  !> @param mpmesh(in/out) MPMesh object
+  !> @param nVetices(in) length of array in, use for assertion
+  !> @param Array(in/out) 1D array of area of dual triangle elements
+  !---------------------------------------------------------------------------
+  subroutine polympo_getMeshDualTriangleArea(mpMesh, nVertices, areaTriangle) &
+             bind(C, NAME='polympo_getMeshDualTriangleArea_f')
+    use :: iso_c_binding
+    type(c_ptr), value :: mpMesh
+    integer(c_int), value :: nVertices
+    type(c_ptr), value :: areaTriangle
+  end subroutine
+
   !---------------------------------------------------------------------------
   !> @brief set the vertices velocity from a host array
   !> @param mpmesh(in/out) MPMesh object

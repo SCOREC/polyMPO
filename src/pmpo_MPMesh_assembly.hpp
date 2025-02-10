@@ -100,6 +100,7 @@ void MPMesh::assemblyElm0() {
 
 template <MeshFieldIndex meshFieldIndex>
 void MPMesh::assemblyVtx1() {
+  
   //Mesh Information
   auto elm2VtxConn = p_mesh->getElm2VtxConn();  
   int numVtx = p_mesh->getNumVertices();
@@ -124,12 +125,15 @@ void MPMesh::assemblyVtx1() {
 
   //Reconstructed values
   Kokkos::View<double**> reconVals("meshField", p_mesh->getNumVertices(), numEntries);
-  
+ 
   //Earth Radius
   double radius = 1.0;
   if(p_mesh->getGeomType() == geom_spherical_surf)
     radius=p_mesh->getSphereRadius();
 
+  bool scaling=true;
+  int reg_method = 2;
+  
   //Assemble matrix for each vertex
   auto assemble = PS_LAMBDA(const int& elm, const int& mp, const int& mask) {
     if(mask) { //if material point is 'active'/'enabled'
@@ -138,48 +142,69 @@ void MPMesh::assemblyVtx1() {
         int vID = elm2VtxConn(elm,i+1)-1; //vID = vertex id
         double w_vtx=weight(mp,i);
         
+	double mScale=1;
+	if(scaling)
+	  mScale=sqrt(dual_triangle_area(vID,0))/radius;
+        
         double CoordDiffs[vec4d_nEntries] = {1, (vtxCoords(vID,0) - mpPositions(mp,0))/radius, 
                                                 (vtxCoords(vID,1) - mpPositions(mp,1))/radius, 
                                                 (vtxCoords(vID,2) - mpPositions(mp,2))/radius};		 
-        for (int k=0; k<vec4d_nEntries; k++)
-          for (int l=0; l<vec4d_nEntries; l++)
+        for (int k=1; k<vec4d_nEntries; k++)
+          for (int l=1; l<vec4d_nEntries; l++)
             Kokkos::atomic_add(&VtxMatrices(vID,k,l), CoordDiffs[k] * CoordDiffs[l] * w_vtx);
+      
+	//First element
+        Kokkos::atomic_add(&VtxMatrices(vID,0,0), CoordDiffs[0] * CoordDiffs[0] * w_vtx*mScale*mScale);
+        
+	//First row and column except the first element
+	for (int k=1; k<vec4d_nEntries; k++){
+          Kokkos::atomic_add(&VtxMatrices(vID,0,k), CoordDiffs[0] * CoordDiffs[k] * w_vtx*mScale);
+	  Kokkos::atomic_add(&VtxMatrices(vID,k,0), CoordDiffs[k] * CoordDiffs[0] * w_vtx*mScale);
+	}
       }
     }
   };
   p_MPs->parallel_for(assemble, "assembly");
   
-  bool regularize=true;
-  //Solve Ax=b for each vertex  
+  //Solve Ax=b for each vertex and apply regularization
   Kokkos::View<double*[vec4d_nEntries]> VtxCoeffs("VtxCoeffs", p_mesh->getNumVertices());
+
   Kokkos::parallel_for("solving Ax=b", numVtx, KOKKOS_LAMBDA(const int vtx){
     Vec4d v0 = {VtxMatrices(vtx,0,0), VtxMatrices(vtx,0,1), VtxMatrices(vtx,0,2), VtxMatrices(vtx,0,3)};
     Vec4d v1 = {VtxMatrices(vtx,1,0), VtxMatrices(vtx,1,1), VtxMatrices(vtx,1,2), VtxMatrices(vtx,1,3)};
     Vec4d v2 = {VtxMatrices(vtx,2,0), VtxMatrices(vtx,2,1), VtxMatrices(vtx,2,2), VtxMatrices(vtx,2,3)};
     Vec4d v3 = {VtxMatrices(vtx,3,0), VtxMatrices(vtx,3,1), VtxMatrices(vtx,3,2), VtxMatrices(vtx,3,3)};
-     
+    //Define the matrices
     Matrix4d A = {v0,v1,v2,v3};
     Matrix4d A_regularized = {v0, v1, v2, v3};
-
-    //Method 1 of rgularization
-    //Need some kind of option to choose regularization method
-    /* 
-    double A_trace = A.trace();
-    A_regularized.addToDiag(A_trace*1e-8);
-    */
-
-    //Method 2 of regularization
-    double mScale=1.0;
-    if(regularize){
-      mScale=sqrt(dual_triangle_area(vtx,0));
-      A_regularized.scaleFirstRowAndColumn(mScale);
-      double regParam=0.0*EPSILON*VtxMatrices(vtx,0,0) + VtxMatrices(vtx,1,1) + VtxMatrices(vtx,2,2) + VtxMatrices(vtx,3,3);
-      A_regularized.addToDiag(regParam);
+    //Regularization
+    switch(reg_method){
+      case 0:{
+        break;
+      }   
+      case 1:{
+        double A_trace = A.trace();
+        A_regularized.addToDiag(A_trace*1e-8);
+        break;
+      }
+      case 2:{
+        double regParam=sqrt(EPSILON)*(VtxMatrices(vtx,0,0)+VtxMatrices(vtx,1,1)+VtxMatrices(vtx,2,2)+VtxMatrices(vtx,3,3));
+        A_regularized.addToDiag(regParam);
+        break;
+      }
+      default:{
+        printf("Invalid regularization method \n");
+        break;	
+      }
     }
+    //Solve Ax=b 
     double coeff[vec4d_nEntries]={0.0, 0.0, 0.0, 0.0};
     CholeskySolve4d_UnitRHS(A_regularized, coeff);
-
     // Undo scaling
+    double mScale=1;
+    if(scaling)
+      mScale=sqrt(dual_triangle_area(vtx,0))/radius;
+        
     coeff[0]=coeff[0]*mScale*mScale;
     coeff[1]=coeff[1]*mScale;
     coeff[2]=coeff[2]*mScale;

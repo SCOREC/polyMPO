@@ -370,26 +370,23 @@ void QRDecomp4d(Matrix4d& A, Matrix4d& Q, Matrix4d& R){
       Vec4d u_column;
       for (int l=0; l<m_size; l++){
          A_column[l] = A(l,i);
-	 u_column[l] = A(l,i);
+         u_column[l] = A(l,i);
       }
 
       for (int j=0; j<i; j++){
          Vec4d q_column;
-	 for (int l=0; l<m_size; l++)
-	   q_column[l] = Q(l,j);
-	 double r=q_column.dot(A_column);
-	 R(j,i) = r;
+         for (int l=0; l<m_size; l++)
+           q_column[l] = Q(l,j);
+         double r=q_column.dot(A_column);
+         R(j,i) = r;
          for (int k=0; k<m_size; k++) u_column[k] -= r*Q(k,j);
       }
       double uNorm = std::sqrt(u_column.dot(u_column));
       R(i,i)=uNorm;
       for (int k=0; k<m_size; k++)
-          Q(k,i)= u_column[k]/uNorm; 
-
+          Q(k,i)= u_column[k]/uNorm;
   }
-
 }
-
 
 KOKKOS_INLINE_FUNCTION
 void initArray(Vec3d* arr, int n, Vec3d fill){

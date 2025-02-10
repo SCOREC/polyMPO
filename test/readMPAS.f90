@@ -27,7 +27,7 @@ subroutine loadMPASMeshInPolyMPO(mpMesh, maxEdges, vertexDegree, &
                         xVertex, yVertex, zVertex, &
                         latVertex, &
                         xCell, yCell, zCell, &
-                        verticesOnCell, cellsOnCell)
+                        verticesOnCell, cellsOnCell, areaTriangle)
     use :: netcdf
     use :: iso_c_binding
     implicit none
@@ -42,6 +42,8 @@ subroutine loadMPASMeshInPolyMPO(mpMesh, maxEdges, vertexDegree, &
     real(kind=MPAS_RKIND), dimension(:), pointer :: latVertex, lonVertex
     real(kind=MPAS_RKIND), dimension(:), pointer :: xCell, yCell, zCell
     integer, dimension(:,:), pointer :: verticesOnCell, cellsOnCell
+    real(kind=MPAS_RKIND), dimension(:), pointer, optional :: areaTriangle
+
 
     call polympo_checkPrecisionForRealKind(MPAS_RKIND)
     !check on maxEdges and vertexDegree
@@ -75,6 +77,11 @@ subroutine loadMPASMeshInPolyMPO(mpMesh, maxEdges, vertexDegree, &
     
     !set mesh element center
     call polympo_setMeshElmCenter(mpMesh,nCells,c_loc(xCell),c_loc(yCell),c_loc(zCell))
+
+    if (present(areaTriangle)) then
+      call polympo_setMeshDualTriangleArea(mpMesh, nVertices, c_loc(areaTriangle)) 
+    end if
+
 end subroutine
 
 subroutine readMPASMeshFromNCFile(filename, maxEdges, vertexDegree, &
@@ -83,7 +90,8 @@ subroutine readMPASMeshFromNCFile(filename, maxEdges, vertexDegree, &
                         xVertex, yVertex, zVertex, &
                         latVertex, lonVertex, &
                         xCell, yCell, zCell, &
-                        verticesOnCell, cellsOnCell)
+                        verticesOnCell, cellsOnCell, &
+                        areaTriangle)
     use :: netcdf
     use :: iso_c_binding
     implicit none
@@ -99,12 +107,14 @@ subroutine readMPASMeshFromNCFile(filename, maxEdges, vertexDegree, &
     real(kind=MPAS_RKIND), dimension(:), pointer :: latVertex, lonVertex
     real(kind=MPAS_RKIND), dimension(:), pointer :: xCell, yCell, zCell
     integer, dimension(:,:), pointer :: verticesOnCell, cellsOnCell
+    
+    real(kind=MPAS_RKIND), dimension(:), pointer, optional :: areaTriangle(:)
 
     integer :: ncid, status, nCellsID, nVerticesID, maxEdgesID, vertexDegreeID, &
                nEdgesOnCellID, xVertexID, yVertexID, zVertexID, &
                latVertexID, lonVertexID, &
                xCellID, yCellID, zCellID, &
-               verticesOnCellID, cellsOnCellID
+               verticesOnCellID, cellsOnCellID, areaTriangleID
     
     status = nf90_open(path=trim(filename), mode=nf90_nowrite, ncid=ncid)
     if (status /= nf90_noerr) then
@@ -180,6 +190,10 @@ subroutine readMPASMeshFromNCFile(filename, maxEdges, vertexDegree, &
     allocate(nEdgesOnCell(nCells))
     allocate(verticesOnCell(maxEdges, nCells))
     allocate(cellsOnCell(maxEdges, nCells))
+   
+    if (present(areaTriangle)) then
+      allocate(areaTriangle(nVertices))
+    end if
    
     status = nf90_get_att(ncid, nf90_global, "on_a_sphere", onSphere)
     if (status /= nf90_noerr) then
@@ -275,6 +289,16 @@ subroutine readMPASMeshFromNCFile(filename, maxEdges, vertexDegree, &
         stop
     end if
 
+    if (present(areaTriangle)) then
+      status = nf90_inq_varid(ncid, 'areaTriangle', areaTriangleID)
+      if (status /= nf90_noerr) then
+        write(0, *) "readMPASMeshFromNCFile: Error on inquire varid of 'areaTriangleID'"
+        write(0, *) trim(nf90_strerror(status))
+        stop
+      end if
+    end if
+
+    !Reading the variables
     status = nf90_get_var(ncid, xVertexID, xVertex)
     if (status /= nf90_noerr) then
         write(0, *) "readMPASMeshFromNCFile: Error on get var of 'xVertex'"
@@ -350,6 +374,18 @@ subroutine readMPASMeshFromNCFile(filename, maxEdges, vertexDegree, &
         write(0, *) "readMPASMeshFromNCFile: Error on get var of 'cellsOnCell'"
         write(0, *) trim(nf90_strerror(status))
         stop
+    end if
+
+    if (present(areaTriangle)) then
+      print *, "Reading area of dual triangles"
+      status = nf90_get_var(ncid, areaTriangleID, areaTriangle)
+      if (status /= nf90_noerr) then
+        write(0, *) "readMPASMeshFromNCFile: Error on get var of 'areaTriangle'"
+        write(0, *) trim(nf90_strerror(status))
+        stop
+      end if
+    else
+      print *, "Not reading area of dual cells"
     end if
 
     status = nf90_close(ncid)   

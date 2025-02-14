@@ -98,34 +98,28 @@ void MPMesh::assemblyElm0() {
   pumipic::RecordTime("PolyMPO_Reconstruct_Elm0", timer.seconds());
 }
 
-template <MeshFieldIndex meshFieldIndex>
-void MPMesh::assemblyVtx1() {
-  
+
+void MPMesh::resetPreComputeFlag(){
+  isPreComputed = false;
+}
+
+void MPMesh::computeMatricesAndSolve(){
+
   //Mesh Information
   auto elm2VtxConn = p_mesh->getElm2VtxConn();  
   int numVtx = p_mesh->getNumVertices();
   auto vtxCoords = p_mesh->getMeshField<polyMPO::MeshF_VtxCoords>();
 
-  //Mesh Field
-  constexpr MaterialPointSlice mpfIndex = meshFieldIndexToMPSlice<meshFieldIndex>;
-  const int numEntries = mpSliceToNumEntries<mpfIndex>();
-  p_mesh->fillMeshField<meshFieldIndex>(numVtx, numEntries, 0.0);
-  auto meshField = p_mesh->getMeshField<meshFieldIndex>();
-
   //Dual Element Area for Regularization
   auto dual_triangle_area=p_mesh->getMeshField<MeshF_DualTriangleArea>();
 
   //Material Points
-  auto mpData = p_MPs->getData<mpfIndex>();
   auto weight = p_MPs->getData<MPF_Basis_Vals>();
   auto mpPositions = p_MPs->getData<MPF_Cur_Pos_XYZ>();
 
   //Matrix for each vertex
   Kokkos::View<double*[vec4d_nEntries][vec4d_nEntries]> VtxMatrices("VtxMatrices", p_mesh->getNumVertices());
 
-  //Reconstructed values
-  Kokkos::View<double**> reconVals("meshField", p_mesh->getNumVertices(), numEntries);
- 
   //Earth Radius
   double radius = 1.0;
   if(p_mesh->getGeomType() == geom_spherical_surf)
@@ -141,22 +135,19 @@ void MPMesh::assemblyVtx1() {
       for(int i=0; i<nVtxE; i++){
         int vID = elm2VtxConn(elm,i+1)-1; //vID = vertex id
         double w_vtx=weight(mp,i);
-        
-	double mScale=1;
-	if(scaling)
-	  mScale=sqrt(dual_triangle_area(vID,0))/radius;
-        
+        double mScale=1;
+        if(scaling)
+          mScale=sqrt(dual_triangle_area(vID,0))/radius;
         double CoordDiffs[vec4d_nEntries] = {1, (vtxCoords(vID,0) - mpPositions(mp,0))/radius, 
                                                 (vtxCoords(vID,1) - mpPositions(mp,1))/radius, 
                                                 (vtxCoords(vID,2) - mpPositions(mp,2))/radius};		 
+        //All entries except first row and column
         for (int k=1; k<vec4d_nEntries; k++)
           for (int l=1; l<vec4d_nEntries; l++)
             Kokkos::atomic_add(&VtxMatrices(vID,k,l), CoordDiffs[k] * CoordDiffs[l] * w_vtx);
-      
-	//First element
-        Kokkos::atomic_add(&VtxMatrices(vID,0,0), CoordDiffs[0] * CoordDiffs[0] * w_vtx*mScale*mScale);
-        
-	//First row and column except the first element
+	//First entry
+        Kokkos::atomic_add(&VtxMatrices(vID,0,0), CoordDiffs[0] * CoordDiffs[0] * w_vtx*mScale*mScale); 
+	//First row and column except the first entry
 	for (int k=1; k<vec4d_nEntries; k++){
           Kokkos::atomic_add(&VtxMatrices(vID,0,k), CoordDiffs[0] * CoordDiffs[k] * w_vtx*mScale);
 	  Kokkos::atomic_add(&VtxMatrices(vID,k,0), CoordDiffs[k] * CoordDiffs[0] * w_vtx*mScale);
@@ -166,7 +157,7 @@ void MPMesh::assemblyVtx1() {
   };
   p_MPs->parallel_for(assemble, "assembly");
   
-  //Solve Ax=b for each vertex and apply regularization
+  //Assemble matrix for each vertex and apply regularization
   Kokkos::View<double*[vec4d_nEntries]> VtxCoeffs("VtxCoeffs", p_mesh->getNumVertices());
 
   Kokkos::parallel_for("solving Ax=b", numVtx, KOKKOS_LAMBDA(const int vtx){
@@ -188,7 +179,8 @@ void MPMesh::assemblyVtx1() {
         break;
       }
       case 2:{
-        double regParam=sqrt(EPSILON)*(VtxMatrices(vtx,0,0)+VtxMatrices(vtx,1,1)+VtxMatrices(vtx,2,2)+VtxMatrices(vtx,3,3));
+        double regParam=sqrt(EPSILON)*(VtxMatrices(vtx,0,0)+VtxMatrices(vtx,1,1)+
+			               VtxMatrices(vtx,2,2)+VtxMatrices(vtx,3,3));
         A_regularized.addToDiag(regParam);
         break;
       }
@@ -212,7 +204,43 @@ void MPMesh::assemblyVtx1() {
     for (int i=0; i<vec4d_nEntries; i++) 
       VtxCoeffs(vtx,i)=coeff[i];
   });
+  this->precomputedVtxCoeffs = VtxCoeffs;
+}
+
+template <MeshFieldIndex meshFieldIndex>
+void MPMesh::assemblyVtx1() {
+   
+  //If no reconstruction till now calculate the coeffs
+  if (!isPreComputed) {
+    computeMatricesAndSolve();
+    isPreComputed=true;
+  }
   
+  auto VtxCoeffs=this->precomputedVtxCoeffs;
+  //Mesh Information
+  auto elm2VtxConn = p_mesh->getElm2VtxConn();  
+  int numVtx = p_mesh->getNumVertices();
+  auto vtxCoords = p_mesh->getMeshField<polyMPO::MeshF_VtxCoords>();
+
+  //Mesh Field
+  constexpr MaterialPointSlice mpfIndex = meshFieldIndexToMPSlice<meshFieldIndex>;
+  const int numEntries = mpSliceToNumEntries<mpfIndex>();
+  p_mesh->fillMeshField<meshFieldIndex>(numVtx, numEntries, 0.0);
+  auto meshField = p_mesh->getMeshField<meshFieldIndex>();
+
+  //Material Points
+  auto mpData = p_MPs->getData<mpfIndex>();
+  auto weight = p_MPs->getData<MPF_Basis_Vals>();
+  auto mpPositions = p_MPs->getData<MPF_Cur_Pos_XYZ>();
+
+  //Earth Radius
+  double radius = 1.0;
+  if(p_mesh->getGeomType() == geom_spherical_surf)
+    radius=p_mesh->getSphereRadius();
+
+  //Reconstructed values
+  Kokkos::View<double**> reconVals("meshField", p_mesh->getNumVertices(), numEntries);
+
   //Reconstruct
   auto reconstruct = PS_LAMBDA(const int& elm, const int& mp, const int& mask) {
     if(mask) { //if material point is 'active'/'enabled'
@@ -223,7 +251,7 @@ void MPMesh::assemblyVtx1() {
         double CoordDiffs[vec4d_nEntries] = {1, (vtxCoords(vID,0) - mpPositions(mp,0))/radius,
                                                 (vtxCoords(vID,1) - mpPositions(mp,1))/radius, 
                                                 (vtxCoords(vID,2) - mpPositions(mp,2))/radius};
-        
+
         auto factor = w_vtx*(VtxCoeffs(vID,0) + VtxCoeffs(vID,1)*CoordDiffs[1] + 
                                                 VtxCoeffs(vID,2)*CoordDiffs[2] + 
                                                 VtxCoeffs(vID,3)*CoordDiffs[3]);
@@ -236,7 +264,8 @@ void MPMesh::assemblyVtx1() {
     }
   };
   p_MPs->parallel_for(reconstruct, "reconstruct");
- 
+
+  //Assign as a field 
   Kokkos::parallel_for("assigning", numVtx, KOKKOS_LAMBDA(const int vtx){
     for(int k=0; k<numEntries; k++)
       meshField(vtx, k) = reconVals(vtx,k);

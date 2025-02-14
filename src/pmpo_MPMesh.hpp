@@ -16,7 +16,17 @@ template <> const MaterialPointSlice meshFieldIndexToMPSlice < MeshF_RotLatLonIn
 #define maxMPsPerElm 8
 
 class MPMesh{
+  private:
+   
+    bool isPreComputed;
+  
   public:
+    
+    MPMesh() : isPreComputed(false){};
+    void computeMatricesAndSolve(); 
+    void resetPreComputeFlag();
+    Kokkos::View<double*[vec4d_nEntries]> precomputedVtxCoeffs;
+
     Mesh* p_mesh;
     MaterialPoints* p_MPs;
 
@@ -49,7 +59,7 @@ class MPMesh{
     void assemblyElm0();
     template <MeshFieldIndex meshFieldIndex>
     void assemblyVtx1();
-
+    
     template<MeshFieldIndex meshFieldIndex>
     void setReconstructSlice(int order, MeshFieldType type);
     void reconstructSlices();

@@ -186,6 +186,8 @@ program main
   deallocate(meshVtxMass)
   deallocate(meshVtxMass1)
   deallocate(meshElmMass)
+  deallocate(meshVtxVelu)
+  deallocate(meshVtxVelv)
 
   stop
 

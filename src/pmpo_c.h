@@ -77,6 +77,11 @@ void polympo_setMeshVtxOnSurfDispIncr_f(MPMesh_ptr p_mpmesh, const int nComps, c
 void polympo_getMeshVtxOnSurfDispIncr_f(MPMesh_ptr p_mpmesh, const int nComps, const int nVertices, double* array);//vec2d
 void polympo_setMeshElmCenter_f(MPMesh_ptr p_mpmesh, const int nCells, const double* xArray, const double* yArray, const double* zArray);
 void polympo_getMeshElmCenter_f(MPMesh_ptr p_mpmesh, const int nCells, double* xArray, double* yArray, double* zArray);
+//Area Triangle
+void polympo_setMeshDualTriangleArea_f(MPMesh_ptr p_mpmesh, const int nVertices, const double* areaTriangle);
+void polympo_getMeshDualTriangleArea_f(MPMesh_ptr p_mpmesh, const int nVertices, double* areaTriangle);
+
+
 
 // calculations
 void polympo_push_f(MPMesh_ptr p_mpmesh);

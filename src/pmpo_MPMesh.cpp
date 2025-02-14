@@ -301,6 +301,7 @@ void MPMesh::reconstructSlices() {
     if (reconstructSlice.size() == 0) return;
     Kokkos::Timer timer;
     calcBasis();
+    resetPreComputeFlag();
     for (auto const& [index, reconstruct] : reconstructSlice) {
         if (reconstruct) reconstruct();
     }

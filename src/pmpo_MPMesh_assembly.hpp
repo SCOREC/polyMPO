@@ -104,7 +104,7 @@ void MPMesh::resetPreComputeFlag(){
 }
 
 void MPMesh::computeMatricesAndSolve(){
-
+  Kokkos::Timer timer;
   //Mesh Information
   auto elm2VtxConn = p_mesh->getElm2VtxConn();  
   int numVtx = p_mesh->getNumVertices();
@@ -205,11 +205,12 @@ void MPMesh::computeMatricesAndSolve(){
       VtxCoeffs(vtx,i)=coeff[i];
   });
   this->precomputedVtxCoeffs = VtxCoeffs;
+  pumipic::RecordTime("PolyMPO_Calculate_MLS_Coeff", timer.seconds());
 }
 
 template <MeshFieldIndex meshFieldIndex>
 void MPMesh::assemblyVtx1() {
-   
+  Kokkos::Timer timer; 
   //If no reconstruction till now calculate the coeffs
   if (!isPreComputed) {
     computeMatricesAndSolve();
@@ -270,6 +271,7 @@ void MPMesh::assemblyVtx1() {
     for(int k=0; k<numEntries; k++)
       meshField(vtx, k) = reconVals(vtx,k);
   });
+  pumipic::RecordTime("PolyMPO_Reconstruct_Vtx1", timer.seconds());
 }
 
 template <MeshFieldIndex meshFieldIndex>

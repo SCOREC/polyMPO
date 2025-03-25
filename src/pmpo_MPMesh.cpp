@@ -127,7 +127,12 @@ void MPMesh::CVTTrackingElmCenterBased(const int printVTPIndex){
     auto MPs2Elm = p_MPs->getData<MPF_Tgt_Elm_ID>();
     auto MPs2Proc = p_MPs->getData<MPF_Tgt_Proc_ID>();
     auto elm2Process = p_mesh->getElm2Process();
-    
+   
+    Kokkos::parallel_for("countProcess", numElms, KOKKOS_LAMBDA(const int iElm){
+      int pp_id=elm2Process(iElm);
+      printf("Mesh elm %d owning element %d \n", iElm, pp_id);
+    });
+
     if(printVTPIndex>=0) {
       printVTP_mesh(printVTPIndex);
     }
@@ -324,15 +329,37 @@ bool getAnyIsMigrating(MaterialPoints* p_MPs, bool isMigrating) {
 }
 
 void MPMesh::push(){
+  static int count=0;
+  std::cout<<__FUNCTION__<<" "<<count<<std::endl;
+  count++;
+  if(count>1) exit(1);
   Kokkos::Timer timer;
   p_mesh->computeRotLatLonIncr();
+  
+  assert(cudaDeviceSynchronize() == cudaSuccess); 
+  MPI_Barrier(MPI_COMM_WORLD);
+  printf("FooPush\n");
+
   sphericalInterpolation<MeshF_RotLatLonIncr>(*this);
+  assert(cudaDeviceSynchronize() == cudaSuccess); 
+  MPI_Barrier(MPI_COMM_WORLD);
+  printf("FooPush \n");
+
   p_MPs->updateRotLatLonAndXYZ2Tgt(p_mesh->getSphereRadius()); // set Tgt_XYZ
+  assert(cudaDeviceSynchronize() == cudaSuccess); 
+  MPI_Barrier(MPI_COMM_WORLD);
+  printf("FooPush\n");
+
   auto elm2Process = p_mesh->getElm2Process();
+  assert(cudaDeviceSynchronize() == cudaSuccess); 
+  MPI_Barrier(MPI_COMM_WORLD);
+  printf("FooPush \n");
 
   bool anyIsMigrating = false;
   do {
     CVTTrackingElmCenterBased(); // move to Tgt_XYZ
+    assert(cudaDeviceSynchronize() == cudaSuccess); 
+    printf("FooPushInside\n");
     p_MPs->updateMPSlice<MPF_Cur_Pos_XYZ, MPF_Tgt_Pos_XYZ>(); // Tgt_XYZ becomes Cur_XYZ
     p_MPs->updateMPSlice<MPF_Cur_Pos_Rot_Lat_Lon, MPF_Tgt_Pos_Rot_Lat_Lon>(); // Tgt becomes Cur
     if (elm2Process.size() > 0)
@@ -343,6 +370,9 @@ void MPMesh::push(){
     reconstructSlices(); 
   } 
   while (anyIsMigrating);
+  assert(cudaDeviceSynchronize() == cudaSuccess); 
+  MPI_Barrier(MPI_COMM_WORLD);
+  printf("FooPush\n");
 
   pumipic::RecordTime("PolyMPO_push", timer.seconds());
 }

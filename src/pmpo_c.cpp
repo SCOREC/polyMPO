@@ -61,17 +61,19 @@ void polympo_setMPICommunicator_f(MPMesh_ptr p_mpmesh, MPI_Fint fcomm){
 
 void polympo_createMPs_f(MPMesh_ptr p_mpmesh,
                        const int numElms,
-                       const int numMPs, // total number of MPs which is GREATER than or equal to number of active MPs
+                       const int numMPs, // total nof of MPs which is >= no of active MPs
                        int* mpsPerElm,
                        const int* mp2Elm,
                        const int* isMPActive) {
   checkMPMeshValid(p_mpmesh);
-
+  std::cout<<__FUNCTION__<<std::endl;
   //the mesh must be fixed/set before adding MPs
   auto p_mesh = ((polyMPO::MPMesh*)p_mpmesh)->p_mesh;
   PMT_ALWAYS_ASSERT(!p_mesh->meshEditable());
   PMT_ALWAYS_ASSERT(p_mesh->getNumElements() == numElms);
 
+  //Find the total no of MPs across all ranks
+  //And loop over all MPs and find the smallest element id associated across a MP
   int numActiveMPs = 0;
   int minElmID = numElms+1;
   for(int i = 0; i < numMPs; i++) {
@@ -82,20 +84,27 @@ void polympo_createMPs_f(MPMesh_ptr p_mpmesh,
       }
     }
   }
-  //TODO do we care about empty ranks? check just in case...
-  PMT_ALWAYS_ASSERT(numActiveMPs>0);
-
-  int firstElmWithMPs=-1;
+  long long globalNumActiveMPs = 0;
+  int globalMinElmID;
+  MPI_Allreduce(&numActiveMPs, &globalNumActiveMPs, 1, MPI_LONG_LONG_INT, MPI_SUM, MPI_COMM_WORLD); 
+  MPI_Allreduce(&minElmID, &globalMinElmID, 1, MPI_INT, MPI_MIN, MPI_COMM_WORLD);
+  PMT_ALWAYS_ASSERT(globalNumActiveMPs>0);
+  
+  //Loop over all mesh elements 0,1,... and find the first element that has an associated MP
+  int firstElmWithMPs=numElms+1;
   for (int i=0; i<numElms; i++) {
     if(mpsPerElm[i]) {
       firstElmWithMPs = i;
       break;
     }
   }
+  int globalFirstElmWithMPs;
+  MPI_Allreduce(&firstElmWithMPs, &globalFirstElmWithMPs, 1, MPI_INT, MPI_MIN, MPI_COMM_WORLD);
+  
   int offset = -1;
-  if(minElmID-firstElmWithMPs==1) {
+  if(globalMinElmID-globalFirstElmWithMPs==1) {
     offset = 1;
-  }else if (minElmID-firstElmWithMPs==0){
+  }else if (globalMinElmID-globalFirstElmWithMPs==0){
     offset = 0;
   }else {
     fprintf(stderr,"The minElmID is incorrect! Offset is wrong!\n");
@@ -116,12 +125,18 @@ void polympo_createMPs_f(MPMesh_ptr p_mpmesh,
   auto mpsPerElm_d = create_mirror_view_and_copy(mpsPerElm, numElms);
   auto active_mp2Elm_d = create_mirror_view_and_copy(active_mp2Elm.data(), numActiveMPs);
   auto active_mpIDs_d = create_mirror_view_and_copy(active_mpIDs.data(), numActiveMPs);
-
+  
   delete ((polyMPO::MPMesh*)p_mpmesh)->p_MPs;
   ((polyMPO::MPMesh*)p_mpmesh)->p_MPs =
      new polyMPO::MaterialPoints(numElms, numActiveMPs, mpsPerElm_d, active_mp2Elm_d, active_mpIDs_d);
+
   auto p_MPs = ((polyMPO::MPMesh*)p_mpmesh)->p_MPs;
   p_MPs->setElmIDoffset(offset);
+  
+  assert(cudaDeviceSynchronize() == cudaSuccess); 
+  MPI_Barrier(MPI_COMM_WORLD);
+  printf("Foo1\n");
+
 }
 
 void polympo_startRebuildMPs_f(MPMesh_ptr p_mpmesh,

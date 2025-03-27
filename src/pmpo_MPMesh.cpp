@@ -127,7 +127,11 @@ void MPMesh::CVTTrackingElmCenterBased(const int printVTPIndex){
     auto MPs2Elm = p_MPs->getData<MPF_Tgt_Elm_ID>();
     auto MPs2Proc = p_MPs->getData<MPF_Tgt_Proc_ID>();
     auto elm2Process = p_mesh->getElm2Process();
-   
+  
+    assert(cudaDeviceSynchronize() == cudaSuccess);
+    MPI_Barrier(MPI_COMM_WORLD);
+    printf("FooTracking \n");
+
     Kokkos::parallel_for("countProcess", numElms, KOKKOS_LAMBDA(const int iElm){
       int pp_id=elm2Process(iElm);
       printf("Mesh elm %d owning element %d \n", iElm, pp_id);
@@ -332,7 +336,7 @@ void MPMesh::push(){
   static int count=0;
   std::cout<<__FUNCTION__<<" "<<count<<std::endl;
   count++;
-  if(count>1) exit(1);
+  //if(count>1) exit(1);
   Kokkos::Timer timer;
   p_mesh->computeRotLatLonIncr();
   

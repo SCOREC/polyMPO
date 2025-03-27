@@ -70,7 +70,7 @@ void polympo_createMPs_f(MPMesh_ptr p_mpmesh,
   //the mesh must be fixed/set before adding MPs
   auto p_mesh = ((polyMPO::MPMesh*)p_mpmesh)->p_mesh;
   PMT_ALWAYS_ASSERT(!p_mesh->meshEditable());
-  PMT_ALWAYS_ASSERT(p_mesh->getNumElements() == numElms);
+  //PMT_ALWAYS_ASSERT(p_mesh->getNumElements() == numElms);
 
   //Find the total no of MPs across all ranks
   //And loop over all MPs and find the smallest element id associated across a MP
@@ -84,6 +84,7 @@ void polympo_createMPs_f(MPMesh_ptr p_mpmesh,
       }
     }
   }
+  printf("Num Active MPs and minElmId %d %d\n", numActiveMPs, minElmID);
   long long globalNumActiveMPs = 0;
   int globalMinElmID;
   MPI_Allreduce(&numActiveMPs, &globalNumActiveMPs, 1, MPI_LONG_LONG_INT, MPI_SUM, MPI_COMM_WORLD); 
@@ -98,6 +99,7 @@ void polympo_createMPs_f(MPMesh_ptr p_mpmesh,
       break;
     }
   }
+  printf("First elem with MP %d\n", firstElmWithMPs);
   int globalFirstElmWithMPs;
   MPI_Allreduce(&firstElmWithMPs, &globalFirstElmWithMPs, 1, MPI_INT, MPI_MIN, MPI_COMM_WORLD);
   

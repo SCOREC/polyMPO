@@ -75,34 +75,33 @@ void polympo_createMPs_f(MPMesh_ptr p_mpmesh,
   //Find the total no of MPs across all ranks
   //And loop over all MPs and find the smallest element id associated across a MP
   int numActiveMPs = 0;
-  int minElmID = numElms+1;
+  int minElmID = INT_MAX;
   for(int i = 0; i < numMPs; i++) {
     if(isMPActive[i] == MP_ACTIVE) {
-      if(mp2Elm[i] < minElmID) {
+      numActiveMPs++;
+      if(mp2Elm[i] < minElmID) 
         minElmID = mp2Elm[i];
-        numActiveMPs++;
-      }
     }
   }
-  printf("Num Active MPs and minElmId %d %d\n", numActiveMPs, minElmID);
-  long long globalNumActiveMPs = 0;
+  int globalNumActiveMPs = 0;
   int globalMinElmID;
-  MPI_Allreduce(&numActiveMPs, &globalNumActiveMPs, 1, MPI_LONG_LONG_INT, MPI_SUM, MPI_COMM_WORLD); 
-  MPI_Allreduce(&minElmID, &globalMinElmID, 1, MPI_INT, MPI_MIN, MPI_COMM_WORLD);
+  MPI_Allreduce(&numActiveMPs, &globalNumActiveMPs, 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD); 
+  MPI_Allreduce(&minElmID, &globalMinElmID, 1, MPI_INT, MPI_MIN, MPI_COMM_WORLD); 
   PMT_ALWAYS_ASSERT(globalNumActiveMPs>0);
   
   //Loop over all mesh elements 0,1,... and find the first element that has an associated MP
-  int firstElmWithMPs=numElms+1;
+  int firstElmWithMPs=INT_MAX;
   for (int i=0; i<numElms; i++) {
     if(mpsPerElm[i]) {
       firstElmWithMPs = i;
       break;
     }
   }
-  printf("First elem with MP %d\n", firstElmWithMPs);
   int globalFirstElmWithMPs;
   MPI_Allreduce(&firstElmWithMPs, &globalFirstElmWithMPs, 1, MPI_INT, MPI_MIN, MPI_COMM_WORLD);
   
+  printf("With a MP, globally smallest mesh elm %d and first elm %d \n", globalMinElmID, globalFirstElmWithMPs);
+
   int offset = -1;
   if(globalMinElmID-globalFirstElmWithMPs==1) {
     offset = 1;
@@ -123,6 +122,7 @@ void polympo_createMPs_f(MPMesh_ptr p_mpmesh,
       numActiveMPs++;
     }
   }
+  auto elm2global = p_mesh->getElmGlobal();
 
   auto mpsPerElm_d = create_mirror_view_and_copy(mpsPerElm, numElms);
   auto active_mp2Elm_d = create_mirror_view_and_copy(active_mp2Elm.data(), numActiveMPs);
@@ -130,19 +130,15 @@ void polympo_createMPs_f(MPMesh_ptr p_mpmesh,
   
   delete ((polyMPO::MPMesh*)p_mpmesh)->p_MPs;
   ((polyMPO::MPMesh*)p_mpmesh)->p_MPs =
-     new polyMPO::MaterialPoints(numElms, numActiveMPs, mpsPerElm_d, active_mp2Elm_d, active_mpIDs_d);
+     new polyMPO::MaterialPoints(numElms, numActiveMPs, mpsPerElm_d, active_mp2Elm_d, active_mpIDs_d, elm2global);
 
   auto p_MPs = ((polyMPO::MPMesh*)p_mpmesh)->p_MPs;
   p_MPs->setElmIDoffset(offset);
   
-  assert(cudaDeviceSynchronize() == cudaSuccess); 
-  MPI_Barrier(MPI_COMM_WORLD);
-  printf("Foo1\n");
-
 }
 
 void polympo_startRebuildMPs_f(MPMesh_ptr p_mpmesh,
-                         const int numMPs, // total number of MPs which is GREATER than or equal to number of active MPs
+                         const int numMPs, // Total # MPs which is GREATER than or equal to number of active MPs
                          const int* allMP2Elm,
                          const int* addedMPMask) {
   checkMPMeshValid(p_mpmesh);
@@ -1045,6 +1041,23 @@ void polympo_setOwningProc_f(MPMesh_ptr p_mpmesh, const int nCells, const int* a
   Kokkos::deep_copy(owningProc, arrayHost);
   p_mesh->setOwningProc(owningProc);
 }
+
+void polympo_setElmGlobal_f(MPMesh_ptr p_mpmesh, const int nCells, const int* array){
+  checkMPMeshValid(p_mpmesh);
+  auto p_mesh = ((polyMPO::MPMesh*)p_mpmesh)->p_mesh; 
+  PMT_ALWAYS_ASSERT(p_mesh->meshEditable());
+  Kokkos::View<int*, Kokkos::HostSpace> arrayHost("arrayHost", nCells);
+  for (int i = 0; i < nCells; i++) {
+    arrayHost(i) = array[i] - 1;  // Decrease each value by 1
+  }
+  //check the size
+  PMT_ALWAYS_ASSERT(nCells == p_mesh->getNumElements());
+
+  Kokkos::View<int*> elmGlobal("elmGlobal",nCells);
+  Kokkos::deep_copy(elmGlobal, arrayHost);
+  p_mesh->setElmGlobal(elmGlobal);
+}
+
 
 void polympo_enableTiming_f(){
   pumipic::EnableTiming();

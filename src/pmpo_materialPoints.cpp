@@ -40,8 +40,12 @@ PS* createDPS(int numElms, int numMPs, MPSView<MPF_Cur_Pos_XYZ> positions, IntVi
   return dps;
 }
 
-PS* createDPS(int numElms, int numMPs, IntView mpsPerElm, IntView mp2elm, IntView mpAppID) {
+PS* createDPS(int numElms, int numMPs, IntView mpsPerElm, IntView mp2elm, IntView mpAppID, IntView elm2global) {
   PS::kkGidView elmGids("elementGlobalIds", numElms); //TODO - initialize this to [0..numElms)
+  Kokkos::parallel_for("setGids", numElms, KOKKOS_LAMBDA(const int elm){
+    elmGids(elm) = elm2global(elm);
+  });
+  
   auto mpInfo = createInternalMemberViews(numMPs, mp2elm, mpAppID);
   Kokkos::TeamPolicy<Kokkos::DefaultExecutionSpace> policy(numElms,Kokkos::AUTO);
   auto dps = new DPS<MaterialPointTypes>(policy, numElms, numMPs, mpsPerElm, elmGids, mp2elm, mpInfo);
@@ -57,8 +61,8 @@ MaterialPoints::MaterialPoints(int numElms, int numMPs, MPSView<MPF_Cur_Pos_XYZ>
   operating_mode = MP_RELEASE;
 };
 
-MaterialPoints::MaterialPoints(int numElms, int numMPs, IntView mpsPerElm, IntView mp2elm, IntView mpAppID) {
-  MPs = createDPS(numElms, numMPs, mpsPerElm, mp2elm, mpAppID);
+MaterialPoints::MaterialPoints(int numElms, int numMPs, IntView mpsPerElm, IntView mp2elm, IntView mpAppID, IntView elm2global){
+  MPs = createDPS(numElms, numMPs, mpsPerElm, mp2elm, mpAppID, elm2global);
   updateMaxAppID();
   operating_mode = MP_RELEASE;
 };

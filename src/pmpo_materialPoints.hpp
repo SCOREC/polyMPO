@@ -130,7 +130,7 @@ class MaterialPoints {
   public:
     MaterialPoints() : MPs(nullptr) {};
     MaterialPoints(int numElms, int numMPs, MPSView<MPF_Cur_Pos_XYZ> positions, IntView mpsPerElm, IntView mp2elm);
-    MaterialPoints(int numElms, int numMPs, IntView mpsPerElm, IntView mp2elm, IntView mpAppID);
+    MaterialPoints(int numElms, int numMPs, IntView mpsPerElm, IntView mp2elm, IntView mpAppID, IntView elm2global);
     ~MaterialPoints();
 
     void rebuild(IntView addedMP2elm, IntView addedMPAppID);

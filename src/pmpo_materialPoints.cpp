@@ -113,14 +113,34 @@ void MaterialPoints::setMPIComm(MPI_Comm comm) {
   mpi_comm = comm;
 }
 
-bool MaterialPoints::migrate() {
+bool MaterialPoints::check_migrate(){
+  Kokkos::Timer timer;
+  auto MPs2Elm = getData<MPF_Tgt_Elm_ID>();
+  auto MPs2Proc = getData<MPF_Tgt_Proc_ID>();
+
+  IntView isMigrating("isMigrating", 1);
+
+  int rank;
+  MPI_Comm_rank(mpi_comm, &rank);
+  auto setMigrationFields = PS_LAMBDA(const int& e, const int& mp, const bool& mask) {
+    if (mask) {
+      if (MPs2Proc(mp) != rank) isMigrating(0) = 1;
+    }
+  };
+  parallel_for(setMigrationFields, "setMigrationFields");
+  if (getOpMode() == polyMPO::MP_DEBUG)
+    printf("Material point check migration: %f\n", timer.seconds());
+  pumipic::RecordTime("PolyMPO_check_migrate", timer.seconds());
+  return pumipic::getLastValue(isMigrating) > 0;
+}
+
+void MaterialPoints::migrate() {
   Kokkos::Timer timer;
   auto MPs2Elm = getData<MPF_Tgt_Elm_ID>();
   auto MPs2Proc = getData<MPF_Tgt_Proc_ID>();
 
   IntView new_elem("new_elem", MPs->capacity());
   IntView new_process("new_process", MPs->capacity());
-  IntView isMigrating("isMigrating", 1);
 
   int rank;
   MPI_Comm_rank(mpi_comm, &rank);
@@ -128,7 +148,6 @@ bool MaterialPoints::migrate() {
     if (mask) {
       new_elem(mp) = MPs2Elm(mp);
       new_process(mp) = MPs2Proc(mp);
-      if (new_process(mp) != rank) isMigrating(0) = 1;
     }
   };
   parallel_for(setMigrationFields, "setMigrationFields");
@@ -137,7 +156,6 @@ bool MaterialPoints::migrate() {
   if (getOpMode() == polyMPO::MP_DEBUG)
     printf("Material point migration: %f\n", timer.seconds());
   pumipic::RecordTime("PolyMPO_migrate", timer.seconds());
-  return pumipic::getLastValue(isMigrating) > 0;
 }
 
 bool MaterialPoints::rebuildOngoing() { return rebuildFields.ongoing; }

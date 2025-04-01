@@ -66,11 +66,10 @@ void polympo_createMPs_f(MPMesh_ptr p_mpmesh,
                        const int* mp2Elm,
                        const int* isMPActive) {
   checkMPMeshValid(p_mpmesh);
-  std::cout<<__FUNCTION__<<std::endl;
   //the mesh must be fixed/set before adding MPs
   auto p_mesh = ((polyMPO::MPMesh*)p_mpmesh)->p_mesh;
   PMT_ALWAYS_ASSERT(!p_mesh->meshEditable());
-  //PMT_ALWAYS_ASSERT(p_mesh->getNumElements() == numElms);
+  PMT_ALWAYS_ASSERT(p_mesh->getNumElements() == numElms);
 
   //Find the total no of MPs across all ranks
   //And loop over all MPs and find the smallest element id associated across a MP
@@ -100,7 +99,7 @@ void polympo_createMPs_f(MPMesh_ptr p_mpmesh,
   int globalFirstElmWithMPs;
   MPI_Allreduce(&firstElmWithMPs, &globalFirstElmWithMPs, 1, MPI_INT, MPI_MIN, MPI_COMM_WORLD);
   
-  printf("With a MP, globally smallest mesh elm %d and first elm %d \n", globalMinElmID, globalFirstElmWithMPs);
+  //printf("With a MP, globally smallest mesh elm %d and first elm %d \n", globalMinElmID, globalFirstElmWithMPs);
 
   int offset = -1;
   if(globalMinElmID-globalFirstElmWithMPs==1) {

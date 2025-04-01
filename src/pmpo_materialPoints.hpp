@@ -138,7 +138,8 @@ class MaterialPoints {
     void finishRebuild();
     bool rebuildOngoing();
 
-    bool migrate();
+    bool check_migrate();
+    void migrate();
     MPI_Comm getMPIComm();
     void setMPIComm(MPI_Comm comm);
 

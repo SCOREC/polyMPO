@@ -135,16 +135,21 @@ void MPMesh::CVTTrackingElmCenterBased(const int printVTPIndex){
     Kokkos::parallel_for("countProcess", numElms, KOKKOS_LAMBDA(const int iElm){
       int pp_id=elm2Process(iElm);
     });
-    
-    if(printVTPIndex>=0) {
-      printVTP_mesh(printVTPIndex);
+   
+    //Since Mesh is static print pnly for 1 time step 
+    if(printVTPIndex==0) {
+      printVTP_mesh(comm_rank);
     }
+    
+    assert(cudaDeviceSynchronize()==cudaSuccess);
+    MPI_Barrier(MPI_COMM_WORLD);
 
     Vec3dView history("positionHistory",numMPs);
     Vec3dView resultLeft("positionResult",numMPs);
     Vec3dView resultRight("positionResult",numMPs);
     Vec3dView mpTgtPosArray("positionTarget",numMPs);
-
+    Kokkos::View<int*> counter("counter",1);
+    
     auto CVTElmCalc = PS_LAMBDA(const int& elm, const int& mp, const int&mask){
         Vec3d MP(mpPositions(mp,0),mpPositions(mp,1),mpPositions(mp,2));
         if(mask){
@@ -163,7 +168,7 @@ void MPMesh::CVTTrackingElmCenterBased(const int printVTPIndex){
                 for(int i=1; i<=numConnElms; i++){
                     int elmID = elm2ElmConn(iElm,i)-1;
                     
-	            //New delta
+                    //New delta
 	            Vec3d center(elmCenter(elmID, 0), elmCenter(elmID, 1), elmCenter(elmID, 2));
                     delta = MPnew - center;
 
@@ -183,7 +188,9 @@ void MPMesh::CVTTrackingElmCenterBased(const int printVTPIndex){
                     iElm = closestElm;
                 }
             }
-            if(printVTPIndex>=0){ 
+
+            if(printVTPIndex>=0 && numMPs>0){
+		//printf("Rank %d mp %d counter %d \n", comm_rank, mp, counter);
                 double d1 = dx[0];
                 double d2 = dx[2];
                 double d3 = dx[3];
@@ -195,29 +202,36 @@ void MPMesh::CVTTrackingElmCenterBased(const int printVTPIndex){
                 Vec3d shift = dx.cross(r) * ((1.0-0.7)*dx.magnitude()/(dx.cross(r)).magnitude());
                 Vec3d MPLeft = MParrow + shift;
                 Vec3d MPRight = MParrow - shift;
-                history(mp) = MP;
-                resultLeft(mp) = MPLeft;
-                resultRight(mp) = MPRight;
-                mpTgtPosArray(mp) = MPnew;
+                auto xx=Kokkos::atomic_fetch_add(&counter(0), 1);
+                history(xx) = MP;
+                resultLeft(xx) = MPLeft;
+                resultRight(xx) = MPRight;
+                mpTgtPosArray(xx) = MPnew;
             }
         }
     };
     p_MPs->parallel_for(CVTElmCalc,"CVTTrackingElmCenterBasedCalc");
 
-    if(printVTPIndex>=0){
+    assert(cudaDeviceSynchronize()==cudaSuccess);
+    MPI_Barrier(MPI_COMM_WORLD);
+    printf("After Tracking \n");
+    
+    if(printVTPIndex>=0 && numMPs>0){
         Vec3dView::HostMirror h_history = Kokkos::create_mirror_view(history);
         Vec3dView::HostMirror h_resultLeft = Kokkos::create_mirror_view(resultLeft);
         Vec3dView::HostMirror h_resultRight = Kokkos::create_mirror_view(resultRight);
         Vec3dView::HostMirror h_mpTgtPos = Kokkos::create_mirror_view(mpTgtPosArray);
+	Kokkos::View<int*>::HostMirror h_counter = Kokkos::create_mirror_view(counter);
 
         Kokkos::deep_copy(h_history, history);
         Kokkos::deep_copy(h_resultLeft, resultLeft);
         Kokkos::deep_copy(h_resultRight, resultRight);
         Kokkos::deep_copy(h_mpTgtPos, mpTgtPosArray);
-
+	Kokkos::deep_copy(h_counter, counter);
+        printf("Host counter value: %d\n", h_counter(0));
         // printVTP file
         char* fileOutput = (char *)malloc(sizeof(char) * 256); 
-        sprintf(fileOutput, "polyMPOCVTTrackingElmCenter_MPtracks_%d.vtp", printVTPIndex);
+        sprintf(fileOutput, "polyMPOCVTTrackingElmCenter_MPtracks_%d_%d.vtp", comm_rank, printVTPIndex);
         FILE * pFile = fopen(fileOutput,"w");
         free(fileOutput);   
         fprintf(pFile, "<VTKFile type=\"PolyData\" version=\"1.0\" byte_order=\"LittleEndian\" header_type=\"UInt64\">\n  <PolyData>\n    <Piece NumberOfPoints=\"%d\" NumberOfVerts=\"0\" NumberOfLines=\"%d\" NumberOfStrips=\"0\" NumberOfPolys=\"0\">\n      <Points>\n        <DataArray type=\"Float32\" Name=\"Points\" NumberOfComponents=\"3\" format=\"ascii\">\n",numMPs*4,numMPs*2); 
@@ -239,6 +253,11 @@ void MPMesh::CVTTrackingElmCenterBased(const int printVTPIndex){
         fprintf(pFile,"        </DataArray>\n      </Lines>\n    </Piece>\n  </PolyData>\n</VTKFile>\n");
         fclose(pFile);
     }
+    assert(cudaDeviceSynchronize()==cudaSuccess);
+    MPI_Barrier(MPI_COMM_WORLD);
+    printf("After printing particle paths \n");
+
+
     pumipic::RecordTime("PolyMPO_CVTTrackingElmCenterBased", timer.seconds());
 }
 
@@ -335,7 +354,6 @@ void MPMesh::push(){
   
   static int count=0;
   std::cout<<"Push"<<"  "<<count<<std::endl;
-  count++;
   
   Kokkos::Timer timer;
   
@@ -349,7 +367,7 @@ void MPMesh::push(){
 
   bool anyIsMigrating = false;
   do {
-    CVTTrackingElmCenterBased(); // move to Tgt_XYZ
+    CVTTrackingElmCenterBased(count); // move to Tgt_XYZ
     assert(cudaDeviceSynchronize() == cudaSuccess); 
     p_MPs->updateMPSlice<MPF_Cur_Pos_XYZ, MPF_Tgt_Pos_XYZ>(); // Tgt_XYZ becomes Cur_XYZ
     p_MPs->updateMPSlice<MPF_Cur_Pos_Rot_Lat_Lon, MPF_Tgt_Pos_Rot_Lat_Lon>(); // Tgt becomes Cur
@@ -365,7 +383,7 @@ void MPMesh::push(){
     reconstructSlices(); 
   } 
   while (anyIsMigrating);
-  
+  count ++; 
   pumipic::RecordTime("PolyMPO_push", timer.seconds());
 }
 

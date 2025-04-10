@@ -25,7 +25,7 @@ void polympo_finishRebuildMPs_f(MPMesh_ptr p_mpmesh);
 
 void polympo_setAppIDFunc_f(MPMesh_ptr p_mpmesh, IntVoidFunc getNext, void* appIDs);
 void polympo_setMPASAppIDFunc_f(MPMesh_ptr p_mpmesh, VoidVoidFunc getMPASAppID, void* arg1, void* arg2, void*arg3,
-  void* arg4, void*arg5, void* arg6);
+  const int arg4);
 
 void polympo_getMPCurElmID_f(MPMesh_ptr p_mpmesh, const int numMPs, int* elmIDs);
 void polympo_setMPLatLonRotatedFlag_f(MPMesh_ptr p_mpmesh, const int isRotateFlag);

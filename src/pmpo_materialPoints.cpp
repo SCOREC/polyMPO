@@ -151,7 +151,7 @@ void MaterialPoints::migrate() {
       new_process(mp) = MPs2Proc(mp);
       if(rank!=new_process(mp)){
         mpAppID(mp)=-1;
-	printf("Particle migrated and so its AppID is -1\n");
+        printf("Particle migrated and so its AppID is -1\n");
       }
     }
   };

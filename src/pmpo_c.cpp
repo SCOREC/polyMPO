@@ -212,6 +212,15 @@ void polympo_setAppIDFunc_f(MPMesh_ptr p_mpmesh, IntVoidFunc getNext, void* appI
   p_MPs->setAppIDFunc(getNextAppID);
 }
 
+void polympo_setMPASAppIDFunc_f(MPMesh_ptr p_mpmesh, VoidVoidFunc getMPASAppID, void* arg1, void*arg2, void*arg3,
+  void* arg4, void* arg5, void*arg6) {
+  checkMPMeshValid(p_mpmesh);
+  auto p_MPs = ((polyMPO::MPMesh*)p_mpmesh)->p_MPs;
+  std::function<int()> polyMPO_getMPASAppID = [getMPASAppID, arg1, arg2, arg3, arg4, arg5, arg6]() 
+    {getMPASAppID(arg1, arg2, arg3, arg4, arg5, arg6); return *(static_cast<int*>(arg5));};
+  p_MPs->setAppIDFunc(polyMPO_getMPASAppID);
+}
+
 void polympo_getMPCurElmID_f(MPMesh_ptr p_mpmesh,
                            const int numMPs,
                            int* elmIDs){

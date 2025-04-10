@@ -22,7 +22,11 @@ void polympo_setMPICommunicator_f(MPMesh_ptr p_mpmesh, MPI_Fint fcomm);
 void polympo_createMPs_f(MPMesh_ptr p_mpmesh, const int numElms, const int numMPs, int* mpsPerElm, const int* mp2Elm, const int* isMPActive);
 void polympo_startRebuildMPs_f(MPMesh_ptr p_mpmesh, const int numMPs, const int* allTgtMpElmIn, const int* addedMPMask);
 void polympo_finishRebuildMPs_f(MPMesh_ptr p_mpmesh);
+
 void polympo_setAppIDFunc_f(MPMesh_ptr p_mpmesh, IntVoidFunc getNext, void* appIDs);
+void polympo_setMPASAppIDFunc_f(MPMesh_ptr p_mpmesh, VoidVoidFunc getMPASAppID, void* arg1, void* arg2, void*arg3,
+  void* arg4, void*arg5, void* arg6);
+
 void polympo_getMPCurElmID_f(MPMesh_ptr p_mpmesh, const int numMPs, int* elmIDs);
 void polympo_setMPLatLonRotatedFlag_f(MPMesh_ptr p_mpmesh, const int isRotateFlag);
 

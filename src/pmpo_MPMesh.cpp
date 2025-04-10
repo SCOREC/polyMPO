@@ -212,10 +212,6 @@ void MPMesh::CVTTrackingElmCenterBased(const int printVTPIndex){
     };
     p_MPs->parallel_for(CVTElmCalc,"CVTTrackingElmCenterBasedCalc");
 
-    assert(cudaDeviceSynchronize()==cudaSuccess);
-    MPI_Barrier(MPI_COMM_WORLD);
-    printf("After Tracking \n");
-    
     if(printVTPIndex>=0 && numMPs>0){
         Vec3dView::HostMirror h_history = Kokkos::create_mirror_view(history);
         Vec3dView::HostMirror h_resultLeft = Kokkos::create_mirror_view(resultLeft);
@@ -228,7 +224,6 @@ void MPMesh::CVTTrackingElmCenterBased(const int printVTPIndex){
         Kokkos::deep_copy(h_resultRight, resultRight);
         Kokkos::deep_copy(h_mpTgtPos, mpTgtPosArray);
 	Kokkos::deep_copy(h_counter, counter);
-        printf("Host counter value: %d\n", h_counter(0));
         // printVTP file
         char* fileOutput = (char *)malloc(sizeof(char) * 256); 
         sprintf(fileOutput, "polyMPOCVTTrackingElmCenter_MPtracks_%d_%d.vtp", comm_rank, printVTPIndex);
@@ -253,10 +248,6 @@ void MPMesh::CVTTrackingElmCenterBased(const int printVTPIndex){
         fprintf(pFile,"        </DataArray>\n      </Lines>\n    </Piece>\n  </PolyData>\n</VTKFile>\n");
         fclose(pFile);
     }
-    assert(cudaDeviceSynchronize()==cudaSuccess);
-    MPI_Barrier(MPI_COMM_WORLD);
-    printf("After printing particle paths \n");
-
 
     pumipic::RecordTime("PolyMPO_CVTTrackingElmCenterBased", timer.seconds());
 }

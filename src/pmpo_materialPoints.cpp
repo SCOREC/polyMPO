@@ -138,6 +138,7 @@ void MaterialPoints::migrate() {
   Kokkos::Timer timer;
   auto MPs2Elm = getData<MPF_Tgt_Elm_ID>();
   auto MPs2Proc = getData<MPF_Tgt_Proc_ID>();
+  auto mpAppID =  getData<polyMPO::MPF_MP_APP_ID>();
 
   IntView new_elem("new_elem", MPs->capacity());
   IntView new_process("new_process", MPs->capacity());
@@ -148,10 +149,39 @@ void MaterialPoints::migrate() {
     if (mask) {
       new_elem(mp) = MPs2Elm(mp);
       new_process(mp) = MPs2Proc(mp);
+      if(rank!=new_process(mp)){
+        mpAppID(mp)=-1;
+	printf("Particle migrated and so its AppID is -1\n");
+      }
     }
   };
   parallel_for(setMigrationFields, "setMigrationFields");
   MPs->migrate(new_elem, new_process);
+
+  //Since rebuilt
+  mpAppID =  getData<polyMPO::MPF_MP_APP_ID>();
+  //Count MPs that have -1 appID, so that we can count no of MPs received
+  Kokkos::View<int*> numReceivedMPs("numReceivedMPs", 1);
+  Kokkos::deep_copy(numReceivedMPs, 0);
+  auto countnewMPs = PS_LAMBDA(const int& e, const int& mp, const bool& mask) {
+    if(mask){
+      if (mpAppID(mp) == -1)
+        Kokkos::atomic_add(&numReceivedMPs(0), 1);
+    }
+  };
+  parallel_for(countnewMPs, "countReceivedPtcls");
+  Kokkos::fence();
+  
+  auto numReceivedMPs_host = Kokkos::create_mirror_view(numReceivedMPs);
+  Kokkos::deep_copy(numReceivedMPs_host, numReceivedMPs);
+  if(numReceivedMPs_host(0))
+    std::cout <<"Rank "<<rank<<" received "<<numReceivedMPs_host(0)<< "MPs \n";
+  
+  std::vector<int> added_mpIDs(numReceivedMPs_host(0));
+  for(int i=0; i<numReceivedMPs_host(0); i++){
+    printf("Trying to find an ID for a material point\n");
+    auto xx = getNextAppID();
+  }
 
   if (getOpMode() == polyMPO::MP_DEBUG)
     printf("Material point migration: %f\n", timer.seconds());

@@ -18,6 +18,9 @@ using hostSpace = Kokkos::HostSpace;
 using defaultSpace = Kokkos::DefaultExecutionSpace::memory_space;
 
 typedef std::function<int()> IntFunc;
+typedef std::function<int(int)> IntIntFunc;
+
+
 
 enum MaterialPointSlice {
   MPF_Status = 0,
@@ -124,7 +127,8 @@ class MaterialPoints {
     bool isRotatedFlag = false;
     Operating_Mode operating_mode;
     RebuildHelper rebuildFields;
-    IntFunc getAppID;
+    //IntFunc getAppID;
+    IntIntFunc getAppID;
     MPI_Comm mpi_comm;
 
   public:
@@ -151,8 +155,10 @@ class MaterialPoints {
     typename std::enable_if<mpSliceData::rank==2>::type
     setRebuildMPSlice(mpSliceData mpSliceIn);
 
-    void setAppIDFunc(IntFunc getAppIDIn);
-    int getNextAppID();
+    //void setAppIDFunc(IntFunc getAppIDIn);
+    void setAppIDFunc(IntIntFunc getAppIDIn);
+
+    int getNextAppID(int iElm);
 
     void rebuild() {
       IntView tgtElm("tgtElm", MPs->capacity());

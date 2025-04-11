@@ -158,7 +158,7 @@ void MaterialPoints::migrate() {
   parallel_for(setMigrationFields, "setMigrationFields");
   MPs->migrate(new_elem, new_process);
 
-  //Since rebuilt
+  //SINCE REBUILT, mpAppID needs to be be recalled
   mpAppID =  getData<polyMPO::MPF_MP_APP_ID>();
   //Count MPs that have -1 appID, so that we can count no of MPs received
   Kokkos::View<int*> numReceivedMPs("numReceivedMPs", 1);
@@ -171,16 +171,31 @@ void MaterialPoints::migrate() {
   };
   parallel_for(countnewMPs, "countReceivedPtcls");
   Kokkos::fence();
-  
+  //Bring them to CPU and print particles received
   auto numReceivedMPs_host = Kokkos::create_mirror_view(numReceivedMPs);
   Kokkos::deep_copy(numReceivedMPs_host, numReceivedMPs);
   if(numReceivedMPs_host(0))
     std::cout <<"Rank "<<rank<<" received "<<numReceivedMPs_host(0)<< "MPs \n";
   
-  std::vector<int> added_mpIDs(numReceivedMPs_host(0));
+  //Another array that contains element id of the the MPs that have migrated
+  Kokkos::View<int*> receivedMPs2Elm("ReceivedMPs2Elm", numReceivedMPs_host(0));
+  Kokkos::View<int*> counter("counter", 1);
+  auto set_new_elem = PS_LAMBDA(const int& e, const int& mp, const bool& mask) {
+    if(mask){
+      if (mpAppID(mp) == -1){
+        auto xx=Kokkos::atomic_fetch_add(&counter(0), 1);
+        receivedMPs2Elm(xx) = e;
+      }
+    }
+  };
+  parallel_for(set_new_elem, "countReceivedPtcls");  
+  //NEED AN ASSERT ELEMNT DOING COUNTER=#RECEIVED MPs
+  auto receivedMPs2Elm_host = Kokkos::create_mirror_view(receivedMPs2Elm);
+  Kokkos::deep_copy(receivedMPs2Elm_host, receivedMPs2Elm);
+
   for(int i=0; i<numReceivedMPs_host(0); i++){
     printf("Trying to find an ID for a material point\n");
-    auto xx = getNextAppID();
+    auto xx = getNextAppID(receivedMPs2Elm_host(i));
   }
 
   if (getOpMode() == polyMPO::MP_DEBUG)
@@ -190,8 +205,8 @@ void MaterialPoints::migrate() {
 
 bool MaterialPoints::rebuildOngoing() { return rebuildFields.ongoing; }
 
-void MaterialPoints::setAppIDFunc(IntFunc getAppIDIn) { getAppID = getAppIDIn; }
+void MaterialPoints::setAppIDFunc(IntIntFunc getAppIDIn) { getAppID = getAppIDIn; }
 
-int MaterialPoints::getNextAppID() { return getAppID(); }
+int MaterialPoints::getNextAppID(int iElm) { return getAppID(iElm); }
 
 }

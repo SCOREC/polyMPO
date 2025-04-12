@@ -345,7 +345,7 @@ void MPMesh::push(){
   
   static int count=0;
   std::cout<<"Push"<<"  "<<count<<std::endl;
-  
+  if(count>473) exit(-1); 
   Kokkos::Timer timer;
   
   p_mesh->computeRotLatLonIncr();

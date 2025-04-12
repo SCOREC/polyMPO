@@ -118,7 +118,7 @@ module polympo
   !> @param appIDs(in) Pointer to opaque data application data structure (that may contain all available app IDs)
   !---------------------------------------------------------------------------
   subroutine polympo_setMPASAppIDFunc(mpMesh, getMPASAppID, &
-    arg1, arg2, arg3, arg4) &
+    arg1, arg2, arg3, arg4, arg5) &
     bind(C, NAME='polympo_setMPASAppIDFunc_f')
     use :: iso_c_binding
     type(c_ptr), value :: mpMesh
@@ -127,6 +127,7 @@ module polympo
     type(c_ptr), value :: arg2
     type(c_ptr), value :: arg3
     integer(c_int), intent(in), value :: arg4
+    integer(c_int), intent(in), value :: arg5
   end subroutine
   
   

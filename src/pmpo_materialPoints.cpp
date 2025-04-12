@@ -195,7 +195,7 @@ void MaterialPoints::migrate() {
 
   for(int i=0; i<numReceivedMPs_host(0); i++){
     printf("Trying to find an ID for a material point\n");
-    auto xx = getNextAppID(receivedMPs2Elm_host(i));
+    auto xx = getNextAppID(receivedMPs2Elm_host(i)+1);
   }
 
   if (getOpMode() == polyMPO::MP_DEBUG)

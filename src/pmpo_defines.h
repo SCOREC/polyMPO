@@ -8,7 +8,7 @@
 typedef void* MPMesh_ptr;
 //Function that receives void* and returns an int
 typedef int (*IntVoidFunc)(void*);
-typedef void (*VoidVoidFunc)(void*, void*, void*, const int, int, int, const int);
+typedef void (*VoidVoidFunc)(void*, const int, const int, const int, int&);
 
 using space_t = Kokkos::DefaultExecutionSpace::memory_space;
 

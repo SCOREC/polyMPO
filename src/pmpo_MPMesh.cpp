@@ -2,7 +2,7 @@
 #include "pmpo_utils.hpp"
 #include "pmpo_MPMesh.hpp"
 #include "pmpo_wachspressBasis.hpp"
-
+#include <unistd.h>
 namespace polyMPO{
 
 void printVTP_mesh(MPMesh& mpMesh, int printVTPIndex=-1);
@@ -345,7 +345,7 @@ void MPMesh::push(){
   
   static int count=0;
   std::cout<<"Push"<<"  "<<count<<std::endl;
-  if(count>473) exit(-1); 
+  
   Kokkos::Timer timer;
   
   p_mesh->computeRotLatLonIncr();
@@ -358,7 +358,7 @@ void MPMesh::push(){
 
   bool anyIsMigrating = false;
   do {
-    CVTTrackingElmCenterBased(count); // move to Tgt_XYZ
+    CVTTrackingElmCenterBased(); // move to Tgt_XYZ
     assert(cudaDeviceSynchronize() == cudaSuccess); 
     p_MPs->updateMPSlice<MPF_Cur_Pos_XYZ, MPF_Tgt_Pos_XYZ>(); // Tgt_XYZ becomes Cur_XYZ
     p_MPs->updateMPSlice<MPF_Cur_Pos_Rot_Lat_Lon, MPF_Tgt_Pos_Rot_Lat_Lon>(); // Tgt becomes Cur
@@ -369,12 +369,26 @@ void MPMesh::push(){
       p_MPs->migrate();
     else
       p_MPs->rebuild();
+    printf("Done till here 0\n");
     
     p_MPs->updateMPElmID(); //update mpElm IDs slices
     reconstructSlices(); 
   } 
   while (anyIsMigrating);
-  count ++; 
+  
+  count ++;
+
+  volatile int i = 0;
+  char hostname[256];
+  gethostname(hostname, sizeof(hostname));
+  MPI_Comm comm = p_MPs->getMPIComm(); 
+  int comm_rank;
+  MPI_Comm_rank(comm, &comm_rank);
+  printf("Rank %d PID %d on %s ready for attach\n", comm_rank, getpid(), hostname);
+  fflush(stdout);
+  if(count==480) sleep(100);
+
+  printf("Done till here\n");
   pumipic::RecordTime("PolyMPO_push", timer.seconds());
 }
 

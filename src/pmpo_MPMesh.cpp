@@ -369,7 +369,6 @@ void MPMesh::push(){
       p_MPs->migrate();
     else
       p_MPs->rebuild();
-    printf("Done till here 0\n");
     
     p_MPs->updateMPElmID(); //update mpElm IDs slices
     reconstructSlices(); 
@@ -384,11 +383,11 @@ void MPMesh::push(){
   MPI_Comm comm = p_MPs->getMPIComm(); 
   int comm_rank;
   MPI_Comm_rank(comm, &comm_rank);
-  printf("Rank %d PID %d on %s ready for attach\n", comm_rank, getpid(), hostname);
-  fflush(stdout);
-  if(count==480) sleep(100);
-
-  printf("Done till here\n");
+  if(count==480){
+    printf("Rank %d PID %d on %s ready for attach\n", comm_rank, getpid(), hostname);
+    fflush(stdout);
+    sleep(100);
+  }
   pumipic::RecordTime("PolyMPO_push", timer.seconds());
 }
 

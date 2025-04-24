@@ -151,7 +151,6 @@ void MaterialPoints::migrate() {
       new_process(mp) = MPs2Proc(mp);
       if(rank!=new_process(mp)){
         mpAppID(mp)=-1;
-        printf("Particle migrated and so its AppID is -1\n");
       }
     }
   };
@@ -200,7 +199,7 @@ void MaterialPoints::migrate() {
   std::vector<int> appIDs;
   for(int i=0; i<numReceivedMPs_host(0); i++){
     auto app_id_new = getNextAppID(receivedMPs2Elm_host(i)+1);
-    printf("Trying to find ID for MP located in %d and it's %d \n", receivedMPs2Elm_host(i), app_id_new);
+    printf("Finding ID for MP migrated to el %d in rank %d and it's %d \n", receivedMPs2Elm_host(i), rank, app_id_new);
     appIDs.push_back(app_id_new);
   }
   kkViewHostU<int*> appIDs_host(appIDs.data(), appIDs.size());
@@ -214,7 +213,6 @@ void MaterialPoints::migrate() {
       if (mpAppID(mp) == -1){
         auto count_temp=Kokkos::atomic_fetch_add(&counter(0), 1);
         mpAppID(mp)=appIDs_d(count_temp)-1;
-	printf("Count_temp %d and new appID %d \n", count_temp, mpAppID(mp));
       }
     }
   };

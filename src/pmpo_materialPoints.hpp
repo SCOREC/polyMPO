@@ -139,6 +139,8 @@ class MaterialPoints {
 
     void rebuild(IntView addedMP2elm, IntView addedMPAppID);
     void startRebuild(IntView tgtElm, int addedNumMPs, IntView addedMP2elm, IntView addedMPAppID, Kokkos::View<const int*> addedMPMask);
+    void startRebuild(IntView tgtElm, int addedNumMPs, IntView addedMP2elm, IntView addedMPAppID);
+    
     void finishRebuild();
     bool rebuildOngoing();
 
@@ -163,9 +165,12 @@ class MaterialPoints {
     void rebuild() {
       IntView tgtElm("tgtElm", MPs->capacity());
       auto tgtMpElm = MPs->get<MPF_Tgt_Elm_ID>();
-      auto setTgtElm = PS_LAMBDA(const int&, const int& mp, const int& mask) {
+      auto mpAppID =  MPs->get<MPF_MP_APP_ID>();
+      auto setTgtElm = PS_LAMBDA(const int& e, const int& mp, const int& mask) {
         if(mask) {
+	  auto app_id=mpAppID(mp);
           tgtElm(mp) = tgtMpElm(mp);
+	  if(app_id==191) printf("Going from elm %d to %d \n", e, tgtMpElm(mp));
         }
       };
       ps::parallel_for(MPs, setTgtElm, "setTargetElement");

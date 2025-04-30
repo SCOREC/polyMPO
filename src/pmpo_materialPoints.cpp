@@ -95,6 +95,16 @@ void MaterialPoints::startRebuild(IntView tgtElm, int addedNumMPs, IntView added
   rebuildFields.addedSlices_h = createInternalMemberViews<hostSpace>(addedNumMPs, addedMP2elm_h, addedMPAppID_h);
 }
 
+void MaterialPoints::startRebuild(IntView tgtElm, int addedNumMPs, IntView addedMP2elm, IntView addedMPAppID) {
+  rebuildFields.ongoing = true;
+  rebuildFields.addedNumMPs = addedNumMPs;
+  rebuildFields.addedMP2elm = addedMP2elm;
+  rebuildFields.allTgtElm = tgtElm;
+  auto addedMP2elm_h = Kokkos::create_mirror_view_and_copy(hostSpace(), addedMP2elm);
+  auto addedMPAppID_h = Kokkos::create_mirror_view_and_copy(hostSpace(), addedMPAppID);
+  rebuildFields.addedSlices_h = createInternalMemberViews<hostSpace>(addedNumMPs, addedMP2elm_h, addedMPAppID_h);
+}
+
 void MaterialPoints::finishRebuild() {
   auto addedSlices_d = ps::createMemberViews<MaterialPointTypes, defaultSpace>(rebuildFields.addedNumMPs);
   ps::CopyMemSpaceToMemSpace<defaultSpace, hostSpace, MaterialPointTypes>(addedSlices_d, rebuildFields.addedSlices_h);
@@ -114,20 +124,20 @@ void MaterialPoints::setMPIComm(MPI_Comm comm) {
 }
 
 bool MaterialPoints::check_migrate(){
-  Kokkos::Timer timer;
-  auto MPs2Elm = getData<MPF_Tgt_Elm_ID>();
+  
+  Kokkos::Timer timer; 
   auto MPs2Proc = getData<MPF_Tgt_Proc_ID>();
-
   IntView isMigrating("isMigrating", 1);
-
   int rank;
   MPI_Comm_rank(mpi_comm, &rank);
+
   auto setMigrationFields = PS_LAMBDA(const int& e, const int& mp, const bool& mask) {
     if (mask) {
       if (MPs2Proc(mp) != rank) isMigrating(0) = 1;
     }
   };
   parallel_for(setMigrationFields, "setMigrationFields");
+  
   if (getOpMode() == polyMPO::MP_DEBUG)
     printf("Material point check migration: %f\n", timer.seconds());
   pumipic::RecordTime("PolyMPO_check_migrate", timer.seconds());
@@ -150,6 +160,7 @@ void MaterialPoints::migrate() {
       new_elem(mp) = MPs2Elm(mp);
       new_process(mp) = MPs2Proc(mp);
       if(rank!=new_process(mp)){
+	printf("Particle %d in rank %d to be moved from %d %d \n", mpAppID(mp), rank, e, new_elem(mp) );
         mpAppID(mp)=-1;
       }
     }

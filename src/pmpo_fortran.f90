@@ -87,6 +87,20 @@ module polympo
     type(c_ptr), intent(in), value :: allMP2Elm
     type(c_ptr), intent(in), value :: addedMPMask
   end subroutine
+
+
+  subroutine polympo_startRebuildMPs2(mpMesh, size1, arg1, size2, size3, arg2, arg3) &
+    bind(C, NAME='polympo_startRebuildMPs_f2')
+    use :: iso_c_binding
+    type(c_ptr), value :: mpMesh
+    integer(c_int), value :: size1
+    type(c_ptr), intent(in), value :: arg1
+    integer(c_int), value :: size2
+    integer(c_int), value :: size3
+    type(c_ptr), intent(in), value :: arg2
+    type(c_ptr), intent(in), value :: arg3
+  end subroutine
+  !
   !---------------------------------------------------------------------------
   !> @brief called after startRebuild()
   !> @brief called after initializing MP fields
@@ -160,12 +174,13 @@ module polympo
   !> @param numMPs(in) number of the MPs
   !> @param array(in) MP current position 2D array (3,numMPs), allocated by user on host
   !---------------------------------------------------------------------------
-  subroutine polympo_setMPPositions(mpMesh, nComps, numMPs, array) &
+  subroutine polympo_setMPPositions(mpMesh, nComps, numMPs, array, setTgtPos) &
              bind(C, NAME='polympo_setMPPositions_f')
     use :: iso_c_binding
     type(c_ptr), value :: mpMesh
     integer(c_int), value :: nComps, numMPs
     type(c_ptr), value :: array
+    integer(c_int), value:: setTgtPos
   end subroutine
   !---------------------------------------------------------------------------
   !> @brief get the MP positions array from a polympo array
@@ -743,6 +758,16 @@ module polympo
     use :: iso_c_binding
     type(c_ptr), value :: mpMesh
   end subroutine
+
+
+  !---------------------------------------------------------------------------
+  !> @brief calculate the MPs from given mesh vertices rotational latitude
+  logical function polympo_push1P(mpMesh) &
+             bind(C, NAME='polympo_push1P_f')
+    use :: iso_c_binding
+    type(c_ptr), value :: mpMesh
+  end function
+
   !---------------------------------------------------------------------------
   !> @brief start the reconstruction of MP Mass to Mesh Vertices
   !> @param mpmesh(in/out) MPMesh object
@@ -823,6 +848,13 @@ module polympo
     use :: iso_c_binding
     integer(c_int), value :: v
   end subroutine
+
+  integer function polympo_getMPCount(mpMesh) bind(C, name="polympo_getMPCount_f")
+    use :: iso_c_binding
+    implicit none
+    type(c_ptr), value :: mpMesh
+  end function
+
   end interface
   contains
   !---------------------------------------------------------------------------
@@ -838,4 +870,5 @@ module polympo
         call exit(1)
     end if
   end subroutine
+
 end module

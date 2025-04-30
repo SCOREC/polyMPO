@@ -141,9 +141,9 @@ void MPMesh::CVTTrackingElmCenterBased(const int printVTPIndex){
       printVTP_mesh(comm_rank);
     }
     
-    assert(cudaDeviceSynchronize()==cudaSuccess);
-    MPI_Barrier(MPI_COMM_WORLD);
-
+    //assert(cudaDeviceSynchronize()==cudaSuccess);
+    //MPI_Barrier(MPI_COMM_WORLD);
+    printf("NumMPs %d \n", numMPs);
     Vec3dView history("positionHistory",numMPs);
     Vec3dView resultLeft("positionResult",numMPs);
     Vec3dView resultRight("positionResult",numMPs);
@@ -339,6 +339,35 @@ bool getAnyIsMigrating(MaterialPoints* p_MPs, bool isMigrating) {
   MPI_Allreduce(&isMigrating, &anyIsMigrating, 1, MPI_C_BOOL, MPI_LOR, comm);
   pumipic::RecordTime("PolyMPO_getAnyIsMigrating", timer.seconds());
   return anyIsMigrating;
+}
+
+bool MPMesh::push1P(){
+  
+  static int count=0; 
+  std::cout<<"Push1P"<<"  "<<count<<std::endl;
+
+  //Latitude Longitude increment at mesh vertices and interpolate to particle position
+  p_mesh->computeRotLatLonIncr(); 
+  sphericalInterpolation<MeshF_RotLatLonIncr>(*this);
+
+  //Push the MPs
+  p_MPs->updateRotLatLonAndXYZ2Tgt(p_mesh->getSphereRadius());
+  
+  //Given target location find the new MP element and the process it belongs to
+  CVTTrackingElmCenterBased();
+  //From the above two inputs find if any particle needs to be migrated
+  bool anyIsMigrating = getAnyIsMigrating(p_MPs, p_MPs->check_migrate());
+
+  //New element (maynot be final) so that MPAS can do the migration
+  p_MPs->updateMPElmID();
+ 
+
+  p_MPs->updateMPSlice<MPF_Cur_Pos_XYZ, MPF_Tgt_Pos_XYZ>();
+  p_MPs->updateMPSlice<MPF_Cur_Pos_Rot_Lat_Lon, MPF_Tgt_Pos_Rot_Lat_Lon>();
+  
+  count++;
+  return anyIsMigrating;
+
 }
 
 void MPMesh::push(){

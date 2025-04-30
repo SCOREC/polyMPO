@@ -110,6 +110,7 @@ void polympo_createMPs_f(MPMesh_ptr p_mpmesh,
     fprintf(stderr,"The minElmID is incorrect! Offset is wrong!\n");
     exit(1);
   }
+  printf("Offset %d \n", offset);
 
   std::vector<int> active_mpIDs(numMPs);
   std::vector<int> active_mp2Elm(numMPs);
@@ -198,6 +199,43 @@ void polympo_startRebuildMPs_f(MPMesh_ptr p_mpmesh,
   }
 }
 
+void polympo_startRebuildMPs_f2(MPMesh_ptr p_mpmesh,
+                         const int sizeMP2elm,
+		         const int* elem_ids,
+			 const int nMPs_delete,
+			 const int nMPs_add,
+                         const int* recvMPs_elm,
+                         const int* recvMPs_ids) {
+  checkMPMeshValid(p_mpmesh);
+  auto p_MPs = ((polyMPO::MPMesh*)p_mpmesh)->p_MPs;
+  int offset = p_MPs->getElmIDoffset();
+  printf("To delete %d MPs add %d MPs\n", nMPs_delete, nMPs_add);
+  auto elem_ids_d = create_mirror_view_and_copy(elem_ids, sizeMP2elm);
+  auto recvMPs_elm_d = create_mirror_view_and_copy(recvMPs_elm, nMPs_add);
+  auto recvMPs_ids_d = create_mirror_view_and_copy(recvMPs_ids, nMPs_add);
+  
+  Kokkos::View<int*> mp2Elm("mp2Elm", p_MPs->getCapacity());
+  Kokkos::View<int*> numDeletedMPs_d("numDeletedMPs", 1);
+  auto mpAppID = p_MPs->getData<polyMPO::MPF_MP_APP_ID>();
+  
+  auto setMP2Elm = PS_LAMBDA(const int& e, const int& mp, const int& mask) {
+    if(mask) {
+      mp2Elm(mp) = elem_ids_d(mpAppID(mp));
+        if (mp2Elm(mp) == MP_DELETE){
+          Kokkos::atomic_increment(&numDeletedMPs_d(0));
+	  printf("Deleted particle is %d it was in %d \n", mpAppID(mp), e);
+	}
+    }
+  };
+  p_MPs->parallel_for(setMP2Elm, "setMP2Elm");
+  int numDeletedMPs = pumipic::getLastValue(numDeletedMPs_d);
+  if(numDeletedMPs) printf("Dleted %d particles \n", numDeletedMPs);
+
+  p_MPs->startRebuild(mp2Elm, nMPs_add, recvMPs_elm_d, recvMPs_ids_d);
+}
+
+
+
 void polympo_finishRebuildMPs_f(MPMesh_ptr p_mpmesh)
 {
   checkMPMeshValid(p_mpmesh);
@@ -255,13 +293,14 @@ void polympo_setMPLatLonRotatedFlag_f(MPMesh_ptr p_mpmesh, const int isRotateFla
 void polympo_setMPPositions_f(MPMesh_ptr p_mpmesh,
                             const int nComps,
                             const int numMPs,
-                            const double* mpPositionsIn){
+                            const double* mpPositionsIn,
+			    const int setTgtPos){
   Kokkos::Timer timer;
   checkMPMeshValid(p_mpmesh);
   auto p_MPs = ((polyMPO::MPMesh*)p_mpmesh)->p_MPs;
   PMT_ALWAYS_ASSERT(nComps == vec3d_nEntries);
   PMT_ALWAYS_ASSERT(numMPs >= p_MPs->getCount());
-  PMT_ALWAYS_ASSERT(numMPs >= p_MPs->getMaxAppID());
+  //PMT_ALWAYS_ASSERT(numMPs >= p_MPs->getMaxAppID());
   kkViewHostU<const double**> mpPositionsIn_h(mpPositionsIn,nComps,numMPs);
 
   if (p_MPs->rebuildOngoing()) {
@@ -270,6 +309,10 @@ void polympo_setMPPositions_f(MPMesh_ptr p_mpmesh,
   }
 
   auto mpPositions = p_MPs->getData<polyMPO::MPF_Cur_Pos_XYZ>();
+  if(setTgtPos){
+    printf("Setting the TGT position instead\n");
+    mpPositions = p_MPs->getData<polyMPO::MPF_Tgt_Pos_XYZ>();
+  }
   auto mpAppID = p_MPs->getData<polyMPO::MPF_MP_APP_ID>();
   Kokkos::View<double**> mpPositionsIn_d("mpPositionsDevice",vec3d_nEntries,numMPs);
   Kokkos::deep_copy(mpPositionsIn_d, mpPositionsIn_h);
@@ -281,6 +324,7 @@ void polympo_setMPPositions_f(MPMesh_ptr p_mpmesh,
     }
   };
   p_MPs->parallel_for(setPos, "setMPPositions");
+  printf("Done setting MP pos\n");
   pumipic::RecordTime("PolyMPO_setMPPositions", timer.seconds());
 }
 
@@ -987,6 +1031,12 @@ void polympo_getMeshVtxOnSurfDispIncr_f(MPMesh_ptr p_mpmesh, const int nComps, c
   Kokkos::deep_copy(arrayHost, array_d);
 }
 
+bool polympo_push1P_f(MPMesh_ptr p_mpmesh){
+  checkMPMeshValid(p_mpmesh);
+  bool is_migrating=((polyMPO::MPMesh*)p_mpmesh) ->push1P();
+  return is_migrating;
+}
+
 void polympo_push_f(MPMesh_ptr p_mpmesh){
   checkMPMeshValid(p_mpmesh);
   ((polyMPO::MPMesh*)p_mpmesh) ->push();
@@ -1067,6 +1117,11 @@ void polympo_setElmGlobal_f(MPMesh_ptr p_mpmesh, const int nCells, const int* ar
   p_mesh->setElmGlobal(elmGlobal);
 }
 
+
+int polympo_getMPCount_f(MPMesh_ptr p_mpmesh) {
+  auto p_MPs = ((polyMPO::MPMesh*)p_mpmesh)->p_MPs;
+  return p_MPs->getCount();  // This returns the int you're after
+}
 
 void polympo_enableTiming_f(){
   pumipic::EnableTiming();

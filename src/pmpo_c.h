@@ -21,6 +21,10 @@ void polympo_setMPICommunicator_f(MPMesh_ptr p_mpmesh, MPI_Fint fcomm);
 //MP info
 void polympo_createMPs_f(MPMesh_ptr p_mpmesh, const int numElms, const int numMPs, int* mpsPerElm, const int* mp2Elm, const int* isMPActive);
 void polympo_startRebuildMPs_f(MPMesh_ptr p_mpmesh, const int numMPs, const int* allTgtMpElmIn, const int* addedMPMask);
+void polympo_startRebuildMPs_f2(MPMesh_ptr p_mpmesh, const int size1, const int* arg1, const int size2, const int size3, const int* arg2, const int* arg3);
+
+int polympo_getMPCount_f(MPMesh_ptr p_mpmesh);
+
 void polympo_finishRebuildMPs_f(MPMesh_ptr p_mpmesh);
 
 void polympo_setAppIDFunc_f(MPMesh_ptr p_mpmesh, IntVoidFunc getNext, void* appIDs);
@@ -30,7 +34,7 @@ void polympo_getMPCurElmID_f(MPMesh_ptr p_mpmesh, const int numMPs, int* elmIDs)
 void polympo_setMPLatLonRotatedFlag_f(MPMesh_ptr p_mpmesh, const int isRotateFlag);
 
 //MP slices
-void polympo_setMPPositions_f(MPMesh_ptr p_mpmesh, const int nComps, const int numMPs, const double* mpPositionsIn);
+void polympo_setMPPositions_f(MPMesh_ptr p_mpmesh, const int nComps, const int numMPs, const double* mpPositionsIn, const int setTgtPos);
 void polympo_getMPPositions_f(MPMesh_ptr p_mpmesh, const int nComps, const int numMPs, double* mpPositionsIn);
 void polympo_setMPRotLatLon_f(MPMesh_ptr p_mpmesh, const int nComps, const int numMPs, const double* mpRotLatLonIn);
 void polympo_getMPRotLatLon_f(MPMesh_ptr p_mpmesh, const int nComps, const int numMPs, double* mpRotLatLonHost);
@@ -90,6 +94,7 @@ void polympo_getMeshDualTriangleArea_f(MPMesh_ptr p_mpmesh, const int nVertices,
 
 // calculations
 void polympo_push_f(MPMesh_ptr p_mpmesh);
+bool polympo_push1P_f(MPMesh_ptr p_mpmesh);
 
 // Reconstruction of variables from MPs to mesh vertices
 void polympo_setReconstructionOfMass_f(MPMesh_ptr p_mpmesh, const int order, const int meshEntType);

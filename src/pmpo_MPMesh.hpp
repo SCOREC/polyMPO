@@ -44,6 +44,9 @@ class MPMesh{
     void CVTTrackingElmCenterBased(const int printVTPIndex = -1);
     void T2LTracking(Vec2dView dx);
     bool push1P();
+    void push_ahead();
+    void push_swap();
+    void push_swap_pos();
     void push();
     void calcBasis();
 

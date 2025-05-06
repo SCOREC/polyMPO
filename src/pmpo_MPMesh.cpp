@@ -128,7 +128,8 @@ void MPMesh::CVTTrackingElmCenterBased(const int printVTPIndex){
     auto MPs2Proc = p_MPs->getData<MPF_Tgt_Proc_ID>();
     auto elm2Process = p_mesh->getElm2Process();
     auto elm2global = p_mesh->getElmGlobal();
-    
+    auto mpAppID = p_MPs->getData<polyMPO::MPF_MP_APP_ID>();
+
     MPI_Comm comm = p_MPs->getMPIComm(); 
     int comm_rank;
     MPI_Comm_rank(comm, &comm_rank);
@@ -143,12 +144,14 @@ void MPMesh::CVTTrackingElmCenterBased(const int printVTPIndex){
     
     //assert(cudaDeviceSynchronize()==cudaSuccess);
     //MPI_Barrier(MPI_COMM_WORLD);
-    printf("NumMPs %d \n", numMPs);
     Vec3dView history("positionHistory",numMPs);
     Vec3dView resultLeft("positionResult",numMPs);
     Vec3dView resultRight("positionResult",numMPs);
     Vec3dView mpTgtPosArray("positionTarget",numMPs);
     Kokkos::View<int*> counter("counter",1);
+   
+    assert(cudaDeviceSynchronize() == cudaSuccess);
+    //printf("Rank %d Foo4 Begin\n", comm_rank);
     
     auto CVTElmCalc = PS_LAMBDA(const int& elm, const int& mp, const int&mask){
         Vec3d MP(mpPositions(mp,0),mpPositions(mp,1),mpPositions(mp,2));
@@ -181,13 +184,15 @@ void MPMesh::CVTTrackingElmCenterBased(const int printVTPIndex){
 
                 if(closestElm<0){
                     MPs2Elm(mp) = iElm;
-                    if (elm2Process.size() > 0)
-                        MPs2Proc(mp) = elm2Process(iElm);
+                    MPs2Proc(mp) = elm2Process(iElm);
                     break;
                 }else{
                     iElm = closestElm;
                 }
             }
+	    if(mpAppID(mp)==0 || mpAppID(mp)==191) 
+	      printf("Pos %.15e %.15e %.15e => %.15e %.15e %.15e\n", mpPositions(mp,0), mpPositions(mp,1), 
+                mpPositions(mp,2), mpTgtPos(mp,0), mpTgtPos(mp,1), mpTgtPos(mp, 2));
 
             if(printVTPIndex>=0 && numMPs>0){
 		//printf("Rank %d mp %d counter %d \n", comm_rank, mp, counter);
@@ -211,6 +216,10 @@ void MPMesh::CVTTrackingElmCenterBased(const int printVTPIndex){
         }
     };
     p_MPs->parallel_for(CVTElmCalc,"CVTTrackingElmCenterBasedCalc");
+    
+    assert(cudaDeviceSynchronize() == cudaSuccess);
+    //printf("Rank %d Foo4 End\n", comm_rank);
+
 
     if(printVTPIndex>=0 && numMPs>0){
         Vec3dView::HostMirror h_history = Kokkos::create_mirror_view(history);
@@ -341,34 +350,43 @@ bool getAnyIsMigrating(MaterialPoints* p_MPs, bool isMigrating) {
   return anyIsMigrating;
 }
 
-bool MPMesh::push1P(){
-  
-  static int count=0; 
-  std::cout<<"Push1P"<<"  "<<count<<std::endl;
-
+void MPMesh::push_ahead(){
+  static int count0=0;
+  std::cout<<"Push_ahead"<<"  "<<count0<<std::endl;
   //Latitude Longitude increment at mesh vertices and interpolate to particle position
   p_mesh->computeRotLatLonIncr(); 
   sphericalInterpolation<MeshF_RotLatLonIncr>(*this);
-
   //Push the MPs
   p_MPs->updateRotLatLonAndXYZ2Tgt(p_mesh->getSphereRadius());
-  
-  //Given target location find the new MP element and the process it belongs to
+  count0 ++; 
+}
+
+bool MPMesh::push1P(){
+  //Given target location find the new element or the last element in a partioned mesh
+  //and the process it belongs to so that migration can be checked
+  static int count_p=0;
   CVTTrackingElmCenterBased();
+  
   //From the above two inputs find if any particle needs to be migrated
   bool anyIsMigrating = getAnyIsMigrating(p_MPs, p_MPs->check_migrate());
-
-  //New element (maynot be final) so that MPAS can do the migration
-  p_MPs->updateMPElmID();
- 
-
-  p_MPs->updateMPSlice<MPF_Cur_Pos_XYZ, MPF_Tgt_Pos_XYZ>();
-  p_MPs->updateMPSlice<MPF_Cur_Pos_Rot_Lat_Lon, MPF_Tgt_Pos_Rot_Lat_Lon>();
-  
-  count++;
+  count_p=count_p+1;
   return anyIsMigrating;
 
 }
+
+void MPMesh::push_swap(){
+  //current becomes target, target becomes -1
+  p_MPs->updateMPElmID();
+}
+
+
+void MPMesh::push_swap_pos(){
+  //current becomes target, target becomes -1
+  //Making read for next push_ahead  
+  p_MPs->updateMPSlice<MPF_Cur_Pos_XYZ, MPF_Tgt_Pos_XYZ>();
+  p_MPs->updateMPSlice<MPF_Cur_Pos_Rot_Lat_Lon, MPF_Tgt_Pos_Rot_Lat_Lon>();
+}
+
 
 void MPMesh::push(){
   

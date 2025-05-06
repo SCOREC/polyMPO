@@ -8,11 +8,13 @@ template<typename MemSpace = defaultSpace, typename View>
 pumipic::MemberTypeViews createInternalMemberViews(int numMPs, View mp2elm, View mpAppID){
   auto mpInfo = ps::createMemberViews<MaterialPointTypes, MemSpace>(numMPs);
   auto mpCurElmPos_m = ps::getMemberView<MaterialPointTypes, MPF_Cur_Elm_ID, MemSpace>(mpInfo);
+  auto mpTgtElmPos_m = ps::getMemberView<MaterialPointTypes, MPF_Tgt_Elm_ID, MemSpace>(mpInfo);
   auto mpAppID_m = ps::getMemberView<MaterialPointTypes, MPF_MP_APP_ID, MemSpace>(mpInfo);
   auto mpStatus_m = ps::getMemberView<MaterialPointTypes, MPF_Status, MemSpace>(mpInfo);
   auto policy = Kokkos::RangePolicy<typename MemSpace::execution_space>(typename MemSpace::execution_space(), 0, numMPs);
   Kokkos::parallel_for("setMPinfo", policy, KOKKOS_LAMBDA(int i) {
     mpCurElmPos_m(i) = mp2elm(i);
+    mpTgtElmPos_m(i) = -1;
     mpStatus_m(i) = MP_ACTIVE;
     mpAppID_m(i) = mpAppID(i);
   });
@@ -113,6 +115,22 @@ void MaterialPoints::finishRebuild() {
   ps::destroyViews<MaterialPointTypes>(rebuildFields.addedSlices_h);
   ps::destroyViews<MaterialPointTypes>(addedSlices_d);
   rebuildFields.ongoing = false;
+  
+  //Debug
+  /*
+  int rank;
+  MPI_Comm_rank(mpi_comm, &rank);
+  if (rank==0) return;
+  auto curr_elm=getData<MPF_Cur_Elm_ID>();
+  auto tgt_elm =getData<MPF_Tgt_Elm_ID>();
+  auto mpAppID = getData<polyMPO::MPF_MP_APP_ID>();
+  auto testElm = PS_LAMBDA(const int& e, const int& mp, const bool& mask) {
+    if (mask) {
+     printf("R1: finishRebuild AppID %d Curr %d Tgt %d e %d \n", mpAppID(mp), curr_elm(mp), tgt_elm(mp), e);
+    }
+  };
+  parallel_for(testElm, "curr_elm");
+  */
 }
 
 MPI_Comm MaterialPoints::getMPIComm() {

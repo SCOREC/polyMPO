@@ -28,7 +28,6 @@ int polympo_getMPCount_f(MPMesh_ptr p_mpmesh);
 void polympo_finishRebuildMPs_f(MPMesh_ptr p_mpmesh);
 
 void polympo_setAppIDFunc_f(MPMesh_ptr p_mpmesh, IntVoidFunc getNext, void* appIDs);
-void polympo_setMPASAppIDFunc_f(MPMesh_ptr p_mpmesh, VoidVoidFunc getMPASAppID, void* arg1, const int arg2, const int arg3);
 
 void polympo_getMPTgtElmID_f(MPMesh_ptr p_mpmesh, const int numMPs, int* elmIDs);
 void polympo_getMPCurElmID_f(MPMesh_ptr p_mpmesh, const int numMPs, int* elmIDs);

@@ -249,17 +249,7 @@ void polympo_setAppIDFunc_f(MPMesh_ptr p_mpmesh, IntVoidFunc getNext, void* appI
   checkMPMeshValid(p_mpmesh);
   auto p_MPs = ((polyMPO::MPMesh*)p_mpmesh)->p_MPs;
   polyMPO::IntFunc getNextAppID = [getNext, appIDs]() { return getNext(appIDs); };
-  //p_MPs->setAppIDFunc(getNextAppID);
-}
-
-//arg1 is blockPtr, arg2 is blockSize and arg3 is nCells
-void polympo_setMPASAppIDFunc_f(MPMesh_ptr p_mpmesh, VoidVoidFunc getMPASAppID, void*arg1,
-  const int arg2, const int arg3) {
-  checkMPMeshValid(p_mpmesh);
-  auto p_MPs = ((polyMPO::MPMesh*)p_mpmesh)->p_MPs;
-  std::function<int(int)> polyMPO_getMPASAppID = [getMPASAppID, arg1, arg2, arg3](int iCell) 
-    { int iParticleNew=-1; getMPASAppID(arg1, arg2, arg3, iCell, iParticleNew); return iParticleNew;};
-  p_MPs->setAppIDFunc(polyMPO_getMPASAppID);
+  p_MPs->setAppIDFunc(getNextAppID);
 }
 
 void polympo_getMPTgtElmID_f(MPMesh_ptr p_mpmesh,
@@ -1263,7 +1253,7 @@ void polympo_setElmGlobal_f(MPMesh_ptr p_mpmesh, const int nCells, const int* ar
   PMT_ALWAYS_ASSERT(p_mesh->meshEditable());
   Kokkos::View<int*, Kokkos::HostSpace> arrayHost("arrayHost", nCells);
   for (int i = 0; i < nCells; i++) {
-    arrayHost(i) = array[i] - 1;  // Decrease each value by 1
+    arrayHost(i) = array[i] - 1;  // TODO right now elmID offset is set after MPs initialized
   }
   //check the size
   PMT_ALWAYS_ASSERT(nCells == p_mesh->getNumElements());

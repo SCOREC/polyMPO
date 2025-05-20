@@ -127,8 +127,7 @@ class MaterialPoints {
     bool isRotatedFlag = false;
     Operating_Mode operating_mode;
     RebuildHelper rebuildFields;
-    //IntFunc getAppID;
-    IntIntFunc getAppID;
+    IntFunc getAppID;
     MPI_Comm mpi_comm;
 
   public:
@@ -157,20 +156,15 @@ class MaterialPoints {
     typename std::enable_if<mpSliceData::rank==2>::type
     setRebuildMPSlice(mpSliceData mpSliceIn);
 
-    //void setAppIDFunc(IntFunc getAppIDIn);
-    void setAppIDFunc(IntIntFunc getAppIDIn);
-
-    int getNextAppID(int iElm);
+    void setAppIDFunc(IntFunc getAppIDIn);
+    int getNextAppID();
 
     void rebuild() {
       IntView tgtElm("tgtElm", MPs->capacity());
       auto tgtMpElm = MPs->get<MPF_Tgt_Elm_ID>();
-      auto mpAppID =  MPs->get<MPF_MP_APP_ID>();
       auto setTgtElm = PS_LAMBDA(const int& e, const int& mp, const int& mask) {
         if(mask) {
-	  auto app_id=mpAppID(mp);
           tgtElm(mp) = tgtMpElm(mp);
-	  if(app_id==191) printf("Going from elm %d to %d \n", e, tgtMpElm(mp));
         }
       };
       ps::parallel_for(MPs, setTgtElm, "setTargetElement");

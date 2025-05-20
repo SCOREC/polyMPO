@@ -114,23 +114,7 @@ void MaterialPoints::finishRebuild() {
   updateMaxAppID();
   ps::destroyViews<MaterialPointTypes>(rebuildFields.addedSlices_h);
   ps::destroyViews<MaterialPointTypes>(addedSlices_d);
-  rebuildFields.ongoing = false;
-  
-  //Debug
-  /*
-  int rank;
-  MPI_Comm_rank(mpi_comm, &rank);
-  if (rank==0) return;
-  auto curr_elm=getData<MPF_Cur_Elm_ID>();
-  auto tgt_elm =getData<MPF_Tgt_Elm_ID>();
-  auto mpAppID = getData<polyMPO::MPF_MP_APP_ID>();
-  auto testElm = PS_LAMBDA(const int& e, const int& mp, const bool& mask) {
-    if (mask) {
-     printf("R1: finishRebuild AppID %d Curr %d Tgt %d e %d \n", mpAppID(mp), curr_elm(mp), tgt_elm(mp), e);
-    }
-  };
-  parallel_for(testElm, "curr_elm");
-  */
+  rebuildFields.ongoing = false;  
 }
 
 MPI_Comm MaterialPoints::getMPIComm() {
@@ -166,7 +150,6 @@ void MaterialPoints::migrate() {
   Kokkos::Timer timer;
   auto MPs2Elm = getData<MPF_Tgt_Elm_ID>();
   auto MPs2Proc = getData<MPF_Tgt_Proc_ID>();
-  auto mpAppID =  getData<polyMPO::MPF_MP_APP_ID>();
 
   IntView new_elem("new_elem", MPs->capacity());
   IntView new_process("new_process", MPs->capacity());
@@ -177,76 +160,11 @@ void MaterialPoints::migrate() {
     if (mask) {
       new_elem(mp) = MPs2Elm(mp);
       new_process(mp) = MPs2Proc(mp);
-      if(rank!=new_process(mp)){
-	printf("Particle %d in rank %d to be moved from %d %d \n", mpAppID(mp), rank, e, new_elem(mp) );
-        mpAppID(mp)=-1;
-      }
     }
   };
   parallel_for(setMigrationFields, "setMigrationFields");
   MPs->migrate(new_elem, new_process);
 
-  //AS REBUILT, mpAppID needs to be be recalled
-  mpAppID =  getData<polyMPO::MPF_MP_APP_ID>();
-  //Count MPs that have -1 appID, so that we can count no of MPs received by a rank
-  Kokkos::View<int*> numReceivedMPs("numReceivedMPs", 1);
-  Kokkos::deep_copy(numReceivedMPs, 0);
-  auto countnewMPs = PS_LAMBDA(const int& e, const int& mp, const bool& mask) {
-    if(mask){
-      if (mpAppID(mp) == -1)
-        Kokkos::atomic_add(&numReceivedMPs(0), 1);
-    }
-  };
-  parallel_for(countnewMPs, "countReceivedPtcls");
-  auto numReceivedMPs_host = Kokkos::create_mirror_view(numReceivedMPs);
-  Kokkos::deep_copy(numReceivedMPs_host, numReceivedMPs);
-  
-  //Another array that contains new element id of the the MPs that have migrated
-  //Array size is #elements received
-  Kokkos::View<int*> receivedMPs2Elm("ReceivedMPs2Elm", numReceivedMPs_host(0));
-  Kokkos::View<int*> counter("counter", 1);
-  Kokkos::deep_copy(counter, 0);
-  auto set_new_elem = PS_LAMBDA(const int& e, const int& mp, const bool& mask) {
-    if(mask){
-      if (mpAppID(mp) == -1){
-        auto count_temp=Kokkos::atomic_fetch_add(&counter(0), 1);
-        receivedMPs2Elm(count_temp) = e;
-      }
-    }
-  };
-  parallel_for(set_new_elem, "countReceivedPtcls");
-  //Bring them to CPU so that elm_id can be passed and a new mpAppID can be found from CPU
-  auto receivedMPs2Elm_host = Kokkos::create_mirror_view(receivedMPs2Elm);
-  Kokkos::deep_copy(receivedMPs2Elm_host, receivedMPs2Elm);
-  auto counter_host = Kokkos::create_mirror_view(counter);
-  Kokkos::deep_copy(counter_host, counter);
-  assert(numReceivedMPs_host(0)==counter_host(0));
-  if(counter_host(0))
-    std::cout <<"Rank "<<rank<<" received "<<counter_host(0)<<"  "<< numReceivedMPs_host(0) <<" MPs \n";
- 
-  //Find new AppIDS from CPU-MPAS and store so that they can be added to MPs that have appID=-1
-  std::vector<int> appIDs;
-  for(int i=0; i<numReceivedMPs_host(0); i++){
-    auto app_id_new = getNextAppID(receivedMPs2Elm_host(i)+1);
-    printf("Finding ID for MP migrated to el %d in rank %d and it's %d \n", receivedMPs2Elm_host(i), rank, app_id_new);
-    appIDs.push_back(app_id_new);
-  }
-  kkViewHostU<int*> appIDs_host(appIDs.data(), appIDs.size());
-  Kokkos::View<int*> appIDs_d("appIDsDevice", appIDs.size());
-  Kokkos::deep_copy(appIDs_d, appIDs_host);
-
-  //If the mpAppID is -1 assign a new mpAppID
-  Kokkos::deep_copy(counter, 0);
-  auto set_appID = PS_LAMBDA(const int& e, const int& mp, const bool& mask) {
-    if(mask){
-      if (mpAppID(mp) == -1){
-        auto count_temp=Kokkos::atomic_fetch_add(&counter(0), 1);
-        mpAppID(mp)=appIDs_d(count_temp)-1;
-      }
-    }
-  };
-  parallel_for(set_appID, "setApplicationIDs");
-   
   if (getOpMode() == polyMPO::MP_DEBUG)
     printf("Material point migration: %f\n", timer.seconds());
   pumipic::RecordTime("PolyMPO_migrate", timer.seconds());
@@ -254,8 +172,8 @@ void MaterialPoints::migrate() {
 
 bool MaterialPoints::rebuildOngoing() { return rebuildFields.ongoing; }
 
-void MaterialPoints::setAppIDFunc(IntIntFunc getAppIDIn) { getAppID = getAppIDIn; }
+void MaterialPoints::setAppIDFunc(IntFunc getAppIDIn) { getAppID = getAppIDIn; }
 
-int MaterialPoints::getNextAppID(int iElm) { return getAppID(iElm); }
+int MaterialPoints::getNextAppID() { return getAppID(); }
 
 }

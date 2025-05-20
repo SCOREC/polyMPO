@@ -210,16 +210,9 @@ void polympo_startRebuildMPs_f2(MPMesh_ptr p_mpmesh,
   auto p_MPs = ((polyMPO::MPMesh*)p_mpmesh)->p_MPs;
   int offset = p_MPs->getElmIDoffset();
 
-  int rank;
-  auto mpi_comm=p_MPs->getMPIComm();
-  MPI_Comm_rank(mpi_comm, &rank);
-  
-  printf("Rank %d to add %d and delete %d ptcls \n", rank, nMPs_add, nMPs_delete); 
   for (int k=0; k<nMPs_add; k++){
     recvMPs_elm[k]=recvMPs_elm[k]-offset;
     recvMPs_ids[k]=recvMPs_ids[k]-offset;
-    //std::cout<<__FUNCTION__<<std::endl;
-    //printf("New Ptcl info element %d and  AppID %d \n", recvMPs_elm[k], recvMPs_ids[k]);
   }
   
   auto elem_ids_d = create_mirror_view_and_copy(elem_ids, sizeMP2elm);
@@ -233,7 +226,6 @@ void polympo_startRebuildMPs_f2(MPMesh_ptr p_mpmesh,
     if(mask) {
       mp2Elm(mp) = elem_ids_d(mpAppID(mp))-offset;
       if (mp2Elm(mp) == MP_DELETE){
-	  //printf("Rank %d to delete %d particle in element %d \n", rank, mpAppID(mp), e);
           Kokkos::atomic_increment(&numDeletedMPs_d(0));
       }
     }

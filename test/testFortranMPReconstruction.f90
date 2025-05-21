@@ -32,7 +32,7 @@ program main
   
   integer, dimension(:,:), pointer :: verticesOnCell, cellsOnCell
   integer :: numMPs, vID
-  integer, dimension(:), pointer :: mpsPerElm, mp2Elm, isMPActive
+  integer, dimension(:), pointer :: mpsPerElm, mp2Elm, isMPActive, globalElms
   real(kind=MPAS_RKIND), dimension(:,:), pointer :: mpPosition, mpLatLon
   real(kind=MPAS_RKIND), dimension(:,:), pointer :: mpMass, mpVel
   real(kind=MPAS_RKIND), dimension(:), pointer :: meshVtxMass, meshElmMass, meshVtxMass1
@@ -84,6 +84,7 @@ program main
   !createMPs
   numMPs = nCells
   allocate(mpsPerElm(nCells))
+  allocate(globalElms(nCells))
   allocate(mp2Elm(numMPs))
   allocate(isMPActive(numMPs))
   allocate(mpPosition(3,numMPs))
@@ -109,7 +110,8 @@ program main
     mpPosition(2,i) = yCell(i)
     mpPosition(3,i) = zCell(i)
   end do
-
+  
+  call polympo_setElmGlobal(mpMesh, nCells, c_loc(globalElms))
   call polympo_createMPs(mpMesh,nCells,numMPs,c_loc(mpsPerElm),c_loc(mp2Elm),c_loc(isMPActive))
   call polympo_setMPICommunicator(mpMesh, mpi_comm_handle)
   call polympo_setMPRotLatLon(mpMesh,2,numMPs,c_loc(mpLatLon))
@@ -188,7 +190,7 @@ program main
   deallocate(meshElmMass)
   deallocate(meshVtxVelu)
   deallocate(meshVtxVelv)
-
+  deallocate(globalElms)
   stop
 
   contains

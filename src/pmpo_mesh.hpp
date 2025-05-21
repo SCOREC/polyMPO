@@ -163,8 +163,7 @@ class Mesh {
     void setOwningProc(IntView owningProc) {PMT_ALWAYS_ASSERT(meshEdit_);
                                             owningProc_ = owningProc; }
     
-    void setElmGlobal(IntView globalElm) {PMT_ALWAYS_ASSERT(meshEdit_);
-                                            globalElm_ = globalElm; }
+    void setElmGlobal(IntView globalElm) {globalElm_ = globalElm;}
     IntView getElmGlobal();
 
     void computeRotLatLonIncr();

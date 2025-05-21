@@ -128,22 +128,16 @@ void MPMesh::CVTTrackingElmCenterBased(const int printVTPIndex){
     auto MPs2Proc = p_MPs->getData<MPF_Tgt_Proc_ID>();
     auto elm2Process = p_mesh->getElm2Process();
     auto elm2global = p_mesh->getElmGlobal();
-    auto mpAppID = p_MPs->getData<polyMPO::MPF_MP_APP_ID>();
 
-    MPI_Comm comm = p_MPs->getMPIComm(); 
-    int comm_rank;
-    MPI_Comm_rank(comm, &comm_rank);
-    
     //Since Mesh is static print pnly for 1 time step 
-    if(printVTPIndex==0) {
-      printVTP_mesh(comm_rank);
+    if(printVTPIndex>=0) {
+      printVTP_mesh(printVTPIndex);
     }
     
     Vec3dView history("positionHistory",numMPs);
     Vec3dView resultLeft("positionResult",numMPs);
     Vec3dView resultRight("positionResult",numMPs);
     Vec3dView mpTgtPosArray("positionTarget",numMPs);
-    Kokkos::View<int*> counter("counter",1);
    
     auto CVTElmCalc = PS_LAMBDA(const int& elm, const int& mp, const int&mask){
         Vec3d MP(mpPositions(mp,0),mpPositions(mp,1),mpPositions(mp,2));
@@ -176,7 +170,8 @@ void MPMesh::CVTTrackingElmCenterBased(const int printVTPIndex){
 
                 if(closestElm<0){
                     MPs2Elm(mp) = iElm;
-                    MPs2Proc(mp) = elm2Process(iElm);
+                    if (elm2Process.size() > 0)
+                        MPs2Proc(mp) = elm2Process(iElm);
                     break;
                 }else{
                     iElm = closestElm;
@@ -194,31 +189,28 @@ void MPMesh::CVTTrackingElmCenterBased(const int printVTPIndex){
                 Vec3d shift = dx.cross(r) * ((1.0-0.7)*dx.magnitude()/(dx.cross(r)).magnitude());
                 Vec3d MPLeft = MParrow + shift;
                 Vec3d MPRight = MParrow - shift;
-                auto xx=Kokkos::atomic_fetch_add(&counter(0), 1);
-                history(xx) = MP;
-                resultLeft(xx) = MPLeft;
-                resultRight(xx) = MPRight;
-                mpTgtPosArray(xx) = MPnew;
+                history(mp) = MP;
+                resultLeft(mp) = MPLeft;
+                resultRight(mp) = MPRight;
+                mpTgtPosArray(mp) = MPnew;
             }
         }
     };
     p_MPs->parallel_for(CVTElmCalc,"CVTTrackingElmCenterBasedCalc");
     
-    if(printVTPIndex>=0 && numMPs>0){
+    if(printVTPIndex>=0){
         Vec3dView::HostMirror h_history = Kokkos::create_mirror_view(history);
         Vec3dView::HostMirror h_resultLeft = Kokkos::create_mirror_view(resultLeft);
         Vec3dView::HostMirror h_resultRight = Kokkos::create_mirror_view(resultRight);
         Vec3dView::HostMirror h_mpTgtPos = Kokkos::create_mirror_view(mpTgtPosArray);
-	Kokkos::View<int*>::HostMirror h_counter = Kokkos::create_mirror_view(counter);
 
         Kokkos::deep_copy(h_history, history);
         Kokkos::deep_copy(h_resultLeft, resultLeft);
         Kokkos::deep_copy(h_resultRight, resultRight);
         Kokkos::deep_copy(h_mpTgtPos, mpTgtPosArray);
-	Kokkos::deep_copy(h_counter, counter);
         // printVTP file
         char* fileOutput = (char *)malloc(sizeof(char) * 256); 
-        sprintf(fileOutput, "polyMPOCVTTrackingElmCenter_MPtracks_%d_%d.vtp", comm_rank, printVTPIndex);
+        sprintf(fileOutput, "polyMPOCVTTrackingElmCenter_MPtracks_%d.vtp", printVTPIndex);
         FILE * pFile = fopen(fileOutput,"w");
         free(fileOutput);   
         fprintf(pFile, "<VTKFile type=\"PolyData\" version=\"1.0\" byte_order=\"LittleEndian\" header_type=\"UInt64\">\n  <PolyData>\n    <Piece NumberOfPoints=\"%d\" NumberOfVerts=\"0\" NumberOfLines=\"%d\" NumberOfStrips=\"0\" NumberOfPolys=\"0\">\n      <Points>\n        <DataArray type=\"Float32\" Name=\"Points\" NumberOfComponents=\"3\" format=\"ascii\">\n",numMPs*4,numMPs*2); 
@@ -378,7 +370,6 @@ void MPMesh::push(){
   bool anyIsMigrating = false;
   do {
     CVTTrackingElmCenterBased(); // move to Tgt_XYZ
-    assert(cudaDeviceSynchronize() == cudaSuccess); 
     p_MPs->updateMPSlice<MPF_Cur_Pos_XYZ, MPF_Tgt_Pos_XYZ>(); // Tgt_XYZ becomes Cur_XYZ
     p_MPs->updateMPSlice<MPF_Cur_Pos_Rot_Lat_Lon, MPF_Tgt_Pos_Rot_Lat_Lon>(); // Tgt becomes Cur
     

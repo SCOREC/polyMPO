@@ -123,7 +123,6 @@ void polympo_createMPs_f(MPMesh_ptr p_mpmesh,
     }
   }
   auto elm2global = p_mesh->getElmGlobal();
-
   auto mpsPerElm_d = create_mirror_view_and_copy(mpsPerElm, numElms);
   auto active_mp2Elm_d = create_mirror_view_and_copy(active_mp2Elm.data(), numActiveMPs);
   auto active_mpIDs_d = create_mirror_view_and_copy(active_mpIDs.data(), numActiveMPs);
@@ -1250,7 +1249,6 @@ void polympo_setOwningProc_f(MPMesh_ptr p_mpmesh, const int nCells, const int* a
 void polympo_setElmGlobal_f(MPMesh_ptr p_mpmesh, const int nCells, const int* array){
   checkMPMeshValid(p_mpmesh);
   auto p_mesh = ((polyMPO::MPMesh*)p_mpmesh)->p_mesh; 
-  PMT_ALWAYS_ASSERT(p_mesh->meshEditable());
   Kokkos::View<int*, Kokkos::HostSpace> arrayHost("arrayHost", nCells);
   for (int i = 0; i < nCells; i++) {
     arrayHost(i) = array[i] - 1;  // TODO right now elmID offset is set after MPs initialized

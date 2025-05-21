@@ -68,7 +68,6 @@ program main
     !This is a dummy array of global Cell IDs for each mesh element
     call polympo_setElmGlobal(mpMesh, nCells, c_loc(globalElms))
     call polympo_createMPs(mpMesh, nCells, numMPs, c_loc(mpsPerElm), c_loc(mp2Elm), c_loc(isMPActive))
-    print *, "Done here"
     call polympo_setMPICommunicator(mpMesh, mpi_comm_handle)
     ! Set function and opaque data structure(list/queue) used to retrieve appIDS
     call polympo_setAppIDFunc(mpMesh, c_funloc(GetAppID), c_loc(queue));

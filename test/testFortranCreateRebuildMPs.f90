@@ -25,7 +25,7 @@ subroutine createMPsTest(mpMesh, nCells, numMPs, mp2Elm, isMPActive, mpPosition)
     real(kind=MPAS_RKIND) :: ptOne = 0.1_MPAS_RKIND
     integer, parameter :: MP_ACTIVE = 1
     integer, parameter :: MP_INACTIVE = 0
-    integer, dimension(:), pointer :: mpsPerElm, mp2Elm, isMPActive
+    integer, dimension(:), pointer :: mpsPerElm, mp2Elm, isMPActive, globalElms
     real(kind=MPAS_RKIND), dimension(:,:), pointer :: mpPosition
   
     isMPActive = MP_ACTIVE !no inactive MPs and some changed below
@@ -42,11 +42,13 @@ subroutine createMPsTest(mpMesh, nCells, numMPs, mp2Elm, isMPActive, mpPosition)
     end do
   
     allocate(mpsPerElm(nCells))
+    allocate(globalElms(nCells))
     mpsPerElm = 1 !all elements have 1 MP and some changed below
     mpsPerElm(1) = 0 !1st element has 0 MPs
     mpsPerElm(2) = 2 !2nd element has 2 MPs
     mpsPerElm(3) = 2 !3rd element has 2 MPs 
 
+    call polympo_setElmGlobal(mpMesh, nCells, c_loc(globalElms))
     call polympo_createMPs(mpMesh,nCells,numMPs,c_loc(mpsPerElm),c_loc(mp2Elm),c_loc(isMPActive))
 
     !set mp positions
@@ -80,6 +82,7 @@ subroutine createMPsTest(mpMesh, nCells, numMPs, mp2Elm, isMPActive, mpPosition)
 
     !deallocate MP variables
     deallocate(mpsPerElm)
+    deallocate(globalElms)
 end subroutine
 
 subroutine rebuildMPsTests(mpMesh, numMPs, mp2Elm, isMPActive, mpPosition)

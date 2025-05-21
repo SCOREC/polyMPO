@@ -77,5 +77,11 @@ namespace polyMPO{
     IntView Mesh::getElm2Process() {
         return owningProc_;
     }
+    
+    IntView Mesh::getElmGlobal() {
+        return globalElm_;
+    }
+
+
 
 } // namespace polyMPO

@@ -88,7 +88,7 @@ class Mesh {
     IntVtx2ElmView elm2VtxConn_;
     IntElm2ElmView elm2ElmConn_;
     IntView owningProc_;
-
+    IntView globalElm_;
     //start of meshFields
     MeshFView<MeshF_VtxCoords> vtxCoords_;
     MeshFView<MeshF_VtxRotLat> vtxRotLat_;
@@ -163,6 +163,9 @@ class Mesh {
     void setOwningProc(IntView owningProc) {PMT_ALWAYS_ASSERT(meshEdit_);
                                             owningProc_ = owningProc; }
     
+    void setElmGlobal(IntView globalElm) {globalElm_ = globalElm;}
+    IntView getElmGlobal();
+
     void computeRotLatLonIncr();
 };
 

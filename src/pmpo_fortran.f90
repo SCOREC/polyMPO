@@ -87,6 +87,20 @@ module polympo
     type(c_ptr), intent(in), value :: allMP2Elm
     type(c_ptr), intent(in), value :: addedMPMask
   end subroutine
+
+
+  subroutine polympo_startRebuildMPs2(mpMesh, size1, arg1, size2, size3, arg2, arg3) &
+    bind(C, NAME='polympo_startRebuildMPs_f2')
+    use :: iso_c_binding
+    type(c_ptr), value :: mpMesh
+    integer(c_int), value :: size1
+    type(c_ptr), intent(in), value :: arg1
+    integer(c_int), value :: size2
+    integer(c_int), value :: size3
+    type(c_ptr), value :: arg2
+    type(c_ptr), value :: arg3
+  end subroutine
+  !
   !---------------------------------------------------------------------------
   !> @brief called after startRebuild()
   !> @brief called after initializing MP fields
@@ -110,6 +124,7 @@ module polympo
     type(c_funptr), value :: getNext
     type(c_ptr), value :: appIDs
   end subroutine
+  
   !---------------------------------------------------------------------------
   !> @brief get the current element ID MP array from a polympo array
   !> @param mpmesh(in/out) MPMesh object
@@ -123,6 +138,16 @@ module polympo
     integer(c_int), value :: numMPs
     type(c_ptr), value :: array
   end subroutine
+
+
+  subroutine polympo_getMPTgtElmID(mpMesh, numMPs, array) &
+             bind(C, NAME='polympo_getMPTgtElmID_f')
+    use :: iso_c_binding
+    type(c_ptr), value :: mpMesh
+    integer(c_int), value :: numMPs
+    type(c_ptr), value :: array
+  end subroutine
+  !
   !---------------------------------------------------------------------------
   !> @brief set the mp lat lon is rotational or normal
   !> @param mpmesh(in/out) MPMesh object
@@ -134,6 +159,8 @@ module polympo
     type(c_ptr), value :: mpMesh
     integer(c_int), value :: isRotateFlag
   end subroutine
+  
+  
   !---------------------------------------------------------------------------
   !> @brief set the MP positions array from a host array
   !> @param mpmesh(in/out) MPMesh object
@@ -164,6 +191,37 @@ module polympo
     type(c_ptr), value :: array
   end subroutine
   !---------------------------------------------------------------------------
+  !> @brief set the MP positions array from a host array
+  !> @param mpmesh(in/out) MPMesh object
+  !> @param nComps(in) number of components, should always be 3
+  !> @param numMPs(in) number of the MPs
+  !> @param array(in) MP current position 2D array (3,numMPs), allocated by user on host
+  !---------------------------------------------------------------------------
+  subroutine polympo_setMPTgtPositions(mpMesh, nComps, numMPs, array) &
+             bind(C, NAME='polympo_setMPTgtPositions_f')
+    use :: iso_c_binding
+    type(c_ptr), value :: mpMesh
+    integer(c_int), value :: nComps, numMPs
+    type(c_ptr), value :: array
+  end subroutine
+  !---------------------------------------------------------------------------
+  !> @brief get the MP positions array from a polympo array
+  !> @param mpmesh(in/out) MPMesh object
+  !> @param nComps(in) number of components, should always be 3
+  !> @param numMPs(in) number of the MPs
+  !> @param array(in/out) output MP current position 2D array (3,numMPs),
+  !>                      allocated by user
+  !---------------------------------------------------------------------------
+  subroutine polympo_getMPTgtPositions(mpMesh, nComps, numMPs, array) &
+             bind(C, NAME='polympo_getMPTgtPositions_f')
+    use :: iso_c_binding
+    type(c_ptr), value :: mpMesh
+    integer(c_int), value :: nComps, numMPs
+    type(c_ptr), value :: array
+  end subroutine
+
+
+  !---------------------------------------------------------------------------
   !> @brief set the MP latitude and longtitude array from a host array
   !> @param mpmesh(in/out) MPMesh object
   !> @param nComps(in) number of components, should always be 2
@@ -193,6 +251,40 @@ module polympo
     integer(c_int), value :: nComps, numMPs
     type(c_ptr), value :: array
   end subroutine
+  !---------------------------------------------------------------------------
+  !> @brief set the MP latitude and longtitude array from a host array
+  !> @param mpmesh(in/out) MPMesh object
+  !> @param nComps(in) number of components, should always be 2
+  !> @param numMPs(in) number of the MPs
+  !> @param array(in)  input MP current lat and lon 2D array (2,numMPs),
+  !>                   allocated by user
+  !---------------------------------------------------------------------------
+  subroutine polympo_setMPTgtRotLatLon(mpMesh, nComps, numMPs, array) &
+             bind(C, NAME='polympo_setMPTgtRotLatLon_f')
+    use :: iso_c_binding
+    type(c_ptr), value :: mpMesh
+    integer(c_int), value :: nComps, numMPs
+    type(c_ptr), intent(in), value :: array
+  end subroutine
+  !---------------------------------------------------------------------------
+  !> @brief get the MP latitude and longtitude array from a polympo array
+  !> @param mpmesh(in/out) MPMesh object
+  !> @param nComps(in) number of components, should always be 2
+  !> @param numMPs(in) number of the MPs
+  !> @param array(in/out) output MP current lat and lon 2D array (2,numMPs),
+  !>                      allocated by user
+  !---------------------------------------------------------------------------
+  subroutine polympo_getMPTgtRotLatLon(mpMesh, nComps, numMPs, array) &
+             bind(C, NAME='polympo_getMPTgtRotLatLon_f')
+    use :: iso_c_binding
+    type(c_ptr), value :: mpMesh
+    integer(c_int), value :: nComps, numMPs
+    type(c_ptr), value :: array
+  end subroutine
+
+  
+  
+  
   !---------------------------------------------------------------------------
   !> @brief set the Mass MP array from a host array
   !> @param mpmesh(in/out) MPMesh object
@@ -699,6 +791,21 @@ module polympo
     type(c_ptr), intent(in), value :: array
   end subroutine
   !---------------------------------------------------------------------------
+  !> @brief set the owning process array
+  !> @param mpmesh(in/out) MPMesh object
+  !> @param nCells(in) number of cells
+  !> @param array(in) input mesh cell to process array
+  !---------------------------------------------------------------------------
+  subroutine polympo_setElmGlobal(mpMesh, nCells, array) &
+    bind(C, NAME='polympo_setElmGlobal_f')
+    use :: iso_c_binding
+    type(c_ptr), value :: mpMesh
+    integer(c_int), value :: nCells
+    type(c_ptr), intent(in), value :: array
+  end subroutine
+  
+  
+  !---------------------------------------------------------------------------
   !> @brief calculate the MPs from given mesh vertices rotational latitude
   !>        longitude, update the MP slices
   !>        MPs MUST have rotated flag set to True(>0)
@@ -709,6 +816,37 @@ module polympo
     use :: iso_c_binding
     type(c_ptr), value :: mpMesh
   end subroutine
+
+
+  !---------------------------------------------------------------------------
+  !> @brief calculate the MPs from given mesh vertices rotational latitude
+  logical function polympo_push1P(mpMesh) &
+             bind(C, NAME='polympo_push1P_f')
+    use :: iso_c_binding
+    type(c_ptr), value :: mpMesh
+  end function
+
+ subroutine polympo_push_ahead(mpMesh) &
+             bind(C, NAME='polympo_push_ahead_f')
+    use :: iso_c_binding
+    type(c_ptr), value :: mpMesh
+  end subroutine
+ 
+  subroutine polympo_push_swap(mpMesh) &
+             bind(C, NAME='polympo_push_swap_f')
+    use :: iso_c_binding
+    type(c_ptr), value :: mpMesh
+  end subroutine
+  
+  subroutine polympo_push_swap_pos(mpMesh) &
+             bind(C, NAME='polympo_push_swap_pos_f')
+    use :: iso_c_binding
+    type(c_ptr), value :: mpMesh
+  end subroutine
+
+
+
+
   !---------------------------------------------------------------------------
   !> @brief start the reconstruction of MP Mass to Mesh Vertices
   !> @param mpmesh(in/out) MPMesh object
@@ -789,6 +927,13 @@ module polympo
     use :: iso_c_binding
     integer(c_int), value :: v
   end subroutine
+
+  integer function polympo_getMPCount(mpMesh) bind(C, name="polympo_getMPCount_f")
+    use :: iso_c_binding
+    implicit none
+    type(c_ptr), value :: mpMesh
+  end function
+
   end interface
   contains
   !---------------------------------------------------------------------------
@@ -804,4 +949,5 @@ module polympo
         call exit(1)
     end if
   end subroutine
+
 end module

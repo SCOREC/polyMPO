@@ -18,6 +18,9 @@ using hostSpace = Kokkos::HostSpace;
 using defaultSpace = Kokkos::DefaultExecutionSpace::memory_space;
 
 typedef std::function<int()> IntFunc;
+typedef std::function<int(int)> IntIntFunc;
+
+
 
 enum MaterialPointSlice {
   MPF_Status = 0,
@@ -130,15 +133,18 @@ class MaterialPoints {
   public:
     MaterialPoints() : MPs(nullptr) {};
     MaterialPoints(int numElms, int numMPs, MPSView<MPF_Cur_Pos_XYZ> positions, IntView mpsPerElm, IntView mp2elm);
-    MaterialPoints(int numElms, int numMPs, IntView mpsPerElm, IntView mp2elm, IntView mpAppID);
+    MaterialPoints(int numElms, int numMPs, IntView mpsPerElm, IntView mp2elm, IntView mpAppID, IntView elm2global);
     ~MaterialPoints();
 
     void rebuild(IntView addedMP2elm, IntView addedMPAppID);
     void startRebuild(IntView tgtElm, int addedNumMPs, IntView addedMP2elm, IntView addedMPAppID, Kokkos::View<const int*> addedMPMask);
+    void startRebuild(IntView tgtElm, int addedNumMPs, IntView addedMP2elm, IntView addedMPAppID);
+    
     void finishRebuild();
     bool rebuildOngoing();
 
-    bool migrate();
+    bool check_migrate();
+    void migrate();
     MPI_Comm getMPIComm();
     void setMPIComm(MPI_Comm comm);
 
@@ -156,7 +162,7 @@ class MaterialPoints {
     void rebuild() {
       IntView tgtElm("tgtElm", MPs->capacity());
       auto tgtMpElm = MPs->get<MPF_Tgt_Elm_ID>();
-      auto setTgtElm = PS_LAMBDA(const int&, const int& mp, const int& mask) {
+      auto setTgtElm = PS_LAMBDA(const int& e, const int& mp, const int& mask) {
         if(mask) {
           tgtElm(mp) = tgtMpElm(mp);
         }

@@ -2,7 +2,7 @@
 #include "pmpo_utils.hpp"
 #include "pmpo_MPMesh.hpp"
 #include "pmpo_wachspressBasis.hpp"
-
+#include <unistd.h>
 namespace polyMPO{
 
 void printVTP_mesh(MPMesh& mpMesh, int printVTPIndex=-1);
@@ -127,16 +127,18 @@ void MPMesh::CVTTrackingElmCenterBased(const int printVTPIndex){
     auto MPs2Elm = p_MPs->getData<MPF_Tgt_Elm_ID>();
     auto MPs2Proc = p_MPs->getData<MPF_Tgt_Proc_ID>();
     auto elm2Process = p_mesh->getElm2Process();
-    
+    auto elm2global = p_mesh->getElmGlobal();
+
+    //Since Mesh is static print pnly for 1 time step 
     if(printVTPIndex>=0) {
       printVTP_mesh(printVTPIndex);
     }
-
+    
     Vec3dView history("positionHistory",numMPs);
     Vec3dView resultLeft("positionResult",numMPs);
     Vec3dView resultRight("positionResult",numMPs);
     Vec3dView mpTgtPosArray("positionTarget",numMPs);
-
+   
     auto CVTElmCalc = PS_LAMBDA(const int& elm, const int& mp, const int&mask){
         Vec3d MP(mpPositions(mp,0),mpPositions(mp,1),mpPositions(mp,2));
         if(mask){
@@ -155,7 +157,7 @@ void MPMesh::CVTTrackingElmCenterBased(const int printVTPIndex){
                 for(int i=1; i<=numConnElms; i++){
                     int elmID = elm2ElmConn(iElm,i)-1;
                     
-	            //New delta
+                    //New delta
 	            Vec3d center(elmCenter(elmID, 0), elmCenter(elmID, 1), elmCenter(elmID, 2));
                     delta = MPnew - center;
 
@@ -175,7 +177,7 @@ void MPMesh::CVTTrackingElmCenterBased(const int printVTPIndex){
                     iElm = closestElm;
                 }
             }
-            if(printVTPIndex>=0){ 
+            if(printVTPIndex>=0 && numMPs>0){
                 double d1 = dx[0];
                 double d2 = dx[2];
                 double d3 = dx[3];
@@ -195,7 +197,7 @@ void MPMesh::CVTTrackingElmCenterBased(const int printVTPIndex){
         }
     };
     p_MPs->parallel_for(CVTElmCalc,"CVTTrackingElmCenterBasedCalc");
-
+    
     if(printVTPIndex>=0){
         Vec3dView::HostMirror h_history = Kokkos::create_mirror_view(history);
         Vec3dView::HostMirror h_resultLeft = Kokkos::create_mirror_view(resultLeft);
@@ -206,7 +208,6 @@ void MPMesh::CVTTrackingElmCenterBased(const int printVTPIndex){
         Kokkos::deep_copy(h_resultLeft, resultLeft);
         Kokkos::deep_copy(h_resultRight, resultRight);
         Kokkos::deep_copy(h_mpTgtPos, mpTgtPosArray);
-
         // printVTP file
         char* fileOutput = (char *)malloc(sizeof(char) * 256); 
         sprintf(fileOutput, "polyMPOCVTTrackingElmCenter_MPtracks_%d.vtp", printVTPIndex);
@@ -231,6 +232,7 @@ void MPMesh::CVTTrackingElmCenterBased(const int printVTPIndex){
         fprintf(pFile,"        </DataArray>\n      </Lines>\n    </Piece>\n  </PolyData>\n</VTKFile>\n");
         fclose(pFile);
     }
+
     pumipic::RecordTime("PolyMPO_CVTTrackingElmCenterBased", timer.seconds());
 }
 
@@ -323,11 +325,46 @@ bool getAnyIsMigrating(MaterialPoints* p_MPs, bool isMigrating) {
   return anyIsMigrating;
 }
 
-void MPMesh::push(){
-  Kokkos::Timer timer;
-  p_mesh->computeRotLatLonIncr();
+void MPMesh::push_ahead(){
+  //Latitude Longitude increment at mesh vertices and interpolate to particle position
+  p_mesh->computeRotLatLonIncr(); 
   sphericalInterpolation<MeshF_RotLatLonIncr>(*this);
+  //Push the MPs
+  p_MPs->updateRotLatLonAndXYZ2Tgt(p_mesh->getSphereRadius());
+}
+
+bool MPMesh::push1P(){
+  //Given target location find the new element or the last element in a partioned mesh
+  //and the process it belongs to so that migration can be checked
+  CVTTrackingElmCenterBased(); 
+  //From the above two inputs find if any particle needs to be migrated
+  bool anyIsMigrating = getAnyIsMigrating(p_MPs, p_MPs->check_migrate());
+  return anyIsMigrating;
+}
+
+void MPMesh::push_swap(){
+  //current becomes target, target becomes -1
+  p_MPs->updateMPElmID();
+}
+
+void MPMesh::push_swap_pos(){
+  //current becomes target, target becomes -1
+  //Making read for next push_ahead  
+  p_MPs->updateMPSlice<MPF_Cur_Pos_XYZ, MPF_Tgt_Pos_XYZ>();
+  p_MPs->updateMPSlice<MPF_Cur_Pos_Rot_Lat_Lon, MPF_Tgt_Pos_Rot_Lat_Lon>();
+}
+
+
+void MPMesh::push(){
+  
+  Kokkos::Timer timer;
+  
+  p_mesh->computeRotLatLonIncr();
+  
+  sphericalInterpolation<MeshF_RotLatLonIncr>(*this);
+  
   p_MPs->updateRotLatLonAndXYZ2Tgt(p_mesh->getSphereRadius()); // set Tgt_XYZ
+  
   auto elm2Process = p_mesh->getElm2Process();
 
   bool anyIsMigrating = false;
@@ -335,15 +372,19 @@ void MPMesh::push(){
     CVTTrackingElmCenterBased(); // move to Tgt_XYZ
     p_MPs->updateMPSlice<MPF_Cur_Pos_XYZ, MPF_Tgt_Pos_XYZ>(); // Tgt_XYZ becomes Cur_XYZ
     p_MPs->updateMPSlice<MPF_Cur_Pos_Rot_Lat_Lon, MPF_Tgt_Pos_Rot_Lat_Lon>(); // Tgt becomes Cur
-    if (elm2Process.size() > 0)
-        anyIsMigrating = getAnyIsMigrating(p_MPs, p_MPs->migrate());
+    
+    bool anyIsMigrating = getAnyIsMigrating(p_MPs, p_MPs->check_migrate());
+   
+    if(anyIsMigrating)
+      p_MPs->migrate();
     else
-        p_MPs->rebuild(); //rebuild pumi-pic
+      p_MPs->rebuild();
+    
     p_MPs->updateMPElmID(); //update mpElm IDs slices
     reconstructSlices(); 
   } 
   while (anyIsMigrating);
-
+  
   pumipic::RecordTime("PolyMPO_push", timer.seconds());
 }
 

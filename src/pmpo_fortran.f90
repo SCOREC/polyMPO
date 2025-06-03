@@ -899,6 +899,31 @@ module polympo
     type(c_ptr), value :: mpMesh
     integer(c_int), value :: order, meshEntType
   end subroutine
+
+
+  subroutine polympo_iceAreaSubAssembly(mpMesh, size1, size2, array) &
+             bind(C, NAME='polympo_iceAreaSubAssembly_f')
+    use :: iso_c_binding
+    type(c_ptr), value :: mpMesh
+    integer(c_int), value :: size1, size2
+    type(c_ptr), value :: array
+  end subroutine
+  subroutine polympo_subAssemblyCoeffs(mpMesh, dim1, dim2, m11, m12, m13, m14, m22, m23, m24, m33, m34, m44) &
+             bind(C, NAME='polympo_subAssemblyCoeffs_f')
+    use :: iso_c_binding
+    type(c_ptr), value :: mpMesh
+    integer(c_int), value :: dim1, dim2
+    type(c_ptr), value :: m11, m12, m13, m14, m22, m23, m24, m33, m34, m44
+  end subroutine
+  subroutine polympo_regularize_and_solve_matrix(mpMesh, dim1, m11, m12, m13, m14, m22, m23, m24, m33, m34, m44) &
+             bind(C, NAME='polympo_regularize_and_solve_matrix_f')
+    use :: iso_c_binding
+    type(c_ptr), value :: mpMesh
+    integer(c_int), value :: dim1
+    type(c_ptr), value :: m11, m12, m13, m14, m22, m23, m24, m33, m34, m44
+  end subroutine
+ 
+
   !---------------------------------------------------------------------------
   !> @brief directly call the reconstruct of the MP fields to mesh fields
   !> @param mpmesh(in/out) MPMesh object

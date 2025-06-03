@@ -113,6 +113,17 @@ void polympo_setReconstructionOfStrainRate_f(MPMesh_ptr p_mpmesh, const int orde
 void polympo_setReconstructionOfStress_f(MPMesh_ptr p_mpmesh, const int order, const int meshEntType);
 void polympo_applyReconstruction_f(MPMesh_ptr p_mpmesh);
 
+//Reconstruction using MPAS
+void polympo_iceAreaSubAssembly_f(MPMesh_ptr p_mpmesh, int size1, int size2, double* array);
+void polympo_subAssemblyCoeffs_f(MPMesh_ptr p_mpmesh, int dim1, int dim2, double* m11, double* m12, double* m13, double* m14,
+                                                                          double* m22, double* m23, double* m24,
+                                                                          double* m33, double* m34,
+                                                                          double* m44);
+void polympo_regularize_and_solve_matrix_f(MPMesh_ptr p_mpmesh, int dim1, double* m11, double* m12, double* m13, double* m14,
+                                                                double* m22, double* m23, double* m24,
+                                                                double* m33, double* m34,
+                                                                double* m44);
+ 
 // Timing
 void polympo_enableTiming_f();
 void polympo_summarizeTime_f();

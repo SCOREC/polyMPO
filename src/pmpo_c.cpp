@@ -1226,6 +1226,37 @@ void polympo_setReconstructionOfStress_f(MPMesh_ptr p_mpmesh, const int order, c
   (void)meshEntType;
 }
 
+
+//With MPI communication done via MPAS
+void polympo_iceAreaSubAssembly_f(MPMesh_ptr p_mpmesh, int size1, int size2, double* array){
+  static int count=0;
+  std::cout<<__FUNCTION__<<count<<std::endl;
+  checkMPMeshValid(p_mpmesh);
+  auto mpmesh = ((polyMPO::MPMesh*)p_mpmesh);
+  mpmesh->subAssemblyVtx1(size1, size2, array);
+  count ++ ;
+}
+void polympo_subAssemblyCoeffs_f(MPMesh_ptr p_mpmesh, int dim1, int dim2, double* m11, double* m12, double* m13, double* m14,
+                                                                          double* m22, double* m23, double* m24,
+                                                                          double* m33, double* m34,
+                                                                          double* m44){
+  checkMPMeshValid(p_mpmesh);
+  auto mpmesh = ((polyMPO::MPMesh*)p_mpmesh);
+  mpmesh->subAssemblyCoeffs(dim1, dim2, m11, m12, m13, m14, m22, m23, m24, m33, m34, m44); 
+}
+
+void polympo_regularize_and_solve_matrix_f(MPMesh_ptr p_mpmesh, int dim1, double* m11, double* m12, double* m13, double* m14,
+                                                                double* m22, double* m23, double* m24,
+                                                                double* m33, double* m34,
+                                                                double* m44){
+  checkMPMeshValid(p_mpmesh);
+  auto mpmesh = ((polyMPO::MPMesh*)p_mpmesh);
+  mpmesh->solveMatrixAndRegularize(dim1, m11, m12, m13, m14, m22, m23, m24, m33, m34, m44); 
+
+}
+
+
+
 void polympo_applyReconstruction_f(MPMesh_ptr p_mpmesh){
   checkMPMeshValid(p_mpmesh);
   auto mpmesh = ((polyMPO::MPMesh*)p_mpmesh);

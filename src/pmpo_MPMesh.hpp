@@ -64,6 +64,16 @@ class MPMesh{
     template <MeshFieldIndex meshFieldIndex>
     void assemblyVtx1();
     
+    void subAssemblyVtx1(int size1, int size2, double* array);
+    void subAssemblyCoeffs(int dim1, int dim2, double* m11, double* m12, double* m13, double* m14, 
+                                               double* m22, double* m23, double* m24, 
+                                               double* m33, double* m34, 
+                                               double* m44);
+    void solveMatrixAndRegularize(int dim1, double* m11, double* m12, double* m13, double* m14, 
+                                  double* m22, double* m23, double* m24, 
+                                  double* m33, double* m34,
+                                  double* m44);
+
     template<MeshFieldIndex meshFieldIndex>
     void setReconstructSlice(int order, MeshFieldType type);
     void reconstructSlices();

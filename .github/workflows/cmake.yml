@@ -61,8 +61,7 @@ jobs:
                   -DOmega_h_USE_MPI=on
                   -DBUILD_TESTING=off
                   -DCMAKE_C_COMPILER=mpicc
-                  -DCMAKE_CXX_COMPILER=mpicxx
-                  -DKokkos_PREFIX=${{ runner.temp }}/build-kokkos/install/lib/cmake'
+                  -DCMAKE_CXX_COMPILER=mpicxx'
 
     - name: build Engpar
       uses: ./.github/actions/install-repo
@@ -87,8 +86,7 @@ jobs:
         cache: true
         options: '-DCMAKE_CXX_COMPILER=${{ matrix.compiler }}
                   -DCMAKE_BUILD_TYPE=Release
-                  -DCMAKE_DISABLE_FIND_PACKAGE_HDF5=ON
-                  -DCMAKE_PREFIX_PATH=${{ runner.temp }}/build-kokkos/install/lib/cmake'
+                  -DCMAKE_DISABLE_FIND_PACKAGE_HDF5=ON'
 
     - name: build pumi-pic
       uses: ./.github/actions/install-repo
@@ -100,12 +98,7 @@ jobs:
         cache: true
         options: '-DCMAKE_CXX_COMPILER=mpicxx
                   -DTEST_DATA_DIR=$GITHUB_WORKSPACE/pumi-pic/pumipic-data
-                  -DOmega_h_PREFIX=${{ runner.temp }}/build-omega_h/install
-                  -DKokkos_PREFIX=${{ runner.temp }}/build-kokkos/install
-                  -DEnGPar_PREFIX=${{ runner.temp }}/build-Engpar/install
-                  -DCabana_PREFIX=${{ runner.temp }}/build-cabana/install
-                  -DENABLE_CABANA=on
-                  -DCMAKE_PREFIX_PATH=${{ runner.temp }}/build-kokkos/install/lib/cmake'
+                  -DENABLE_CABANA=on'
 
     - name: build polyMPO
       uses: ./.github/actions/install-repo
@@ -115,9 +108,7 @@ jobs:
         submodules: 'recursive'
         repo-ref: ''
         cache: false
-        options: '-DCMAKE_BUILD_TYPE="Debug"
-                  -DKokkos_DIR=${{ runner.temp }}/build-kokkos/install/lib64/cmake/Kokkos
-                  -DCMAKE_PREFIX_PATH=${{ runner.temp }}/build-pumi-pic/install
+        options: '-DCMAKE_BUILD_TYPE=Debug
                   -DIS_TESTING=on
                   -DCMAKE_CXX_COMPILER=mpicxx'
     

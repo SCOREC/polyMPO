@@ -1,9 +1,8 @@
 name: Globus-Systems
 on:
-  push:
-  # schedule:
-    # Monday 5:35 UTC or 01:35 EDT
-    # - cron: '35 5 * * 1'
+  schedule:
+    # Monday 9:35 UTC or 04:35 EDT
+    - cron: '35 9 * * 1'
 
 jobs:
 

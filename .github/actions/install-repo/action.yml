@@ -45,7 +45,3 @@ runs:
     if: ${{ !steps.check-cache.outputs.cache-hit }}
     shell: bash
     run: cmake --build ${{ runner.temp }}/build-${{ inputs.repo-name }} -j8 --target install
-
-  - name: Export Install Path
-    shell: bash
-    run: export CMAKE_PREFIX_PATH=$CMAKE_PREFIX_PATH:${{ runner.temp }}/build-${{ inputs.repo-name }}/install

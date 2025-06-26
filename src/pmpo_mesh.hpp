@@ -89,6 +89,7 @@ class Mesh {
     IntElm2ElmView elm2ElmConn_;
     IntView owningProc_;
     IntView globalElm_;
+    IntView globalVtx_;
     //start of meshFields
     MeshFView<MeshF_VtxCoords> vtxCoords_;
     MeshFView<MeshF_VtxRotLat> vtxRotLat_;
@@ -165,6 +166,8 @@ class Mesh {
     
     void setElmGlobal(IntView globalElm) {globalElm_ = globalElm;}
     IntView getElmGlobal();
+    void setVtxGlobal(IntView globalVtx) {globalVtx_ = globalVtx;}
+    IntView getVtxGlobal() {return globalVtx_;}
 
     void computeRotLatLonIncr();
 };

@@ -527,6 +527,7 @@ module polympo
              bind(C, NAME='polympo_getMeshFElmType_f')
     use :: iso_c_binding
   end function
+
   !---------------------------------------------------------------------------
   !> @brief set the polympo mesh vertices coordinates
   !> @param mpmesh(in/out) MPMesh object
@@ -803,7 +804,15 @@ module polympo
     integer(c_int), value :: nCells
     type(c_ptr), intent(in), value :: array
   end subroutine
+  subroutine polympo_setVtxGlobal(mpMesh, nVertices, array) &
+    bind(C, NAME='polympo_setVtxGlobal_f')
+    use :: iso_c_binding
+    type(c_ptr), value :: mpMesh
+    integer(c_int), value :: nVertices
+    type(c_ptr), intent(in), value :: array
+  end subroutine
   
+
   
   !---------------------------------------------------------------------------
   !> @brief calculate the MPs from given mesh vertices rotational latitude
@@ -901,13 +910,21 @@ module polympo
   end subroutine
 
 
-  subroutine polympo_iceAreaSubAssembly(mpMesh, size1, size2, array) &
-             bind(C, NAME='polympo_iceAreaSubAssembly_f')
+  subroutine polympo_vtxSubAssemblyIceArea(mpMesh, size1, size2, array, comp) &
+             bind(C, NAME='polympo_vtxSubAssemblyIceArea_f')
     use :: iso_c_binding
     type(c_ptr), value :: mpMesh
-    integer(c_int), value :: size1, size2
+    integer(c_int), value :: size1, size2, comp
     type(c_ptr), value :: array
   end subroutine
+  subroutine polympo_vtxSubAssemblyVelocity(mpMesh, size1, size2, array, comp) &
+             bind(C, NAME='polympo_vtxSubAssemblyVelocity_f')
+    use :: iso_c_binding
+    type(c_ptr), value :: mpMesh
+    integer(c_int), value :: size1, size2, comp
+    type(c_ptr), value :: array
+  end subroutine
+  
   subroutine polympo_subAssemblyCoeffs(mpMesh, dim1, dim2, m11, m12, m13, m14, m22, m23, m24, m33, m34, m44) &
              bind(C, NAME='polympo_subAssemblyCoeffs_f')
     use :: iso_c_binding

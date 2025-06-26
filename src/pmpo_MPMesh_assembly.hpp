@@ -103,6 +103,7 @@ void MPMesh::resetPreComputeFlag(){
   isPreComputed = false;
 }
 
+//Method 1
 void MPMesh::computeMatricesAndSolve(){
   Kokkos::Timer timer;
   //Mesh Information
@@ -208,33 +209,37 @@ void MPMesh::computeMatricesAndSolve(){
   pumipic::RecordTime("PolyMPO_Calculate_MLS_Coeff", timer.seconds());
 }
 
+//Method 2
 void MPMesh::subAssemblyCoeffs(int dim1, int dim2, double* m11, double* m12, double* m13, double* m14, 
                                                    double* m22, double* m23, double* m24, 
                                                    double* m33, double* m34, 
                                                    double* m44){
-
-  std::cout<<__FUNCTION__<<std::endl;
   
+  //Material Points Information
+  MPI_Comm comm = p_MPs->getMPIComm(); 
+  int comm_rank;
+  MPI_Comm_rank(comm, &comm_rank);
+
   //Mesh Information
   auto elm2VtxConn = p_mesh->getElm2VtxConn();  
   int numVtx = p_mesh->getNumVertices();
   auto vtxCoords = p_mesh->getMeshField<polyMPO::MeshF_VtxCoords>();
   auto elm2Process = p_mesh->getElm2Process();
+  auto elm2global = p_mesh->getElmGlobal();
+
   //Dual Element Area for Regularization
   auto dual_triangle_area=p_mesh->getMeshField<MeshF_DualTriangleArea>();
+  
   //Material Points
   calcBasis();
   auto weight = p_MPs->getData<MPF_Basis_Vals>();
-  auto mpPositions = p_MPs->getData<MPF_Cur_Pos_XYZ>();
+  auto mpPos = p_MPs->getData<MPF_Cur_Pos_XYZ>();
+  auto mpAppID = p_MPs->getData<polyMPO::MPF_MP_APP_ID>();
+
   //Radius
   double radius = 1.0;
   if(p_mesh->getGeomType() == geom_spherical_surf)
     radius=p_mesh->getSphereRadius();
-
-  MPI_Comm comm = p_MPs->getMPIComm(); 
-  int comm_rank;
-  MPI_Comm_rank(comm, &comm_rank);
-
 
   kkDbl2dViewHostU m11_h(m11, dim1, dim2);
   kkDbl2dViewHostU m12_h(m12, dim1, dim2);
@@ -257,7 +262,6 @@ void MPMesh::subAssemblyCoeffs(int dim1, int dim2, double* m11, double* m12, dou
   Kokkos::View<double**> m34_d("m34", dim1, dim2);
   Kokkos::View<double**> m44_d("m34", dim1, dim2);
  
-
   auto sub_assemble = PS_LAMBDA(const int& elm, const int& mp, const int& mask) {
     if(mask && (elm2Process(elm)==comm_rank)) { //if material point is 'active'/'enabled'
       int nVtxE = elm2VtxConn(elm,0); //number of vertices bounding the element
@@ -268,20 +272,20 @@ void MPMesh::subAssemblyCoeffs(int dim1, int dim2, double* m11, double* m12, dou
           double mScale=sqrt(dual_triangle_area(vID,0))/radius;
           
           Kokkos::atomic_add(&m11_d(i,elm), w_vtx*mScale*mScale);
-          Kokkos::atomic_add(&m12_d(i,elm), w_vtx*mScale*(vtxCoords(vID,0)-mpPositions(mp,0))/radius);
-          Kokkos::atomic_add(&m13_d(i,elm), w_vtx*mScale*(vtxCoords(vID,1)-mpPositions(mp,1))/radius);
-          Kokkos::atomic_add(&m14_d(i,elm), w_vtx*mScale*(vtxCoords(vID,2)-mpPositions(mp,2))/radius);
-          Kokkos::atomic_add(&m22_d(i,elm), w_vtx*mScale*(vtxCoords(vID,0)-mpPositions(mp,0))*(vtxCoords(vID,0)-mpPositions(mp,0))/(radius*radius));
-          Kokkos::atomic_add(&m23_d(i,elm), w_vtx*mScale*(vtxCoords(vID,0)-mpPositions(mp,0))*(vtxCoords(vID,1)-mpPositions(mp,1))/(radius*radius));
-          Kokkos::atomic_add(&m24_d(i,elm), w_vtx*mScale*(vtxCoords(vID,0)-mpPositions(mp,0))*(vtxCoords(vID,2)-mpPositions(mp,2))/(radius*radius));
-          Kokkos::atomic_add(&m33_d(i,elm), w_vtx*mScale*(vtxCoords(vID,1)-mpPositions(mp,1))*(vtxCoords(vID,1)-mpPositions(mp,1))/(radius*radius));
-          Kokkos::atomic_add(&m34_d(i,elm), w_vtx*mScale*(vtxCoords(vID,1)-mpPositions(mp,1))*(vtxCoords(vID,2)-mpPositions(mp,2))/(radius*radius));
-          Kokkos::atomic_add(&m44_d(i,elm), w_vtx*mScale*(vtxCoords(vID,2)-mpPositions(mp,2))*(vtxCoords(vID,2)-mpPositions(mp,2))/(radius*radius));
+          Kokkos::atomic_add(&m12_d(i,elm), w_vtx*mScale*(vtxCoords(vID,0)-mpPos(mp,0))/radius);
+          Kokkos::atomic_add(&m13_d(i,elm), w_vtx*mScale*(vtxCoords(vID,1)-mpPos(mp,1))/radius);
+          Kokkos::atomic_add(&m14_d(i,elm), w_vtx*mScale*(vtxCoords(vID,2)-mpPos(mp,2))/radius);
+          Kokkos::atomic_add(&m22_d(i,elm), w_vtx*mScale*(vtxCoords(vID,0)-mpPos(mp,0))*(vtxCoords(vID,0)-mpPos(mp,0))/(radius*radius));
+          Kokkos::atomic_add(&m23_d(i,elm), w_vtx*mScale*(vtxCoords(vID,0)-mpPos(mp,0))*(vtxCoords(vID,1)-mpPos(mp,1))/(radius*radius));
+          Kokkos::atomic_add(&m24_d(i,elm), w_vtx*mScale*(vtxCoords(vID,0)-mpPos(mp,0))*(vtxCoords(vID,2)-mpPos(mp,2))/(radius*radius));
+          Kokkos::atomic_add(&m33_d(i,elm), w_vtx*mScale*(vtxCoords(vID,1)-mpPos(mp,1))*(vtxCoords(vID,1)-mpPos(mp,1))/(radius*radius));
+          Kokkos::atomic_add(&m34_d(i,elm), w_vtx*mScale*(vtxCoords(vID,1)-mpPos(mp,1))*(vtxCoords(vID,2)-mpPos(mp,2))/(radius*radius));
+          Kokkos::atomic_add(&m44_d(i,elm), w_vtx*mScale*(vtxCoords(vID,2)-mpPos(mp,2))*(vtxCoords(vID,2)-mpPos(mp,2))/(radius*radius));
       }
     }
   };
   p_MPs->parallel_for(sub_assemble, "sub_assembly");
-  
+
   Kokkos::deep_copy(m11_h, m11_d); 
   Kokkos::deep_copy(m12_h, m12_d); 
   Kokkos::deep_copy(m13_h, m13_d); 
@@ -295,12 +299,21 @@ void MPMesh::subAssemblyCoeffs(int dim1, int dim2, double* m11, double* m12, dou
   
 }
 
+//Method 2
 void MPMesh::solveMatrixAndRegularize( int dim1, double* m11, double* m12, double* m13, double* m14, 
                                        double* m22, double* m23, double* m24, 
                                        double* m33, double* m34,
                                        double* m44){
 
-  std::cout<<__FUNCTION__<<std::endl;
+  MPI_Comm comm = p_MPs->getMPIComm(); 
+  int comm_rank;
+  MPI_Comm_rank(comm, &comm_rank);
+
+  static int count=0;
+  if(!comm_rank)
+    std::cout<<__FUNCTION__<<count<<std::endl;
+  count ++; 
+
   auto dual_triangle_area=p_mesh->getMeshField<MeshF_DualTriangleArea>();
 
   kkViewHostU<const double*> m11_h(m11, dim1);
@@ -345,6 +358,9 @@ void MPMesh::solveMatrixAndRegularize( int dim1, double* m11, double* m12, doubl
     Vec4d v3 = {m14_d(vtx), m24_d(vtx), m34_d(vtx), m44_d(vtx)}; 
     //Matrix4d A = {v0,v1,v2,v3};
     Matrix4d A_regularized = {v0, v1, v2, v3};
+    double regParam = sqrt(EPSILON)*(m11_d(vtx) + m22_d(vtx) + m33_d(vtx) + m44_d(vtx));
+    A_regularized.addToDiag(regParam);
+    
     double coeff[vec4d_nEntries]={0.0, 0.0, 0.0, 0.0};
     CholeskySolve4d_UnitRHS(A_regularized, coeff);
     
@@ -361,10 +377,17 @@ void MPMesh::solveMatrixAndRegularize( int dim1, double* m11, double* m12, doubl
 
 }
 
-void MPMesh::subAssemblyVtx1(int size1, int size2, double* array) {
+//Method2
+template <MeshFieldIndex meshFieldIndex>
+void MPMesh::subAssemblyVtx1(int size1, int size2, double* array, int comp) {
   Kokkos::Timer timer; 
   
   auto VtxCoeffs=this->precomputedVtxCoeffs; 
+  
+  // MPI Information
+  MPI_Comm comm = p_MPs->getMPIComm(); 
+  int comm_rank;
+  MPI_Comm_rank(comm, &comm_rank);
 
   //Mesh Information
   auto elm2VtxConn = p_mesh->getElm2VtxConn();  
@@ -372,7 +395,8 @@ void MPMesh::subAssemblyVtx1(int size1, int size2, double* array) {
   auto vtxCoords = p_mesh->getMeshField<polyMPO::MeshF_VtxCoords>();
   auto elm2Process = p_mesh->getElm2Process();
  
-  constexpr MaterialPointSlice mpfIndex = MPF_Mass;
+  // Material Points Information
+  constexpr MaterialPointSlice mpfIndex = meshFieldIndexToMPSlice<meshFieldIndex>;
   auto mpData = p_MPs->getData<mpfIndex>();
   auto weight = p_MPs->getData<MPF_Basis_Vals>();
   auto mpPositions = p_MPs->getData<MPF_Cur_Pos_XYZ>();
@@ -381,11 +405,6 @@ void MPMesh::subAssemblyVtx1(int size1, int size2, double* array) {
 
   kkDbl2dViewHostU arrayHost(array, size1, size2);
   Kokkos::View<double**> array_d("reconstructedIceArea", size1, size2);
-
-
-  MPI_Comm comm = p_MPs->getMPIComm(); 
-  int comm_rank;
-  MPI_Comm_rank(comm, &comm_rank);
 
   auto sub_assemble = PS_LAMBDA(const int& elm, const int& mp, const int& mask) {
     if(mask && (elm2Process(elm)==comm_rank)) { 
@@ -401,7 +420,7 @@ void MPMesh::subAssemblyVtx1(int size1, int size2, double* array) {
                                                 VtxCoeffs(vID,2)*CoordDiffs[2] + 
                                                 VtxCoeffs(vID,3)*CoordDiffs[3]);
   
-        auto val = factor*mpData(mp,0);
+        auto val = factor*mpData(mp, comp);
         Kokkos::atomic_add(&array_d(i, elm), val);
       }
     }
@@ -409,13 +428,10 @@ void MPMesh::subAssemblyVtx1(int size1, int size2, double* array) {
   p_MPs->parallel_for(sub_assemble, "sub_assembly"); 
   
   Kokkos::deep_copy(arrayHost, array_d); 
-  
-  //assert(cudaDeviceSynchronize()==cudaSuccess);
   pumipic::RecordTime("PolyMPO_subAssembly", timer.seconds());
 }
 
-
-
+//Method 1
 template <MeshFieldIndex meshFieldIndex>
 void MPMesh::assemblyVtx1() {
   Kokkos::Timer timer; 

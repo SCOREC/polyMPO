@@ -116,7 +116,7 @@ void MPMesh::CVTTrackingElmCenterBased(const int printVTPIndex){
     int numVtxs = p_mesh->getNumVertices();
     int numElms = p_mesh->getNumElements();
     auto numMPs = p_MPs->getCount();
-
+    
     const auto elmCenter = p_mesh->getMeshField<polyMPO::MeshF_ElmCenterXYZ>();
 
     auto elm2VtxConn = p_mesh->getElm2VtxConn();
@@ -167,6 +167,9 @@ void MPMesh::CVTTrackingElmCenterBased(const int printVTPIndex){
                         minDistSq = neighborDistSq;
                     }
                 }
+                if(abs(mpTgtPos(mp,0)+5.724649188625998e+06) < 1e-10)
+                  printf("Track: %.15e %.15e %.15e => %.15e %.15e %.15e \n", mpTgtPos(mp,0), mpTgtPos(mp,1), mpTgtPos(mp,2), 
+                                                                             mpPositions(mp,0), mpPositions(mp,1), mpPositions(mp,2) );
 
                 if(closestElm<0){
                     MPs2Elm(mp) = iElm;

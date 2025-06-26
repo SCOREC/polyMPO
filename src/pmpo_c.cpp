@@ -1228,13 +1228,15 @@ void polympo_setReconstructionOfStress_f(MPMesh_ptr p_mpmesh, const int order, c
 
 
 //With MPI communication done via MPAS
-void polympo_iceAreaSubAssembly_f(MPMesh_ptr p_mpmesh, int size1, int size2, double* array){
-  static int count=0;
-  std::cout<<__FUNCTION__<<count<<std::endl;
+void polympo_vtxSubAssemblyIceArea_f(MPMesh_ptr p_mpmesh, int size1, int size2, double* array, int comp){
   checkMPMeshValid(p_mpmesh);
   auto mpmesh = ((polyMPO::MPMesh*)p_mpmesh);
-  mpmesh->subAssemblyVtx1(size1, size2, array);
-  count ++ ;
+  mpmesh->subAssemblyVtx1<polyMPO::MeshF_VtxMass>(size1, size2, array, comp);
+}
+void polympo_vtxSubAssemblyVelocity_f(MPMesh_ptr p_mpmesh, int size1, int size2, double* array, int comp){
+  checkMPMeshValid(p_mpmesh);
+  auto mpmesh = ((polyMPO::MPMesh*)p_mpmesh);
+  mpmesh->subAssemblyVtx1<polyMPO::MeshF_Vel>(size1, size2, array, comp);
 }
 void polympo_subAssemblyCoeffs_f(MPMesh_ptr p_mpmesh, int dim1, int dim2, double* m11, double* m12, double* m13, double* m14,
                                                                           double* m22, double* m23, double* m24,
@@ -1292,6 +1294,20 @@ void polympo_setElmGlobal_f(MPMesh_ptr p_mpmesh, const int nCells, const int* ar
   p_mesh->setElmGlobal(elmGlobal);
 }
 
+void polympo_setVtxGlobal_f(MPMesh_ptr p_mpmesh, const int nVertices, const int* array){
+  checkMPMeshValid(p_mpmesh);
+  auto p_mesh = ((polyMPO::MPMesh*)p_mpmesh)->p_mesh; 
+  Kokkos::View<int*, Kokkos::HostSpace> arrayHost("arrayHost", nVertices);
+  for (int i = 0; i < nVertices; i++) {
+    arrayHost(i) = array[i] - 1;  // TODO right now elmID offset is set after MPs initialized
+  }
+  //check the size
+  //PMT_ALWAYS_ASSERT(nVertices == p_mesh->getNumVertices());
+
+  Kokkos::View<int*> vtxGlobal("vtxGlobal",nVertices);
+  Kokkos::deep_copy(vtxGlobal, arrayHost);
+  p_mesh->setVtxGlobal(vtxGlobal);
+}
 
 int polympo_getMPCount_f(MPMesh_ptr p_mpmesh) {
   auto p_MPs = ((polyMPO::MPMesh*)p_mpmesh)->p_MPs;

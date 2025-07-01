@@ -2,7 +2,6 @@
 #include "pmpo_utils.hpp"
 #include "pmpo_MPMesh.hpp"
 #include "pmpo_wachspressBasis.hpp"
-#include <unistd.h>
 namespace polyMPO{
 
 void printVTP_mesh(MPMesh& mpMesh, int printVTPIndex=-1);
@@ -129,7 +128,6 @@ void MPMesh::CVTTrackingElmCenterBased(const int printVTPIndex){
     auto elm2Process = p_mesh->getElm2Process();
     auto elm2global = p_mesh->getElmGlobal();
 
-    //Since Mesh is static print pnly for 1 time step 
     if(printVTPIndex>=0) {
       printVTP_mesh(printVTPIndex);
     }
@@ -167,10 +165,6 @@ void MPMesh::CVTTrackingElmCenterBased(const int printVTPIndex){
                         minDistSq = neighborDistSq;
                     }
                 }
-                if(abs(mpTgtPos(mp,0)+5.724649188625998e+06) < 1e-10)
-                  printf("Track: %.15e %.15e %.15e => %.15e %.15e %.15e \n", mpTgtPos(mp,0), mpTgtPos(mp,1), mpTgtPos(mp,2), 
-                                                                             mpPositions(mp,0), mpPositions(mp,1), mpPositions(mp,2) );
-
                 if(closestElm<0){
                     MPs2Elm(mp) = iElm;
                     if (elm2Process.size() > 0)

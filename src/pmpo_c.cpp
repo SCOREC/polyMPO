@@ -265,10 +265,6 @@ void polympo_getMPTgtElmID_f(MPMesh_ptr p_mpmesh,
   kkIntViewHostU arrayHost(elmIDs,numMPs);
   polyMPO::IntView mpTgtElmIDCopy("mpTgtElmIDNewValue",numMPs);
 
-  int rank;
-  auto mpi_comm=p_MPs->getMPIComm();
-  MPI_Comm_rank(mpi_comm, &rank);
-   
   auto setTgtElmId = PS_LAMBDA(const int&, const int& mp, const int& mask){
     if(mask){
         mpTgtElmIDCopy(mpAppID(mp)) = mpTgtElmID(mp)+elmIDoffset;
@@ -294,10 +290,6 @@ void polympo_getMPCurElmID_f(MPMesh_ptr p_mpmesh,
   kkIntViewHostU arrayHost(elmIDs,numMPs);
   polyMPO::IntView mpCurElmIDCopy("mpCurElmIDNewValue",numMPs);
 
-  int rank;
-  auto mpi_comm=p_MPs->getMPIComm();
-  MPI_Comm_rank(mpi_comm, &rank);
-   
   auto getElmId = PS_LAMBDA(const int&, const int& mp, const int& mask){
     if(mask){
         mpCurElmIDCopy(mpAppID(mp)) = mpCurElmID(mp)+elmIDoffset; 

@@ -103,7 +103,7 @@ void MPMesh::resetPreComputeFlag(){
   isPreComputed = false;
 }
 
-//Method 1
+//Method 1 for coefficients
 void MPMesh::computeMatricesAndSolve(){
   Kokkos::Timer timer;
   //Mesh Information
@@ -209,7 +209,7 @@ void MPMesh::computeMatricesAndSolve(){
   pumipic::RecordTime("PolyMPO_Calculate_MLS_Coeff", timer.seconds());
 }
 
-//Method 2
+//Method 2 for coefficients
 void MPMesh::subAssemblyCoeffs(int dim1, int dim2, double* m11, double* m12, double* m13, double* m14, 
                                                    double* m22, double* m23, double* m24, 
                                                    double* m33, double* m34, 
@@ -299,20 +299,11 @@ void MPMesh::subAssemblyCoeffs(int dim1, int dim2, double* m11, double* m12, dou
   
 }
 
-//Method 2
-void MPMesh::solveMatrixAndRegularize( int dim1, double* m11, double* m12, double* m13, double* m14, 
+//Method 2 for coefficients Solve matrix
+void MPMesh::solveMatrixAndRegularize(int dim1, double* m11, double* m12, double* m13, double* m14, 
                                        double* m22, double* m23, double* m24, 
                                        double* m33, double* m34,
                                        double* m44){
-
-  MPI_Comm comm = p_MPs->getMPIComm(); 
-  int comm_rank;
-  MPI_Comm_rank(comm, &comm_rank);
-
-  static int count=0;
-  if(!comm_rank)
-    std::cout<<__FUNCTION__<<count<<std::endl;
-  count ++; 
 
   auto dual_triangle_area=p_mesh->getMeshField<MeshF_DualTriangleArea>();
 

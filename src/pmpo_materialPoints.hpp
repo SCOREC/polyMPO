@@ -36,6 +36,7 @@ enum MaterialPointSlice {
   MPF_Mass,
   MPF_Vel,
   MPF_Rot_Lat_Lon_Incr,
+  MPF_Vel_Incr,
   MPF_Strain_Rate,
   MPF_Stress,
   MPF_Stress_Div,
@@ -64,6 +65,7 @@ template <> struct mpSliceToMeshField < MPF_Basis_Grad_Vals     > { using type =
 template <> struct mpSliceToMeshField < MPF_Mass                > { using type = doubleSclr_t; };
 template <> struct mpSliceToMeshField < MPF_Vel                 > { using type = vec2d_t; };
 template <> struct mpSliceToMeshField < MPF_Rot_Lat_Lon_Incr    > { using type = vec2d_t; };
+template <> struct mpSliceToMeshField < MPF_Vel_Incr            > { using type = vec2d_t; };
 template <> struct mpSliceToMeshField < MPF_Strain_Rate         > { using type = double[6]; };
 template <> struct mpSliceToMeshField < MPF_Stress              > { using type = double[6]; };
 template <> struct mpSliceToMeshField < MPF_Stress_Div          > { using type = vec3d_t; };
@@ -100,6 +102,7 @@ typedef MemberTypes<mpSliceToMeshField < MPF_Status              >::type,
                     mpSliceToMeshField < MPF_Mass                >::type,
                     mpSliceToMeshField < MPF_Vel                 >::type,
                     mpSliceToMeshField < MPF_Rot_Lat_Lon_Incr    >::type,
+                    mpSliceToMeshField < MPF_Vel_Incr            >::type,
                     mpSliceToMeshField < MPF_Strain_Rate         >::type,
                     mpSliceToMeshField < MPF_Stress              >::type,
                     mpSliceToMeshField < MPF_Stress_Div          >::type,
@@ -220,7 +223,10 @@ class MaterialPoints {
         auto tgtPosRotLatLon = MPs->get<MPF_Tgt_Pos_Rot_Lat_Lon>();
         auto tgtPosXYZ = MPs->get<MPF_Tgt_Pos_XYZ>();
         auto rotLatLonIncr = MPs->get<MPF_Rot_Lat_Lon_Incr>();
-        
+        //Velocity   
+        auto velMPs = MPs->get<MPF_Vel>();
+        auto velIncr = MPs->get<MPF_Vel_Incr>();
+      
         auto is_rotated = getRotatedFlag(); 
         auto updateRotLatLon = PS_LAMBDA(const int& elm, const int& mp, const int& mask){
             if(mask){
@@ -235,10 +241,13 @@ class MaterialPoints {
                   auto xyz_geo = grid_rotation_backward(xyz_rot);
                   lat_lon_from_xyz(geoLat, geoLon, xyz_geo, radius);
                 }	
-                // x = cosLon cosLat, y = sinLon cosLat, z = sinLat
+                
                 tgtPosXYZ(mp,0) = radius * std::cos(geoLon) * std::cos(geoLat);
                 tgtPosXYZ(mp,1) = radius * std::sin(geoLon) * std::cos(geoLat);
                 tgtPosXYZ(mp,2) = radius * std::sin(geoLat);
+                
+                velMPs(mp,0) = velMPs(mp,0) + velIncr(mp,0);
+                velMPs(mp,1) = velMPs(mp,1) + velIncr(mp,1);
             } 
         };
         ps::parallel_for(MPs, updateRotLatLon,"updateRotationalLatitudeLongitude"); 

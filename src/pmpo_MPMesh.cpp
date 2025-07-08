@@ -326,6 +326,10 @@ void MPMesh::push_ahead(){
   //Latitude Longitude increment at mesh vertices and interpolate to particle position
   p_mesh->computeRotLatLonIncr(); 
   sphericalInterpolation<MeshF_RotLatLonIncr>(*this);
+  //Interploate mesh velocity increments to particle positions
+  //Note that the basis fucntions are created twice and so need to avoid redeundant clualtions
+  //Tried template lists Template_Type... maybe better option available
+  sphericalInterpolation<MeshF_OnSurfVeloIncr>(*this);
   //Push the MPs
   p_MPs->updateRotLatLonAndXYZ2Tgt(p_mesh->getSphereRadius());
 }

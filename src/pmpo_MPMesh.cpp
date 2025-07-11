@@ -329,6 +329,7 @@ void MPMesh::push_ahead(){
   //Interploate mesh velocity increments to particle positions
   //Note that the basis fucntions are created twice and so need to avoid redeundant clualtions
   //Tried template lists Template_Type... maybe better option available
+  Kokkos::fence();
   sphericalInterpolation<MeshF_OnSurfVeloIncr>(*this);
   //Push the MPs
   p_MPs->updateRotLatLonAndXYZ2Tgt(p_mesh->getSphereRadius());

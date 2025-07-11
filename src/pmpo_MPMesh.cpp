@@ -323,6 +323,7 @@ bool getAnyIsMigrating(MaterialPoints* p_MPs, bool isMigrating) {
 }
 
 void MPMesh::push_ahead(){
+  Kokkos::Timer timer;
   //Latitude Longitude increment at mesh vertices and interpolate to particle position
   p_mesh->computeRotLatLonIncr(); 
   sphericalInterpolation<MeshF_RotLatLonIncr>(*this);
@@ -333,14 +334,17 @@ void MPMesh::push_ahead(){
   sphericalInterpolation<MeshF_OnSurfVeloIncr>(*this);
   //Push the MPs
   p_MPs->updateRotLatLonAndXYZ2Tgt(p_mesh->getSphereRadius());
+  pumipic::RecordTime("PolyMPO_interpolateAndPush", timer.seconds());
 }
 
 bool MPMesh::push1P(){
+  Kokkos::Timer timer;
   //Given target location find the new element or the last element in a partioned mesh
   //and the process it belongs to so that migration can be checked
   CVTTrackingElmCenterBased(); 
   //From the above two inputs find if any particle needs to be migrated
   bool anyIsMigrating = getAnyIsMigrating(p_MPs, p_MPs->check_migrate());
+  pumipic::RecordTime("PolyMPO_trackAndCheckMigrate", timer.seconds());
   return anyIsMigrating;
 }
 

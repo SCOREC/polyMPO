@@ -254,6 +254,7 @@ void polympo_setAppIDFunc_f(MPMesh_ptr p_mpmesh, IntVoidFunc getNext, void* appI
 void polympo_getMPTgtElmID_f(MPMesh_ptr p_mpmesh,
                             const int numMPs,
                             int* elmIDs){
+  Kokkos::Timer timer;
   checkMPMeshValid(p_mpmesh);
   auto p_MPs = ((polyMPO::MPMesh*)p_mpmesh)->p_MPs;
   PMT_ALWAYS_ASSERT(numMPs >= p_MPs->getCount());
@@ -272,7 +273,7 @@ void polympo_getMPTgtElmID_f(MPMesh_ptr p_mpmesh,
   };
   p_MPs->parallel_for(setTgtElmId, "set mpTgtElmID");
   Kokkos::deep_copy( arrayHost, mpTgtElmIDCopy);
-  
+  pumipic::RecordTime("PolyMPO_getMPTgtElmID", timer.seconds());
 }
 
 void polympo_getMPCurElmID_f(MPMesh_ptr p_mpmesh,
@@ -396,13 +397,14 @@ void polympo_setMPTgtPositions_f(MPMesh_ptr p_mpmesh,
     }
   };
   p_MPs->parallel_for(setPos, "setMPPositions");
-  pumipic::RecordTime("PolyMPO_setMPPositions", timer.seconds());
+  pumipic::RecordTime("PolyMPO_setMPTgtPositions", timer.seconds());
 }
 
 void polympo_getMPTgtPositions_f(MPMesh_ptr p_mpmesh,
                             const int nComps,
                             const int numMPs,
                             double* mpPositionsHost){
+  Kokkos::Timer timer;
   checkMPMeshValid(p_mpmesh);
   auto p_MPs = ((polyMPO::MPMesh*)p_mpmesh)->p_MPs;
   PMT_ALWAYS_ASSERT(nComps == vec3d_nEntries);
@@ -422,6 +424,7 @@ void polympo_getMPTgtPositions_f(MPMesh_ptr p_mpmesh,
   p_MPs->parallel_for(getPos, "getMPPositions");
   kkDbl2dViewHostU arrayHost(mpPositionsHost,nComps,numMPs);
   Kokkos::deep_copy(arrayHost, mpPositionsCopy);
+  pumipic::RecordTime("PolyMPO_getMPTgtPositions", timer.seconds());
 }
 
 
@@ -429,6 +432,7 @@ void polympo_setMPRotLatLon_f(MPMesh_ptr p_mpmesh,
                          const int nComps,
                          const int numMPs,
                          const double* mpRotLatLonIn){
+  Kokkos::Timer timer;
   static int callCount = 0;
   PMT_ALWAYS_ASSERT(callCount == 0);
   checkMPMeshValid(p_mpmesh);
@@ -450,6 +454,7 @@ void polympo_setMPRotLatLon_f(MPMesh_ptr p_mpmesh,
   };
   p_MPs->parallel_for(setPos, "setMPRotLatLon");
   callCount++;
+  pumipic::RecordTime("PolyMPO_setMPRotLatLon", timer.seconds());
 }
 
 void polympo_getMPRotLatLon_f(MPMesh_ptr p_mpmesh,
@@ -481,6 +486,7 @@ void polympo_setMPTgtRotLatLon_f(MPMesh_ptr p_mpmesh,
                          const int nComps,
                          const int numMPs,
                          const double* mpRotLatLonIn){
+  Kokkos::Timer timer;
   checkMPMeshValid(p_mpmesh);
   auto p_MPs = ((polyMPO::MPMesh*)p_mpmesh)->p_MPs;
   PMT_ALWAYS_ASSERT(nComps == vec2d_nEntries);
@@ -498,13 +504,15 @@ void polympo_setMPTgtRotLatLon_f(MPMesh_ptr p_mpmesh,
       mpRotLatLon(mp,1) = mpRotLatLonIn_d(1, mpAppID(mp));
     }
   };
-  p_MPs->parallel_for(setPos, "setMPRotLatLon");
+  p_MPs->parallel_for(setPos, "setMPTgtRotLatLon");
+  pumipic::RecordTime("PolyMPO_setMPTgtRotLatLon", timer.seconds());
 }
 
 void polympo_getMPTgtRotLatLon_f(MPMesh_ptr p_mpmesh,
                          const int nComps,
                          const int numMPs,
                          double* mpRotLatLonHost){
+  Kokkos::Timer timer;
   checkMPMeshValid(p_mpmesh);
   auto p_MPs = ((polyMPO::MPMesh*)p_mpmesh)->p_MPs;
   PMT_ALWAYS_ASSERT(nComps == vec2d_nEntries);
@@ -523,6 +531,7 @@ void polympo_getMPTgtRotLatLon_f(MPMesh_ptr p_mpmesh,
   p_MPs->parallel_for(getPos, "getMPRotLatLon");
   kkDbl2dViewHostU arrayHost(mpRotLatLonHost,nComps,numMPs);
   Kokkos::deep_copy(arrayHost, mpRotLatLonCopy);
+  pumipic::RecordTime("PolyMPO_getMPTgtRotLatLon", timer.seconds());
 }
 
 

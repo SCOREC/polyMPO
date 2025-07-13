@@ -358,5 +358,74 @@ void sphericalInterpolation(MPMesh& mpMesh){
     pumipic::RecordTime("PolyMPO_sphericalInterpolation", timer.seconds());
 }
 
+
+inline void sphericalInterpolation1(MPMesh& mpMesh){
+    Kokkos::Timer timer;
+    auto p_mesh = mpMesh.p_mesh;
+    auto vtxCoords = p_mesh->getMeshField<polyMPO::MeshF_VtxCoords>();
+    int numVtxs = p_mesh->getNumVertices();
+    auto elm2VtxConn = p_mesh->getElm2VtxConn();
+    
+    auto p_MPs = mpMesh.p_MPs;
+    auto MPsPosition = p_MPs->getPositions();
+    double radius = p_mesh->getSphereRadius();
+    PMT_ALWAYS_ASSERT(radius > 0);
+ 
+    constexpr MeshFieldIndex meshFieldIndex1 = polyMPO::MeshF_RotLatLonIncr;
+    constexpr MeshFieldIndex meshFieldIndex2 = polyMPO::MeshF_OnSurfVeloIncr;
+    
+    auto meshField1 = p_mesh->getMeshField<meshFieldIndex1>();
+    auto meshField2 = p_mesh->getMeshField<meshFieldIndex2>();
+    
+    constexpr MaterialPointSlice mpfIndex1 = meshFieldIndexToMPSlice<meshFieldIndex1>;
+    constexpr MaterialPointSlice mpfIndex2 = meshFieldIndexToMPSlice<meshFieldIndex2>;
+
+    const int numEntries1 = mpSliceToNumEntries<mpfIndex1>();
+    const int numEntries2 = mpSliceToNumEntries<mpfIndex2>();
+
+    auto mpField1 = p_MPs->getData<mpfIndex1>();
+    auto mpField2 = p_MPs->getData<mpfIndex2>();
+
+    auto interpolation = PS_LAMBDA(const int& elm, const int& mp, const int& mask) {
+      if(mask) {
+        Vec3d position3d(MPsPosition(mp, 0), MPsPosition(mp, 1), MPsPosition(mp, 2));
+        Vec3d v3d[maxVtxsPerElm + 1];
+        int numVtx = elm2VtxConn(elm, 0);
+        for (int i = 1; i <= numVtx; i++) {
+          v3d[i-1][0] = vtxCoords(elm2VtxConn(elm, i) - 1, 0);
+          v3d[i-1][1] = vtxCoords(elm2VtxConn(elm, i) - 1, 1);
+          v3d[i-1][2] = vtxCoords(elm2VtxConn(elm, i) - 1, 2);
+        }
+        v3d[numVtx][0] = vtxCoords(elm2VtxConn(elm,1)-1,0);
+        v3d[numVtx][1] = vtxCoords(elm2VtxConn(elm,1)-1,1);
+        v3d[numVtx][2] = vtxCoords(elm2VtxConn(elm,1)-1,2);        
+
+        double basisByArea3d[maxVtxsPerElm] = {0.0};
+        initArray(basisByArea3d, maxVtxsPerElm, 0.0);
+
+        getBasisByAreaGblFormSpherical(position3d, numVtx, v3d, radius, basisByArea3d);
+      
+        for(int entry=0; entry<numEntries1; entry++){
+          double mpValue = 0.0;
+          for(int i=1; i<= numVtx; i++){
+            mpValue += meshField1(elm2VtxConn(elm,i)-1,entry)*basisByArea3d[i-1];
+          }
+          mpField1(mp,entry) = mpValue;
+        }
+        
+        for(int entry=0; entry<numEntries2; entry++){
+          double mpValue = 0.0;
+          for(int i=1; i<= numVtx; i++){
+            mpValue += meshField2(elm2VtxConn(elm,i)-1,entry)*basisByArea3d[i-1];
+          }
+          mpField2(mp,entry) = mpValue;
+        }   
+      }
+    };
+    p_MPs->parallel_for(interpolation, "sphericalInterpolationMultiField");
+    pumipic::RecordTime("PolyMPO_sphericalInterpolation1", timer.seconds());
+  }
+
+
 } //namespace polyMPO end
 #endif

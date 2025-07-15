@@ -215,6 +215,7 @@ void MPMesh::subAssemblyCoeffs(int dim1, int dim2, double* m11, double* m12, dou
                                                    double* m33, double* m34, 
                                                    double* m44){
   
+  Kokkos::Timer timer;
   //Material Points Information
   MPI_Comm comm = p_MPs->getMPIComm(); 
   int comm_rank;
@@ -241,16 +242,6 @@ void MPMesh::subAssemblyCoeffs(int dim1, int dim2, double* m11, double* m12, dou
   if(p_mesh->getGeomType() == geom_spherical_surf)
     radius=p_mesh->getSphereRadius();
 
-  kkDbl2dViewHostU m11_h(m11, dim1, dim2);
-  kkDbl2dViewHostU m12_h(m12, dim1, dim2);
-  kkDbl2dViewHostU m13_h(m13, dim1, dim2);
-  kkDbl2dViewHostU m14_h(m14, dim1, dim2);
-  kkDbl2dViewHostU m22_h(m22, dim1, dim2);
-  kkDbl2dViewHostU m23_h(m23, dim1, dim2);
-  kkDbl2dViewHostU m24_h(m24, dim1, dim2);
-  kkDbl2dViewHostU m33_h(m33, dim1, dim2);
-  kkDbl2dViewHostU m34_h(m34, dim1, dim2);
-  kkDbl2dViewHostU m44_h(m44, dim1, dim2);
   Kokkos::View<double**> m11_d("m11", dim1, dim2);
   Kokkos::View<double**> m12_d("m12", dim1, dim2);
   Kokkos::View<double**> m13_d("m13", dim1, dim2);
@@ -285,7 +276,20 @@ void MPMesh::subAssemblyCoeffs(int dim1, int dim2, double* m11, double* m12, dou
     }
   };
   p_MPs->parallel_for(sub_assemble, "sub_assembly");
+  pumipic::RecordTime("VtxSubAssemblyComputeCoeff", timer.seconds());
 
+  Kokkos::Timer timer2;
+  kkDbl2dViewHostU m11_h(m11, dim1, dim2);
+  kkDbl2dViewHostU m12_h(m12, dim1, dim2);
+  kkDbl2dViewHostU m13_h(m13, dim1, dim2);
+  kkDbl2dViewHostU m14_h(m14, dim1, dim2);
+  kkDbl2dViewHostU m22_h(m22, dim1, dim2);
+  kkDbl2dViewHostU m23_h(m23, dim1, dim2);
+  kkDbl2dViewHostU m24_h(m24, dim1, dim2);
+  kkDbl2dViewHostU m33_h(m33, dim1, dim2);
+  kkDbl2dViewHostU m34_h(m34, dim1, dim2);
+  kkDbl2dViewHostU m44_h(m44, dim1, dim2);
+  
   Kokkos::deep_copy(m11_h, m11_d); 
   Kokkos::deep_copy(m12_h, m12_d); 
   Kokkos::deep_copy(m13_h, m13_d); 
@@ -296,6 +300,7 @@ void MPMesh::subAssemblyCoeffs(int dim1, int dim2, double* m11, double* m12, dou
   Kokkos::deep_copy(m33_h, m33_d); 
   Kokkos::deep_copy(m34_h, m34_d); 
   Kokkos::deep_copy(m44_h, m44_d); 
+  pumipic::RecordTime("VtxSubAssemblyGetCoeff", timer2.seconds());
   
 }
 
@@ -305,8 +310,7 @@ void MPMesh::solveMatrixAndRegularize(int dim1, double* m11, double* m12, double
                                        double* m33, double* m34,
                                        double* m44){
 
-  auto dual_triangle_area=p_mesh->getMeshField<MeshF_DualTriangleArea>();
-
+  Kokkos::Timer timer;
   kkViewHostU<const double*> m11_h(m11, dim1);
   kkViewHostU<const double*> m12_h(m12, dim1);
   kkViewHostU<const double*> m13_h(m13, dim1);
@@ -339,7 +343,10 @@ void MPMesh::solveMatrixAndRegularize(int dim1, double* m11, double* m12, double
   Kokkos::deep_copy(m33_d, m33_h);
   Kokkos::deep_copy(m34_d, m34_h);
   Kokkos::deep_copy(m44_d, m44_h);
+  pumipic::RecordTime("polyMPOsolveMatrixCoeffSet", timer.seconds());
 
+  Kokkos::Timer timer2;
+  auto dual_triangle_area=p_mesh->getMeshField<MeshF_DualTriangleArea>();
   Kokkos::View<double*[vec4d_nEntries]> VtxCoeffs("VtxCoeffs", dim1);
   double radius=p_mesh->getSphereRadius();
   Kokkos::parallel_for("fill", dim1, KOKKOS_LAMBDA(const int vtx){
@@ -365,6 +372,7 @@ void MPMesh::solveMatrixAndRegularize(int dim1, double* m11, double* m12, double
       VtxCoeffs(vtx,i)=coeff[i];
   });
   this->precomputedVtxCoeffs = VtxCoeffs;
+  pumipic::RecordTime("polyMPOsolveMatrixCoeffCompute", timer2.seconds());
 
 }
 
@@ -394,9 +402,7 @@ void MPMesh::subAssemblyVtx1(int size1, int size2, double* array, int comp) {
  
   double radius=p_mesh->getSphereRadius();
 
-  kkDbl2dViewHostU arrayHost(array, size1, size2);
   Kokkos::View<double**> array_d("reconstructedIceArea", size1, size2);
-
   auto sub_assemble = PS_LAMBDA(const int& elm, const int& mp, const int& mask) {
     if(mask && (elm2Process(elm)==comm_rank)) { 
       int nVtxE = elm2VtxConn(elm,0); //number of vertices bounding the element
@@ -417,9 +423,12 @@ void MPMesh::subAssemblyVtx1(int size1, int size2, double* array, int comp) {
     }
   };
   p_MPs->parallel_for(sub_assemble, "sub_assembly"); 
+  pumipic::RecordTime("polyMPOsubAssemblyFieldCompute", timer.seconds());
   
+  Kokkos::Timer timer2;
+  kkDbl2dViewHostU arrayHost(array, size1, size2);
   Kokkos::deep_copy(arrayHost, array_d); 
-  pumipic::RecordTime("PolyMPO_subAssembly", timer.seconds());
+  pumipic::RecordTime("PolyMPOsubAssemblyFieldGet", timer2.seconds());
 }
 
 //Method 1

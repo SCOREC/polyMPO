@@ -205,6 +205,8 @@ void polympo_startRebuildMPs_f2(MPMesh_ptr p_mpmesh,
 			 const int nMPs_add,
                          int* recvMPs_elm,
                          int* recvMPs_ids) {
+  
+  Kokkos::Timer timer;
   checkMPMeshValid(p_mpmesh);
   auto p_MPs = ((polyMPO::MPMesh*)p_mpmesh)->p_MPs;
   int offset = p_MPs->getElmIDoffset();
@@ -233,15 +235,17 @@ void polympo_startRebuildMPs_f2(MPMesh_ptr p_mpmesh,
   int numDeletedMPs = pumipic::getLastValue(numDeletedMPs_d);
   assert(nMPs_delete==numDeletedMPs);
   p_MPs->startRebuild(mp2Elm, nMPs_add, recvMPs_elm_d, recvMPs_ids_d);
+  pumipic::RecordTime("polympo_startRebuildMPs_f2", timer.seconds());
 }
 
 
 
-void polympo_finishRebuildMPs_f(MPMesh_ptr p_mpmesh)
-{
+void polympo_finishRebuildMPs_f(MPMesh_ptr p_mpmesh){
+  Kokkos::Timer timer;
   checkMPMeshValid(p_mpmesh);
   auto p_MPs = ((polyMPO::MPMesh*)p_mpmesh)->p_MPs;
   p_MPs->finishRebuild();
+  pumipic::RecordTime("polympo_finishRebuildMPs_f", timer.seconds());
 }
 
 void polympo_setAppIDFunc_f(MPMesh_ptr p_mpmesh, IntVoidFunc getNext, void* appIDs) {

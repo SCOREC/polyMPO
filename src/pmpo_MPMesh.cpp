@@ -128,15 +128,12 @@ void MPMesh::CVTTrackingElmCenterBased(const int printVTPIndex){
     auto elm2Process = p_mesh->getElm2Process();
     auto elm2global = p_mesh->getElmGlobal();
 
-    if(printVTPIndex>=0) {
+    static int count_mesh_print=0;
+    if(printVTPIndex>=0 && count_mesh_print==0) {
       printVTP_mesh(printVTPIndex);
+      count_mesh_print += 1;
     }
     
-    Vec3dView history("positionHistory",numMPs);
-    Vec3dView resultLeft("positionResult",numMPs);
-    Vec3dView resultRight("positionResult",numMPs);
-    Vec3dView mpTgtPosArray("positionTarget",numMPs);
-   
     auto CVTElmCalc = PS_LAMBDA(const int& elm, const int& mp, const int&mask){
         Vec3d MP(mpPositions(mp,0),mpPositions(mp,1),mpPositions(mp,2));
         if(mask){
@@ -155,8 +152,7 @@ void MPMesh::CVTTrackingElmCenterBased(const int printVTPIndex){
                 for(int i=1; i<=numConnElms; i++){
                     int elmID = elm2ElmConn(iElm,i)-1;
                     
-                    //New delta
-	            Vec3d center(elmCenter(elmID, 0), elmCenter(elmID, 1), elmCenter(elmID, 2));
+                    Vec3d center(elmCenter(elmID, 0), elmCenter(elmID, 1), elmCenter(elmID, 2));
                     delta = MPnew - center;
 
                     double neighborDistSq = delta[0]*delta[0] + delta[1]*delta[1] + delta[2]*delta[2];
@@ -167,69 +163,16 @@ void MPMesh::CVTTrackingElmCenterBased(const int printVTPIndex){
                 }
                 if(closestElm<0){
                     MPs2Elm(mp) = iElm;
-                    if (elm2Process.size() > 0)
-                        MPs2Proc(mp) = elm2Process(iElm);
+                    MPs2Proc(mp) = elm2Process(iElm);
                     break;
                 }else{
                     iElm = closestElm;
                 }
             }
-            if(printVTPIndex>=0 && numMPs>0){
-                double d1 = dx[0];
-                double d2 = dx[2];
-                double d3 = dx[3];
-                double m1 = MP[0];
-                double m2 = MP[1];
-                double m3 = MP[2];
-                Vec3d MParrow = MP + dx*0.7;
-                Vec3d r = MPnew * (1.0/MPnew.magnitude());
-                Vec3d shift = dx.cross(r) * ((1.0-0.7)*dx.magnitude()/(dx.cross(r)).magnitude());
-                Vec3d MPLeft = MParrow + shift;
-                Vec3d MPRight = MParrow - shift;
-                history(mp) = MP;
-                resultLeft(mp) = MPLeft;
-                resultRight(mp) = MPRight;
-                mpTgtPosArray(mp) = MPnew;
-            }
         }
     };
     p_MPs->parallel_for(CVTElmCalc,"CVTTrackingElmCenterBasedCalc");
     
-    if(printVTPIndex>=0){
-        Vec3dView::HostMirror h_history = Kokkos::create_mirror_view(history);
-        Vec3dView::HostMirror h_resultLeft = Kokkos::create_mirror_view(resultLeft);
-        Vec3dView::HostMirror h_resultRight = Kokkos::create_mirror_view(resultRight);
-        Vec3dView::HostMirror h_mpTgtPos = Kokkos::create_mirror_view(mpTgtPosArray);
-
-        Kokkos::deep_copy(h_history, history);
-        Kokkos::deep_copy(h_resultLeft, resultLeft);
-        Kokkos::deep_copy(h_resultRight, resultRight);
-        Kokkos::deep_copy(h_mpTgtPos, mpTgtPosArray);
-        // printVTP file
-        char* fileOutput = (char *)malloc(sizeof(char) * 256); 
-        sprintf(fileOutput, "polyMPOCVTTrackingElmCenter_MPtracks_%d.vtp", printVTPIndex);
-        FILE * pFile = fopen(fileOutput,"w");
-        free(fileOutput);   
-        fprintf(pFile, "<VTKFile type=\"PolyData\" version=\"1.0\" byte_order=\"LittleEndian\" header_type=\"UInt64\">\n  <PolyData>\n    <Piece NumberOfPoints=\"%d\" NumberOfVerts=\"0\" NumberOfLines=\"%d\" NumberOfStrips=\"0\" NumberOfPolys=\"0\">\n      <Points>\n        <DataArray type=\"Float32\" Name=\"Points\" NumberOfComponents=\"3\" format=\"ascii\">\n",numMPs*4,numMPs*2); 
-        for(int i=0; i<numMPs; i++){
-            fprintf(pFile,"          %f %f %f\n          %f %f %f\n          %f %f %f\n          %f %f %f\n",
-                          h_history(i)[0],h_history(i)[1],h_history(i)[2],
-                          h_mpTgtPos(i)[0],h_mpTgtPos(i)[1],h_mpTgtPos(i)[2],
-                          h_resultLeft(i)[0],h_resultLeft(i)[1],h_resultLeft(i)[2],
-                          h_resultRight(i)[0],h_resultRight(i)[1],h_resultRight(i)[2]);
-        }
-        fprintf(pFile,"        </DataArray>\n      </Points>\n      <Lines>\n        <DataArray type=\"Int64\" Name=\"connectivity\" format=\"ascii\">\n"); 
-        for(int i=0; i<numMPs*4; i+=4){
-             fprintf(pFile,"          %d %d\n          %d %d %d\n",i,i+1,i+2,i+1,i+3);
-        }
-        fprintf(pFile,"        </DataArray>\n        <DataArray type=\"Int64\" Name=\"offsets\" format=\"ascii\">\n");
-        for(int i=0; i<numMPs*5; i+=5){
-            fprintf(pFile,"          %d\n          %d\n",i+2,i+5);
-        }
-        fprintf(pFile,"        </DataArray>\n      </Lines>\n    </Piece>\n  </PolyData>\n</VTKFile>\n");
-        fclose(pFile);
-    }
-
     pumipic::RecordTime("PolyMPO_CVTTrackingElmCenterBased", timer.seconds());
 }
 
@@ -322,49 +265,53 @@ bool getAnyIsMigrating(MaterialPoints* p_MPs, bool isMigrating) {
   return anyIsMigrating;
 }
 
+//Spehrical Interpolation and Push
 void MPMesh::push_ahead(){
   Kokkos::Timer timer;
   //Latitude Longitude increment at mesh vertices and interpolate to particle position
   p_mesh->computeRotLatLonIncr(); 
   
-  //sphericalInterpolation<MeshF_RotLatLonIncr>(*this);
-  //Interploate mesh velocity increments to particle positions
-  //Note that the basis fucntions are created twice and so need to avoid redeundant clualtions
-  //Tried template lists Template_Type... maybe better option available
-  //Kokkos::fence();
-  //sphericalInterpolation<MeshF_OnSurfVeloIncr>(*this);
-  
+  /*
+  sphericalInterpolation<MeshF_RotLatLonIncr>(*this);
+  Kokkos::fence();
+  sphericalInterpolation<MeshF_OnSurfVeloIncr>(*this);
+  */
+
+  //The current spherical interpolation accepts just one template but for multiple
+  //fields the same weights can be used, maybe pass parameter list. Temporarily,
+  //application specific the following function
   sphericalInterpolation1(*this);
   
-  //Push the MPs
+  //Move the MPs
   p_MPs->updateRotLatLonAndXYZ2Tgt(p_mesh->getSphereRadius());
   pumipic::RecordTime("PolyMPO_interpolateAndPush", timer.seconds());
 }
 
+//MP Tracking and migration check
 bool MPMesh::push1P(){
   Kokkos::Timer timer;
   //Given target location find the new element or the last element in a partioned mesh
-  //and the process it belongs to so that migration can be checked
+  //for the MP. Also the owning process for that element.
   CVTTrackingElmCenterBased(); 
-  //From the above two inputs find if any particle needs to be migrated
+  //From the above check if any particle needs to be migrated
   bool anyIsMigrating = getAnyIsMigrating(p_MPs, p_MPs->check_migrate());
   pumipic::RecordTime("PolyMPO_trackAndCheckMigrate", timer.seconds());
   return anyIsMigrating;
 }
 
+//Current elm becomes the target elm, target elm becomes -1
 void MPMesh::push_swap(){
-  //current becomes target, target becomes -1
   p_MPs->updateMPElmID();
 }
 
+//Current becomes the target, target becomes -1
+//Make read for next push_ahead
 void MPMesh::push_swap_pos(){
-  //current becomes target, target becomes -1
-  //Making read for next push_ahead  
   p_MPs->updateMPSlice<MPF_Cur_Pos_XYZ, MPF_Tgt_Pos_XYZ>();
   p_MPs->updateMPSlice<MPF_Cur_Pos_Rot_Lat_Lon, MPF_Tgt_Pos_Rot_Lat_Lon>();
 }
 
-
+//Push routine where migration is carried out using polyMPO
 void MPMesh::push(){
   
   Kokkos::Timer timer;

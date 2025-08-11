@@ -163,7 +163,7 @@ void MPMesh::CVTTrackingElmCenterBased(const int printVTPIndex){
                 }
                 if(closestElm<0){
                     MPs2Elm(mp) = iElm;
-                    MPs2Proc(mp) = elm2Process(iElm);
+                    if(elm2Process.size()>0) MPs2Proc(mp) = elm2Process(iElm);
                     break;
                 }else{
                     iElm = closestElm;

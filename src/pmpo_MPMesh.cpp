@@ -2,6 +2,7 @@
 #include "pmpo_utils.hpp"
 #include "pmpo_MPMesh.hpp"
 #include "pmpo_wachspressBasis.hpp"
+
 namespace polyMPO{
 
 void printVTP_mesh(MPMesh& mpMesh, int printVTPIndex=-1);

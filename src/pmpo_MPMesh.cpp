@@ -156,7 +156,7 @@ void MPMesh::CVTTrackingElmCenterBased(const int printVTPIndex){
                     int elmID = elm2ElmConn(iElm,i)-1;
                     
                     //New delta
-	            Vec3d center(elmCenter(elmID, 0), elmCenter(elmID, 1), elmCenter(elmID, 2));
+                    Vec3d center(elmCenter(elmID, 0), elmCenter(elmID, 1), elmCenter(elmID, 2));
                     delta = MPnew - center;
 
                     double neighborDistSq = delta[0]*delta[0] + delta[1]*delta[1] + delta[2]*delta[2];
@@ -165,6 +165,7 @@ void MPMesh::CVTTrackingElmCenterBased(const int printVTPIndex){
                         minDistSq = neighborDistSq;
                     }
                 }
+
                 if(closestElm<0){
                     MPs2Elm(mp) = iElm;
                     if (elm2Process.size() > 0)
@@ -206,6 +207,7 @@ void MPMesh::CVTTrackingElmCenterBased(const int printVTPIndex){
         Kokkos::deep_copy(h_resultRight, resultRight);
         Kokkos::deep_copy(h_mpTgtPos, mpTgtPosArray);
         // printVTP file
+
         char* fileOutput = (char *)malloc(sizeof(char) * 256); 
         sprintf(fileOutput, "polyMPOCVTTrackingElmCenter_MPtracks_%d.vtp", printVTPIndex);
         FILE * pFile = fopen(fileOutput,"w");
@@ -229,7 +231,6 @@ void MPMesh::CVTTrackingElmCenterBased(const int printVTPIndex){
         fprintf(pFile,"        </DataArray>\n      </Lines>\n    </Piece>\n  </PolyData>\n</VTKFile>\n");
         fclose(pFile);
     }
-
     pumipic::RecordTime("PolyMPO_CVTTrackingElmCenterBased", timer.seconds());
 }
 

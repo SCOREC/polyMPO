@@ -20,8 +20,6 @@ using defaultSpace = Kokkos::DefaultExecutionSpace::memory_space;
 typedef std::function<int()> IntFunc;
 typedef std::function<int(int)> IntIntFunc;
 
-
-
 enum MaterialPointSlice {
   MPF_Status = 0,
   MPF_Cur_Elm_ID,
@@ -241,7 +239,7 @@ class MaterialPoints {
                   auto xyz_geo = grid_rotation_backward(xyz_rot);
                   lat_lon_from_xyz(geoLat, geoLon, xyz_geo, radius);
                 }	
-                
+                // x=cosLon cosLat, y=sinLon cosLat, z= sinLat
                 tgtPosXYZ(mp,0) = radius * std::cos(geoLon) * std::cos(geoLat);
                 tgtPosXYZ(mp,1) = radius * std::sin(geoLon) * std::cos(geoLat);
                 tgtPosXYZ(mp,2) = radius * std::sin(geoLat);

@@ -66,7 +66,7 @@ class MPMesh{
     template <MeshFieldIndex meshFieldIndex>
     void assemblyVtx1();
     template <MeshFieldIndex meshFieldIndex>
-    void subAssemblyVtx1(int size1, int size2, double* array, int comp);
+    void subAssemblyVtx1(int size1, int size2, int comp, double* array);
     
     void subAssemblyCoeffs(int dim1, int dim2, double* m11, double* m12, double* m13, double* m14, 
                                                double* m22, double* m23, double* m24, 

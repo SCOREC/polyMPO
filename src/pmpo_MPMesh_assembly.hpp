@@ -378,7 +378,7 @@ void MPMesh::solveMatrixAndRegularize(int dim1, double* m11, double* m12, double
 
 //Method2
 template <MeshFieldIndex meshFieldIndex>
-void MPMesh::subAssemblyVtx1(int size1, int size2, double* array, int comp) {
+void MPMesh::subAssemblyVtx1(int size1, int size2, int comp, double* array) {
   Kokkos::Timer timer; 
   
   auto VtxCoeffs=this->precomputedVtxCoeffs; 

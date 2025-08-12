@@ -21,7 +21,7 @@ void polympo_setMPICommunicator_f(MPMesh_ptr p_mpmesh, MPI_Fint fcomm);
 //MP info
 void polympo_createMPs_f(MPMesh_ptr p_mpmesh, const int numElms, const int numMPs, int* mpsPerElm, const int* mp2Elm, const int* isMPActive);
 void polympo_startRebuildMPs_f(MPMesh_ptr p_mpmesh, const int numMPs, const int* allTgtMpElmIn, const int* addedMPMask);
-void polympo_startRebuildMPs_f2(MPMesh_ptr p_mpmesh, const int size1, const int* arg1, const int size2, const int size3, int* arg2, int* arg3);
+void polympo_startRebuildMPs2_f(MPMesh_ptr p_mpmesh, const int size1, const int* arg1, const int size2, const int size3, int* arg2, int* arg3);
 
 int polympo_getMPCount_f(MPMesh_ptr p_mpmesh);
 
@@ -113,8 +113,8 @@ void polympo_setReconstructionOfStress_f(MPMesh_ptr p_mpmesh, const int order, c
 void polympo_applyReconstruction_f(MPMesh_ptr p_mpmesh);
 
 //Reconstruction using MPAS
-void polympo_vtxSubAssemblyIceArea_f(MPMesh_ptr p_mpmesh, int size1, int size2, double* array, int comp);
-void polympo_vtxSubAssemblyVelocity_f(MPMesh_ptr p_mpmesh, int size1, int size2, double* array, int comp);
+void polympo_vtxSubAssemblyIceArea_f(MPMesh_ptr p_mpmesh, int size1, int size2, int comp, double* array);
+void polympo_vtxSubAssemblyVelocity_f(MPMesh_ptr p_mpmesh, int size1, int size2, int comp, double* array);
 void polympo_subAssemblyCoeffs_f(MPMesh_ptr p_mpmesh, int dim1, int dim2, double* m11, double* m12, double* m13, double* m14,
                                                                           double* m22, double* m23, double* m24,
                                                                           double* m33, double* m34,

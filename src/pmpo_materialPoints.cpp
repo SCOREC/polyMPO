@@ -114,7 +114,7 @@ void MaterialPoints::finishRebuild() {
   updateMaxAppID();
   ps::destroyViews<MaterialPointTypes>(rebuildFields.addedSlices_h);
   ps::destroyViews<MaterialPointTypes>(addedSlices_d);
-  rebuildFields.ongoing = false;  
+  rebuildFields.ongoing = false;
 }
 
 MPI_Comm MaterialPoints::getMPIComm() {

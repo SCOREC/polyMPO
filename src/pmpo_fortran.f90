@@ -90,7 +90,7 @@ module polympo
 
 
   subroutine polympo_startRebuildMPs2(mpMesh, size1, arg1, size2, size3, arg2, arg3) &
-    bind(C, NAME='polympo_startRebuildMPs_f2')
+    bind(C, NAME='polympo_startRebuildMPs2_f')
     use :: iso_c_binding
     type(c_ptr), value :: mpMesh
     integer(c_int), value :: size1
@@ -910,14 +910,15 @@ module polympo
   end subroutine
 
 
-  subroutine polympo_vtxSubAssemblyIceArea(mpMesh, size1, size2, array, comp) &
+  subroutine polympo_vtxSubAssemblyIceArea(mpMesh, size1, size2, comp, array) &
              bind(C, NAME='polympo_vtxSubAssemblyIceArea_f')
     use :: iso_c_binding
     type(c_ptr), value :: mpMesh
     integer(c_int), value :: size1, size2, comp
     type(c_ptr), value :: array
   end subroutine
-  subroutine polympo_vtxSubAssemblyVelocity(mpMesh, size1, size2, array, comp) &
+
+  subroutine polympo_vtxSubAssemblyVelocity(mpMesh, size1, size2, comp, array) &
              bind(C, NAME='polympo_vtxSubAssemblyVelocity_f')
     use :: iso_c_binding
     type(c_ptr), value :: mpMesh

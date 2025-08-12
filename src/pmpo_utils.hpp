@@ -304,12 +304,12 @@ void CholeskySolve4d_UnitRHS(Matrix4d& A, double* x){
     double a_00=A(0,0);
     if (A(0,0)==0){
         x[0]=0;
-	x[1]=0;
-	x[2]=0;
-	x[3]=0;
+        x[1]=0;
+        x[2]=0;
+        x[3]=0;
 	return;
     }
-    
+
     A(0,0) = std::sqrt(A(0,0));
     A(0,1) /= A(0,0);
     A(0,2) /= A(0,0);
@@ -317,48 +317,48 @@ void CholeskySolve4d_UnitRHS(Matrix4d& A, double* x){
 
     double diag = A(1,1) - A(0,1)*A(0,1);
     if(diag>EPSILON){
-         A(1,1)=std::sqrt(diag);
-	 A(1,2)=(A(1,2)-A(0,1)*A(0,2))/A(1,1);
-	 A(1,3)=(A(1,3)-A(0,1)*A(0,3))/A(1,1);
+        A(1,1)=std::sqrt(diag);
+        A(1,2)=(A(1,2)-A(0,1)*A(0,2))/A(1,1);
+        A(1,3)=(A(1,3)-A(0,1)*A(0,3))/A(1,1);
     }
     else{
         A(1,1)=0.0;
-	A(1,2)=0.0;
-	A(1,3)=0.0;
+        A(1,2)=0.0;
+        A(1,3)=0.0;
     }
-    
+
     diag = A(2,2) - A(0,2)*A(0,2)-A(1,2)*A(1,2);
     if(diag>EPSILON){
         A(2,2)=std::sqrt(diag);
         A(2,3)=(A(2,3)-A(0,2)*A(0,3)-A(1,2)*A(1,3))/A(2,2);
     }
     else{
-       A(2,2)=0.0;
-       A(2,3)=0.0;
+        A(2,2)=0.0;
+        A(2,3)=0.0;
     }
 
     diag=A(3,3)-A(0,3)*A(0,3)-A(1,3)*A(1,3)-A(2,3)*A(2,3);
     if(diag>EPSILON)
-       A(3,3)=std::sqrt(diag);
+        A(3,3)=std::sqrt(diag);
     else 
-       A(3,3)=0.0;
+        A(3,3)=0.0;
 
     if(abs(A(1,1))<EPSILON || abs(A(2,2))<EPSILON || abs(A(3,3))<EPSILON){
-       x[0]=1.0/a_00;
-       x[1]=0.0;
-       x[2]=0.0;
-       x[3]=0.0;
+        x[0]=1.0/a_00;
+        x[1]=0.0;
+        x[2]=0.0;
+        x[3]=0.0;
     }
     else{
-       x[0]= 1.0/A(0,0);
-       x[1]= -A(0,1)*x[0]/A(1,1);                
-       x[2]= -(A(0,2)*x[0]+A(1,2)*x[1])/A(2,2);  
-       x[3]= -(A(0,3)*x[0]+A(1,3)*x[1]+A(2,3)*x[2])/A(3,3); 
+        x[0]= 1.0/A(0,0);
+        x[1]= -A(0,1)*x[0]/A(1,1);                
+        x[2]= -(A(0,2)*x[0]+A(1,2)*x[1])/A(2,2);  
+        x[3]= -(A(0,3)*x[0]+A(1,3)*x[1]+A(2,3)*x[2])/A(3,3); 
 
-       x[3] = x[3]/A(3,3);
-       x[2] = ( x[2] - A(2,3)*x[3] )/A(2,2);
-       x[1] = ( x[1] - A(1,2)*x[2] - A(1,3)*x[3])/A(1,1);
-       x[0] = ( x[0] - A(0,1)*x[1] - A(0,2)*x[2] - A(0,3)*x[3])/A(0,0);
+        x[3] = x[3]/A(3,3);
+        x[2] = ( x[2] - A(2,3)*x[3] )/A(2,2);
+        x[1] = ( x[1] - A(1,2)*x[2] - A(1,3)*x[3])/A(1,1);
+        x[0] = ( x[0] - A(0,1)*x[1] - A(0,2)*x[2] - A(0,3)*x[3])/A(0,0);
     } 
 }
 
@@ -369,17 +369,17 @@ void QRDecomp4d(Matrix4d& A, Matrix4d& Q, Matrix4d& R){
       Vec4d A_column;
       Vec4d u_column;
       for (int l=0; l<m_size; l++){
-         A_column[l] = A(l,i);
-         u_column[l] = A(l,i);
+          A_column[l] = A(l,i);
+          u_column[l] = A(l,i);
       }
 
       for (int j=0; j<i; j++){
-         Vec4d q_column;
-         for (int l=0; l<m_size; l++)
-           q_column[l] = Q(l,j);
-         double r=q_column.dot(A_column);
-         R(j,i) = r;
-         for (int k=0; k<m_size; k++) u_column[k] -= r*Q(k,j);
+          Vec4d q_column;
+          for (int l=0; l<m_size; l++)
+              q_column[l] = Q(l,j);
+          double r=q_column.dot(A_column);
+          R(j,i) = r;
+          for (int k=0; k<m_size; k++) u_column[k] -= r*Q(k,j);
       }
       double uNorm = std::sqrt(u_column.dot(u_column));
       R(i,i)=uNorm;

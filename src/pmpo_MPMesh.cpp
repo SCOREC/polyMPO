@@ -331,7 +331,7 @@ void MPMesh::push_ahead(){
 
   //Interpolates latitude longitude increments and mesh velocity increments to
   //MP positions
-  sphericalInterpolation1(*this);
+  sphericalInterpolationDispVelIncr(*this);
   
   //Push the MPs
   p_MPs->updateRotLatLonAndXYZ2Tgt(p_mesh->getSphereRadius());

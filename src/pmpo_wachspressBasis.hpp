@@ -359,7 +359,7 @@ void sphericalInterpolation(MPMesh& mpMesh){
 }
 
 
-inline void sphericalInterpolation1(MPMesh& mpMesh){
+inline void sphericalInterpolationDispVelIncr(MPMesh& mpMesh){
     Kokkos::Timer timer;
     auto p_mesh = mpMesh.p_mesh;
     auto vtxCoords = p_mesh->getMeshField<polyMPO::MeshF_VtxCoords>();
@@ -423,7 +423,7 @@ inline void sphericalInterpolation1(MPMesh& mpMesh){
       }
     };
     p_MPs->parallel_for(interpolation, "sphericalInterpolationMultiField");
-    pumipic::RecordTime("PolyMPO_sphericalInterpolation1", timer.seconds());
+    pumipic::RecordTime("PolyMPO_sphericalInterpolationDispVelIncr", timer.seconds());
   }
 
 

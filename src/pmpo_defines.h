@@ -4,7 +4,7 @@
 
 #define MP_ACTIVE 1
 #define MP_DELETE -1
-
+#define INVALID_ELM_ID -1
 typedef void* MPMesh_ptr;
 //Function that receives void* and returns an int
 typedef int (*IntVoidFunc)(void*);

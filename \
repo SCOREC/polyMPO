@@ -136,7 +136,7 @@ void polympo_createMPs_f(MPMesh_ptr p_mpmesh,
 }
 
 void polympo_startRebuildMPs_f(MPMesh_ptr p_mpmesh,
-                         const int numMPs, // Total MPs which is GREATER than or equal to number of active MPs
+                         const int numMPs, // Total number of MPs which is GREATER than or equal to number of active MPs
                          const int* allMP2Elm,
                          const int* addedMPMask) {
   checkMPMeshValid(p_mpmesh);

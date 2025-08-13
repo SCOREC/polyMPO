@@ -14,7 +14,7 @@ pumipic::MemberTypeViews createInternalMemberViews(int numMPs, View mp2elm, View
   auto policy = Kokkos::RangePolicy<typename MemSpace::execution_space>(typename MemSpace::execution_space(), 0, numMPs);
   Kokkos::parallel_for("setMPinfo", policy, KOKKOS_LAMBDA(int i) {
     mpCurElmPos_m(i) = mp2elm(i);
-    mpTgtElmPos_m(i) = -1;
+    mpTgtElmPos_m(i) = INVALID_ELM_ID;
     mpStatus_m(i) = MP_ACTIVE;
     mpAppID_m(i) = mpAppID(i);
   });

@@ -61,7 +61,7 @@ void polympo_setMPICommunicator_f(MPMesh_ptr p_mpmesh, MPI_Fint fcomm){
 
 void polympo_createMPs_f(MPMesh_ptr p_mpmesh,
                        const int numElms,
-                       const int numMPs, // total number of MPs which is >= no of active MPs
+                       const int numMPs, // total number of MPs which is >= number of active MPs
                        int* mpsPerElm,
                        const int* mp2Elm,
                        const int* isMPActive) {

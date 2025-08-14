@@ -910,35 +910,35 @@ module polympo
   end subroutine
 
 
-  subroutine polympo_vtxSubAssemblyIceArea(mpMesh, vtxPerElm, nCellsPlus1, comp, array) &
+  subroutine polympo_vtxSubAssemblyIceArea(mpMesh, vtxPerElm, nCells, comp, array) &
              bind(C, NAME='polympo_vtxSubAssemblyIceArea_f')
     use :: iso_c_binding
     type(c_ptr), value :: mpMesh
-    integer(c_int), value :: vtxPerElm, nCellsPlus1, comp
+    integer(c_int), value :: vtxPerElm, nCells, comp
     type(c_ptr), value :: array
   end subroutine
 
-  subroutine polympo_vtxSubAssemblyVelocity(mpMesh, vtxPerElm, nCellsPlus1, comp, array) &
+  subroutine polympo_vtxSubAssemblyVelocity(mpMesh, vtxPerElm, nCells, comp, array) &
              bind(C, NAME='polympo_vtxSubAssemblyVelocity_f')
     use :: iso_c_binding
     type(c_ptr), value :: mpMesh
-    integer(c_int), value :: vtxPerElm, nCellsPlus1, comp
+    integer(c_int), value :: vtxPerElm, nCells, comp
     type(c_ptr), value :: array
   end subroutine
   
-  subroutine polympo_subAssemblyCoeffs(mpMesh, vtxPerElm, nCellsPlus1, m11, m12, m13, m14, m22, m23, m24, m33, m34, m44) &
+  subroutine polympo_subAssemblyCoeffs(mpMesh, vtxPerElm, nCells, m11, m12, m13, m14, m22, m23, m24, m33, m34, m44) &
              bind(C, NAME='polympo_subAssemblyCoeffs_f')
     use :: iso_c_binding
     type(c_ptr), value :: mpMesh
-    integer(c_int), value :: vtxPerElm, nCellsPlus1
+    integer(c_int), value :: vtxPerElm, nCells
     type(c_ptr), value :: m11, m12, m13, m14, m22, m23, m24, m33, m34, m44
   end subroutine
   
-  subroutine polympo_regularize_and_solve_matrix(mpMesh, nVerticesPlus1, m11, m12, m13, m14, m22, m23, m24, m33, m34, m44) &
+  subroutine polympo_regularize_and_solve_matrix(mpMesh, nVertices, m11, m12, m13, m14, m22, m23, m24, m33, m34, m44) &
              bind(C, NAME='polympo_regularize_and_solve_matrix_f')
     use :: iso_c_binding
     type(c_ptr), value :: mpMesh
-    integer(c_int), value :: nVerticesPlus1
+    integer(c_int), value :: nVertices
     type(c_ptr), value :: m11, m12, m13, m14, m22, m23, m24, m33, m34, m44
   end subroutine
  

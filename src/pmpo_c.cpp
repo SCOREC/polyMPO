@@ -99,8 +99,6 @@ void polympo_createMPs_f(MPMesh_ptr p_mpmesh,
   int globalFirstElmWithMPs;
   MPI_Allreduce(&firstElmWithMPs, &globalFirstElmWithMPs, 1, MPI_INT, MPI_MIN, MPI_COMM_WORLD);
   
-  //printf("With a MP, globally smallest mesh elm %d and first elm %d \n", globalMinElmID, globalFirstElmWithMPs);
-
   int offset = -1;
   if(globalMinElmID-globalFirstElmWithMPs==1) {
     offset = 1;
@@ -1239,47 +1237,47 @@ void polympo_setReconstructionOfStress_f(MPMesh_ptr p_mpmesh, const int order, c
 }
 
 //With MPI communication done via MPAS
-void polympo_vtxSubAssemblyIceArea_f(MPMesh_ptr p_mpmesh, int vtxPerElm, int nCellsPlus1, int comp, double* array){
+void polympo_vtxSubAssemblyIceArea_f(MPMesh_ptr p_mpmesh, int vtxPerElm, int nCells, int comp, double* array){
   checkMPMeshValid(p_mpmesh);
   auto mpmesh = ((polyMPO::MPMesh*)p_mpmesh);
   auto p_mesh = ((polyMPO::MPMesh*)p_mpmesh)->p_mesh;
   PMT_ALWAYS_ASSERT(vtxPerElm <= maxVtxsPerElm);
-  PMT_ALWAYS_ASSERT(nCellsPlus1 == p_mesh->getNumElements()+1);
+  PMT_ALWAYS_ASSERT(nCells == p_mesh->getNumElements());
   PMT_ALWAYS_ASSERT(comp == 0 || comp== 1);  //either first or second component
-  mpmesh->subAssemblyVtx1<polyMPO::MeshF_VtxMass>(vtxPerElm, nCellsPlus1, comp, array);
+  mpmesh->subAssemblyVtx1<polyMPO::MeshF_VtxMass>(vtxPerElm, nCells, comp, array);
 }
 
-void polympo_vtxSubAssemblyVelocity_f(MPMesh_ptr p_mpmesh, int vtxPerElm, int nCellsPlus1, int comp, double* array){
+void polympo_vtxSubAssemblyVelocity_f(MPMesh_ptr p_mpmesh, int vtxPerElm, int nCells, int comp, double* array){
   checkMPMeshValid(p_mpmesh);
   auto mpmesh = ((polyMPO::MPMesh*)p_mpmesh);
   auto p_mesh = ((polyMPO::MPMesh*)p_mpmesh)->p_mesh;
   PMT_ALWAYS_ASSERT(vtxPerElm <= maxVtxsPerElm);
-  PMT_ALWAYS_ASSERT(nCellsPlus1 == p_mesh->getNumElements()+1);
+  PMT_ALWAYS_ASSERT(nCells == p_mesh->getNumElements());
   PMT_ALWAYS_ASSERT(comp == 0 || comp== 1);  //either first or second component
-  mpmesh->subAssemblyVtx1<polyMPO::MeshF_Vel>(vtxPerElm, nCellsPlus1, comp, array);
+  mpmesh->subAssemblyVtx1<polyMPO::MeshF_Vel>(vtxPerElm, nCells, comp, array);
 }
 
-void polympo_subAssemblyCoeffs_f(MPMesh_ptr p_mpmesh, int vtxPerElm, int nCellsPlus1, double* m11, double* m12, double* m13, double* m14,
+void polympo_subAssemblyCoeffs_f(MPMesh_ptr p_mpmesh, int vtxPerElm, int nCells, double* m11, double* m12, double* m13, double* m14,
                                                       double* m22, double* m23, double* m24,
                                                       double* m33, double* m34,
                                                       double* m44){
   checkMPMeshValid(p_mpmesh);
   auto p_mesh = ((polyMPO::MPMesh*)p_mpmesh)->p_mesh;
   PMT_ALWAYS_ASSERT(vtxPerElm <= maxVtxsPerElm);
-  PMT_ALWAYS_ASSERT(nCellsPlus1 == p_mesh->getNumElements()+1);
+  PMT_ALWAYS_ASSERT(nCells == p_mesh->getNumElements());
   auto mpmesh = ((polyMPO::MPMesh*)p_mpmesh);
-  mpmesh->subAssemblyCoeffs(vtxPerElm, nCellsPlus1, m11, m12, m13, m14, m22, m23, m24, m33, m34, m44); 
+  mpmesh->subAssemblyCoeffs(vtxPerElm, nCells, m11, m12, m13, m14, m22, m23, m24, m33, m34, m44); 
 }
 
-void polympo_regularize_and_solve_matrix_f(MPMesh_ptr p_mpmesh, int nVerticesPlus1, double* m11, double* m12, double* m13, double* m14,
+void polympo_regularize_and_solve_matrix_f(MPMesh_ptr p_mpmesh, int nVertices, double* m11, double* m12, double* m13, double* m14,
                                                                 double* m22, double* m23, double* m24,
                                                                 double* m33, double* m34,
                                                                 double* m44){
   checkMPMeshValid(p_mpmesh);
   auto p_mesh = ((polyMPO::MPMesh*)p_mpmesh)->p_mesh;
-  PMT_ALWAYS_ASSERT(nVerticesPlus1 == p_mesh->getNumVertices()+1);
+  PMT_ALWAYS_ASSERT(nVertices == p_mesh->getNumVertices());
   auto mpmesh = ((polyMPO::MPMesh*)p_mpmesh);
-  mpmesh->solveMatrixAndRegularize(nVerticesPlus1, m11, m12, m13, m14, m22, m23, m24, m33, m34, m44);
+  mpmesh->solveMatrixAndRegularize(nVertices, m11, m12, m13, m14, m22, m23, m24, m33, m34, m44);
 }
 
 void polympo_applyReconstruction_f(MPMesh_ptr p_mpmesh){

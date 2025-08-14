@@ -210,7 +210,7 @@ void MPMesh::computeMatricesAndSolve(){
 }
 
 //Method 2 for coefficients
-void MPMesh::subAssemblyCoeffs(int vtxPerElm, int nCellsPlus1, double* m11, double* m12, double* m13, double* m14, 
+void MPMesh::subAssemblyCoeffs(int vtxPerElm, int nCells, double* m11, double* m12, double* m13, double* m14, 
                                                                double* m22, double* m23, double* m24, 
                                                                double* m33, double* m34, 
                                                                double* m44){
@@ -242,16 +242,16 @@ void MPMesh::subAssemblyCoeffs(int vtxPerElm, int nCellsPlus1, double* m11, doub
   if(p_mesh->getGeomType() == geom_spherical_surf)
     radius=p_mesh->getSphereRadius();
 
-  Kokkos::View<double**> m11_d("m11", vtxPerElm, nCellsPlus1);
-  Kokkos::View<double**> m12_d("m12", vtxPerElm, nCellsPlus1);
-  Kokkos::View<double**> m13_d("m13", vtxPerElm, nCellsPlus1);
-  Kokkos::View<double**> m14_d("m14", vtxPerElm, nCellsPlus1);
-  Kokkos::View<double**> m22_d("m22", vtxPerElm, nCellsPlus1);
-  Kokkos::View<double**> m23_d("m23", vtxPerElm, nCellsPlus1);
-  Kokkos::View<double**> m24_d("m23", vtxPerElm, nCellsPlus1);
-  Kokkos::View<double**> m33_d("m33", vtxPerElm, nCellsPlus1);
-  Kokkos::View<double**> m34_d("m34", vtxPerElm, nCellsPlus1);
-  Kokkos::View<double**> m44_d("m34", vtxPerElm, nCellsPlus1);
+  Kokkos::View<double**> m11_d("m11", vtxPerElm, nCells);
+  Kokkos::View<double**> m12_d("m12", vtxPerElm, nCells);
+  Kokkos::View<double**> m13_d("m13", vtxPerElm, nCells);
+  Kokkos::View<double**> m14_d("m14", vtxPerElm, nCells);
+  Kokkos::View<double**> m22_d("m22", vtxPerElm, nCells);
+  Kokkos::View<double**> m23_d("m23", vtxPerElm, nCells);
+  Kokkos::View<double**> m24_d("m23", vtxPerElm, nCells);
+  Kokkos::View<double**> m33_d("m33", vtxPerElm, nCells);
+  Kokkos::View<double**> m34_d("m34", vtxPerElm, nCells);
+  Kokkos::View<double**> m44_d("m34", vtxPerElm, nCells);
  
   auto sub_assemble = PS_LAMBDA(const int& elm, const int& mp, const int& mask) {
     if(mask && (elm2Process(elm)==comm_rank)) { //if material point is 'active'/'enabled'
@@ -279,16 +279,16 @@ void MPMesh::subAssemblyCoeffs(int vtxPerElm, int nCellsPlus1, double* m11, doub
   pumipic::RecordTime("VtxSubAssemblyComputeCoeff", timer.seconds());
 
   Kokkos::Timer timer2;
-  kkDbl2dViewHostU m11_h(m11, vtxPerElm, nCellsPlus1);
-  kkDbl2dViewHostU m12_h(m12, vtxPerElm, nCellsPlus1);
-  kkDbl2dViewHostU m13_h(m13, vtxPerElm, nCellsPlus1);
-  kkDbl2dViewHostU m14_h(m14, vtxPerElm, nCellsPlus1);
-  kkDbl2dViewHostU m22_h(m22, vtxPerElm, nCellsPlus1);
-  kkDbl2dViewHostU m23_h(m23, vtxPerElm, nCellsPlus1);
-  kkDbl2dViewHostU m24_h(m24, vtxPerElm, nCellsPlus1);
-  kkDbl2dViewHostU m33_h(m33, vtxPerElm, nCellsPlus1);
-  kkDbl2dViewHostU m34_h(m34, vtxPerElm, nCellsPlus1);
-  kkDbl2dViewHostU m44_h(m44, vtxPerElm, nCellsPlus1);
+  kkDbl2dViewHostU m11_h(m11, vtxPerElm, nCells);
+  kkDbl2dViewHostU m12_h(m12, vtxPerElm, nCells);
+  kkDbl2dViewHostU m13_h(m13, vtxPerElm, nCells);
+  kkDbl2dViewHostU m14_h(m14, vtxPerElm, nCells);
+  kkDbl2dViewHostU m22_h(m22, vtxPerElm, nCells);
+  kkDbl2dViewHostU m23_h(m23, vtxPerElm, nCells);
+  kkDbl2dViewHostU m24_h(m24, vtxPerElm, nCells);
+  kkDbl2dViewHostU m33_h(m33, vtxPerElm, nCells);
+  kkDbl2dViewHostU m34_h(m34, vtxPerElm, nCells);
+  kkDbl2dViewHostU m44_h(m44, vtxPerElm, nCells);
   
   Kokkos::deep_copy(m11_h, m11_d); 
   Kokkos::deep_copy(m12_h, m12_d); 
@@ -305,33 +305,33 @@ void MPMesh::subAssemblyCoeffs(int vtxPerElm, int nCellsPlus1, double* m11, doub
 }
 
 //Method 2 for coefficients Solve matrix
-void MPMesh::solveMatrixAndRegularize(int nVerticesPlus1, double* m11, double* m12, double* m13, double* m14, 
+void MPMesh::solveMatrixAndRegularize(int nVertices, double* m11, double* m12, double* m13, double* m14, 
                                        double* m22, double* m23, double* m24, 
                                        double* m33, double* m34,
                                        double* m44){
 
   Kokkos::Timer timer;
-  kkViewHostU<const double*> m11_h(m11, nVerticesPlus1);
-  kkViewHostU<const double*> m12_h(m12, nVerticesPlus1);
-  kkViewHostU<const double*> m13_h(m13, nVerticesPlus1);
-  kkViewHostU<const double*> m14_h(m14, nVerticesPlus1);
-  kkViewHostU<const double*> m22_h(m22, nVerticesPlus1);
-  kkViewHostU<const double*> m23_h(m23, nVerticesPlus1);
-  kkViewHostU<const double*> m24_h(m24, nVerticesPlus1);
-  kkViewHostU<const double*> m33_h(m33, nVerticesPlus1);
-  kkViewHostU<const double*> m34_h(m34, nVerticesPlus1);
-  kkViewHostU<const double*> m44_h(m44, nVerticesPlus1);
+  kkViewHostU<const double*> m11_h(m11, nVertices);
+  kkViewHostU<const double*> m12_h(m12, nVertices);
+  kkViewHostU<const double*> m13_h(m13, nVertices);
+  kkViewHostU<const double*> m14_h(m14, nVertices);
+  kkViewHostU<const double*> m22_h(m22, nVertices);
+  kkViewHostU<const double*> m23_h(m23, nVertices);
+  kkViewHostU<const double*> m24_h(m24, nVertices);
+  kkViewHostU<const double*> m33_h(m33, nVertices);
+  kkViewHostU<const double*> m34_h(m34, nVertices);
+  kkViewHostU<const double*> m44_h(m44, nVertices);
   
-  Kokkos::View<double*> m11_d("m11", nVerticesPlus1);
-  Kokkos::View<double*> m12_d("m12", nVerticesPlus1);
-  Kokkos::View<double*> m13_d("m13", nVerticesPlus1);
-  Kokkos::View<double*> m14_d("m14", nVerticesPlus1); 
-  Kokkos::View<double*> m22_d("m22", nVerticesPlus1);
-  Kokkos::View<double*> m23_d("m23", nVerticesPlus1);
-  Kokkos::View<double*> m24_d("m24", nVerticesPlus1);
-  Kokkos::View<double*> m33_d("m33", nVerticesPlus1);
-  Kokkos::View<double*> m34_d("m34", nVerticesPlus1);
-  Kokkos::View<double*> m44_d("m44", nVerticesPlus1);
+  Kokkos::View<double*> m11_d("m11", nVertices);
+  Kokkos::View<double*> m12_d("m12", nVertices);
+  Kokkos::View<double*> m13_d("m13", nVertices);
+  Kokkos::View<double*> m14_d("m14", nVertices); 
+  Kokkos::View<double*> m22_d("m22", nVertices);
+  Kokkos::View<double*> m23_d("m23", nVertices);
+  Kokkos::View<double*> m24_d("m24", nVertices);
+  Kokkos::View<double*> m33_d("m33", nVertices);
+  Kokkos::View<double*> m34_d("m34", nVertices);
+  Kokkos::View<double*> m44_d("m44", nVertices);
   
   Kokkos::deep_copy(m11_d, m11_h);
   Kokkos::deep_copy(m12_d, m12_h);
@@ -347,9 +347,9 @@ void MPMesh::solveMatrixAndRegularize(int nVerticesPlus1, double* m11, double* m
 
   Kokkos::Timer timer2;
   auto dual_triangle_area=p_mesh->getMeshField<MeshF_DualTriangleArea>();
-  Kokkos::View<double*[vec4d_nEntries]> VtxCoeffs("VtxCoeffs", nVerticesPlus1);
+  Kokkos::View<double*[vec4d_nEntries]> VtxCoeffs("VtxCoeffs", nVertices);
   double radius=p_mesh->getSphereRadius();
-  Kokkos::parallel_for("fill", nVerticesPlus1, KOKKOS_LAMBDA(const int vtx){
+  Kokkos::parallel_for("fill", nVertices, KOKKOS_LAMBDA(const int vtx){
     Vec4d v0 = {m11_d(vtx), m12_d(vtx), m13_d(vtx), m14_d(vtx)};
     Vec4d v1 = {m12_d(vtx), m22_d(vtx), m23_d(vtx), m24_d(vtx)};
     Vec4d v2 = {m13_d(vtx), m23_d(vtx), m33_d(vtx), m34_d(vtx)};
@@ -378,7 +378,7 @@ void MPMesh::solveMatrixAndRegularize(int nVerticesPlus1, double* m11, double* m
 
 //Method2
 template <MeshFieldIndex meshFieldIndex>
-void MPMesh::subAssemblyVtx1(int vtxPerElm, int nCellsPlus1, int comp, double* array) {
+void MPMesh::subAssemblyVtx1(int vtxPerElm, int nCells, int comp, double* array) {
   Kokkos::Timer timer; 
   
   auto VtxCoeffs=this->precomputedVtxCoeffs; 
@@ -402,7 +402,7 @@ void MPMesh::subAssemblyVtx1(int vtxPerElm, int nCellsPlus1, int comp, double* a
  
   double radius=p_mesh->getSphereRadius();
 
-  Kokkos::View<double**> array_d("reconstructedIceArea", vtxPerElm, nCellsPlus1);
+  Kokkos::View<double**> array_d("reconstructedIceArea", vtxPerElm, nCells);
   auto sub_assemble = PS_LAMBDA(const int& elm, const int& mp, const int& mask) {
     if(mask && (elm2Process(elm)==comm_rank)) { 
       int nVtxE = elm2VtxConn(elm,0); //number of vertices bounding the element
@@ -426,7 +426,7 @@ void MPMesh::subAssemblyVtx1(int vtxPerElm, int nCellsPlus1, int comp, double* a
   pumipic::RecordTime("polyMPOsubAssemblyFieldCompute", timer.seconds());
   
   Kokkos::Timer timer2;
-  kkDbl2dViewHostU arrayHost(array, vtxPerElm, nCellsPlus1);
+  kkDbl2dViewHostU arrayHost(array, vtxPerElm, nCells);
   Kokkos::deep_copy(arrayHost, array_d); 
   pumipic::RecordTime("PolyMPOsubAssemblyFieldGet", timer2.seconds());
 }

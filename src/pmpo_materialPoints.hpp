@@ -129,7 +129,7 @@ class MaterialPoints {
     Operating_Mode operating_mode;
     RebuildHelper rebuildFields;
     IntFunc getAppID;
-    MPI_Comm mpi_comm;
+    MPI_Comm mpi_comm = MPI_COMM_WORLD;
 
   public:
     MaterialPoints() : MPs(nullptr) {};

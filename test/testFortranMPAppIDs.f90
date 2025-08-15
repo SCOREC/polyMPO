@@ -40,7 +40,7 @@ program main
     integer :: setMeshOption, setMPOption
     integer :: ierr, self
     integer :: mpi_comm_handle = MPI_COMM_WORLD
-    integer, dimension(:), pointer :: mpsPerElm, mp2Elm, isMPActive
+    integer, dimension(:), pointer :: mpsPerElm, mp2Elm, isMPActive, globalElms
     type(c_ptr) :: mpMesh
     integer :: nCells, numMPs, appID
     integer, parameter :: MP_ACTIVE = 1
@@ -56,15 +56,17 @@ program main
     setMeshOption = 1 !create a hard coded planar test mesh
     setMPOption = 0   !create an empty set of MPs
     mpMesh = polympo_createMPMesh(setMeshOption, setMPOption)
-
     numMPs = 1
     allocate(mpsPerElm(nCells))
+    allocate(globalElms(nCells))
     allocate(mp2Elm(numMPs))
     allocate(isMPActive(numMPs))
     call polympo_getMeshNumElms(mpMesh, nCells)
     mpsPerElm = 1
     mp2Elm = 1
     isMPActive = MP_ACTIVE
+    !This is a dummy array of global Cell IDs for each mesh element
+    call polympo_setElmGlobal(mpMesh, nCells, c_loc(globalElms))
     call polympo_createMPs(mpMesh, nCells, numMPs, c_loc(mpsPerElm), c_loc(mp2Elm), c_loc(isMPActive))
     call polympo_setMPICommunicator(mpMesh, mpi_comm_handle)
     ! Set function and opaque data structure(list/queue) used to retrieve appIDS
@@ -74,6 +76,12 @@ program main
     call testAppIDPointer(mpMesh)
 
     ! Clean Up
+    deallocate(mpsPerElm)
+    deallocate(globalElms)
+    deallocate(mp2Elm)
+    deallocate(isMPActive)
+    
+    
     call polympo_deleteMPMesh(mpMesh)
     call queue_destroy(queue)
     call polympo_finalize()

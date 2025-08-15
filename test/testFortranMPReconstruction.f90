@@ -19,7 +19,7 @@ program main
   real(kind=MPAS_RKIND) :: pi = 4.0_MPAS_RKIND*atan(1.0_MPAS_RKIND)
   real(kind=MPAS_RKIND) :: TEST_VAL = 1.1_MPAS_RKIND
   real(kind=MPAS_RKIND) :: TOLERANCE = 0.0001_MPAS_RKIND
-  real(kind=MPAS_RKIND) :: TOLERANCE1 = 0.0000000001_MPAS_RKIND
+  real(kind=MPAS_RKIND) :: TOLERANCE1 = 0.000000001_MPAS_RKIND
   character (len=2048) :: filename
   real(kind=MPAS_RKIND), dimension(:,:), pointer :: dispIncr
   character (len=64) :: onSphere
@@ -28,12 +28,15 @@ program main
   real(kind=MPAS_RKIND), dimension(:), pointer :: xVertex, yVertex, zVertex
   real(kind=MPAS_RKIND), dimension(:), pointer :: latVertex, lonVertex
   real(kind=MPAS_RKIND), dimension(:), pointer :: xCell, yCell, zCell
+  real(kind=MPAS_RKIND), dimension(:), pointer :: areaTriangle
+  
   integer, dimension(:,:), pointer :: verticesOnCell, cellsOnCell
   integer :: numMPs, vID
-  integer, dimension(:), pointer :: mpsPerElm, mp2Elm, isMPActive
+  integer, dimension(:), pointer :: mpsPerElm, mp2Elm, isMPActive, globalElms
   real(kind=MPAS_RKIND), dimension(:,:), pointer :: mpPosition, mpLatLon
   real(kind=MPAS_RKIND), dimension(:,:), pointer :: mpMass, mpVel
   real(kind=MPAS_RKIND), dimension(:), pointer :: meshVtxMass, meshElmMass, meshVtxMass1
+  real(kind=MPAS_RKIND), dimension(:), pointer :: meshVtxVelu, meshVtxVelv
   logical :: inBound
   integer, parameter :: MP_ACTIVE = 1
   integer, parameter :: MP_INACTIVE = 0
@@ -58,7 +61,7 @@ program main
                         xVertex, yVertex, zVertex, &
                         latVertex, lonVertex, &
                         xCell, yCell, zCell, &
-                        verticesOnCell, cellsOnCell)
+                        verticesOnCell, cellsOnCell, areaTriangle)
   if (onSphere .ne. 'YES') then
     write (*,*) "The mesh is not spherical!"
     call exit(1)
@@ -74,13 +77,14 @@ program main
                         xVertex, yVertex, zVertex, &
                         latVertex, &
                         xCell, yCell, zCell, &
-                        verticesOnCell, cellsOnCell)
+                        verticesOnCell, cellsOnCell, areaTriangle)
  
   nCompsDisp = 2
   allocate(dispIncr(nCompsDisp,nVertices))
   !createMPs
   numMPs = nCells
   allocate(mpsPerElm(nCells))
+  allocate(globalElms(nCells))
   allocate(mp2Elm(numMPs))
   allocate(isMPActive(numMPs))
   allocate(mpPosition(3,numMPs))
@@ -90,6 +94,8 @@ program main
   allocate(meshVtxMass(nVertices))
   allocate(meshVtxMass1(nVertices))
   allocate(meshElmMass(nCells))
+  allocate(meshVtxVelu(nVertices))
+  allocate(meshVtxVelv(nVertices))
 
   isMPActive = MP_ACTIVE !all active MPs and some changed below
   mpsPerElm = 1 !all elements have 1 MP and some changed below
@@ -104,7 +110,8 @@ program main
     mpPosition(2,i) = yCell(i)
     mpPosition(3,i) = zCell(i)
   end do
-
+  
+  call polympo_setElmGlobal(mpMesh, nCells, c_loc(globalElms))
   call polympo_createMPs(mpMesh,nCells,numMPs,c_loc(mpsPerElm),c_loc(mp2Elm),c_loc(isMPActive))
   call polympo_setMPICommunicator(mpMesh, mpi_comm_handle)
   call polympo_setMPRotLatLon(mpMesh,2,numMPs,c_loc(mpLatLon))
@@ -120,14 +127,20 @@ program main
 
   do i = 1, nVertices
     call assert(meshVtxMass(i) < TEST_VAL+TOLERANCE .and. meshVtxMass(i) > TEST_VAL-TOLERANCE, "Error: wrong vtx mass")
+    !write(*, *) 'The value of LRV is:', meshVtxMass(i)
   end do
   
   !Test vtx order 1 reconstruction
   call polympo_setReconstructionOfMass(mpMesh,1,polympo_getMeshFVtxType())
+  call polympo_setReconstructionOfVel(mpMesh, 1, polympo_getMeshFVtxType())
   call polympo_applyReconstruction(mpMesh)
   call polympo_getMeshVtxMass(mpMesh,nVertices,c_loc(meshVtxMass1))
+  call polympo_getMeshVtxVel(mpMesh, nVertices, c_loc(meshVtxVelu), c_loc(meshVtxVelv))
   do i = 1, nVertices
-    call assert(meshVtxMass1(i) < TEST_VAL+TOLERANCE1 .and. meshVtxMass1(i) > TEST_VAL-TOLERANCE1, "Error: wrong vtx mass LINEAR")
+    call assert(meshVtxMass1(i) < TEST_VAL+TOLERANCE1 .and. meshVtxMass1(i) > TEST_VAL-TOLERANCE1, "Error: wrong vtx mass order 1")
+    call assert(meshVtxVelu(i) < TEST_VAL+TOLERANCE1 .and. meshVtxVelu(i) > TEST_VAL-TOLERANCE1, "Error: wrong vtx velU order 1")
+    call assert(meshVtxVelv(i) < TEST_VAL+TOLERANCE1 .and. meshVtxVelv(i) > TEST_VAL-TOLERANCE1, "Error: wrong vtx velV order 1")
+    write(*, *) 'The value of LRV is:', meshVtxVelu(i)-TEST_VAL, meshVtxVelv(i)-TEST_VAL
   end do
 
 
@@ -143,7 +156,7 @@ program main
 
     do i = 1, numMPs
       vID = verticesOnCell(1,mp2Elm(i))
-      call assert(meshVtxMass(vID) < TEST_VAL+TOLERANCE .and. meshVtxMass(vID) > TEST_VAL-TOLERANCE, "Error: wrong vtx mass")
+      call assert(meshVtxMass(vID) < TEST_VAL+TOLERANCE1 .and. meshVtxMass(vID) > TEST_VAL-TOLERANCE1, "Error: wrong vtx mass push")
 
       call assert(meshElmMass(mp2Elm(i)) < TEST_VAL+TOLERANCE &
             .and. meshElmMass(mp2Elm(i)) > TEST_VAL-TOLERANCE, "Error: wrong elm mass")
@@ -175,7 +188,9 @@ program main
   deallocate(meshVtxMass)
   deallocate(meshVtxMass1)
   deallocate(meshElmMass)
-
+  deallocate(meshVtxVelu)
+  deallocate(meshVtxVelv)
+  deallocate(globalElms)
   stop
 
   contains

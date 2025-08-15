@@ -98,8 +98,350 @@ void MPMesh::assemblyElm0() {
   pumipic::RecordTime("PolyMPO_Reconstruct_Elm0", timer.seconds());
 }
 
+
+void MPMesh::resetPreComputeFlag(){
+  isPreComputed = false;
+}
+
+//Method 1 for coefficients
+void MPMesh::computeMatricesAndSolve(){
+  Kokkos::Timer timer;
+  //Mesh Information
+  auto elm2VtxConn = p_mesh->getElm2VtxConn();  
+  int numVtx = p_mesh->getNumVertices();
+  auto vtxCoords = p_mesh->getMeshField<polyMPO::MeshF_VtxCoords>();
+
+  //Dual Element Area for Regularization
+  auto dual_triangle_area=p_mesh->getMeshField<MeshF_DualTriangleArea>();
+
+  //Material Points
+  auto weight = p_MPs->getData<MPF_Basis_Vals>();
+  auto mpPositions = p_MPs->getData<MPF_Cur_Pos_XYZ>();
+
+  //Matrix for each vertex
+  Kokkos::View<double*[vec4d_nEntries][vec4d_nEntries]> VtxMatrices("VtxMatrices", p_mesh->getNumVertices());
+
+  //Earth Radius
+  double radius = 1.0;
+  if(p_mesh->getGeomType() == geom_spherical_surf)
+    radius=p_mesh->getSphereRadius();
+
+  bool scaling=true;
+  int reg_method = 2;
+  
+  //Assemble matrix for each vertex
+  auto assemble = PS_LAMBDA(const int& elm, const int& mp, const int& mask) {
+    if(mask) { //if material point is 'active'/'enabled'
+      int nVtxE = elm2VtxConn(elm,0); //number of vertices bounding the element
+      for(int i=0; i<nVtxE; i++){
+        int vID = elm2VtxConn(elm,i+1)-1; //vID = vertex id
+        double w_vtx=weight(mp,i);
+        double mScale=1;
+        if(scaling)
+          mScale=sqrt(dual_triangle_area(vID,0))/radius;
+        double CoordDiffs[vec4d_nEntries] = {1, (vtxCoords(vID,0) - mpPositions(mp,0))/radius, 
+                                                (vtxCoords(vID,1) - mpPositions(mp,1))/radius, 
+                                                (vtxCoords(vID,2) - mpPositions(mp,2))/radius};		 
+        //All entries except first row and column
+        for (int k=1; k<vec4d_nEntries; k++)
+          for (int l=1; l<vec4d_nEntries; l++)
+            Kokkos::atomic_add(&VtxMatrices(vID,k,l), CoordDiffs[k] * CoordDiffs[l] * w_vtx);
+        //First entry
+        Kokkos::atomic_add(&VtxMatrices(vID,0,0), CoordDiffs[0] * CoordDiffs[0] * w_vtx*mScale*mScale); 
+        //First row and column except the first entry
+        for (int k=1; k<vec4d_nEntries; k++){
+          Kokkos::atomic_add(&VtxMatrices(vID,0,k), CoordDiffs[0] * CoordDiffs[k] * w_vtx*mScale);
+          Kokkos::atomic_add(&VtxMatrices(vID,k,0), CoordDiffs[k] * CoordDiffs[0] * w_vtx*mScale);
+        }
+      }
+    }
+  };
+  p_MPs->parallel_for(assemble, "assembly");
+  
+  //Assemble matrix for each vertex and apply regularization
+  Kokkos::View<double*[vec4d_nEntries]> VtxCoeffs("VtxCoeffs", p_mesh->getNumVertices());
+
+  Kokkos::parallel_for("solving Ax=b", numVtx, KOKKOS_LAMBDA(const int vtx){
+    Vec4d v0 = {VtxMatrices(vtx,0,0), VtxMatrices(vtx,0,1), VtxMatrices(vtx,0,2), VtxMatrices(vtx,0,3)};
+    Vec4d v1 = {VtxMatrices(vtx,1,0), VtxMatrices(vtx,1,1), VtxMatrices(vtx,1,2), VtxMatrices(vtx,1,3)};
+    Vec4d v2 = {VtxMatrices(vtx,2,0), VtxMatrices(vtx,2,1), VtxMatrices(vtx,2,2), VtxMatrices(vtx,2,3)};
+    Vec4d v3 = {VtxMatrices(vtx,3,0), VtxMatrices(vtx,3,1), VtxMatrices(vtx,3,2), VtxMatrices(vtx,3,3)};
+    //Define the matrices
+    Matrix4d A = {v0,v1,v2,v3};
+    Matrix4d A_regularized = {v0, v1, v2, v3};
+    //Regularization
+    switch(reg_method){
+      case 0:{
+        break;
+      }   
+      case 1:{
+        double A_trace = A.trace();
+        A_regularized.addToDiag(A_trace*1e-8);
+        break;
+      }
+      case 2:{
+        double regParam=sqrt(EPSILON)*(VtxMatrices(vtx,0,0)+VtxMatrices(vtx,1,1)+
+			               VtxMatrices(vtx,2,2)+VtxMatrices(vtx,3,3));
+        A_regularized.addToDiag(regParam);
+        break;
+      }
+      default:{
+        printf("Invalid regularization method \n");
+        break;	
+      }
+    }
+    //Solve Ax=b 
+    double coeff[vec4d_nEntries]={0.0, 0.0, 0.0, 0.0};
+    CholeskySolve4d_UnitRHS(A_regularized, coeff);
+    // Undo scaling
+    double mScale=1;
+    if(scaling)
+      mScale=sqrt(dual_triangle_area(vtx,0))/radius;
+        
+    coeff[0]=coeff[0]*mScale*mScale;
+    coeff[1]=coeff[1]*mScale;
+    coeff[2]=coeff[2]*mScale;
+    coeff[3]=coeff[3]*mScale;
+    for (int i=0; i<vec4d_nEntries; i++) 
+      VtxCoeffs(vtx,i)=coeff[i];
+  });
+  this->precomputedVtxCoeffs = VtxCoeffs;
+  pumipic::RecordTime("PolyMPO_Calculate_MLS_Coeff", timer.seconds());
+}
+
+//Method 2 for coefficients
+void MPMesh::subAssemblyCoeffs(int vtxPerElm, int nCells, double* m11, double* m12, double* m13, double* m14, 
+                                                               double* m22, double* m23, double* m24, 
+                                                               double* m33, double* m34, 
+                                                               double* m44){
+  
+  Kokkos::Timer timer;
+  //Material Points Information
+  MPI_Comm comm = p_MPs->getMPIComm(); 
+  int comm_rank;
+  MPI_Comm_rank(comm, &comm_rank);
+
+  //Mesh Information
+  auto elm2VtxConn = p_mesh->getElm2VtxConn();  
+  int numVtx = p_mesh->getNumVertices();
+  auto vtxCoords = p_mesh->getMeshField<polyMPO::MeshF_VtxCoords>();
+  auto elm2Process = p_mesh->getElm2Process();
+  auto elm2global = p_mesh->getElmGlobal();
+
+  //Dual Element Area for Regularization
+  auto dual_triangle_area=p_mesh->getMeshField<MeshF_DualTriangleArea>();
+  
+  //Material Points
+  calcBasis();
+  auto weight = p_MPs->getData<MPF_Basis_Vals>();
+  auto mpPos = p_MPs->getData<MPF_Cur_Pos_XYZ>();
+  auto mpAppID = p_MPs->getData<polyMPO::MPF_MP_APP_ID>();
+
+  //Radius
+  double radius = 1.0;
+  if(p_mesh->getGeomType() == geom_spherical_surf)
+    radius=p_mesh->getSphereRadius();
+
+  Kokkos::View<double**> m11_d("m11", vtxPerElm, nCells);
+  Kokkos::View<double**> m12_d("m12", vtxPerElm, nCells);
+  Kokkos::View<double**> m13_d("m13", vtxPerElm, nCells);
+  Kokkos::View<double**> m14_d("m14", vtxPerElm, nCells);
+  Kokkos::View<double**> m22_d("m22", vtxPerElm, nCells);
+  Kokkos::View<double**> m23_d("m23", vtxPerElm, nCells);
+  Kokkos::View<double**> m24_d("m23", vtxPerElm, nCells);
+  Kokkos::View<double**> m33_d("m33", vtxPerElm, nCells);
+  Kokkos::View<double**> m34_d("m34", vtxPerElm, nCells);
+  Kokkos::View<double**> m44_d("m34", vtxPerElm, nCells);
+ 
+  auto sub_assemble = PS_LAMBDA(const int& elm, const int& mp, const int& mask) {
+    if(mask && (elm2Process(elm)==comm_rank)) { //if material point is 'active'/'enabled'
+      int nVtxE = elm2VtxConn(elm,0); //number of vertices bounding the element
+      for(int i=0; i<nVtxE; i++){
+        int vID = elm2VtxConn(elm,i+1)-1; //vID = vertex id
+          
+          double w_vtx=weight(mp,i);
+          double mScale=sqrt(dual_triangle_area(vID,0))/radius;
+          
+          Kokkos::atomic_add(&m11_d(i,elm), w_vtx*mScale*mScale);
+          Kokkos::atomic_add(&m12_d(i,elm), w_vtx*mScale*(vtxCoords(vID,0)-mpPos(mp,0))/radius);
+          Kokkos::atomic_add(&m13_d(i,elm), w_vtx*mScale*(vtxCoords(vID,1)-mpPos(mp,1))/radius);
+          Kokkos::atomic_add(&m14_d(i,elm), w_vtx*mScale*(vtxCoords(vID,2)-mpPos(mp,2))/radius);
+          Kokkos::atomic_add(&m22_d(i,elm), w_vtx*mScale*(vtxCoords(vID,0)-mpPos(mp,0))*(vtxCoords(vID,0)-mpPos(mp,0))/(radius*radius));
+          Kokkos::atomic_add(&m23_d(i,elm), w_vtx*mScale*(vtxCoords(vID,0)-mpPos(mp,0))*(vtxCoords(vID,1)-mpPos(mp,1))/(radius*radius));
+          Kokkos::atomic_add(&m24_d(i,elm), w_vtx*mScale*(vtxCoords(vID,0)-mpPos(mp,0))*(vtxCoords(vID,2)-mpPos(mp,2))/(radius*radius));
+          Kokkos::atomic_add(&m33_d(i,elm), w_vtx*mScale*(vtxCoords(vID,1)-mpPos(mp,1))*(vtxCoords(vID,1)-mpPos(mp,1))/(radius*radius));
+          Kokkos::atomic_add(&m34_d(i,elm), w_vtx*mScale*(vtxCoords(vID,1)-mpPos(mp,1))*(vtxCoords(vID,2)-mpPos(mp,2))/(radius*radius));
+          Kokkos::atomic_add(&m44_d(i,elm), w_vtx*mScale*(vtxCoords(vID,2)-mpPos(mp,2))*(vtxCoords(vID,2)-mpPos(mp,2))/(radius*radius));
+      }
+    }
+  };
+  p_MPs->parallel_for(sub_assemble, "sub_assembly");
+  pumipic::RecordTime("VtxSubAssemblyComputeCoeff", timer.seconds());
+
+  Kokkos::Timer timer2;
+  kkDbl2dViewHostU m11_h(m11, vtxPerElm, nCells);
+  kkDbl2dViewHostU m12_h(m12, vtxPerElm, nCells);
+  kkDbl2dViewHostU m13_h(m13, vtxPerElm, nCells);
+  kkDbl2dViewHostU m14_h(m14, vtxPerElm, nCells);
+  kkDbl2dViewHostU m22_h(m22, vtxPerElm, nCells);
+  kkDbl2dViewHostU m23_h(m23, vtxPerElm, nCells);
+  kkDbl2dViewHostU m24_h(m24, vtxPerElm, nCells);
+  kkDbl2dViewHostU m33_h(m33, vtxPerElm, nCells);
+  kkDbl2dViewHostU m34_h(m34, vtxPerElm, nCells);
+  kkDbl2dViewHostU m44_h(m44, vtxPerElm, nCells);
+  
+  Kokkos::deep_copy(m11_h, m11_d); 
+  Kokkos::deep_copy(m12_h, m12_d); 
+  Kokkos::deep_copy(m13_h, m13_d); 
+  Kokkos::deep_copy(m14_h, m14_d); 
+  Kokkos::deep_copy(m22_h, m22_d); 
+  Kokkos::deep_copy(m23_h, m23_d); 
+  Kokkos::deep_copy(m24_h, m24_d); 
+  Kokkos::deep_copy(m33_h, m33_d); 
+  Kokkos::deep_copy(m34_h, m34_d); 
+  Kokkos::deep_copy(m44_h, m44_d); 
+  pumipic::RecordTime("VtxSubAssemblyGetCoeff", timer2.seconds());
+  
+}
+
+//Method 2 for coefficients Solve matrix
+void MPMesh::solveMatrixAndRegularize(int nVertices, double* m11, double* m12, double* m13, double* m14, 
+                                       double* m22, double* m23, double* m24, 
+                                       double* m33, double* m34,
+                                       double* m44){
+
+  Kokkos::Timer timer;
+  kkViewHostU<const double*> m11_h(m11, nVertices);
+  kkViewHostU<const double*> m12_h(m12, nVertices);
+  kkViewHostU<const double*> m13_h(m13, nVertices);
+  kkViewHostU<const double*> m14_h(m14, nVertices);
+  kkViewHostU<const double*> m22_h(m22, nVertices);
+  kkViewHostU<const double*> m23_h(m23, nVertices);
+  kkViewHostU<const double*> m24_h(m24, nVertices);
+  kkViewHostU<const double*> m33_h(m33, nVertices);
+  kkViewHostU<const double*> m34_h(m34, nVertices);
+  kkViewHostU<const double*> m44_h(m44, nVertices);
+  
+  Kokkos::View<double*> m11_d("m11", nVertices);
+  Kokkos::View<double*> m12_d("m12", nVertices);
+  Kokkos::View<double*> m13_d("m13", nVertices);
+  Kokkos::View<double*> m14_d("m14", nVertices); 
+  Kokkos::View<double*> m22_d("m22", nVertices);
+  Kokkos::View<double*> m23_d("m23", nVertices);
+  Kokkos::View<double*> m24_d("m24", nVertices);
+  Kokkos::View<double*> m33_d("m33", nVertices);
+  Kokkos::View<double*> m34_d("m34", nVertices);
+  Kokkos::View<double*> m44_d("m44", nVertices);
+  
+  Kokkos::deep_copy(m11_d, m11_h);
+  Kokkos::deep_copy(m12_d, m12_h);
+  Kokkos::deep_copy(m13_d, m13_h);
+  Kokkos::deep_copy(m14_d, m14_h);
+  Kokkos::deep_copy(m22_d, m22_h);
+  Kokkos::deep_copy(m23_d, m23_h);
+  Kokkos::deep_copy(m24_d, m24_h);
+  Kokkos::deep_copy(m33_d, m33_h);
+  Kokkos::deep_copy(m34_d, m34_h);
+  Kokkos::deep_copy(m44_d, m44_h);
+  pumipic::RecordTime("polyMPOsolveMatrixCoeffSet", timer.seconds());
+
+  Kokkos::Timer timer2;
+  auto dual_triangle_area=p_mesh->getMeshField<MeshF_DualTriangleArea>();
+  Kokkos::View<double*[vec4d_nEntries]> VtxCoeffs("VtxCoeffs", nVertices);
+  double radius=p_mesh->getSphereRadius();
+  Kokkos::parallel_for("fill", nVertices, KOKKOS_LAMBDA(const int vtx){
+    Vec4d v0 = {m11_d(vtx), m12_d(vtx), m13_d(vtx), m14_d(vtx)};
+    Vec4d v1 = {m12_d(vtx), m22_d(vtx), m23_d(vtx), m24_d(vtx)};
+    Vec4d v2 = {m13_d(vtx), m23_d(vtx), m33_d(vtx), m34_d(vtx)};
+    Vec4d v3 = {m14_d(vtx), m24_d(vtx), m34_d(vtx), m44_d(vtx)}; 
+    //Matrix4d A = {v0,v1,v2,v3};
+    Matrix4d A_regularized = {v0, v1, v2, v3};
+    double regParam = sqrt(EPSILON)*(m11_d(vtx) + m22_d(vtx) + m33_d(vtx) + m44_d(vtx));
+    A_regularized.addToDiag(regParam);
+    
+    double coeff[vec4d_nEntries]={0.0, 0.0, 0.0, 0.0};
+    CholeskySolve4d_UnitRHS(A_regularized, coeff);
+    
+    double mScale=sqrt(dual_triangle_area(vtx,0))/radius;
+    coeff[0]=coeff[0]*mScale*mScale;
+    coeff[1]=coeff[1]*mScale;
+    coeff[2]=coeff[2]*mScale;
+    coeff[3]=coeff[3]*mScale;
+
+    for (int i=0; i<vec4d_nEntries; i++) 
+      VtxCoeffs(vtx,i)=coeff[i];
+  });
+  this->precomputedVtxCoeffs = VtxCoeffs;
+  pumipic::RecordTime("polyMPOsolveMatrixCoeffCompute", timer2.seconds());
+
+}
+
+//Method2
+template <MeshFieldIndex meshFieldIndex>
+void MPMesh::subAssemblyVtx1(int vtxPerElm, int nCells, int comp, double* array) {
+  Kokkos::Timer timer; 
+  
+  auto VtxCoeffs=this->precomputedVtxCoeffs; 
+  
+  // MPI Information
+  MPI_Comm comm = p_MPs->getMPIComm(); 
+  int comm_rank;
+  MPI_Comm_rank(comm, &comm_rank);
+
+  //Mesh Information
+  auto elm2VtxConn = p_mesh->getElm2VtxConn();  
+  int numVtx = p_mesh->getNumVertices();
+  auto vtxCoords = p_mesh->getMeshField<polyMPO::MeshF_VtxCoords>();
+  auto elm2Process = p_mesh->getElm2Process();
+ 
+  // Material Points Information
+  constexpr MaterialPointSlice mpfIndex = meshFieldIndexToMPSlice<meshFieldIndex>;
+  auto mpData = p_MPs->getData<mpfIndex>();
+  auto weight = p_MPs->getData<MPF_Basis_Vals>();
+  auto mpPositions = p_MPs->getData<MPF_Cur_Pos_XYZ>();
+ 
+  double radius=p_mesh->getSphereRadius();
+
+  Kokkos::View<double**> array_d("reconstructedIceArea", vtxPerElm, nCells);
+  auto sub_assemble = PS_LAMBDA(const int& elm, const int& mp, const int& mask) {
+    if(mask && (elm2Process(elm)==comm_rank)) { 
+      int nVtxE = elm2VtxConn(elm,0); //number of vertices bounding the element
+      for(int i=0; i<nVtxE; i++){
+        int vID = elm2VtxConn(elm,i+1)-1; //vID = vertex id
+        double w_vtx=weight(mp,i);
+        double CoordDiffs[vec4d_nEntries] = {1, (vtxCoords(vID,0) - mpPositions(mp,0))/radius, 
+                                                (vtxCoords(vID,1) - mpPositions(mp,1))/radius, 
+                                                (vtxCoords(vID,2) - mpPositions(mp,2))/radius};
+
+        auto factor = w_vtx*(VtxCoeffs(vID,0) + VtxCoeffs(vID,1)*CoordDiffs[1] + 
+                                                VtxCoeffs(vID,2)*CoordDiffs[2] + 
+                                                VtxCoeffs(vID,3)*CoordDiffs[3]);
+  
+        auto val = factor*mpData(mp, comp);
+        Kokkos::atomic_add(&array_d(i, elm), val);
+      }
+    }
+  };
+  p_MPs->parallel_for(sub_assemble, "sub_assembly"); 
+  pumipic::RecordTime("polyMPOsubAssemblyFieldCompute", timer.seconds());
+  
+  Kokkos::Timer timer2;
+  kkDbl2dViewHostU arrayHost(array, vtxPerElm, nCells);
+  Kokkos::deep_copy(arrayHost, array_d); 
+  pumipic::RecordTime("PolyMPOsubAssemblyFieldGet", timer2.seconds());
+}
+
+//Method 1
 template <MeshFieldIndex meshFieldIndex>
 void MPMesh::assemblyVtx1() {
+  Kokkos::Timer timer; 
+  //If no reconstruction till now calculate the coeffs
+  if (!isPreComputed) {
+    computeMatricesAndSolve();
+    isPreComputed=true;
+  }
+  
+  auto VtxCoeffs=this->precomputedVtxCoeffs;
   //Mesh Information
   auto elm2VtxConn = p_mesh->getElm2VtxConn();  
   int numVtx = p_mesh->getNumVertices();
@@ -116,55 +458,14 @@ void MPMesh::assemblyVtx1() {
   auto weight = p_MPs->getData<MPF_Basis_Vals>();
   auto mpPositions = p_MPs->getData<MPF_Cur_Pos_XYZ>();
 
-  //Matrix for each vertex
-  Kokkos::View<double*[vec4d_nEntries][vec4d_nEntries]> VtxMatrices("VtxMatrices", p_mesh->getNumVertices());
-
-  //Reconstructed values
-  Kokkos::View<double**> reconVals("meshField", p_mesh->getNumVertices(), numEntries);
-  
   //Earth Radius
   double radius = 1.0;
   if(p_mesh->getGeomType() == geom_spherical_surf)
     radius=p_mesh->getSphereRadius();
 
-  //Assemble matrix for each vertex
-  auto assemble = PS_LAMBDA(const int& elm, const int& mp, const int& mask) {
-    if(mask) { //if material point is 'active'/'enabled'
-      int nVtxE = elm2VtxConn(elm,0); //number of vertices bounding the element
-      for(int i=0; i<nVtxE; i++){
-        int vID = elm2VtxConn(elm,i+1)-1; //vID = vertex id
-        double w_vtx=weight(mp,i);
-        
-        double CoordDiffs[vec4d_nEntries] = {1, (vtxCoords(vID,0) - mpPositions(mp,0))/radius, 
-                                                (vtxCoords(vID,1) - mpPositions(mp,1))/radius, 
-                                                (vtxCoords(vID,2) - mpPositions(mp,2))/radius};		 
-        for (int k=0; k<vec4d_nEntries; k++)
-          for (int l=0; l<vec4d_nEntries; l++)
-            Kokkos::atomic_add(&VtxMatrices(vID,k,l), CoordDiffs[k] * CoordDiffs[l] * w_vtx);
-      }
-    }
-  };
-  p_MPs->parallel_for(assemble, "assembly");
-  
-  //Solve Ax=b for each vertex  
-  Kokkos::View<double*[vec4d_nEntries]> VtxCoeffs("VtxCoeffs", p_mesh->getNumVertices());
-  Kokkos::parallel_for("solving Ax=b", numVtx, KOKKOS_LAMBDA(const int vtx){
-    Vec4d v0 = {VtxMatrices(vtx,0,0), VtxMatrices(vtx,0,1), VtxMatrices(vtx,0,2), VtxMatrices(vtx,0,3)};
-    Vec4d v1 = {VtxMatrices(vtx,1,0), VtxMatrices(vtx,1,1), VtxMatrices(vtx,1,2), VtxMatrices(vtx,1,3)};
-    Vec4d v2 = {VtxMatrices(vtx,2,0), VtxMatrices(vtx,2,1), VtxMatrices(vtx,2,2), VtxMatrices(vtx,2,3)};
-    Vec4d v3 = {VtxMatrices(vtx,3,0), VtxMatrices(vtx,3,1), VtxMatrices(vtx,3,2), VtxMatrices(vtx,3,3)};
-     
-    Matrix4d A = {v0,v1,v2,v3}; 
-    double A_trace = A.trace();
-    Matrix4d A_regularized = {v0, v1, v2, v3};
-    A_regularized.addToDiag(A_trace*1e-8);
-   
-    double coeff[vec4d_nEntries]={0.0, 0.0, 0.0, 0.0};
-    CholeskySolve4d_UnitRHS(A_regularized, coeff);
-    for (int i=0; i<vec4d_nEntries; i++) 
-      VtxCoeffs(vtx,i)=coeff[i];
-  });
-  
+  //Reconstructed values
+  Kokkos::View<double**> reconVals("meshField", p_mesh->getNumVertices(), numEntries);
+
   //Reconstruct
   auto reconstruct = PS_LAMBDA(const int& elm, const int& mp, const int& mask) {
     if(mask) { //if material point is 'active'/'enabled'
@@ -175,7 +476,7 @@ void MPMesh::assemblyVtx1() {
         double CoordDiffs[vec4d_nEntries] = {1, (vtxCoords(vID,0) - mpPositions(mp,0))/radius,
                                                 (vtxCoords(vID,1) - mpPositions(mp,1))/radius, 
                                                 (vtxCoords(vID,2) - mpPositions(mp,2))/radius};
-        
+
         auto factor = w_vtx*(VtxCoeffs(vID,0) + VtxCoeffs(vID,1)*CoordDiffs[1] + 
                                                 VtxCoeffs(vID,2)*CoordDiffs[2] + 
                                                 VtxCoeffs(vID,3)*CoordDiffs[3]);
@@ -188,11 +489,13 @@ void MPMesh::assemblyVtx1() {
     }
   };
   p_MPs->parallel_for(reconstruct, "reconstruct");
- 
+
+  //Assign as a field 
   Kokkos::parallel_for("assigning", numVtx, KOKKOS_LAMBDA(const int vtx){
     for(int k=0; k<numEntries; k++)
       meshField(vtx, k) = reconVals(vtx,k);
   });
+  pumipic::RecordTime("PolyMPO_Reconstruct_Vtx1", timer.seconds());
 }
 
 template <MeshFieldIndex meshFieldIndex>

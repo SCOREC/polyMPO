@@ -127,7 +127,8 @@ void MPMesh::CVTTrackingElmCenterBased(const int printVTPIndex){
     auto MPs2Elm = p_MPs->getData<MPF_Tgt_Elm_ID>();
     auto MPs2Proc = p_MPs->getData<MPF_Tgt_Proc_ID>();
     auto elm2Process = p_mesh->getElm2Process();
-    
+    auto elm2global = p_mesh->getElmGlobal();
+
     if(printVTPIndex>=0) {
       printVTP_mesh(printVTPIndex);
     }
@@ -155,8 +156,8 @@ void MPMesh::CVTTrackingElmCenterBased(const int printVTPIndex){
                 for(int i=1; i<=numConnElms; i++){
                     int elmID = elm2ElmConn(iElm,i)-1;
                     
-	            //New delta
-	            Vec3d center(elmCenter(elmID, 0), elmCenter(elmID, 1), elmCenter(elmID, 2));
+                    //New delta
+                    Vec3d center(elmCenter(elmID, 0), elmCenter(elmID, 1), elmCenter(elmID, 2));
                     delta = MPnew - center;
 
                     double neighborDistSq = delta[0]*delta[0] + delta[1]*delta[1] + delta[2]*delta[2];
@@ -175,7 +176,7 @@ void MPMesh::CVTTrackingElmCenterBased(const int printVTPIndex){
                     iElm = closestElm;
                 }
             }
-            if(printVTPIndex>=0){ 
+            if(printVTPIndex>=0 && numMPs>0){
                 double d1 = dx[0];
                 double d2 = dx[2];
                 double d3 = dx[3];
@@ -301,6 +302,7 @@ void MPMesh::reconstructSlices() {
     if (reconstructSlice.size() == 0) return;
     Kokkos::Timer timer;
     calcBasis();
+    resetPreComputeFlag();
     for (auto const& [index, reconstruct] : reconstructSlice) {
         if (reconstruct) reconstruct();
     }
@@ -322,11 +324,54 @@ bool getAnyIsMigrating(MaterialPoints* p_MPs, bool isMigrating) {
   return anyIsMigrating;
 }
 
-void MPMesh::push(){
+void MPMesh::push_ahead(){
   Kokkos::Timer timer;
+  //Latitude Longitude increment at mesh vertices and interpolate to particle position
+  p_mesh->computeRotLatLonIncr();   
+
+  //Interpolates latitude longitude increments and mesh velocity increments to
+  //MP positions
+  sphericalInterpolationDispVelIncr(*this);
+  
+  //Push the MPs
+  p_MPs->updateRotLatLonAndXYZ2Tgt(p_mesh->getSphereRadius());
+  pumipic::RecordTime("PolyMPO_interpolateAndPush", timer.seconds());
+}
+
+bool MPMesh::push1P(){
+  Kokkos::Timer timer;
+  //Given target location find the new element or the last element in a partioned mesh
+  //and the process it belongs to so that migration can be checked
+  CVTTrackingElmCenterBased(); 
+  //From the above two inputs find if any particle needs to be migrated
+  bool anyIsMigrating = getAnyIsMigrating(p_MPs, p_MPs->check_migrate());
+  pumipic::RecordTime("PolyMPO_trackAndCheckMigrate", timer.seconds());
+  return anyIsMigrating;
+}
+
+void MPMesh::push_swap(){
+  //current becomes target, target becomes -1
+  p_MPs->updateMPElmID();
+}
+
+void MPMesh::push_swap_pos(){
+  //current becomes target, target becomes -1
+  //Making read for next push_ahead  
+  p_MPs->updateMPSlice<MPF_Cur_Pos_XYZ, MPF_Tgt_Pos_XYZ>();
+  p_MPs->updateMPSlice<MPF_Cur_Pos_Rot_Lat_Lon, MPF_Tgt_Pos_Rot_Lat_Lon>();
+}
+
+
+void MPMesh::push(){
+  
+  Kokkos::Timer timer;
+  
   p_mesh->computeRotLatLonIncr();
+  
   sphericalInterpolation<MeshF_RotLatLonIncr>(*this);
+  
   p_MPs->updateRotLatLonAndXYZ2Tgt(p_mesh->getSphereRadius()); // set Tgt_XYZ
+  
   auto elm2Process = p_mesh->getElm2Process();
 
   bool anyIsMigrating = false;
@@ -334,10 +379,14 @@ void MPMesh::push(){
     CVTTrackingElmCenterBased(); // move to Tgt_XYZ
     p_MPs->updateMPSlice<MPF_Cur_Pos_XYZ, MPF_Tgt_Pos_XYZ>(); // Tgt_XYZ becomes Cur_XYZ
     p_MPs->updateMPSlice<MPF_Cur_Pos_Rot_Lat_Lon, MPF_Tgt_Pos_Rot_Lat_Lon>(); // Tgt becomes Cur
-    if (elm2Process.size() > 0)
-        anyIsMigrating = getAnyIsMigrating(p_MPs, p_MPs->migrate());
+    
+    bool anyIsMigrating = getAnyIsMigrating(p_MPs, p_MPs->check_migrate());
+   
+    if(anyIsMigrating)
+      p_MPs->migrate();
     else
-        p_MPs->rebuild(); //rebuild pumi-pic
+      p_MPs->rebuild();
+    
     p_MPs->updateMPElmID(); //update mpElm IDs slices
     reconstructSlices(); 
   } 

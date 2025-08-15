@@ -41,6 +41,10 @@ namespace polyMPO{
         auto vtxRotLatLonIncrMapEntry = meshFields2TypeAndString.at(MeshF_RotLatLonIncr);
         PMT_ALWAYS_ASSERT(vtxRotLatLonIncrMapEntry.first == MeshFType_VtxBased);
         vtxRotLatLonIncr_ = MeshFView<MeshF_RotLatLonIncr>(vtxRotLatLonIncrMapEntry.second,numVtxs_);
+
+        auto dualTriangleAreaEntry = meshFields2TypeAndString.at(MeshF_DualTriangleArea);
+        PMT_ALWAYS_ASSERT(dualTriangleAreaEntry.first == MeshFType_VtxBased);
+        dualTriangleArea_ = MeshFView<MeshF_DualTriangleArea>(dualTriangleAreaEntry.second,numVtxs_);
     }
     
     void Mesh::setMeshElmBasedFieldSize(){
@@ -73,5 +77,11 @@ namespace polyMPO{
     IntView Mesh::getElm2Process() {
         return owningProc_;
     }
+    
+    IntView Mesh::getElmGlobal() {
+        return globalElm_;
+    }
+
+
 
 } // namespace polyMPO

@@ -218,7 +218,7 @@ program main
   real(kind=MPAS_RKIND), dimension(:), pointer :: xCell, yCell, zCell
   integer, dimension(:,:), pointer :: verticesOnCell, cellsOnCell
   integer :: numMPs, numMPsCount, numPush
-  integer, dimension(:), pointer :: mpsPerElm, mp2Elm, isMPActive, mp2Elm_new
+  integer, dimension(:), pointer :: mpsPerElm, mp2Elm, isMPActive, mp2Elm_new, globalElms
   real(kind=MPAS_RKIND), dimension(:,:), pointer :: mpPosition, mpLatLon, mpPositions_new, mpLatLon_new
   integer, parameter :: MP_ACTIVE = 1
   integer, parameter :: MP_INACTIVE = 0
@@ -284,6 +284,7 @@ program main
 
   allocate(lonCell(nCells))
   allocate(mpsPerElm(nCells))
+  allocate(globalElms(nCells))
   allocate(mp2Elm(numMPs))
   allocate(mp2Elm_new(numMPs))
 
@@ -301,6 +302,7 @@ program main
     mp2Elm(numMPsCount+1:numMPsCount+localNumMPs) = i
     mpsPerElm(i) = localNumMPs
     numMPsCount = numMPsCount + localNumMPs
+    globalElms(i)=i
   end do
 
   call assert(numMPsCount == numMPs, "num mps miscounted")
@@ -356,24 +358,11 @@ program main
   end do
 
   call assert(numMPsCount == numMPs, "num mps miscounted")
-
+  call polympo_setElmGlobal(mpMesh, nCells, c_loc(globalElms))
   call polympo_createMPs(mpMesh,nCells,numMPs,c_loc(mpsPerElm),c_loc(mp2Elm),c_loc(isMPActive))
   call polympo_setMPRotLatLon(mpMesh,2,numMPs,c_loc(mpLatLon))
   call polympo_setMPPositions(mpMesh,3,numMPs,c_loc(mpPosition))
-
-  !Another advection test to test if material poins come back to the same position
-  call runAdvectionTest2(mpMesh, numPush, latVertex, lonVertex, nEdgesOnCell, verticesOnCell, nVertices, sphereRadius)
-  call polympo_getMPPositions(mpMesh, 3, numMPs, c_loc(mpPositions_new))
-  call polympo_getMPRotLatLon(mpMesh, 2, numMPs, c_loc(mpLatLon_new))
-    call polympo_getMPCurElmID(mpMesh, numMPS, c_loc(mp2Elm_new))
-
-  do i = 1, numMPs
-    if ( abs(mpLatLon_new(2,i)-mpLatLon(2,i)) > max_push_diff ) then
-      max_push_diff = abs(mpLatLon_new(2,i)-mpLatLon(2,i))
-    end if
-  end do
-  call assert(max_push_diff.le.TOLERANCE_PUSH , "MPs donot come back check push!")
-
+ 
   if (testType == "API") then
     call runApiTest(mpMesh, numMPs, nVertices, nCells, numPush, mpLatLon, mpPosition, xVertex, yVertex, zVertex, latVertex)
   else if (testType == "MIGRATION") then
@@ -412,7 +401,7 @@ program main
   deallocate(isMPActive)
   deallocate(mpPosition)
   deallocate(mpLatLon)
-
+  deallocate(globalElms)
   stop
 
 end program

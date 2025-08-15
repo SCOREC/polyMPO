@@ -8,11 +8,13 @@ template<typename MemSpace = defaultSpace, typename View>
 pumipic::MemberTypeViews createInternalMemberViews(int numMPs, View mp2elm, View mpAppID){
   auto mpInfo = ps::createMemberViews<MaterialPointTypes, MemSpace>(numMPs);
   auto mpCurElmPos_m = ps::getMemberView<MaterialPointTypes, MPF_Cur_Elm_ID, MemSpace>(mpInfo);
+  auto mpTgtElmPos_m = ps::getMemberView<MaterialPointTypes, MPF_Tgt_Elm_ID, MemSpace>(mpInfo);
   auto mpAppID_m = ps::getMemberView<MaterialPointTypes, MPF_MP_APP_ID, MemSpace>(mpInfo);
   auto mpStatus_m = ps::getMemberView<MaterialPointTypes, MPF_Status, MemSpace>(mpInfo);
   auto policy = Kokkos::RangePolicy<typename MemSpace::execution_space>(typename MemSpace::execution_space(), 0, numMPs);
   Kokkos::parallel_for("setMPinfo", policy, KOKKOS_LAMBDA(int i) {
     mpCurElmPos_m(i) = mp2elm(i);
+    mpTgtElmPos_m(i) = INVALID_ELM_ID;
     mpStatus_m(i) = MP_ACTIVE;
     mpAppID_m(i) = mpAppID(i);
   });
@@ -40,8 +42,12 @@ PS* createDPS(int numElms, int numMPs, MPSView<MPF_Cur_Pos_XYZ> positions, IntVi
   return dps;
 }
 
-PS* createDPS(int numElms, int numMPs, IntView mpsPerElm, IntView mp2elm, IntView mpAppID) {
+PS* createDPS(int numElms, int numMPs, IntView mpsPerElm, IntView mp2elm, IntView mpAppID, IntView elm2global) {
   PS::kkGidView elmGids("elementGlobalIds", numElms); //TODO - initialize this to [0..numElms)
+  Kokkos::parallel_for("setGids", numElms, KOKKOS_LAMBDA(const int elm){
+    elmGids(elm) = elm2global(elm);
+  });
+  
   auto mpInfo = createInternalMemberViews(numMPs, mp2elm, mpAppID);
   Kokkos::TeamPolicy<Kokkos::DefaultExecutionSpace> policy(numElms,Kokkos::AUTO);
   auto dps = new DPS<MaterialPointTypes>(policy, numElms, numMPs, mpsPerElm, elmGids, mp2elm, mpInfo);
@@ -57,8 +63,8 @@ MaterialPoints::MaterialPoints(int numElms, int numMPs, MPSView<MPF_Cur_Pos_XYZ>
   operating_mode = MP_RELEASE;
 };
 
-MaterialPoints::MaterialPoints(int numElms, int numMPs, IntView mpsPerElm, IntView mp2elm, IntView mpAppID) {
-  MPs = createDPS(numElms, numMPs, mpsPerElm, mp2elm, mpAppID);
+MaterialPoints::MaterialPoints(int numElms, int numMPs, IntView mpsPerElm, IntView mp2elm, IntView mpAppID, IntView elm2global){
+  MPs = createDPS(numElms, numMPs, mpsPerElm, mp2elm, mpAppID, elm2global);
   updateMaxAppID();
   operating_mode = MP_RELEASE;
 };
@@ -91,6 +97,16 @@ void MaterialPoints::startRebuild(IntView tgtElm, int addedNumMPs, IntView added
   rebuildFields.addedSlices_h = createInternalMemberViews<hostSpace>(addedNumMPs, addedMP2elm_h, addedMPAppID_h);
 }
 
+void MaterialPoints::startRebuild(IntView tgtElm, int addedNumMPs, IntView addedMP2elm, IntView addedMPAppID) {
+  rebuildFields.ongoing = true;
+  rebuildFields.addedNumMPs = addedNumMPs;
+  rebuildFields.addedMP2elm = addedMP2elm;
+  rebuildFields.allTgtElm = tgtElm;
+  auto addedMP2elm_h = Kokkos::create_mirror_view_and_copy(hostSpace(), addedMP2elm);
+  auto addedMPAppID_h = Kokkos::create_mirror_view_and_copy(hostSpace(), addedMPAppID);
+  rebuildFields.addedSlices_h = createInternalMemberViews<hostSpace>(addedNumMPs, addedMP2elm_h, addedMPAppID_h);
+}
+
 void MaterialPoints::finishRebuild() {
   auto addedSlices_d = ps::createMemberViews<MaterialPointTypes, defaultSpace>(rebuildFields.addedNumMPs);
   ps::CopyMemSpaceToMemSpace<defaultSpace, hostSpace, MaterialPointTypes>(addedSlices_d, rebuildFields.addedSlices_h);
@@ -109,14 +125,34 @@ void MaterialPoints::setMPIComm(MPI_Comm comm) {
   mpi_comm = comm;
 }
 
-bool MaterialPoints::migrate() {
+bool MaterialPoints::check_migrate(){
+  
+  Kokkos::Timer timer; 
+  auto MPs2Proc = getData<MPF_Tgt_Proc_ID>();
+  IntView isMigrating("isMigrating", 1);
+  int rank;
+  MPI_Comm_rank(mpi_comm, &rank);
+
+  auto setMigrationFields = PS_LAMBDA(const int& e, const int& mp, const bool& mask) {
+    if (mask) {
+      if (MPs2Proc(mp) != rank) isMigrating(0) = 1;
+    }
+  };
+  parallel_for(setMigrationFields, "setMigrationFields");
+  
+  if (getOpMode() == polyMPO::MP_DEBUG)
+    printf("Material point check migration: %f\n", timer.seconds());
+  pumipic::RecordTime("PolyMPO_check_migrate", timer.seconds());
+  return pumipic::getLastValue(isMigrating) > 0;
+}
+
+void MaterialPoints::migrate() {
   Kokkos::Timer timer;
   auto MPs2Elm = getData<MPF_Tgt_Elm_ID>();
   auto MPs2Proc = getData<MPF_Tgt_Proc_ID>();
 
   IntView new_elem("new_elem", MPs->capacity());
   IntView new_process("new_process", MPs->capacity());
-  IntView isMigrating("isMigrating", 1);
 
   int rank;
   MPI_Comm_rank(mpi_comm, &rank);
@@ -124,7 +160,6 @@ bool MaterialPoints::migrate() {
     if (mask) {
       new_elem(mp) = MPs2Elm(mp);
       new_process(mp) = MPs2Proc(mp);
-      if (new_process(mp) != rank) isMigrating(0) = 1;
     }
   };
   parallel_for(setMigrationFields, "setMigrationFields");
@@ -133,7 +168,6 @@ bool MaterialPoints::migrate() {
   if (getOpMode() == polyMPO::MP_DEBUG)
     printf("Material point migration: %f\n", timer.seconds());
   pumipic::RecordTime("PolyMPO_migrate", timer.seconds());
-  return pumipic::getLastValue(isMigrating) > 0;
 }
 
 bool MaterialPoints::rebuildOngoing() { return rebuildFields.ongoing; }

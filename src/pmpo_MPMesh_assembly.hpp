@@ -98,12 +98,11 @@ void MPMesh::assemblyElm0() {
   pumipic::RecordTime("PolyMPO_Reconstruct_Elm0", timer.seconds());
 }
 
-
+// Linear Reconstruction Method 1, no MPI.
 void MPMesh::resetPreComputeFlag(){
   isPreComputed = false;
 }
 
-//Method 1 for coefficients
 void MPMesh::computeMatricesAndSolve(){
   Kokkos::Timer timer;
   //Mesh Information
@@ -209,14 +208,80 @@ void MPMesh::computeMatricesAndSolve(){
   pumipic::RecordTime("PolyMPO_Calculate_MLS_Coeff", timer.seconds());
 }
 
-//Method 2 for coefficients
+template <MeshFieldIndex meshFieldIndex>
+void MPMesh::assemblyVtx1() {
+  Kokkos::Timer timer; 
+  //If no reconstruction till now calculate the coeffs
+  if (!isPreComputed) {
+    computeMatricesAndSolve();
+    isPreComputed=true;
+  }
+  
+  auto VtxCoeffs=this->precomputedVtxCoeffs;
+  //Mesh Information
+  auto elm2VtxConn = p_mesh->getElm2VtxConn();  
+  int numVtx = p_mesh->getNumVertices();
+  auto vtxCoords = p_mesh->getMeshField<polyMPO::MeshF_VtxCoords>();
+
+  //Mesh Field
+  constexpr MaterialPointSlice mpfIndex = meshFieldIndexToMPSlice<meshFieldIndex>;
+  const int numEntries = mpSliceToNumEntries<mpfIndex>();
+  p_mesh->fillMeshField<meshFieldIndex>(numVtx, numEntries, 0.0);
+  auto meshField = p_mesh->getMeshField<meshFieldIndex>();
+
+  //Material Points
+  auto mpData = p_MPs->getData<mpfIndex>();
+  auto weight = p_MPs->getData<MPF_Basis_Vals>();
+  auto mpPositions = p_MPs->getData<MPF_Cur_Pos_XYZ>();
+
+  //Earth Radius
+  double radius = 1.0;
+  if(p_mesh->getGeomType() == geom_spherical_surf)
+    radius=p_mesh->getSphereRadius();
+
+  //Reconstructed values
+  Kokkos::View<double**> reconVals("meshField", p_mesh->getNumVertices(), numEntries);
+
+  //Reconstruct
+  auto reconstruct = PS_LAMBDA(const int& elm, const int& mp, const int& mask) {
+    if(mask) { //if material point is 'active'/'enabled'
+      int nVtxE = elm2VtxConn(elm,0); //number of vertices bounding the element
+      for(int i=0; i<nVtxE; i++){
+        int vID = elm2VtxConn(elm,i+1)-1;
+        double w_vtx=weight(mp,i); 
+        double CoordDiffs[vec4d_nEntries] = {1, (vtxCoords(vID,0) - mpPositions(mp,0))/radius,
+                                                (vtxCoords(vID,1) - mpPositions(mp,1))/radius, 
+                                                (vtxCoords(vID,2) - mpPositions(mp,2))/radius};
+
+        auto factor = w_vtx*(VtxCoeffs(vID,0) + VtxCoeffs(vID,1)*CoordDiffs[1] + 
+                                                VtxCoeffs(vID,2)*CoordDiffs[2] + 
+                                                VtxCoeffs(vID,3)*CoordDiffs[3]);
+  
+        for (int k=0; k<numEntries; k++){
+          auto val = factor*mpData(mp,k);
+          Kokkos::atomic_add(&reconVals(vID,k), val);
+        }
+      }
+    }
+  };
+  p_MPs->parallel_for(reconstruct, "reconstruct");
+
+  //Assign as a field 
+  Kokkos::parallel_for("assigning", numVtx, KOKKOS_LAMBDA(const int vtx){
+    for(int k=0; k<numEntries; k++)
+      meshField(vtx, k) = reconVals(vtx,k);
+  });
+  pumipic::RecordTime("PolyMPO_Reconstruct_Vtx1", timer.seconds());
+}
+
+//Method 2: Uses subassembly, depends on MPAS for MPI
 void MPMesh::subAssemblyCoeffs(int vtxPerElm, int nCells, double* m11, double* m12, double* m13, double* m14, 
-                                                               double* m22, double* m23, double* m24, 
-                                                               double* m33, double* m34, 
-                                                               double* m44){
+                                                          double* m22, double* m23, double* m24, 
+                                                          double* m33, double* m34, 
+                                                          double* m44){
   
   Kokkos::Timer timer;
-  //Material Points Information
+  
   MPI_Comm comm = p_MPs->getMPIComm(); 
   int comm_rank;
   MPI_Comm_rank(comm, &comm_rank);
@@ -304,7 +369,6 @@ void MPMesh::subAssemblyCoeffs(int vtxPerElm, int nCells, double* m11, double* m
   
 }
 
-//Method 2 for coefficients Solve matrix
 void MPMesh::solveMatrixAndRegularize(int nVertices, double* m11, double* m12, double* m13, double* m14, 
                                        double* m22, double* m23, double* m24, 
                                        double* m33, double* m34,
@@ -376,7 +440,6 @@ void MPMesh::solveMatrixAndRegularize(int nVertices, double* m11, double* m12, d
 
 }
 
-//Method2
 template <MeshFieldIndex meshFieldIndex>
 void MPMesh::subAssemblyVtx1(int vtxPerElm, int nCells, int comp, double* array) {
   Kokkos::Timer timer; 
@@ -402,7 +465,7 @@ void MPMesh::subAssemblyVtx1(int vtxPerElm, int nCells, int comp, double* array)
  
   double radius=p_mesh->getSphereRadius();
 
-  Kokkos::View<double**> array_d("reconstructedIceArea", vtxPerElm, nCells);
+  Kokkos::View<double**> array_d("reconstructedField", vtxPerElm, nCells);
   auto sub_assemble = PS_LAMBDA(const int& elm, const int& mp, const int& mask) {
     if(mask && (elm2Process(elm)==comm_rank)) { 
       int nVtxE = elm2VtxConn(elm,0); //number of vertices bounding the element
@@ -431,71 +494,43 @@ void MPMesh::subAssemblyVtx1(int vtxPerElm, int nCells, int comp, double* array)
   pumipic::RecordTime("PolyMPOsubAssemblyFieldGet", timer2.seconds());
 }
 
-//Method 1
-template <MeshFieldIndex meshFieldIndex>
-void MPMesh::assemblyVtx1() {
-  Kokkos::Timer timer; 
-  //If no reconstruction till now calculate the coeffs
-  if (!isPreComputed) {
-    computeMatricesAndSolve();
-    isPreComputed=true;
-  }
+// An improvement on the above method by doing the full assembly on GPUs
+void MPMesh::assembleMatrix(){
+ 
+}
+
+void MPMesh::assembleField(int vtxPerElm, int nCells, int nVerticesSolve, int nVertices, double* array_sub, double* array_full){
   
-  auto VtxCoeffs=this->precomputedVtxCoeffs;
+  Kokkos::Timer timer;  
   //Mesh Information
   auto elm2VtxConn = p_mesh->getElm2VtxConn();  
   int numVtx = p_mesh->getNumVertices();
-  auto vtxCoords = p_mesh->getMeshField<polyMPO::MeshF_VtxCoords>();
+  auto elm2Process = p_mesh->getElm2Process();
 
-  //Mesh Field
-  constexpr MaterialPointSlice mpfIndex = meshFieldIndexToMPSlice<meshFieldIndex>;
-  const int numEntries = mpSliceToNumEntries<mpfIndex>();
-  p_mesh->fillMeshField<meshFieldIndex>(numVtx, numEntries, 0.0);
-  auto meshField = p_mesh->getMeshField<meshFieldIndex>();
-
-  //Material Points
-  auto mpData = p_MPs->getData<mpfIndex>();
-  auto weight = p_MPs->getData<MPF_Basis_Vals>();
-  auto mpPositions = p_MPs->getData<MPF_Cur_Pos_XYZ>();
-
-  //Earth Radius
-  double radius = 1.0;
-  if(p_mesh->getGeomType() == geom_spherical_surf)
-    radius=p_mesh->getSphereRadius();
-
-  //Reconstructed values
-  Kokkos::View<double**> reconVals("meshField", p_mesh->getNumVertices(), numEntries);
-
-  //Reconstruct
-  auto reconstruct = PS_LAMBDA(const int& elm, const int& mp, const int& mask) {
-    if(mask) { //if material point is 'active'/'enabled'
-      int nVtxE = elm2VtxConn(elm,0); //number of vertices bounding the element
-      for(int i=0; i<nVtxE; i++){
-        int vID = elm2VtxConn(elm,i+1)-1;
-        double w_vtx=weight(mp,i); 
-        double CoordDiffs[vec4d_nEntries] = {1, (vtxCoords(vID,0) - mpPositions(mp,0))/radius,
-                                                (vtxCoords(vID,1) - mpPositions(mp,1))/radius, 
-                                                (vtxCoords(vID,2) - mpPositions(mp,2))/radius};
-
-        auto factor = w_vtx*(VtxCoeffs(vID,0) + VtxCoeffs(vID,1)*CoordDiffs[1] + 
-                                                VtxCoeffs(vID,2)*CoordDiffs[2] + 
-                                                VtxCoeffs(vID,3)*CoordDiffs[3]);
-  
-        for (int k=0; k<numEntries; k++){
-          auto val = factor*mpData(mp,k);
-          Kokkos::atomic_add(&reconVals(vID,k), val);
-        }
+  //Copy the subAssembled Field to GPU
+  kkViewHostU<const double**> array_sub_h(array_sub, vtxPerElm, nCells);
+  Kokkos::View<double**> array_sub_d("array_sub", vtxPerElm, nCells);
+  Kokkos::deep_copy(array_sub_d, array_sub_h);
+ 
+  Kokkos::View<double*> array_full_d("reconstructedField", nVertices);
+  Kokkos::parallel_for("assemble", nCells, KOKKOS_LAMBDA(const int elm){
+    int nVtxE = elm2VtxConn(elm,0); //number of vertices bounding the element
+    for(int i=0; i<nVtxE; i++){
+      int vID = elm2VtxConn(elm,i+1)-1;
+      if(vID < nVerticesSolve){
+        auto val = array_sub_d(i, elm);
+        Kokkos::atomic_add(&array_full_d(vID), val);
       }
-    }
-  };
-  p_MPs->parallel_for(reconstruct, "reconstruct");
-
-  //Assign as a field 
-  Kokkos::parallel_for("assigning", numVtx, KOKKOS_LAMBDA(const int vtx){
-    for(int k=0; k<numEntries; k++)
-      meshField(vtx, k) = reconVals(vtx,k);
+    } 
   });
-  pumipic::RecordTime("PolyMPO_Reconstruct_Vtx1", timer.seconds());
+
+  pumipic::RecordTime("polyMPOfullAssemble", timer.seconds());
+
+  //Copy the assembled field to CPU
+  kkDblViewHostU arrayHost(array_full, nVertices);
+  Kokkos::deep_copy(arrayHost, array_full_d);
+ 
+  pumipic::RecordTime("assembleField", timer.seconds());
 }
 
 template <MeshFieldIndex meshFieldIndex>

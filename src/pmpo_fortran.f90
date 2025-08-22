@@ -941,7 +941,15 @@ module polympo
     integer(c_int), value :: nVertices
     type(c_ptr), value :: m11, m12, m13, m14, m22, m23, m24, m33, m34, m44
   end subroutine
- 
+
+  subroutine polympo_fullAssemblyIceArea(mpMesh, vtxPerElm, nCells, nVerticesSolve, nVertices, array_sub, array_full) &
+             bind(C, NAME='polympo_fullAssemblyIceArea_f')
+    use :: iso_c_binding
+    type(c_ptr), value :: mpMesh
+    integer(c_int), value :: vtxPerElm, nCells, nVerticesSolve, nVertices
+    type(c_ptr), value :: array_sub, array_full
+  end subroutine
+  
   !---------------------------------------------------------------------------
   !> @brief directly call the reconstruct of the MP fields to mesh fields
   !> @param mpmesh(in/out) MPMesh object

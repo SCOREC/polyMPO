@@ -1286,6 +1286,16 @@ void polympo_applyReconstruction_f(MPMesh_ptr p_mpmesh){
   mpmesh->reconstructSlices();
 }
 
+//Method 1
+void polympo_fullAssemblyIceArea_f(MPMesh_ptr p_mpmesh, int vtxPerElm, int nCells, int nVerticesSolve, int nVertices, 
+                                   double* array_sub, double* array_full){
+  checkMPMeshValid(p_mpmesh);
+  auto p_mesh = ((polyMPO::MPMesh*)p_mpmesh)->p_mesh;
+  auto mpmesh = ((polyMPO::MPMesh*)p_mpmesh);
+  PMT_ALWAYS_ASSERT(nVertices == p_mesh->getNumVertices());
+  mpmesh->assembleField<polyMPO::MeshF_VtxMass>(vtxPerElm, nCells, nVerticesSolve, nVertices, array_sub, array_full);
+}
+
 void polympo_setOwningProc_f(MPMesh_ptr p_mpmesh, const int nCells, const int* array){
   checkMPMeshValid(p_mpmesh);
   auto p_mesh = ((polyMPO::MPMesh*)p_mpmesh)->p_mesh; 

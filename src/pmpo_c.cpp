@@ -1293,7 +1293,7 @@ void polympo_fullAssemblyIceArea_f(MPMesh_ptr p_mpmesh, int vtxPerElm, int nCell
   auto p_mesh = ((polyMPO::MPMesh*)p_mpmesh)->p_mesh;
   auto mpmesh = ((polyMPO::MPMesh*)p_mpmesh);
   PMT_ALWAYS_ASSERT(nVertices == p_mesh->getNumVertices());
-  mpmesh->assembleField<polyMPO::MeshF_VtxMass>(vtxPerElm, nCells, nVerticesSolve, nVertices, array_sub, array_full);
+  mpmesh->assembleField(vtxPerElm, nCells, nVerticesSolve, nVertices, array_sub, array_full);
 }
 
 void polympo_setOwningProc_f(MPMesh_ptr p_mpmesh, const int nCells, const int* array){

@@ -82,7 +82,6 @@ class MPMesh{
     void reconstructSlices();
     
     // Full assembly on GPU
-    void assembleMatrix();
     void assembleField(int vtxPerElm, int nCells, int nVerticesSolve, int nVertices, double* array_sub, double* array_full);
         
     void printVTP_mesh(int printVTPIndex);

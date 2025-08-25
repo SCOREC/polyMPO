@@ -495,23 +495,21 @@ void MPMesh::subAssemblyVtx1(int vtxPerElm, int nCells, int comp, double* array)
 }
 
 // An improvement on the above method by doing the full assembly on GPUs
-void MPMesh::assembleMatrix(){
- 
-}
-
 void MPMesh::assembleField(int vtxPerElm, int nCells, int nVerticesSolve, int nVertices, double* array_sub, double* array_full){
   
-  Kokkos::Timer timer;  
   //Mesh Information
   auto elm2VtxConn = p_mesh->getElm2VtxConn();  
   int numVtx = p_mesh->getNumVertices();
   auto elm2Process = p_mesh->getElm2Process();
 
   //Copy the subAssembled Field to GPU
+  Kokkos::Timer timer;
   kkViewHostU<const double**> array_sub_h(array_sub, vtxPerElm, nCells);
   Kokkos::View<double**> array_sub_d("array_sub", vtxPerElm, nCells);
   Kokkos::deep_copy(array_sub_d, array_sub_h);
- 
+  pumipic::RecordTime("polyMPOsetsubAssemblyField", timer.seconds());
+
+  Kokkos::Timer timer1;
   Kokkos::View<double*> array_full_d("reconstructedField", nVertices);
   Kokkos::parallel_for("assemble", nCells, KOKKOS_LAMBDA(const int elm){
     int nVtxE = elm2VtxConn(elm,0); //number of vertices bounding the element
@@ -523,14 +521,13 @@ void MPMesh::assembleField(int vtxPerElm, int nCells, int nVerticesSolve, int nV
       }
     } 
   });
-
-  pumipic::RecordTime("polyMPOfullAssemble", timer.seconds());
+  pumipic::RecordTime("polyMPOfullAssemble", timer1.seconds());
 
   //Copy the assembled field to CPU
+  Kokkos::Timer timer2;
   kkDblViewHostU arrayHost(array_full, nVertices);
   Kokkos::deep_copy(arrayHost, array_full_d);
- 
-  pumipic::RecordTime("assembleField", timer.seconds());
+  pumipic::RecordTime("polyMPOgetAssemblyField", timer2.seconds());
 }
 
 template <MeshFieldIndex meshFieldIndex>

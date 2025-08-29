@@ -528,6 +528,110 @@ void MPMesh::assembleField(int vtxPerElm, int nCells, int nVerticesSolve, int nV
   kkDblViewHostU arrayHost(array_full, nVertices);
   Kokkos::deep_copy(arrayHost, array_full_d);
   pumipic::RecordTime("polyMPOgetAssemblyField", timer2.seconds());
+
+  MPMesh::startCommunication(nVerticesSolve);
+}
+
+//Start Communication routine
+void MPMesh::startCommunication(int nVerticesSolve){
+
+  MPI_Comm comm = p_MPs->getMPIComm(); 
+  int comm_rank, nProcs;
+  MPI_Comm_rank(comm, &comm_rank);
+  MPI_Comm_size(comm, &nProcs); 
+
+  int nCells = p_mesh->getNumElements();
+  int numVertices = p_mesh->getNumVertices();
+
+  //Owning processes in GPU and copy to CPU
+  auto elmOwners = p_mesh->getElm2Process();
+  auto elmOwners_host = Kokkos::create_mirror_view_and_copy(Kokkos::DefaultHostExecutionSpace::memory_space(),
+                        elmOwners);
+
+  auto vtxGlobal= p_mesh->getVtxGlobal();
+  auto vtxGlobal_host = Kokkos::create_mirror_view_and_copy(Kokkos::DefaultHostExecutionSpace::memory_space(),
+                        vtxGlobal);
+
+  //Elment to Vertex Connection in GPU and communicate to CPU
+  auto elm2VtxConn = p_mesh->getElm2VtxConn();  
+  auto elm2VtxConn_host = Kokkos::create_mirror_view_and_copy(Kokkos::DefaultHostExecutionSpace::memory_space(),
+                          elm2VtxConn);
+  //Debugging
+  for (auto k=0; k<elmOwners_host.size(); k++)
+    if(k==0 || k==elmOwners_host.size()-1)
+      printf("Rank %d Owning Proc %d \n", comm_rank, elmOwners_host(k));
+  
+  //Find adjacent processes and no of adjacent cells for each process
+  std::map<int, int> adjProcsForCells;
+  std::vector<int> send_each_proc(nProcs);
+  for (auto iCell=0; iCell<nCells; iCell++){
+    if(elmOwners_host(iCell) != comm_rank){
+      auto ownerProc = elmOwners_host[iCell];
+      adjProcsForCells[ownerProc] = adjProcsForCells[ownerProc]+1;
+      send_each_proc[ownerProc] +=1;
+    }
+  }
+  //Debugging
+  printf("Size adjProcs %d \n", adjProcsForCells.size());
+  for (const auto& [key, value] : adjProcsForCells){
+    printf ("Process %d sends to %d size %d\n", comm_rank, key, value);
+  }
+ 
+  //Find received particles in each process
+  std::vector<int> total_recv_each_proc(nProcs);
+  MPI_Alltoall(send_each_proc.data(), 1, MPI_INT, total_recv_each_proc.data(), 1, MPI_INT, comm);
+  //Debiugging for receiving
+  for (int i=0; i<nProcs; i++)
+    printf("Rank %d receiving from %d size %d \n", comm_rank, i, total_recv_each_proc[i]);
+
+  //Create maps of data to Send
+  std::map<int, std::vector<int>> cellDataToSend;
+  std::map<int, int> counter;
+  for (const auto& [key, value] : adjProcsForCells){
+    cellDataToSend[key].resize(4 * value * maxVtxsPerElm);
+    counter[key] = 0;
+  }
+  
+  for (auto iCell=0; iCell<nCells; iCell++){
+    if(elmOwners_host(iCell) != comm_rank){
+      int ownerProc = elmOwners_host[iCell];
+      auto idx_start = counter[ownerProc]*4*maxVtxsPerElm;
+      int nVtxE = elm2VtxConn_host(iCell,0);
+      for (int v=0; v<nVtxE; v++){
+        int vID = elm2VtxConn_host(iCell, v+1)-1;
+        int idx = idx_start + v*4;
+        if (vID < nVerticesSolve)
+          cellDataToSend[ownerProc][idx+0] = 0;            //TO DO better way
+        else
+          cellDataToSend[ownerProc][idx+0] = 1;
+        cellDataToSend[ownerProc][idx+1] = comm_rank;      //sending Proc TODO not needed
+        cellDataToSend[ownerProc][idx+2] = vID;            //localID
+        cellDataToSend[ownerProc][idx+3] = vtxGlobal_host(vID); //globalID
+      }
+      counter[ownerProc] = counter[ownerProc] + 1;
+      //assert(counter[ownerProc] == adjProcsForCells.find(ownerProc));
+    }
+  }
+  
+  std::vector<MPI_Request> s_requests;
+  s_requests.resize(cellDataToSend.size());
+  int count_s_request=0;
+  for (auto & [proc, vec] : cellDataToSend){
+    MPI_Isend(vec.data(), vec.size(), MPI_INT, proc, MPI_ANY_TAG, comm, &s_requests[count_s_request]);
+    count_s_request=count_s_request+1;
+  }
+
+  std::vector<std::vector<int>> cellDataToReceive;
+  cellDataToReceive.resize(nProcs); //
+  for (int iProc=0; iProc< nProcs; iProc++)
+    cellDataToReceive[iProc].resize(total_recv_each_proc[iProc]);   
+  
+  std::vector<MPI_Request> r_requests;
+  r_requests.resize(nProcs);
+  for (int iProc=0; iProc< nProcs; iProc++)
+    MPI_Irecv(cellDataToReceive[iProc].data(), total_recv_each_proc[iProc], MPI_INT, iProc, 
+              MPI_ANY_TAG, comm, &r_requests[iProc]);
+  
 }
 
 template <MeshFieldIndex meshFieldIndex>

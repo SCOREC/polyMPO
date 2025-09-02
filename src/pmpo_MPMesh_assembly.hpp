@@ -535,6 +535,10 @@ void MPMesh::assembleField(int vtxPerElm, int nCells, int nVerticesSolve, int nV
 //Start Communication routine
 void MPMesh::startCommunication(int nVerticesSolve){
 
+  static int test_count=0;
+  if(test_count>0) return;
+  test_count += 1;
+
   MPI_Comm comm = p_MPs->getMPIComm(); 
   int comm_rank, nProcs;
   MPI_Comm_rank(comm, &comm_rank);
@@ -556,12 +560,11 @@ void MPMesh::startCommunication(int nVerticesSolve){
   auto elm2VtxConn = p_mesh->getElm2VtxConn();  
   auto elm2VtxConn_host = Kokkos::create_mirror_view_and_copy(Kokkos::DefaultHostExecutionSpace::memory_space(),
                           elm2VtxConn);
-  //Debugging
-  for (auto k=0; k<elmOwners_host.size(); k++)
-    if(k==0 || k==elmOwners_host.size()-1)
-      printf("Rank %d Owning Proc %d \n", comm_rank, elmOwners_host(k));
+
+  //Last element and first element cannot have same owner 
+  assert(elmOwners_host(0) != elmOwners_host(elmOwners_host.size()-1));
   
-  //Find adjacent processes and no of adjacent cells for each process
+  //Map of adjacent process and  # halo cells owned by adjacent processes
   std::map<int, int> adjProcsForCells;
   std::vector<int> send_each_proc(nProcs);
   for (auto iCell=0; iCell<nCells; iCell++){
@@ -571,66 +574,78 @@ void MPMesh::startCommunication(int nVerticesSolve){
       send_each_proc[ownerProc] +=1;
     }
   }
-  //Debugging
-  printf("Size adjProcs %d \n", adjProcsForCells.size());
-  for (const auto& [key, value] : adjProcsForCells){
-    printf ("Process %d sends to %d size %d\n", comm_rank, key, value);
-  }
- 
-  //Find received particles in each process
-  std::vector<int> total_recv_each_proc(nProcs);
-  MPI_Alltoall(send_each_proc.data(), 1, MPI_INT, total_recv_each_proc.data(), 1, MPI_INT, comm);
-  //Debiugging for receiving
-  for (int i=0; i<nProcs; i++)
-    printf("Rank %d receiving from %d size %d \n", comm_rank, i, total_recv_each_proc[i]);
-
-  //Create maps of data to Send
+  //Create maps of data to send
+  int num_ints_per_vertex=4;
   std::map<int, std::vector<int>> cellDataToSend;
-  std::map<int, int> counter;
+  std::map<int, int> counter;  
   for (const auto& [key, value] : adjProcsForCells){
-    cellDataToSend[key].resize(4 * value * maxVtxsPerElm);
-    counter[key] = 0;
+    cellDataToSend[key].resize(num_ints_per_vertex*value*maxVtxsPerElm);
+    counter[key]=0;
   }
-  
+  // And fill the data
   for (auto iCell=0; iCell<nCells; iCell++){
     if(elmOwners_host(iCell) != comm_rank){
       int ownerProc = elmOwners_host[iCell];
-      auto idx_start = counter[ownerProc]*4*maxVtxsPerElm;
+      auto idx_start = counter[ownerProc]*num_ints_per_vertex*maxVtxsPerElm;
       int nVtxE = elm2VtxConn_host(iCell,0);
       for (int v=0; v<nVtxE; v++){
         int vID = elm2VtxConn_host(iCell, v+1)-1;
-        int idx = idx_start + v*4;
-        if (vID < nVerticesSolve)
-          cellDataToSend[ownerProc][idx+0] = 0;            //TO DO better way
-        else
-          cellDataToSend[ownerProc][idx+0] = 1;
-        cellDataToSend[ownerProc][idx+1] = comm_rank;      //sending Proc TODO not needed
-        cellDataToSend[ownerProc][idx+2] = vID;            //localID
-        cellDataToSend[ownerProc][idx+3] = vtxGlobal_host(vID); //globalID
+        int idx = idx_start + v*num_ints_per_vertex;
+        cellDataToSend[ownerProc][idx] = (vID < nVerticesSolve) ? 0 : 1;  // TODO better way
+        cellDataToSend[ownerProc][idx+1] = comm_rank;                     //sending Proc TODO not needed
+        cellDataToSend[ownerProc][idx+2] = vID;                           //localID
+        cellDataToSend[ownerProc][idx+3] = vtxGlobal_host(vID);           //globalID
       }
-      counter[ownerProc] = counter[ownerProc] + 1;
-      //assert(counter[ownerProc] == adjProcsForCells.find(ownerProc));
+      counter[ownerProc]++;
     }
   }
-  
+  //Assertion
+  for (const auto& [key, value] : adjProcsForCells){
+    assert(cellDataToSend[key].size() == send_each_proc[key]*num_ints_per_vertex*maxVtxsPerElm);
+  }
+  //Sending 
   std::vector<MPI_Request> s_requests;
   s_requests.resize(cellDataToSend.size());
   int count_s_request=0;
   for (auto & [proc, vec] : cellDataToSend){
-    MPI_Isend(vec.data(), vec.size(), MPI_INT, proc, MPI_ANY_TAG, comm, &s_requests[count_s_request]);
+    MPI_Isend(vec.data(), vec.size(), MPI_INT, proc, 0, comm, &s_requests[count_s_request]);
     count_s_request=count_s_request+1;
   }
-
+  //Find received particles in each process and allocate buffer
+  std::vector<int> recv_each_proc(nProcs);
+  MPI_Alltoall(send_each_proc.data(), 1, MPI_INT, recv_each_proc.data(), 1, MPI_INT, comm);
   std::vector<std::vector<int>> cellDataToReceive;
   cellDataToReceive.resize(nProcs); //
   for (int iProc=0; iProc< nProcs; iProc++)
-    cellDataToReceive[iProc].resize(total_recv_each_proc[iProc]);   
-  
+    cellDataToReceive[iProc].resize(recv_each_proc[iProc]*num_ints_per_vertex*maxVtxsPerElm);
+
+  //Receive 
   std::vector<MPI_Request> r_requests;
-  r_requests.resize(nProcs);
-  for (int iProc=0; iProc< nProcs; iProc++)
-    MPI_Irecv(cellDataToReceive[iProc].data(), total_recv_each_proc[iProc], MPI_INT, iProc, 
-              MPI_ANY_TAG, comm, &r_requests[iProc]);
+  for (int iProc=0; iProc< nProcs; iProc++){
+    if (recv_each_proc[iProc] > 0){
+      MPI_Request req;
+      MPI_Irecv(cellDataToReceive[iProc].data(), recv_each_proc[iProc]*num_ints_per_vertex*maxVtxsPerElm, 
+                MPI_INT, iProc, MPI_ANY_TAG, comm, &req);
+      r_requests.push_back(req);
+    }
+  }
+  //Wait
+  int sen = MPI_Waitall(s_requests.size(), s_requests.data(), MPI_STATUSES_IGNORE);
+  int rec = MPI_Waitall(r_requests.size(), r_requests.data(), MPI_STATUSES_IGNORE);
+
+  //Debugging Rank 1 sending to 3 and Rank 3 receiving from 1
+  bool debug=true;
+  if(!debug) return;
+  printf("Size adjProcs %d \n", adjProcsForCells.size());
+  for (const auto& [key, value] : adjProcsForCells)
+    printf ("Process %d sends to %d size %d\n", comm_rank, key, value);
+  //Debugging for receiving
+  for (int i=0; i<nProcs; i++)
+    printf("Rank %d receiving from rank %d, size %d \n", comm_rank, i, recv_each_proc[i]);
+  for (int i=0; i<cellDataToSend[3].size(); i++)
+    if(comm_rank==1) printf("Sending i %d %d \n", i, cellDataToSend[3][i]);
+  for (int j=0; j<cellDataToReceive[1].size(); j++)
+    if(comm_rank==3) printf("Receiving i %d %d \n", j, cellDataToReceive[1][j]);
   
 }
 

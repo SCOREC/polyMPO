@@ -529,10 +529,143 @@ void MPMesh::assembleField(int vtxPerElm, int nCells, int nVerticesSolve, int nV
   Kokkos::deep_copy(arrayHost, array_full_d);
   pumipic::RecordTime("polyMPOgetAssemblyField", timer2.seconds());
 
-  MPMesh::startCommunication(nVerticesSolve);
+  MPMesh::startCommunication();
 }
 
 //Start Communication routine
+void MPMesh::startCommunication(){
+
+  static int test_count=0;
+  if(test_count>0) return;
+  test_count += 1;
+ 
+  MPI_Comm comm = p_MPs->getMPIComm(); 
+  int self, numProcsTot;
+  MPI_Comm_rank(comm, &self);
+  MPI_Comm_size(comm, &numProcsTot); 
+
+  //Owning processes in GPU
+  auto elmOwners = p_mesh->getElm2Process();
+  //Loop over elements and find no of owners and halos
+  int numElements = p_mesh->getNumElements();
+  Kokkos::View<int> owner_count("owner_count");
+  Kokkos::View<int> halo_count("halo_count");
+  Kokkos::parallel_for("countOwnerHalo", numElements, KOKKOS_LAMBDA(const int elm){
+    if (elmOwners(elm)==self)
+      Kokkos::atomic_add(&owner_count(), 1);
+    else
+      Kokkos::atomic_add(&halo_count(), 1);
+  });
+
+  int numOwnersTot, numHalosTot;
+  Kokkos::deep_copy(numOwnersTot, owner_count);
+  Kokkos::deep_copy(numHalosTot, halo_count);
+  
+  printf("Owners %d Halos %d Total %d \n", numOwnersTot, numHalosTot, numElements);
+
+  
+  int mode;
+  int num_doubles_per_ent;
+  //number of doubles to represent amount of data to exchanged per entity
+  
+  //The following has to be built one time: most can be native/simple array 
+  int num_ints_per_copy = 2; // 2 integers: owner's proc ID and owner's local entity ID on its proc, or halo's proc ID  and  halo's local entity ID on its proc
+  
+  std::vector<int>numHalosOnOtherProcs(numProcsTot); 
+  // every other proc has how many halos accounting for all owners on this proc 
+  
+  std::vector<int>haloToOwner(num_ints_per_copy*numHalosTot);
+  // each halo has one owner and stores 2 integers: owner's proc ID and owner's local entity ID on its proc, and here it is  assumed halo entities are appended after contiguous  set  of owner entities
+
+  std::vector<int>numOwnersOnOtherProcs(numProcsTot);
+  // every other proc has how many owners accounting for all halos on this proc 
+  
+  std::map<int, std::vector<std::pair<int, int>>>ownerToHalos; 
+  // first int is for halo/other proc ID, second vector has a pair: owner entity ID on this proc and halo's local entity ID  on halo's proc (i.e., first int: halo/other proc ID)
+  
+  //Copy owning processes to CPu
+  auto elmOwners_host = Kokkos::create_mirror_view_and_copy(Kokkos::DefaultHostExecutionSpace::memory_space(),
+                        elmOwners);
+
+  //Loop over all halo Entities and find the owning process
+  //# Halo Entities  which are owner entities somewhere else
+  for (auto iEnt=0; iEnt<numOwnersTot+numHalosTot; iEnt++){
+    if(elmOwners_host(iEnt) != self){
+      auto ownerProc = elmOwners_host[iEnt];
+      numOwnersOnOtherProcs[ownerProc] = numOwnersOnOtherProcs[ownerProc]+1;
+    }
+  }
+  //for (int i=0; i<numProcsTot; i++)
+    //printf("Rank %d has %d owners of other rank %d \n", self, numOwnersOnOtherProcs[i], i);
+  
+  //# Owner Entities which are halo entities somewhere else
+  MPI_Alltoall(numOwnersOnOtherProcs.data(), 1, MPI_INT, numHalosOnOtherProcs.data(), 1, MPI_INT, comm);
+  //for (int i=0; i<numProcsTot; i++)
+    //printf("Rank %d has %d halos of other rank %d \n", self, numHalosOnOtherProcs[i], i);
+  
+  // Send Halo Entity Global Id To Owner
+  // Get back local ID
+  
+  std::map<int, std::vector<int>> owner_to_elems;
+  for(int iEnt = 0; iEnt < numElements; iEnt++) {
+    if(elmOwners_host(iEnt) != self){
+      int ownerProc = elmOwners_host(iEnt);
+      owner_to_elems[ownerProc].push_back(ownerProc);
+    }
+  }
+
+  // Flatten into a sequential vector in **process order**
+  std::vector<int> reordered_elements;
+  for(int proc = 0; proc < numProcsTot; proc++) {
+    auto it = owner_to_elems.find(proc);
+    if(it != owner_to_elems.end()) {
+      reordered_elements.insert(reordered_elements.end(), it->second.begin(), it->second.end());
+    }
+  }
+  
+  if(self==0){
+  printf("Reordered element IDs: ");
+  for(auto id : reordered_elements)
+    //printf("Id %d \n", id);
+  }
+  
+  //Calculate Send Dispalcements
+  std::vector<int>s_disps(numProcsTot);
+  for (int i=1; i < numProcsTot; i++){
+    s_disps[i]=s_disps[i-1]+numOwnersOnOtherProcs[i-1];
+  }
+ 
+  //Calcualte Receive Displacements
+  std::vector<int>r_disps(numProcsTot);
+  for (int i=1; i < numProcsTot; i++){
+    r_disps[i]=r_disps[i-1]+numHalosOnOtherProcs[i-1];
+  }
+
+  //Allocate receive buffer  
+  int sumNumHalosOnOtherProcs=0;
+  for (int i=1; i < numProcsTot; i++)
+    sumNumHalosOnOtherProcs=sumNumHalosOnOtherProcs + numHalosOnOtherProcs[i];
+  
+  std::vector<int> recvbuf(sumNumHalosOnOtherProcs);
+
+  if(self<4){
+    for(auto id : s_disps)
+      printf("Rank %d Send displacement %d \n", self, id);
+    for(auto id : numOwnersOnOtherProcs)
+      printf("Rank %d Send count %d \n", self, id);
+    for(auto id : r_disps)
+      printf("Rank %d Receive displacement %d \n", self, id);
+    for(auto id : numHalosOnOtherProcs)
+      printf("Rank %d Receive count %d \n", self, id);
+  }
+  
+  //Perform Alltoallv
+  //MPI_Alltoallv(reordered_elements.data(), numOwnersOnOtherProcs.data(), s_disps.data(), MPI_INT,
+    //            recvbuf.data(), numHalosOnOtherProcs.data(), r_disps.data(), MPI_INT, MPI_COMM_WORLD);  
+  
+ 
+}
+/*
 void MPMesh::startCommunication(int nVerticesSolve){
 
   static int test_count=0;
@@ -648,7 +781,7 @@ void MPMesh::startCommunication(int nVerticesSolve){
     if(comm_rank==3) printf("Receiving i %d %d \n", j, cellDataToReceive[1][j]);
   
 }
-
+*/
 template <MeshFieldIndex meshFieldIndex>
 void MPMesh::assembly(int order, MeshFieldType type, bool basisWeightFlag, bool massWeightFlag){
   if(basisWeightFlag || massWeightFlag) {

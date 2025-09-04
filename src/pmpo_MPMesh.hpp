@@ -83,7 +83,7 @@ class MPMesh{
     
     // Full assembly on GPU
     void assembleField(int vtxPerElm, int nCells, int nVerticesSolve, int nVertices, double* array_sub, double* array_full);
-    void startCommunication(int nVerticesSolve);
+    void startCommunication();
         
     void printVTP_mesh(int printVTPIndex);
 };

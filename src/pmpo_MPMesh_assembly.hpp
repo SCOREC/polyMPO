@@ -529,7 +529,7 @@ void MPMesh::assembleField(int vtxPerElm, int nCells, int nVerticesSolve, int nV
   Kokkos::deep_copy(arrayHost, array_full_d);
   pumipic::RecordTime("polyMPOgetAssemblyField", timer2.seconds());
 
-  MPMesh::startCommunication();
+  //MPMesh::startCommunication();
 }
 
 //Start Communication routine
@@ -624,9 +624,9 @@ void MPMesh::startCommunication(){
   }
   
   if(self==0){
-  printf("Reordered element IDs: ");
-  for(auto id : reordered_elements)
-    //printf("Id %d \n", id);
+    printf("Reordered element IDs: ");
+    for(auto id : reordered_elements)
+      printf("Id %d \n", id);
   }
   
   //Calculate Send Dispalcements

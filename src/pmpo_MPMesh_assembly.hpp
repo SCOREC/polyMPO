@@ -585,6 +585,7 @@ void MPMesh::startCommunication(){
                          elm2global);
 
   //Do Map of Global To Local ID
+  //TODO make ordered map; which faster
   std::unordered_map<int, int> global2local;
   for (int iEnt = 0; iEnt < numElements; iEnt++) {
     int globalID = elm2global_host(iEnt);
@@ -602,22 +603,30 @@ void MPMesh::startCommunication(){
   //# Owner Entities which are halo entities somewhere else
   MPI_Alltoall(numOwnersOnOtherProcs.data(), 1, MPI_INT, numHalosOnOtherProcs.data(), 1, MPI_INT, comm);
 
-  // Send Halo Entity Global Id To Owning Process
+  // Send Halo Entity Global & Local Id To Owning Process
   std::vector<std::vector<int>> sendBufs(numProcsTot);
+  for (int proc = 0; proc < numProcsTot; proc++) 
+    sendBufs[proc].reserve(2*numOwnersOnOtherProcs[proc]);
+
   for (int iEnt=numOwnersTot; iEnt<numOwnersTot+numHalosTot; iEnt++) {
     auto ownerProc = elmOwners_host(iEnt);
     assert(ownerProc != self);
     sendBufs[ownerProc].push_back(elm2global_host(iEnt));
+    sendBufs[ownerProc].push_back(iEnt);
   }
-  //Requests
+  
+  MPI_Barrier(comm);
+  printf("Done 0\n ");
+  //Requests  
   std::vector<MPI_Request> requests;
+    requests.reserve(2*numProcsTot);
   //Receive Calls
   std::vector<std::vector<int>> recvBufs(numProcsTot);
   for (int proc = 0; proc < numProcsTot; proc++) {
     if (numHalosOnOtherProcs[proc] > 0) {
-      recvBufs[proc].resize(numHalosOnOtherProcs[proc]);
+      recvBufs[proc].resize(2*numHalosOnOtherProcs[proc]);
       MPI_Request req;
-      MPI_Irecv(recvBufs[proc].data(), numHalosOnOtherProcs[proc], MPI_INT, proc, MPI_ANY_TAG, comm, &req);
+      MPI_Irecv(recvBufs[proc].data(), 2*numHalosOnOtherProcs[proc], MPI_INT, proc, MPI_ANY_TAG, comm, &req);
       requests.push_back(req);
     }
   }
@@ -632,6 +641,8 @@ void MPMesh::startCommunication(){
   MPI_Waitall(requests.size(), requests.data(), MPI_STATUSES_IGNORE);
   requests.clear();
 
+  MPI_Barrier(comm);
+  printf("Done 1\n ");
   //Now the owner process needs to look at these globalIDs convert them to localIds and send it back
   //recvBufs[p] contains global IDs of elements that halo rank p needs
   //numHalosOnOtherProcs[p] tells how many to expect from proc p
@@ -640,12 +651,19 @@ void MPMesh::startCommunication(){
     if (numHalosOnOtherProcs[proc] > 0) {
       localIDBufs[proc].resize(numHalosOnOtherProcs[proc]);
       for (int i = 0; i < numHalosOnOtherProcs[proc]; i++) {
-        int globalID = recvBufs[proc][i];
+        int globalID = recvBufs[proc][i*2];
         localIDBufs[proc][i] = global2local[globalID]; // Convert to localID
       }
     }
   }
  
+  //Owning process gets the global and local Id from halo process
+  //Conver Global to local in this process and also local ID in halo process
+  //So TODO make ownerTOHaloMap <int, int>
+
+
+  
+  //Sends back localID of the owned cells so that HaloToOwner can be done for halo processes
   for (int proc = 0; proc < numProcsTot; proc++) {
     if (!localIDBufs[proc].empty()) {
       MPI_Request req;
@@ -666,6 +684,7 @@ void MPMesh::startCommunication(){
   }
   MPI_Waitall(requests.size(), requests.data(), MPI_STATUSES_IGNORE);
 
+  /*
   //Debugging
   printf("Rank %d Owners %d Halos %d Total %d \n", self, numOwnersTot, numHalosTot, numElements);
   for (int i=0; i<numProcsTot; i++){
@@ -703,7 +722,7 @@ void MPMesh::startCommunication(){
       printf("Owner LID in rank 0 %d \n", haloLocalIDs[1][i]);
   }
   MPI_Barrier(comm);
-  
+  */
 }
  
 /*

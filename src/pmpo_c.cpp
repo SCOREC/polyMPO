@@ -882,6 +882,10 @@ void polympo_setMeshVtxRotLat_f(MPMesh_ptr p_mpmesh, const int nVertices, const 
   }
   Kokkos::deep_copy(coordsArray, h_coordsArray);
   pumipic::RecordTime("PolyMPO_setMeshVtxRotLat", timer.seconds());
+  
+  auto mpmesh = ((polyMPO::MPMesh*)p_mpmesh);
+  mpmesh->startCommunication();  //Temporary last API in set mesh needs to be separate API
+
 }
 
 void polympo_getMeshVtxRotLat_f(MPMesh_ptr p_mpmesh, const int nVertices, double* latitude){

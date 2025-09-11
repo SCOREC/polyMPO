@@ -21,7 +21,7 @@ class MPMesh{
   private:
    
     bool isPreComputed;
-  
+    
   public:
     
     MPMesh() : isPreComputed(false){};
@@ -33,10 +33,19 @@ class MPMesh{
     MaterialPoints* p_MPs;
 
     std::map<MeshFieldIndex, std::function<void()>> reconstructSlice = std::map<MeshFieldIndex, std::function<void()>>();
-    
+   
+    int numOwnersTot, numHalosTot;
+    std::vector<int> numOwnersOnOtherProcs;
+    std::vector<int> numHalosOnOtherProcs;
+    std::vector<int>haloOwnerProcs;
+    std::vector<std::vector<int>> haloOwnerLocalIDs;
+    std::vector<std::vector<std::pair<int,int>>> ownerToHalos;
+    void startCommunication();
+    void communicateFields();
     MPMesh(Mesh* inMesh, MaterialPoints* inMPs):
         p_mesh(inMesh), p_MPs(inMPs) {
     };
+   
     ~MPMesh() {
       delete p_mesh;
       delete p_MPs;
@@ -83,7 +92,6 @@ class MPMesh{
     
     // Full assembly on GPU
     void assembleField(int vtxPerElm, int nCells, int nVerticesSolve, int nVertices, double* array_sub, double* array_full);
-    void startCommunication();
         
     void printVTP_mesh(int printVTPIndex);
 };

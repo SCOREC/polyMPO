@@ -529,16 +529,11 @@ void MPMesh::assembleField(int vtxPerElm, int nCells, int nVerticesSolve, int nV
   Kokkos::deep_copy(arrayHost, array_full_d);
   pumipic::RecordTime("polyMPOgetAssemblyField", timer2.seconds());
 
-  MPMesh::startCommunication();
 }
 
 //Start Communication routine
 void MPMesh::startCommunication(){
 
-  static int test_count=0;
-  if(test_count>0) return;
-  test_count += 1;
- 
   int self, numProcsTot;
   MPI_Comm comm = p_MPs->getMPIComm(); 
   MPI_Comm_rank(comm, &self);
@@ -560,22 +555,25 @@ void MPMesh::startCommunication(){
     else
       Kokkos::atomic_add(&halo_count(), 1);
   });
-  int numOwnersTot, numHalosTot;
+  
   Kokkos::deep_copy(numOwnersTot, owner_count);
   Kokkos::deep_copy(numHalosTot, halo_count);
-
+  assert(numHalosTot+numOwnersTot == numElements);
+  printf("Rank %d owners %d halo %d\n", self, numOwnersTot, numHalosTot);
   int num_ints_per_copy = 2;
-  
+
   //#Halo Cells/proc which are owners on other process
-  std::vector<int>numOwnersOnOtherProcs(numProcsTot);
+  numOwnersOnOtherProcs.resize(numProcsTot);
+
   //#OwnerCells/proc which are halos on other proces
-  std::vector<int>numHalosOnOtherProcs(numProcsTot); 
+  numHalosOnOtherProcs.resize(numProcsTot); 
 
   //For every halo cell find the owning process and the local Id in that process
-  std::vector<std::vector<int>> haloLocalIDs(numProcsTot);
-  
+  haloOwnerProcs.reserve(numHalosTot);
+  haloOwnerLocalIDs.resize(numProcsTot);
+ 
   //Pair has haloLocalId and ownerLocalId
-  std::vector<std::vector<std::pair<int, int>>>ownerToHalos(numProcsTot); 
+  ownerToHalos.resize(numProcsTot);
   
   //Copy owning processes and globalIds to CPU
   auto elmOwners_host = Kokkos::create_mirror_view_and_copy(Kokkos::DefaultHostExecutionSpace::memory_space(),
@@ -596,8 +594,9 @@ void MPMesh::startCommunication(){
     auto ownerProc = elmOwners_host[iEnt];
     assert(elmOwners_host(iEnt) != self);
     numOwnersOnOtherProcs[ownerProc] = numOwnersOnOtherProcs[ownerProc]+1;
+    haloOwnerProcs.push_back(ownerProc);
   }
-  
+
   MPI_Alltoall(numOwnersOnOtherProcs.data(), 1, MPI_INT, numHalosOnOtherProcs.data(), 1, MPI_INT, comm);
 
   // Halo Entity's Global & Local Id To Owning Process
@@ -611,11 +610,11 @@ void MPMesh::startCommunication(){
     sendBufs[ownerProc].push_back(elm2global_host(iEnt));
     sendBufs[ownerProc].push_back(iEnt);
   }
-  
+
   //Requests  
   std::vector<MPI_Request> requests;
   requests.reserve(2*numProcsTot);
-  
+
   //Receive Calls
   std::vector<std::vector<int>> recvBufs(numProcsTot);
   for (int proc = 0; proc < numProcsTot; proc++) {
@@ -663,13 +662,13 @@ void MPMesh::startCommunication(){
       }
     }
   }
-  
+
   // On the halo side, need to receive the localIds of owning Process
   for (int proc = 0; proc < numProcsTot; proc++) {
     if (numOwnersOnOtherProcs[proc] > 0) { // these are cells whose owners are in other processes
-      haloLocalIDs[proc].resize(numOwnersOnOtherProcs[proc]);
+      haloOwnerLocalIDs[proc].resize(numOwnersOnOtherProcs[proc]);
       MPI_Request req;
-      MPI_Irecv(haloLocalIDs[proc].data(), haloLocalIDs[proc].size(), MPI_INT, proc, MPI_ANY_TAG, comm, &req);
+      MPI_Irecv(haloOwnerLocalIDs[proc].data(), haloOwnerLocalIDs[proc].size(), MPI_INT, proc, MPI_ANY_TAG, comm, &req);
       requests.push_back(req);
     }
   }
@@ -685,8 +684,11 @@ void MPMesh::startCommunication(){
   
   MPI_Waitall(requests.size(), requests.data(), MPI_STATUSES_IGNORE);
 
-  
-  //Debugging
+  communicateFields();
+
+  bool debug = false;
+  if(! debug) return;
+
   printf("Rank %d Owners %d Halos %d Total %d \n", self, numOwnersTot, numHalosTot, numElements);
   for (int i=0; i<numProcsTot; i++){
     printf("Rank %d has %d halos which are owners in other rank %d \n", self, numOwnersOnOtherProcs[i], i);
@@ -719,11 +721,10 @@ void MPMesh::startCommunication(){
   MPI_Barrier(comm);
   //Checking if they have received them back
   if(self==0){
-    for (int i=0; i<haloLocalIDs[1].size(); i++)
-      printf("Owner LID in rank 0 %d \n", haloLocalIDs[1][i]);
+    for (int i=0; i<haloOwnerLocalIDs[1].size(); i++)
+      printf("Owner LID in rank 0 %d \n", haloOwnerLocalIDs[1][i]);
   }
   MPI_Barrier(comm);
-
   //OwnerToHalos
   if(self==1){
    for (const auto &p : ownerToHalos[0]) {
@@ -731,124 +732,113 @@ void MPMesh::startCommunication(){
     }
   }
 }
+
+void MPMesh::communicateFields(){
+
+  int self, numProcsTot;
+  MPI_Comm comm = p_MPs->getMPIComm();
+  MPI_Comm_rank(comm, &self);
+  MPI_Comm_size(comm, &numProcsTot);
+
+  //Mode 0 is Gather, mode 1 is Scatter
+  int mode = 0;                     //TODO make it enum
+  int num_doubles_per_ent = 2;      //This will come as input or vector size of the field
+
+  std::vector<MPI_Request> recvRequests;
+  std::vector<MPI_Request> sendRequests;
+
+  std::vector<std::vector<int>>    recvIDVec(numProcsTot);
+  std::vector<std::vector<double>> sendDataVec(numProcsTot), recvDataVec(numProcsTot);
+
+  for(int i = 0; i < numProcsTot; i++){
+    if(i==self) continue;
+    
+    int numToSend = 0, numToRecv = 0; 
+    if(mode == 0) {
+      //gather (halos send to owners)
+      numToSend = numOwnersOnOtherProcs[i]; 
+      numToRecv = numHalosOnOtherProcs[i];
+    }
+    else{ 
+      //scatter (owners send to halos)
+      numToSend = numHalosOnOtherProcs[i];
+      numToRecv = numOwnersOnOtherProcs[i];
+    }
  
-/*
-void MPMesh::startCommunication(int nVerticesSolve){
-
-  static int test_count=0;
-  if(test_count>0) return;
-  test_count += 1;
-
-  MPI_Comm comm = p_MPs->getMPIComm(); 
-  int comm_rank, nProcs;
-  MPI_Comm_rank(comm, &comm_rank);
-  MPI_Comm_size(comm, &nProcs); 
-
-  int nCells = p_mesh->getNumElements();
-  int numVertices = p_mesh->getNumVertices();
-
-  //Owning processes in GPU and copy to CPU
-  auto elmOwners = p_mesh->getElm2Process();
-  auto elmOwners_host = Kokkos::create_mirror_view_and_copy(Kokkos::DefaultHostExecutionSpace::memory_space(),
-                        elmOwners);
-
-  auto vtxGlobal= p_mesh->getVtxGlobal();
-  auto vtxGlobal_host = Kokkos::create_mirror_view_and_copy(Kokkos::DefaultHostExecutionSpace::memory_space(),
-                        vtxGlobal);
-
-  //Elment to Vertex Connection in GPU and communicate to CPU
-  auto elm2VtxConn = p_mesh->getElm2VtxConn();  
-  auto elm2VtxConn_host = Kokkos::create_mirror_view_and_copy(Kokkos::DefaultHostExecutionSpace::memory_space(),
-                          elm2VtxConn);
-
-  //Last element and first element cannot have same owner 
-  assert(elmOwners_host(0) != elmOwners_host(elmOwners_host.size()-1));
+    if(numToSend > 0){
+      sendDataVec[i].reserve(numToSend*num_doubles_per_ent);
+    }
+    if(numToRecv > 0){
+      recvDataVec[i].resize(numToRecv*num_doubles_per_ent);
+      recvIDVec[i].resize(numToRecv);
+    }
+  }
   
-  //Map of adjacent process and  # halo cells owned by adjacent processes
-  std::map<int, int> adjProcsForCells;
-  std::vector<int> send_each_proc(nProcs);
-  for (auto iCell=0; iCell<nCells; iCell++){
-    if(elmOwners_host(iCell) != comm_rank){
-      auto ownerProc = elmOwners_host[iCell];
-      adjProcsForCells[ownerProc] = adjProcsForCells[ownerProc]+1;
-      send_each_proc[ownerProc] +=1;
-    }
-  }
-  //Create maps of data to send
-  int num_ints_per_vertex=4;
-  std::map<int, std::vector<int>> cellDataToSend;
-  std::map<int, int> counter;  
-  for (const auto& [key, value] : adjProcsForCells){
-    cellDataToSend[key].resize(num_ints_per_vertex*value*maxVtxsPerElm);
-    counter[key]=0;
-  }
-  // And fill the data
-  for (auto iCell=0; iCell<nCells; iCell++){
-    if(elmOwners_host(iCell) != comm_rank){
-      int ownerProc = elmOwners_host[iCell];
-      auto idx_start = counter[ownerProc]*num_ints_per_vertex*maxVtxsPerElm;
-      int nVtxE = elm2VtxConn_host(iCell,0);
-      for (int v=0; v<nVtxE; v++){
-        int vID = elm2VtxConn_host(iCell, v+1)-1;
-        int idx = idx_start + v*num_ints_per_vertex;
-        cellDataToSend[ownerProc][idx] = (vID < nVerticesSolve) ? 0 : 1;  // TODO better way
-        cellDataToSend[ownerProc][idx+1] = comm_rank;                     //sending Proc TODO not needed
-        cellDataToSend[ownerProc][idx+2] = vID;                           //localID
-        cellDataToSend[ownerProc][idx+3] = vtxGlobal_host(vID);           //globalID
-      }
-      counter[ownerProc]++;
-    }
-  }
-  //Assertion
-  for (const auto& [key, value] : adjProcsForCells){
-    assert(cellDataToSend[key].size() == send_each_proc[key]*num_ints_per_vertex*maxVtxsPerElm);
-  }
-  //Sending 
-  std::vector<MPI_Request> s_requests;
-  s_requests.resize(cellDataToSend.size());
-  int count_s_request=0;
-  for (auto & [proc, vec] : cellDataToSend){
-    MPI_Isend(vec.data(), vec.size(), MPI_INT, proc, 0, comm, &s_requests[count_s_request]);
-    count_s_request=count_s_request+1;
-  }
-  //Find received particles in each process and allocate buffer
-  std::vector<int> recv_each_proc(nProcs);
-  MPI_Alltoall(send_each_proc.data(), 1, MPI_INT, recv_each_proc.data(), 1, MPI_INT, comm);
-  std::vector<std::vector<int>> cellDataToReceive;
-  cellDataToReceive.resize(nProcs); //
-  for (int iProc=0; iProc< nProcs; iProc++)
-    cellDataToReceive[iProc].resize(recv_each_proc[iProc]*num_ints_per_vertex*maxVtxsPerElm);
+  // Create dummy fieldData: first owners, then halos
+  std::vector<std::vector<double>> fieldData(numOwnersTot + numHalosTot, std::vector<double>(num_doubles_per_ent));
+  for (int i = 0; i < numOwnersTot + numHalosTot; ++i)
+    for (int j = 0; j < num_doubles_per_ent; ++j)
+     fieldData[i][j] = numOwnersTot + i;
 
-  //Receive 
-  std::vector<MPI_Request> r_requests;
-  for (int iProc=0; iProc< nProcs; iProc++){
-    if (recv_each_proc[iProc] > 0){
-      MPI_Request req;
-      MPI_Irecv(cellDataToReceive[iProc].data(), recv_each_proc[iProc]*num_ints_per_vertex*maxVtxsPerElm, 
-                MPI_INT, iProc, MPI_ANY_TAG, comm, &req);
-      r_requests.push_back(req);
+  if(mode == 0){
+    // halo sends to owner
+    for (int iEnt=0; iEnt<numHalosTot; iEnt++){
+      auto ownerProc = haloOwnerProcs[iEnt];
+      for (int iDouble=0; iDouble<num_doubles_per_ent; iDouble++)
+        sendDataVec[ownerProc].push_back(fieldData[numOwnersTot+iEnt][iDouble]);
     }
   }
-  //Wait
-  int sen = MPI_Waitall(s_requests.size(), s_requests.data(), MPI_STATUSES_IGNORE);
-  int rec = MPI_Waitall(r_requests.size(), r_requests.data(), MPI_STATUSES_IGNORE);
 
-  //Debugging Rank 1 sending to 3 and Rank 3 receiving from 1
-  bool debug=true;
+  std::vector<MPI_Request> requests;
+  requests.reserve(4*numProcsTot);
+  
+  for(int proc = 0; proc < numProcsTot; proc++){ 
+    if(proc == self) continue;  
+    if(mode==0 && numHalosOnOtherProcs[proc]){
+      MPI_Request req3, req4;
+      MPI_Irecv(recvIDVec[proc].data(), recvIDVec[proc].size(), MPI_INT, proc, 1, comm, &req3);
+      MPI_Irecv(recvDataVec[proc].data(), recvDataVec[proc].size(), MPI_DOUBLE, proc, 2, comm, &req4);
+      requests.push_back(req3);
+      requests.push_back(req4);
+    }
+    if(mode==0 && numOwnersOnOtherProcs[proc]) {
+      MPI_Request req1, req2;
+      MPI_Isend(haloOwnerLocalIDs[proc].data(), haloOwnerLocalIDs[proc].size(), MPI_INT, proc, 1, comm, &req1);
+      MPI_Isend(sendDataVec[proc].data(), sendDataVec[proc].size(), MPI_DOUBLE, proc, 2, comm, &req2);
+      requests.push_back(req1);
+      requests.push_back(req2);
+    }
+  }
+
+  MPI_Waitall(requests.size(), requests.data(), MPI_STATUSES_IGNORE);
+
+  bool debug = true;
   if(!debug) return;
-  printf("Size adjProcs %d \n", adjProcsForCells.size());
-  for (const auto& [key, value] : adjProcsForCells)
-    printf ("Process %d sends to %d size %d\n", comm_rank, key, value);
-  //Debugging for receiving
-  for (int i=0; i<nProcs; i++)
-    printf("Rank %d receiving from rank %d, size %d \n", comm_rank, i, recv_each_proc[i]);
-  for (int i=0; i<cellDataToSend[3].size(); i++)
-    if(comm_rank==1) printf("Sending i %d %d \n", i, cellDataToSend[3][i]);
-  for (int j=0; j<cellDataToReceive[1].size(); j++)
-    if(comm_rank==3) printf("Receiving i %d %d \n", j, cellDataToReceive[1][j]);
   
+  if(self==0 || self==1){
+    for (int proc = 0; proc < numProcsTot; ++proc) {
+      int sendIDs = (int)haloOwnerLocalIDs[proc].size();
+      int sendD   = (int)sendDataVec[proc].size();
+      int recvIDs = (int)recvIDVec[proc].size();
+      int recvD   = (int)recvDataVec[proc].size();
+      printf("[Rank %d]->sending %d %d Receiving<-from [proc %d] %d %d \n", self, sendIDs,sendD, proc, recvIDs, recvD);
+    }
+  }
+  MPI_Barrier(comm);  
+  if(self==0){ //Rank 0 sending its halos to rank 1
+    for (int i = 0; i < haloOwnerLocalIDs[1].size(); i++) {
+      printf("i %d EntInd %d: D %.15e %.15e \n", i, haloOwnerLocalIDs[1][i], sendDataVec[1][i*2], sendDataVec[1][i*2+1]);
+    }
+  }
+  if(self==1){ //Rank 1 receiving from rank 0
+    for (int i = 0; i < recvIDVec[0].size(); i++) {
+      printf("i %d EntInd %d D %.15e %.15e \n", i, recvIDVec[0][i], recvDataVec[0][i*2], recvDataVec[0][i*2+1]);
+    }
+  }
+  MPI_Barrier(comm);
+ 
 }
-*/
+
 template <MeshFieldIndex meshFieldIndex>
 void MPMesh::assembly(int order, MeshFieldType type, bool basisWeightFlag, bool massWeightFlag){
   if(basisWeightFlag || massWeightFlag) {

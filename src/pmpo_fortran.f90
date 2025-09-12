@@ -690,6 +690,13 @@ module polympo
     integer(c_int), value :: nVertices
     type(c_ptr), value :: vtxMass
   end subroutine
+  
+  subroutine polympo_startCommunication(mpMesh) &
+             bind(C, NAME='polympo_startCommunication_f')
+    use :: iso_c_binding
+    type(c_ptr), value :: mpMesh
+  end subroutine
+  
   !---------------------------------------------------------------------------
   !> @brief set the mesh elements mass from a host array
   !> @param mpmesh(in/out) MPMesh object

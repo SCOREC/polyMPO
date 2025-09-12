@@ -32,6 +32,7 @@ void polympo_setAppIDFunc_f(MPMesh_ptr p_mpmesh, IntVoidFunc getNext, void* appI
 void polympo_getMPTgtElmID_f(MPMesh_ptr p_mpmesh, const int numMPs, int* elmIDs);
 void polympo_getMPCurElmID_f(MPMesh_ptr p_mpmesh, const int numMPs, int* elmIDs);
 void polympo_setMPLatLonRotatedFlag_f(MPMesh_ptr p_mpmesh, const int isRotateFlag);
+void polympo_startCommunication_f(MPMesh_ptr p_mpmesh);
 
 //MP slices
 //Positions

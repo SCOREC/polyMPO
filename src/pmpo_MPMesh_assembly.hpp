@@ -741,13 +741,13 @@ void MPMesh::communicateFields(){
   MPI_Comm_size(comm, &numProcsTot);
 
   //Mode 0 is Gather, mode 1 is Scatter
-  int mode = 0;                     //TODO make it enum
+  int mode = 1;                     //TODO make it enum
   int num_doubles_per_ent = 2;      //This will come as input or vector size of the field
 
   std::vector<MPI_Request> recvRequests;
   std::vector<MPI_Request> sendRequests;
 
-  std::vector<std::vector<int>>    recvIDVec(numProcsTot);
+  std::vector<std::vector<int>>    sendIDVec(numProcsTot), recvIDVec(numProcsTot);
   std::vector<std::vector<double>> sendDataVec(numProcsTot), recvDataVec(numProcsTot);
 
   for(int i = 0; i < numProcsTot; i++){
@@ -767,6 +767,8 @@ void MPMesh::communicateFields(){
  
     if(numToSend > 0){
       sendDataVec[i].reserve(numToSend*num_doubles_per_ent);
+      if (mode == 1) sendIDVec[i].reserve(numToSend);
+        
     }
     if(numToRecv > 0){
       recvDataVec[i].resize(numToRecv*num_doubles_per_ent);
@@ -781,11 +783,22 @@ void MPMesh::communicateFields(){
      fieldData[i][j] = numOwnersTot + i;
 
   if(mode == 0){
-    // halo sends to owner
-    for (int iEnt=0; iEnt<numHalosTot; iEnt++){
+    // Halos sends to owners
+    for (int iEnt = 0; iEnt < numHalosTot; iEnt++){
       auto ownerProc = haloOwnerProcs[iEnt];
-      for (int iDouble=0; iDouble<num_doubles_per_ent; iDouble++)
+      for (int iDouble = 0; iDouble < num_doubles_per_ent; iDouble++)
         sendDataVec[ownerProc].push_back(fieldData[numOwnersTot+iEnt][iDouble]);
+    }
+  }
+  
+  else if(mode == 1){
+    // Owner sends to halos
+    for (int iProc=0; iProc<ownerToHalos.size(); iProc++) {
+      for (auto& [ownerID, haloID] : ownerToHalos[iProc]) {
+        sendIDVec[iProc].push_back(haloID);
+        for (int iDouble = 0; iDouble < num_doubles_per_ent; iDouble++)
+          sendDataVec[iProc].push_back(fieldData[ownerID][iDouble]);
+      }
     }
   }
 
@@ -794,16 +807,31 @@ void MPMesh::communicateFields(){
   
   for(int proc = 0; proc < numProcsTot; proc++){ 
     if(proc == self) continue;  
-    if(mode==0 && numHalosOnOtherProcs[proc]){
+    if(mode == 0 && numHalosOnOtherProcs[proc]){
       MPI_Request req3, req4;
       MPI_Irecv(recvIDVec[proc].data(), recvIDVec[proc].size(), MPI_INT, proc, 1, comm, &req3);
       MPI_Irecv(recvDataVec[proc].data(), recvDataVec[proc].size(), MPI_DOUBLE, proc, 2, comm, &req4);
       requests.push_back(req3);
       requests.push_back(req4);
     }
-    if(mode==0 && numOwnersOnOtherProcs[proc]) {
+    if(mode == 0 && numOwnersOnOtherProcs[proc]) {
       MPI_Request req1, req2;
       MPI_Isend(haloOwnerLocalIDs[proc].data(), haloOwnerLocalIDs[proc].size(), MPI_INT, proc, 1, comm, &req1);
+      MPI_Isend(sendDataVec[proc].data(), sendDataVec[proc].size(), MPI_DOUBLE, proc, 2, comm, &req2);
+      requests.push_back(req1);
+      requests.push_back(req2);
+    }
+
+    if(mode == 1 && numOwnersOnOtherProcs[proc]){
+      MPI_Request req3, req4;
+      MPI_Irecv(recvIDVec[proc].data(), recvIDVec[proc].size(), MPI_INT, proc, 1, comm, &req3);
+      MPI_Irecv(recvDataVec[proc].data(), recvDataVec[proc].size(), MPI_DOUBLE, proc, 2, comm, &req4);
+      requests.push_back(req3);
+      requests.push_back(req4);
+    }
+    if(mode == 1 && numHalosOnOtherProcs[proc]) {
+      MPI_Request req1, req2;
+      MPI_Isend(sendIDVec[proc].data(), sendIDVec[proc].size(), MPI_INT, proc, 1, comm, &req1);
       MPI_Isend(sendDataVec[proc].data(), sendDataVec[proc].size(), MPI_DOUBLE, proc, 2, comm, &req2);
       requests.push_back(req1);
       requests.push_back(req2);
@@ -826,13 +854,13 @@ void MPMesh::communicateFields(){
   }
   MPI_Barrier(comm);  
   if(self==0){ //Rank 0 sending its halos to rank 1
-    for (int i = 0; i < haloOwnerLocalIDs[1].size(); i++) {
-      printf("i %d EntInd %d: D %.15e %.15e \n", i, haloOwnerLocalIDs[1][i], sendDataVec[1][i*2], sendDataVec[1][i*2+1]);
+    for (int i = 0; i < sendIDVec[1].size(); i++) {
+      printf("i %d EntInd %d: D %.15e %.15e Send \n", i, sendIDVec[1][i], sendDataVec[1][i*2], sendDataVec[1][i*2+1]);
     }
   }
   if(self==1){ //Rank 1 receiving from rank 0
     for (int i = 0; i < recvIDVec[0].size(); i++) {
-      printf("i %d EntInd %d D %.15e %.15e \n", i, recvIDVec[0][i], recvDataVec[0][i*2], recvDataVec[0][i*2+1]);
+      printf("i %d EntInd %d D %.15e %.15e Recv \n", i, recvIDVec[0][i], recvDataVec[0][i*2], recvDataVec[0][i*2+1]);
     }
   }
   MPI_Barrier(comm);

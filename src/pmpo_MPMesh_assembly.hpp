@@ -686,7 +686,7 @@ void MPMesh::startCommunication(){
 
   communicateFields();
 
-  bool debug = false;
+  bool debug = true;
   if(! debug) return;
 
   printf("Rank %d Owners %d Halos %d Total %d \n", self, numOwnersTot, numHalosTot, numElements);
@@ -717,12 +717,14 @@ void MPMesh::startCommunication(){
   if(self==1){
     for (int i=0; i<localIDBufs[0].size(); i++)
       printf("LIDs in owned rank 1 %d \n", localIDBufs[0][i]);
+    printf("Rank %d local 0 13 Global %d %d\n", self, elm2global_host(0), elm2global_host(13));
   }
   MPI_Barrier(comm);
   //Checking if they have received them back
   if(self==0){
     for (int i=0; i<haloOwnerLocalIDs[1].size(); i++)
       printf("Owner LID in rank 0 %d \n", haloOwnerLocalIDs[1][i]);
+      printf("Rank %d local 641 644 Global %d %d\n", self, elm2global_host(641), elm2global_host(644));
   }
   MPI_Barrier(comm);
   //OwnerToHalos
@@ -840,7 +842,7 @@ void MPMesh::communicateFields(){
 
   MPI_Waitall(requests.size(), requests.data(), MPI_STATUSES_IGNORE);
 
-  bool debug = true;
+  bool debug = false;
   if(!debug) return;
   
   if(self==0 || self==1){

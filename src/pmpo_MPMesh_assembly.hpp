@@ -445,6 +445,8 @@ void MPMesh::subAssemblyVtx1(int vtxPerElm, int nCells, int comp, double* array)
   Kokkos::Timer timer; 
   
   auto VtxCoeffs=this->precomputedVtxCoeffs; 
+  std::cout << "SubAssemblyExtent(0) = " << VtxCoeffs.extent(0) << std::endl;
+  std::cout << "SubAssemblyExtent(1) = " << VtxCoeffs.extent(1) << std::endl;
   
   // MPI Information
   MPI_Comm comm = p_MPs->getMPIComm(); 
@@ -540,17 +542,24 @@ void MPMesh::startCommunication(){
   MPI_Comm_size(comm, &numProcsTot); 
 
   //Owning processes and global Numbering
-  auto elmOwners = p_mesh->getElm2Process();
-  auto elm2global = p_mesh->getElmGlobal();
-
+  
+  //For Elements Checked
+  //auto entOwners = p_mesh->getElm2Process();
+  //auto ent2global = p_mesh->getElmGlobal();
+  //int numEntities = p_mesh->getNumElements();
+  
+  //For Vertices not checked  
+  auto entOwners = p_mesh->getVtx2Process();
+  auto ent2global = p_mesh->getVtxGlobal();
+  int numEntities = p_mesh->getNumVertices();
+  
   //Loop over elements and find no of owners and halos
-  int numElements = p_mesh->getNumElements();
   Kokkos::View<int> owner_count("owner_count");
   Kokkos::View<int> halo_count("halo_count");
   Kokkos::deep_copy(owner_count, 0);
   Kokkos::deep_copy(halo_count, 0);
-  Kokkos::parallel_for("countOwnerHalo", numElements, KOKKOS_LAMBDA(const int elm){
-    if (elmOwners(elm)==self)
+  Kokkos::parallel_for("countOwnerHalo", numEntities, KOKKOS_LAMBDA(const int elm){
+    if (entOwners(elm)==self)
       Kokkos::atomic_add(&owner_count(), 1);
     else
       Kokkos::atomic_add(&halo_count(), 1);
@@ -558,7 +567,7 @@ void MPMesh::startCommunication(){
   
   Kokkos::deep_copy(numOwnersTot, owner_count);
   Kokkos::deep_copy(numHalosTot, halo_count);
-  assert(numHalosTot+numOwnersTot == numElements);
+  assert(numHalosTot+numOwnersTot == numEntities);
   printf("Rank %d owners %d halo %d\n", self, numOwnersTot, numHalosTot);
   int num_ints_per_copy = 2;
 
@@ -576,23 +585,23 @@ void MPMesh::startCommunication(){
   ownerToHalos.resize(numProcsTot);
   
   //Copy owning processes and globalIds to CPU
-  auto elmOwners_host = Kokkos::create_mirror_view_and_copy(Kokkos::DefaultHostExecutionSpace::memory_space(),
-                        elmOwners);
-  auto elm2global_host = Kokkos::create_mirror_view_and_copy(Kokkos::DefaultHostExecutionSpace::memory_space(),
-                         elm2global);
+  auto entOwners_host = Kokkos::create_mirror_view_and_copy(Kokkos::DefaultHostExecutionSpace::memory_space(),
+                        entOwners);
+  auto ent2global_host = Kokkos::create_mirror_view_and_copy(Kokkos::DefaultHostExecutionSpace::memory_space(),
+                         ent2global);
 
   //Do Map of Global To Local ID
   //TODO make ordered map; which faster?
   std::unordered_map<int, int> global2local;
-  for (int iEnt = 0; iEnt < numElements; iEnt++) {
-    int globalID = elm2global_host(iEnt);
+  for (int iEnt = 0; iEnt < numEntities; iEnt++) {
+    int globalID = ent2global_host(iEnt);
     global2local[globalID] = iEnt;
   }
 
   //Loop over all halo Entities and find the owning process
   for (auto iEnt=numOwnersTot; iEnt<numOwnersTot+numHalosTot; iEnt++){
-    auto ownerProc = elmOwners_host[iEnt];
-    assert(elmOwners_host(iEnt) != self);
+    auto ownerProc = entOwners_host[iEnt];
+    assert(entOwners_host(iEnt) != self);
     numOwnersOnOtherProcs[ownerProc] = numOwnersOnOtherProcs[ownerProc]+1;
     haloOwnerProcs.push_back(ownerProc);
   }
@@ -605,9 +614,9 @@ void MPMesh::startCommunication(){
     sendBufs[proc].reserve(num_ints_per_copy*numOwnersOnOtherProcs[proc]);
 
   for (int iEnt=numOwnersTot; iEnt<numOwnersTot+numHalosTot; iEnt++) {
-    auto ownerProc = elmOwners_host(iEnt);
+    auto ownerProc = entOwners_host(iEnt);
     assert(ownerProc != self);
-    sendBufs[ownerProc].push_back(elm2global_host(iEnt));
+    sendBufs[ownerProc].push_back(ent2global_host(iEnt));
     sendBufs[ownerProc].push_back(iEnt);
   }
 
@@ -684,12 +693,10 @@ void MPMesh::startCommunication(){
   
   MPI_Waitall(requests.size(), requests.data(), MPI_STATUSES_IGNORE);
 
-  communicateFields();
-
-  bool debug = true;
+  bool debug = false;
   if(! debug) return;
 
-  printf("Rank %d Owners %d Halos %d Total %d \n", self, numOwnersTot, numHalosTot, numElements);
+  printf("Rank %d Owners %d Halos %d Total %d \n", self, numOwnersTot, numHalosTot, numEntities);
   for (int i=0; i<numProcsTot; i++){
     printf("Rank %d has %d halos which are owners in other rank %d \n", self, numOwnersOnOtherProcs[i], i);
     printf("Rank %d has %d owners wicch are halos in other rank %d \n", self, numHalosOnOtherProcs[i], i);
@@ -698,8 +705,8 @@ void MPMesh::startCommunication(){
   //Check rank 0 sending to rank 1
   if(self==0){
     for (int i=0; i<numHalosTot; i++)
-      if( elmOwners_host(numOwnersTot+i)==1 )
-        printf("Halo Element with lid %d, gid %d and owner %d \n",  numOwnersTot+i, elm2global_host(numOwnersTot+i), elmOwners_host(numOwnersTot+i));
+      if( entOwners_host(numOwnersTot+i)==1 )
+        printf("Halo Element with lid %d, gid %d and owner %d \n",  numOwnersTot+i, ent2global_host(numOwnersTot+i), entOwners_host(numOwnersTot+i));
   }
   MPI_Barrier(comm);
   if(self==0){
@@ -717,40 +724,182 @@ void MPMesh::startCommunication(){
   if(self==1){
     for (int i=0; i<localIDBufs[0].size(); i++)
       printf("LIDs in owned rank 1 %d \n", localIDBufs[0][i]);
-    printf("Rank %d local 0 13 Global %d %d\n", self, elm2global_host(0), elm2global_host(13));
+    //printf("Rank %d local 0 13 Global %d %d\n", self, ent2global_host(0), ent2global_host(13));
   }
   MPI_Barrier(comm);
   //Checking if they have received them back
   if(self==0){
     for (int i=0; i<haloOwnerLocalIDs[1].size(); i++)
       printf("Owner LID in rank 0 %d \n", haloOwnerLocalIDs[1][i]);
-      printf("Rank %d local 641 644 Global %d %d\n", self, elm2global_host(641), elm2global_host(644));
+    //printf("Rank %d local 641 644 Global %d %d\n", self, ent2global_host(641), ent2global_host(644));
   }
   MPI_Barrier(comm);
   //OwnerToHalos
   if(self==1){
-   for (const auto &p : ownerToHalos[0]) {
-     std::cout << "(" << p.first << ", " << p.second << ")\n";
+    for (const auto &p : ownerToHalos[0]) {
+      std::cout << "(" << p.first << ", " << p.second << ")\n";
     }
   }
 }
 
-void MPMesh::communicateFields(){
+template <MeshFieldIndex meshFieldIndex>
+void MPMesh::reconstruct_full() {
+  std::cout<<__FUNCTION__<<std::endl;
+  Kokkos::Timer timer; 
+ 
+  auto VtxCoeffs=this->precomputedVtxCoeffs;
+  std::cout << "Extent(0) = " << VtxCoeffs.extent(0) << std::endl; // 10
+  std::cout << "Extent(1) = " << VtxCoeffs.extent(1) << std::endl; // 20
+  //Mesh Information
+  auto elm2VtxConn = p_mesh->getElm2VtxConn();  
+  int numVtx = p_mesh->getNumVertices();
+  auto vtxCoords = p_mesh->getMeshField<polyMPO::MeshF_VtxCoords>();
+  int numVertices = p_mesh->getNumVertices();
+  //Mesh Field
+  constexpr MaterialPointSlice mpfIndex = meshFieldIndexToMPSlice<meshFieldIndex>;
+  const int numEntries = mpSliceToNumEntries<mpfIndex>();
+  p_mesh->fillMeshField<meshFieldIndex>(numVtx, numEntries, 0.0);
+  auto meshField = p_mesh->getMeshField<meshFieldIndex>();
+  
+  MPI_Barrier(MPI_COMM_WORLD);
+  assert(cudaDeviceSynchronize()==cudaSuccess);
+
+  //Material Points
+  calcBasis();
+  auto mpData = p_MPs->getData<mpfIndex>();
+  auto weight = p_MPs->getData<MPF_Basis_Vals>();
+  auto mpPositions = p_MPs->getData<MPF_Cur_Pos_XYZ>();
+ 
+  MPI_Barrier(MPI_COMM_WORLD);
+  assert(cudaDeviceSynchronize()==cudaSuccess);
+
+  //Earth Radius
+  double radius = 1.0;
+  if(p_mesh->getGeomType() == geom_spherical_surf)
+    radius=p_mesh->getSphereRadius();
+ 
+  MPI_Barrier(MPI_COMM_WORLD);
+  assert(cudaDeviceSynchronize()==cudaSuccess);
+
+  //Reconstructed values
+  Kokkos::View<double**> reconVals("meshField", numVertices, numEntries);
+  
+  MPI_Barrier(MPI_COMM_WORLD);
+  assert(cudaDeviceSynchronize()==cudaSuccess);
+ 
+  //Reconstruct
+  auto reconstruct = PS_LAMBDA(const int& elm, const int& mp, const int& mask) {
+    if(mask) { //if material point is 'active'/'enabled'
+      int nVtxE = elm2VtxConn(elm,0); //number of vertices bounding the element
+      for(int i=0; i<nVtxE; i++){
+        int vID = elm2VtxConn(elm,i+1)-1;
+        double w_vtx=weight(mp,i); 
+        double CoordDiffs[vec4d_nEntries] = {1, (vtxCoords(vID,0) - mpPositions(mp,0))/radius,
+                                                (vtxCoords(vID,1) - mpPositions(mp,1))/radius, 
+                                                (vtxCoords(vID,2) - mpPositions(mp,2))/radius};
+
+        auto factor = w_vtx*(VtxCoeffs(vID,0) + VtxCoeffs(vID,1)*CoordDiffs[1] + 
+                                                VtxCoeffs(vID,2)*CoordDiffs[2] + 
+                                                VtxCoeffs(vID,3)*CoordDiffs[3]);
+ 
+        for (int k=0; k<numEntries; k++){
+          auto val = factor*mpData(mp,k);
+          Kokkos::atomic_add(&reconVals(vID,k), val);
+        }
+      }
+    }
+  };
+  p_MPs->parallel_for(reconstruct, "reconstruct");
+  
+  MPI_Barrier(MPI_COMM_WORLD);
+  assert(cudaDeviceSynchronize()==cudaSuccess);
+ 
+  // create host mirror and copy device -> host
+  auto reconVals_host = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), reconVals);
+  std::vector<std::vector<double>> fieldData(numVertices, std::vector<double>(numEntries, 0.0));
+  for (int i = 0; i < numVertices; ++i) {
+    for (int j = 0; j < numEntries; ++j) {
+      fieldData[i][j] = reconVals_host(i, j);
+    }
+  }
+
+  MPI_Barrier(MPI_COMM_WORLD);
+  assert(cudaDeviceSynchronize()==cudaSuccess);
+ 
+  //Mode 0 is Gather:  Halos Send to Owners
+  //Mode 1 is Scatter: Owners Send to Halos
+  int mode=0;
+  std::vector<std::vector<int>>    recvIDVec;
+  std::vector<std::vector<double>> recvDataVec;
+  communicateFields(fieldData, numVertices, numEntries, mode, recvIDVec, recvDataVec);
+  
+  int numProcsTot =  recvIDVec.size();
+  //Copy recvData and recvIDVec in GPU so that contributions can be taken
+  
+  
+  int totalSize = 0;
+  std::vector<int> offsets(numProcsTot);
+  for(int i=0; i<numProcsTot; i++) {
+    offsets[i] = totalSize;
+    totalSize += recvDataVec[i].size();
+  }
+  std::vector<double> flatData(totalSize);
+  for(int i=0; i<numProcsTot; i++) {
+    std::copy(recvDataVec[i].begin(), recvDataVec[i].end(), flatData.begin() + offsets[i]);
+  }
+  Kokkos::View<double*> recvDataGPU("recvDataGPU", totalSize);
+  Kokkos::deep_copy(recvDataGPU, Kokkos::View<double*, Kokkos::HostSpace>(flatData.data(), totalSize));
+  
+  //Kokkos::View<int*> offsetsGPU("offsetsGPU", numProcsTot);
+  //Kokkos::deep_copy(offsetsGPU, Kokkos::View<int*, Kokkos::HostSpace>(offsets.data(), numProcsTot));
+
+  totalSize = 0;
+  for(int i=0; i<numProcsTot; i++) {
+    offsets[i] = totalSize;
+    totalSize += recvIDVec[i].size();
+  }
+  std::vector<double> flatIDVec(totalSize);
+  for(int i=0; i<numProcsTot; i++) {
+    std::copy(recvIDVec[i].begin(), recvIDVec[i].end(), flatIDVec.begin() + offsets[i]);
+  }
+  Kokkos::View<double*> recvIDGPU("recvIDGPU", totalSize);
+  Kokkos::deep_copy(recvIDGPU, Kokkos::View<double*, Kokkos::HostSpace>(flatIDVec.data(), totalSize));
+  //Kokkos::View<int*> offsetsIDGPU("offsetsIDGPU", numProcsTot);
+  //Kokkos::deep_copy(offsetsIDGPU, Kokkos::View<int*, Kokkos::HostSpace>(offsets.data(), numProcsTot));
+ 
+
+  //Asssign the field
+  Kokkos::parallel_for("assigning", numVtx, KOKKOS_LAMBDA(const int vtx){
+    for(int k=0; k<numEntries; k++)
+      meshField(vtx, k) = reconVals(vtx,k);
+  });
+  
+  Kokkos::parallel_for("assigning2", recvIDGPU.size(), KOKKOS_LAMBDA(const int i){
+    int vertex = recvIDGPU(i);
+    for(int k=0; k<numEntries; k++)
+      Kokkos::atomic_add(&meshField(vertex,k), recvDataGPU(i*numEntries+k));
+  });
+  
+}
+
+void MPMesh::communicateFields(const std::vector<std::vector<double>>& fieldData, const int numEntities, const int numEntries, int mode, 
+                               std::vector<std::vector<int>>& recvIDVec,  std::vector<std::vector<double>>& recvDataVec){
 
   int self, numProcsTot;
   MPI_Comm comm = p_MPs->getMPIComm();
   MPI_Comm_rank(comm, &self);
   MPI_Comm_size(comm, &numProcsTot);
 
-  //Mode 0 is Gather, mode 1 is Scatter
-  int mode = 1;                     //TODO make it enum
-  int num_doubles_per_ent = 2;      //This will come as input or vector size of the field
-
+  assert(numEntities == numOwnersTot + numHalosTot);
+  
   std::vector<MPI_Request> recvRequests;
   std::vector<MPI_Request> sendRequests;
 
-  std::vector<std::vector<int>>    sendIDVec(numProcsTot), recvIDVec(numProcsTot);
-  std::vector<std::vector<double>> sendDataVec(numProcsTot), recvDataVec(numProcsTot);
+  std::vector<std::vector<int>>    sendIDVec(numProcsTot);
+  std::vector<std::vector<double>> sendDataVec(numProcsTot);
+  
+  recvIDVec.resize(numProcsTot);
+  recvDataVec.resize(numProcsTot);
 
   for(int i = 0; i < numProcsTot; i++){
     if(i==self) continue;
@@ -768,27 +917,29 @@ void MPMesh::communicateFields(){
     }
  
     if(numToSend > 0){
-      sendDataVec[i].reserve(numToSend*num_doubles_per_ent);
+      sendDataVec[i].reserve(numToSend*numEntries);
       if (mode == 1) sendIDVec[i].reserve(numToSend);
         
     }
     if(numToRecv > 0){
-      recvDataVec[i].resize(numToRecv*num_doubles_per_ent);
+      recvDataVec[i].resize(numToRecv*numEntries);
       recvIDVec[i].resize(numToRecv);
     }
   }
   
   // Create dummy fieldData: first owners, then halos
-  std::vector<std::vector<double>> fieldData(numOwnersTot + numHalosTot, std::vector<double>(num_doubles_per_ent));
+  /*
+  std::vector<std::vector<double>> fieldData(numOwnersTot + numHalosTot, std::vector<double>(numEntries));
   for (int i = 0; i < numOwnersTot + numHalosTot; ++i)
-    for (int j = 0; j < num_doubles_per_ent; ++j)
+    for (int j = 0; j < numEntries; ++j)
      fieldData[i][j] = numOwnersTot + i;
-
+  */
+  
   if(mode == 0){
     // Halos sends to owners
     for (int iEnt = 0; iEnt < numHalosTot; iEnt++){
       auto ownerProc = haloOwnerProcs[iEnt];
-      for (int iDouble = 0; iDouble < num_doubles_per_ent; iDouble++)
+      for (int iDouble = 0; iDouble < numEntries; iDouble++)
         sendDataVec[ownerProc].push_back(fieldData[numOwnersTot+iEnt][iDouble]);
     }
   }
@@ -798,7 +949,7 @@ void MPMesh::communicateFields(){
     for (int iProc=0; iProc<ownerToHalos.size(); iProc++) {
       for (auto& [ownerID, haloID] : ownerToHalos[iProc]) {
         sendIDVec[iProc].push_back(haloID);
-        for (int iDouble = 0; iDouble < num_doubles_per_ent; iDouble++)
+        for (int iDouble = 0; iDouble < numEntries; iDouble++)
           sendDataVec[iProc].push_back(fieldData[ownerID][iDouble]);
       }
     }

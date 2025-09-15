@@ -41,7 +41,9 @@ class MPMesh{
     std::vector<std::vector<int>> haloOwnerLocalIDs;
     std::vector<std::vector<std::pair<int,int>>> ownerToHalos;
     void startCommunication();
-    void communicateFields();
+    void communicateFields(const std::vector<std::vector<double>>& fieldData, const int numEntities, const int numEntries, int mode,
+                           std::vector<std::vector<int>>& recvIDVec,  std::vector<std::vector<double>>& recvDataVec);
+
     MPMesh(Mesh* inMesh, MaterialPoints* inMPs):
         p_mesh(inMesh), p_MPs(inMPs) {
     };
@@ -86,6 +88,9 @@ class MPMesh{
                                                       double* m33, double* m34,
                                                       double* m44);
 
+    template <MeshFieldIndex meshFieldIndex>
+    void reconstruct_full();
+    
     template<MeshFieldIndex meshFieldIndex>
     void setReconstructSlice(int order, MeshFieldType type);
     void reconstructSlices();

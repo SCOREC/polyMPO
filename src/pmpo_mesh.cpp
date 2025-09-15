@@ -74,14 +74,4 @@ namespace polyMPO{
         pumipic::RecordTime("PolyMPO_computeRotLatLonIncr", timer.seconds());
     }
 
-    IntView Mesh::getElm2Process() {
-        return owningProc_;
-    }
-    
-    IntView Mesh::getElmGlobal() {
-        return globalElm_;
-    }
-
-
-
 } // namespace polyMPO

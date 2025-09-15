@@ -88,6 +88,7 @@ class Mesh {
     IntVtx2ElmView elm2VtxConn_;
     IntElm2ElmView elm2ElmConn_;
     IntView owningProc_;
+    IntView owningProcVertex_;
     IntView globalElm_;
     IntView globalVtx_;
     //start of meshFields
@@ -131,7 +132,15 @@ class Mesh {
     bool checkMeshType(int meshType);
     bool checkGeomType(int geomType);
 
-    IntView getElm2Process();
+    void setOwningProc(IntView owningProc){
+      PMT_ALWAYS_ASSERT(meshEdit_);
+      owningProc_ = owningProc;
+    }
+    void setOwningProcVertex(IntView owningProcVertex){
+      owningProcVertex_ = owningProcVertex; 
+     } 
+    IntView getElm2Process() {return owningProc_;}
+    IntView getVtx2Process() {return owningProcVertex_;}
 
     mesh_type getMeshType() { return meshType_; }
     geom_type getGeomType() { return geomType_; }
@@ -161,12 +170,11 @@ class Mesh {
                                                      elm2VtxConn_ = elm2VtxConn; }
     void setElm2ElmConn(IntElm2ElmView elm2ElmConn) {PMT_ALWAYS_ASSERT(meshEdit_);
                                                      elm2ElmConn_ = elm2ElmConn; }
-    void setOwningProc(IntView owningProc) {PMT_ALWAYS_ASSERT(meshEdit_);
-                                            owningProc_ = owningProc; }
+    
     
     void setElmGlobal(IntView globalElm) {globalElm_ = globalElm;}
-    IntView getElmGlobal();
     void setVtxGlobal(IntView globalVtx) {globalVtx_ = globalVtx;}
+    IntView getElmGlobal() {return globalElm_;}
     IntView getVtxGlobal() {return globalVtx_;}
 
     void computeRotLatLonIncr();

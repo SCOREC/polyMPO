@@ -1301,6 +1301,12 @@ void polympo_fullAssemblyIceArea_f(MPMesh_ptr p_mpmesh, int vtxPerElm, int nCell
   mpmesh->assembleField(vtxPerElm, nCells, nVerticesSolve, nVertices, array_sub, array_full);
 }
 
+void polympo_reconstruct_iceArea_with_MPI_f(MPMesh_ptr p_mpmesh){
+  checkMPMeshValid(p_mpmesh);
+  auto mpmesh = ((polyMPO::MPMesh*)p_mpmesh);
+  mpmesh->reconstruct_full<polyMPO::MeshF_VtxMass>();
+}
+
 void polympo_setOwningProc_f(MPMesh_ptr p_mpmesh, const int nCells, const int* array){
   checkMPMeshValid(p_mpmesh);
   auto p_mesh = ((polyMPO::MPMesh*)p_mpmesh)->p_mesh; 
@@ -1313,6 +1319,19 @@ void polympo_setOwningProc_f(MPMesh_ptr p_mpmesh, const int nCells, const int* a
   Kokkos::View<int*> owningProc("owningProc",nCells);
   Kokkos::deep_copy(owningProc, arrayHost);
   p_mesh->setOwningProc(owningProc);
+}
+
+void polympo_setOwningProcVertex_f(MPMesh_ptr p_mpmesh, const int nVertices, const int* array){
+  checkMPMeshValid(p_mpmesh);
+  auto p_mesh = ((polyMPO::MPMesh*)p_mpmesh)->p_mesh; 
+  kkViewHostU<const int*> arrayHost(array,nVertices); 
+
+  //check the size
+  PMT_ALWAYS_ASSERT(nVertices == p_mesh->getNumVertices());
+
+  Kokkos::View<int*> owningProcVertex("owningProcVerterx", nVertices);
+  Kokkos::deep_copy(owningProcVertex, arrayHost);
+  p_mesh->setOwningProcVertex(owningProcVertex);
 }
 
 void polympo_setElmGlobal_f(MPMesh_ptr p_mpmesh, const int nCells, const int* array){

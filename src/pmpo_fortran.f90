@@ -798,6 +798,15 @@ module polympo
     integer(c_int), value :: nCells
     type(c_ptr), intent(in), value :: array
   end subroutine
+
+  subroutine polympo_setOwningProcVertex(mpMesh, nVertices, array) &
+    bind(C, NAME='polympo_setOwningProcVertex_f')
+    use :: iso_c_binding
+    type(c_ptr), value :: mpMesh
+    integer(c_int), value :: nVertices
+    type(c_ptr), intent(in), value :: array
+  end subroutine
+  
   !---------------------------------------------------------------------------
   !> @brief set the owning process array
   !> @param mpmesh(in/out) MPMesh object
@@ -957,6 +966,12 @@ module polympo
     type(c_ptr), value :: array_sub, array_full
   end subroutine
   
+  subroutine polympo_reconstruct_iceArea_with_MPI(mpMesh) &
+             bind(C, NAME='polympo_reconstruct_iceArea_with_MPI_f')
+    use :: iso_c_binding
+    type(c_ptr), value :: mpMesh
+  end subroutine
+   
   !---------------------------------------------------------------------------
   !> @brief directly call the reconstruct of the MP fields to mesh fields
   !> @param mpmesh(in/out) MPMesh object

@@ -72,6 +72,7 @@ void polympo_setMeshNumEdgesPerElm_f(MPMesh_ptr p_mpmesh, const int nCells, cons
 void polympo_setMeshElm2VtxConn_f(MPMesh_ptr p_mpmesh, const int maxEdges, const int nCells, const int* array);
 void polympo_setMeshElm2ElmConn_f(MPMesh_ptr p_mpmesh, const int maxEdges, const int nCells, const int* array);
 void polympo_setOwningProc_f(MPMesh_ptr p_mpmesh, const int nCells, const int* array);
+void polympo_setOwningProcVertex_f(MPMesh_ptr p_mpmesh, const int nVertices, const int* array);
 void polympo_setElmGlobal_f(MPMesh_ptr p_mpmesh, const int nCells, const int* array);
 void polympo_setVtxGlobal_f(MPMesh_ptr p_mpmesh, const int nVertices, const int* array);
 
@@ -128,6 +129,8 @@ void polympo_regularize_and_solve_matrix_f(MPMesh_ptr p_mpmesh, int nVetices, do
 //Method 1
 void polympo_fullAssemblyIceArea_f(MPMesh_ptr p_mpmesh, int vtxPerElm, int nCells, int nVerticesSolve, int nVertices, 
                                    double* array_sub, double* array_full);
+
+void polympo_reconstruct_iceArea_with_MPI_f(MPMesh_ptr p_mpmesh);
  
 // Timing
 void polympo_enableTiming_f();

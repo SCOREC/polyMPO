@@ -804,7 +804,7 @@ void MPMesh::reconstruct_full() {
  
         for (int k=0; k<numEntries; k++){
           auto val = factor*mpData(mp,k);
-          Kokkos::atomic_add(&reconVals(vID,k), val);
+          Kokkos::atomic_add(&meshField(vID,k), val);
         }
       }
     }
@@ -815,7 +815,7 @@ void MPMesh::reconstruct_full() {
   assert(cudaDeviceSynchronize()==cudaSuccess);
  
   // create host mirror and copy device -> host
-  auto reconVals_host = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), reconVals);
+  auto reconVals_host = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), meshField);
   std::vector<std::vector<double>> fieldData(numVertices, std::vector<double>(numEntries, 0.0));
   for (int i = 0; i < numVertices; ++i) {
     for (int j = 0; j < numEntries; ++j) {
@@ -868,12 +868,7 @@ void MPMesh::reconstruct_full() {
   //Kokkos::deep_copy(offsetsIDGPU, Kokkos::View<int*, Kokkos::HostSpace>(offsets.data(), numProcsTot));
  
 
-  //Asssign the field
-  Kokkos::parallel_for("assigning", numVtx, KOKKOS_LAMBDA(const int vtx){
-    for(int k=0; k<numEntries; k++)
-      meshField(vtx, k) = reconVals(vtx,k);
-  });
-  
+  //Take contributions from other procs
   Kokkos::parallel_for("assigning2", recvIDGPU.size(), KOKKOS_LAMBDA(const int i){
     int vertex = recvIDGPU(i);
     for(int k=0; k<numEntries; k++)

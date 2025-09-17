@@ -744,48 +744,32 @@ void MPMesh::startCommunication(){
 
 template <MeshFieldIndex meshFieldIndex>
 void MPMesh::reconstruct_full() {
-  std::cout<<__FUNCTION__<<std::endl;
+  
   Kokkos::Timer timer; 
  
   auto VtxCoeffs=this->precomputedVtxCoeffs;
-  std::cout << "Extent(0) = " << VtxCoeffs.extent(0) << std::endl; // 10
-  std::cout << "Extent(1) = " << VtxCoeffs.extent(1) << std::endl; // 20
+  
   //Mesh Information
   auto elm2VtxConn = p_mesh->getElm2VtxConn();  
   int numVtx = p_mesh->getNumVertices();
   auto vtxCoords = p_mesh->getMeshField<polyMPO::MeshF_VtxCoords>();
   int numVertices = p_mesh->getNumVertices();
+  
   //Mesh Field
   constexpr MaterialPointSlice mpfIndex = meshFieldIndexToMPSlice<meshFieldIndex>;
   const int numEntries = mpSliceToNumEntries<mpfIndex>();
   p_mesh->fillMeshField<meshFieldIndex>(numVtx, numEntries, 0.0);
   auto meshField = p_mesh->getMeshField<meshFieldIndex>();
   
-  MPI_Barrier(MPI_COMM_WORLD);
-  assert(cudaDeviceSynchronize()==cudaSuccess);
-
   //Material Points
-  calcBasis();
   auto mpData = p_MPs->getData<mpfIndex>();
   auto weight = p_MPs->getData<MPF_Basis_Vals>();
   auto mpPositions = p_MPs->getData<MPF_Cur_Pos_XYZ>();
  
-  MPI_Barrier(MPI_COMM_WORLD);
-  assert(cudaDeviceSynchronize()==cudaSuccess);
-
   //Earth Radius
   double radius = 1.0;
   if(p_mesh->getGeomType() == geom_spherical_surf)
     radius=p_mesh->getSphereRadius();
- 
-  MPI_Barrier(MPI_COMM_WORLD);
-  assert(cudaDeviceSynchronize()==cudaSuccess);
-
-  //Reconstructed values
-  Kokkos::View<double**> reconVals("meshField", numVertices, numEntries);
-  
-  MPI_Barrier(MPI_COMM_WORLD);
-  assert(cudaDeviceSynchronize()==cudaSuccess);
  
   //Reconstruct
   auto reconstruct = PS_LAMBDA(const int& elm, const int& mp, const int& mask) {
@@ -810,35 +794,31 @@ void MPMesh::reconstruct_full() {
     }
   };
   p_MPs->parallel_for(reconstruct, "reconstruct");
+
+  communicate_and_take_halo_contributions(meshField, numVertices, numEntries);
   
-  MPI_Barrier(MPI_COMM_WORLD);
-  assert(cudaDeviceSynchronize()==cudaSuccess);
- 
+}
+
+void MPMesh::communicate_and_take_halo_contributions(const Kokkos::View<double**>& meshField, int nEntities, int numEntries){
   // create host mirror and copy device -> host
   auto reconVals_host = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), meshField);
-  std::vector<std::vector<double>> fieldData(numVertices, std::vector<double>(numEntries, 0.0));
-  for (int i = 0; i < numVertices; ++i) {
+  std::vector<std::vector<double>> fieldData(nEntities, std::vector<double>(numEntries, 0.0));
+  for (int i = 0; i < nEntities; ++i) {
     for (int j = 0; j < numEntries; ++j) {
       fieldData[i][j] = reconVals_host(i, j);
     }
-  }
-
-  MPI_Barrier(MPI_COMM_WORLD);
-  assert(cudaDeviceSynchronize()==cudaSuccess);
- 
+  } 
   //Mode 0 is Gather:  Halos Send to Owners
   //Mode 1 is Scatter: Owners Send to Halos
   int mode=0;
   std::vector<std::vector<int>>    recvIDVec;
   std::vector<std::vector<double>> recvDataVec;
-  communicateFields(fieldData, numVertices, numEntries, mode, recvIDVec, recvDataVec);
+  communicateFields(fieldData, nEntities, numEntries, mode, recvIDVec, recvDataVec);
   
   int numProcsTot =  recvIDVec.size();
-  //Copy recvData and recvIDVec in GPU so that contributions can be taken
-  
-  
   int totalSize = 0;
   std::vector<int> offsets(numProcsTot);
+  //For the data
   for(int i=0; i<numProcsTot; i++) {
     offsets[i] = totalSize;
     totalSize += recvDataVec[i].size();
@@ -849,10 +829,7 @@ void MPMesh::reconstruct_full() {
   }
   Kokkos::View<double*> recvDataGPU("recvDataGPU", totalSize);
   Kokkos::deep_copy(recvDataGPU, Kokkos::View<double*, Kokkos::HostSpace>(flatData.data(), totalSize));
-  
-  //Kokkos::View<int*> offsetsGPU("offsetsGPU", numProcsTot);
-  //Kokkos::deep_copy(offsetsGPU, Kokkos::View<int*, Kokkos::HostSpace>(offsets.data(), numProcsTot));
-
+  //For the IDs
   totalSize = 0;
   for(int i=0; i<numProcsTot; i++) {
     offsets[i] = totalSize;
@@ -864,17 +841,13 @@ void MPMesh::reconstruct_full() {
   }
   Kokkos::View<double*> recvIDGPU("recvIDGPU", totalSize);
   Kokkos::deep_copy(recvIDGPU, Kokkos::View<double*, Kokkos::HostSpace>(flatIDVec.data(), totalSize));
-  //Kokkos::View<int*> offsetsIDGPU("offsetsIDGPU", numProcsTot);
-  //Kokkos::deep_copy(offsetsIDGPU, Kokkos::View<int*, Kokkos::HostSpace>(offsets.data(), numProcsTot));
  
-
   //Take contributions from other procs
-  Kokkos::parallel_for("assigning2", recvIDGPU.size(), KOKKOS_LAMBDA(const int i){
+  Kokkos::parallel_for("halo contribution", recvIDGPU.size(), KOKKOS_LAMBDA(const int i){
     int vertex = recvIDGPU(i);
     for(int k=0; k<numEntries; k++)
       Kokkos::atomic_add(&meshField(vertex,k), recvDataGPU(i*numEntries+k));
   });
-  
 }
 
 void MPMesh::communicateFields(const std::vector<std::vector<double>>& fieldData, const int numEntities, const int numEntries, int mode, 
@@ -921,14 +894,6 @@ void MPMesh::communicateFields(const std::vector<std::vector<double>>& fieldData
       recvIDVec[i].resize(numToRecv);
     }
   }
-  
-  // Create dummy fieldData: first owners, then halos
-  /*
-  std::vector<std::vector<double>> fieldData(numOwnersTot + numHalosTot, std::vector<double>(numEntries));
-  for (int i = 0; i < numOwnersTot + numHalosTot; ++i)
-    for (int j = 0; j < numEntries; ++j)
-     fieldData[i][j] = numOwnersTot + i;
-  */
   
   if(mode == 0){
     // Halos sends to owners

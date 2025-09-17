@@ -44,6 +44,8 @@ class MPMesh{
     void communicateFields(const std::vector<std::vector<double>>& fieldData, const int numEntities, const int numEntries, int mode,
                            std::vector<std::vector<int>>& recvIDVec,  std::vector<std::vector<double>>& recvDataVec);
 
+    void communicate_and_take_halo_contributions(const Kokkos::View<double**>& meshField, int nEntities, int numEntries);
+
     MPMesh(Mesh* inMesh, MaterialPoints* inMPs):
         p_mesh(inMesh), p_MPs(inMPs) {
     };

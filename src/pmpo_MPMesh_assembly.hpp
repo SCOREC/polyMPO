@@ -742,13 +742,132 @@ void MPMesh::startCommunication(){
   }
 }
 
+void MPMesh::reconstruct_coeff_full(){   
+  int self, numProcsTot;
+  MPI_Comm comm = p_MPs->getMPIComm(); 
+  MPI_Comm_rank(comm, &self);
+  MPI_Comm_size(comm, &numProcsTot); 
+
+  //Mesh Information
+  auto elm2VtxConn = p_mesh->getElm2VtxConn();  
+  int numVtx = p_mesh->getNumVertices();
+  auto vtxCoords = p_mesh->getMeshField<polyMPO::MeshF_VtxCoords>();
+  int numVertices = p_mesh->getNumVertices();
+  //Dual Element Area for Regularization
+  auto dual_triangle_area=p_mesh->getMeshField<MeshF_DualTriangleArea>();
+
+  //Material Points
+  calcBasis();
+  auto weight = p_MPs->getData<MPF_Basis_Vals>();
+  auto mpPos = p_MPs->getData<MPF_Cur_Pos_XYZ>();
+
+  //Matrix for each vertex
+  constexpr int numEntriesMatrix=10;
+  Kokkos::View<double*[numEntriesMatrix]> vtxMatrices("VtxMatrices", p_mesh->getNumVertices());
+  Kokkos::deep_copy(vtxMatrices, 0);
+
+  //Earth Radius
+  double radius = 1.0;
+  if(p_mesh->getGeomType() == geom_spherical_surf)
+    radius=p_mesh->getSphereRadius();
+
+  bool scaling=true;
+  
+  //Assemble matrix for each vertex
+  auto assemble = PS_LAMBDA(const int& elm, const int& mp, const int& mask) {
+    if(mask) { //if material point is 'active'/'enabled'
+      int nVtxE = elm2VtxConn(elm,0); //number of vertices bounding the element
+      for(int i=0; i<nVtxE; i++){
+        int vID = elm2VtxConn(elm,i+1)-1; //vID = vertex id
+        double w_vtx=weight(mp,i);
+        double mScale=1;
+        if(scaling)
+          mScale=sqrt(dual_triangle_area(vID,0))/radius;
+        
+        Kokkos::atomic_add(&vtxMatrices(vID,0), w_vtx*mScale*mScale);
+        Kokkos::atomic_add(&vtxMatrices(vID,1), w_vtx*mScale*(vtxCoords(vID,0)-mpPos(mp,0))/radius);
+        Kokkos::atomic_add(&vtxMatrices(vID,2), w_vtx*mScale*(vtxCoords(vID,1)-mpPos(mp,1))/radius);
+        Kokkos::atomic_add(&vtxMatrices(vID,3), w_vtx*mScale*(vtxCoords(vID,2)-mpPos(mp,2))/radius);
+        Kokkos::atomic_add(&vtxMatrices(vID,4), w_vtx*mScale*(vtxCoords(vID,0)-mpPos(mp,0))*(vtxCoords(vID,0)-mpPos(mp,0))/(radius*radius));
+        Kokkos::atomic_add(&vtxMatrices(vID,5), w_vtx*mScale*(vtxCoords(vID,0)-mpPos(mp,0))*(vtxCoords(vID,1)-mpPos(mp,1))/(radius*radius));
+        Kokkos::atomic_add(&vtxMatrices(vID,6), w_vtx*mScale*(vtxCoords(vID,0)-mpPos(mp,0))*(vtxCoords(vID,2)-mpPos(mp,2))/(radius*radius));
+        Kokkos::atomic_add(&vtxMatrices(vID,7), w_vtx*mScale*(vtxCoords(vID,1)-mpPos(mp,1))*(vtxCoords(vID,1)-mpPos(mp,1))/(radius*radius));
+        Kokkos::atomic_add(&vtxMatrices(vID,8), w_vtx*mScale*(vtxCoords(vID,1)-mpPos(mp,1))*(vtxCoords(vID,2)-mpPos(mp,2))/(radius*radius));
+        Kokkos::atomic_add(&vtxMatrices(vID,9), w_vtx*mScale*(vtxCoords(vID,2)-mpPos(mp,2))*(vtxCoords(vID,2)-mpPos(mp,2))/(radius*radius));  
+      }
+    }
+  };
+  p_MPs->parallel_for(assemble, "assembly");
+
+  auto ent2global = p_mesh->getVtxGlobal();
+  Kokkos::parallel_for("halo debug", numVertices, KOKKOS_LAMBDA(const int vtx){
+    if(ent2global(vtx)==2282){
+      for (int j=0; j<10; j++)
+        printf("Before Rank %d Vtx %d GLobal %d %.15e \n ", self, vtx, ent2global(vtx), vtxMatrices(vtx, j));
+    }
+  });
+ 
+  //Mode 0 is Gather:  Halos Send to Owners
+  //Mode 1 is Scatter: Owners Send to Halos
+  if (numProcsTot >1){
+    communicate_and_take_halo_contributions(vtxMatrices, numVertices, numEntriesMatrix, 0, 0);
+    communicate_and_take_halo_contributions(vtxMatrices, numVertices, numEntriesMatrix, 1, 1);
+  }
+
+  Kokkos::parallel_for("halo debug", numVertices, KOKKOS_LAMBDA(const int vtx){
+    if(ent2global(vtx)==2282){
+      for (int j=0; j<10; j++)
+        printf("After Rank %d Vtx %d Global %d %.15e \n ", self, vtx, ent2global(vtx), vtxMatrices(vtx, j));
+    }
+  });
+
+  solveMatrix(vtxMatrices, radius, scaling);
+}
+
+void MPMesh::solveMatrix(const Kokkos::View<double**>& vtxMatrices, double& radius, bool scaling){
+  Kokkos::Timer timer;
+  
+  auto dual_triangle_area=p_mesh->getMeshField<MeshF_DualTriangleArea>();
+  int nVertices = p_mesh->getNumVertices();
+
+  //Solutions fo matrix, a0, a1, a2, a3 for each vertex
+  Kokkos::View<double*[vec4d_nEntries]> VtxCoeffs("VtxCoeffs", nVertices); 
+  
+  Kokkos::parallel_for("solveMatrix", nVertices, KOKKOS_LAMBDA(const int vtx){
+    Vec4d v0 = {vtxMatrices(vtx, 0), vtxMatrices(vtx, 1), vtxMatrices(vtx, 2), vtxMatrices(vtx, 3)};
+    Vec4d v1 = {vtxMatrices(vtx, 1), vtxMatrices(vtx, 4), vtxMatrices(vtx, 5), vtxMatrices(vtx, 6)};
+    Vec4d v2 = {vtxMatrices(vtx, 2), vtxMatrices(vtx, 5), vtxMatrices(vtx, 7), vtxMatrices(vtx, 8)};
+    Vec4d v3 = {vtxMatrices(vtx, 3), vtxMatrices(vtx, 6), vtxMatrices(vtx, 8), vtxMatrices(vtx, 9)};
+    //Regularization
+    Matrix4d A_regularized = {v0, v1, v2, v3};
+    double regParam = sqrt(EPSILON)*(vtxMatrices(vtx, 0) + vtxMatrices(vtx, 4) + vtxMatrices(vtx, 7) + vtxMatrices(vtx, 9));
+    A_regularized.addToDiag(regParam);
+    
+    double coeff[vec4d_nEntries]={0.0, 0.0, 0.0, 0.0};
+    CholeskySolve4d_UnitRHS(A_regularized, coeff);
+    
+    double mScale=sqrt(dual_triangle_area(vtx,0))/radius;
+    if (scaling){
+      coeff[0]=coeff[0]*mScale*mScale;
+      coeff[1]=coeff[1]*mScale;
+      coeff[2]=coeff[2]*mScale;
+      coeff[3]=coeff[3]*mScale;
+    }
+    for (int i=0; i<vec4d_nEntries; i++) 
+      VtxCoeffs(vtx,i)=coeff[i];
+  });
+  this->precomputedVtxCoeffs = VtxCoeffs;
+  
+  pumipic::RecordTime("polyMPOsolveMatrixCoeffCompute", timer.seconds());
+}
+
 template <MeshFieldIndex meshFieldIndex>
 void MPMesh::reconstruct_full() {
   
   Kokkos::Timer timer; 
  
   auto VtxCoeffs=this->precomputedVtxCoeffs;
-  
+ 
   //Mesh Information
   auto elm2VtxConn = p_mesh->getElm2VtxConn();  
   int numVtx = p_mesh->getNumVertices();
@@ -795,11 +914,10 @@ void MPMesh::reconstruct_full() {
   };
   p_MPs->parallel_for(reconstruct, "reconstruct");
 
-  communicate_and_take_halo_contributions(meshField, numVertices, numEntries);
-  
+  communicate_and_take_halo_contributions(meshField, numVertices, numEntries, 0, 0);
 }
 
-void MPMesh::communicate_and_take_halo_contributions(const Kokkos::View<double**>& meshField, int nEntities, int numEntries){
+void MPMesh::communicate_and_take_halo_contributions(const Kokkos::View<double**>& meshField, int nEntities, int numEntries, int mode, int op){
   // create host mirror and copy device -> host
   auto reconVals_host = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), meshField);
   std::vector<std::vector<double>> fieldData(nEntities, std::vector<double>(numEntries, 0.0));
@@ -808,46 +926,76 @@ void MPMesh::communicate_and_take_halo_contributions(const Kokkos::View<double**
       fieldData[i][j] = reconVals_host(i, j);
     }
   } 
-  //Mode 0 is Gather:  Halos Send to Owners
-  //Mode 1 is Scatter: Owners Send to Halos
-  int mode=0;
+  
   std::vector<std::vector<int>>    recvIDVec;
   std::vector<std::vector<double>> recvDataVec;
   communicateFields(fieldData, nEntities, numEntries, mode, recvIDVec, recvDataVec);
-  
+ 
   int numProcsTot =  recvIDVec.size();
+  
+  //Flatten IDs 
   int totalSize = 0;
-  std::vector<int> offsets(numProcsTot);
-  //For the data
-  for(int i=0; i<numProcsTot; i++) {
-    offsets[i] = totalSize;
-    totalSize += recvDataVec[i].size();
-  }
-  std::vector<double> flatData(totalSize);
-  for(int i=0; i<numProcsTot; i++) {
-    std::copy(recvDataVec[i].begin(), recvDataVec[i].end(), flatData.begin() + offsets[i]);
-  }
-  Kokkos::View<double*> recvDataGPU("recvDataGPU", totalSize);
-  Kokkos::deep_copy(recvDataGPU, Kokkos::View<double*, Kokkos::HostSpace>(flatData.data(), totalSize));
-  //For the IDs
-  totalSize = 0;
+  std::vector<int> offsets(numProcsTot); 
   for(int i=0; i<numProcsTot; i++) {
     offsets[i] = totalSize;
     totalSize += recvIDVec[i].size();
   }
-  std::vector<double> flatIDVec(totalSize);
+  std::vector<int> flatIDVec(totalSize);
   for(int i=0; i<numProcsTot; i++) {
     std::copy(recvIDVec[i].begin(), recvIDVec[i].end(), flatIDVec.begin() + offsets[i]);
   }
-  Kokkos::View<double*> recvIDGPU("recvIDGPU", totalSize);
-  Kokkos::deep_copy(recvIDGPU, Kokkos::View<double*, Kokkos::HostSpace>(flatIDVec.data(), totalSize));
- 
+  Kokkos::View<int*> recvIDGPU("recvIDGPU", totalSize);
+  auto hostView = Kokkos::View<int*, Kokkos::HostSpace>("recvIDCPU", totalSize);
+  for (int i = 0; i < totalSize; i++) 
+    hostView(i) = flatIDVec[i];
+  Kokkos::deep_copy(recvIDGPU, hostView);
+
+  //Flatten Data
+  int totalSize_data=0;
+  std::vector<int> offsets_data(numProcsTot); 
+  for(int i=0; i<numProcsTot; i++) {
+    offsets_data[i] = totalSize_data;
+    totalSize_data += recvDataVec[i].size();
+  }
+  std::vector<double> flatDataVec(totalSize_data);
+  for(int i=0; i<numProcsTot; i++) {
+    std::copy(recvDataVec[i].begin(), recvDataVec[i].end(), flatDataVec.begin() + offsets_data[i]);
+  }
+  Kokkos::View<double*> recvDataGPU("recvDataGPU", totalSize_data);
+  auto hostView_data= Kokkos::View<double*, Kokkos::HostSpace>("recvDataCPU", totalSize_data);
+  for (int i = 0; i < totalSize_data; i++) 
+    hostView_data(i) = flatDataVec[i];
+  Kokkos::deep_copy(recvDataGPU, hostView_data);
+  
+  //Assertions
+  assert(totalSize_data == totalSize*numEntries);
+  for (int i=0; i<numProcsTot; i++){
+    assert(recvDataVec[i].size() == recvIDVec[i].size() * numEntries);
+  }
+  
   //Take contributions from other procs
   Kokkos::parallel_for("halo contribution", recvIDGPU.size(), KOKKOS_LAMBDA(const int i){
     int vertex = recvIDGPU(i);
-    for(int k=0; k<numEntries; k++)
-      Kokkos::atomic_add(&meshField(vertex,k), recvDataGPU(i*numEntries+k));
+    for(int k=0; k<numEntries; k++){
+      if(op==0) Kokkos::atomic_add(&meshField(vertex,k), recvDataGPU(i*numEntries+k));
+      if(op==1) meshField(vertex, k) = recvDataGPU(i * numEntries + k);
+    }
   });
+
+  bool debug = false;
+  if(!debug) return;  
+  int self;
+  MPI_Comm comm = p_MPs->getMPIComm(); 
+  MPI_Comm_rank(comm, &self);
+  if (self==1){
+    for (int i=0; i< totalSize; i++){
+      if(flatDataVec[i*numEntries]==0) continue;
+      printf("FlatIDs %d \n", flatIDVec[i]);
+      for (int j=0; j<numEntries; j++)
+        printf(" %.15e ", flatDataVec[i*numEntries+j]);
+      printf("\n");
+    }
+  }
 }
 
 void MPMesh::communicateFields(const std::vector<std::vector<double>>& fieldData, const int numEntities, const int numEntries, int mode, 
@@ -921,6 +1069,8 @@ void MPMesh::communicateFields(const std::vector<std::vector<double>>& fieldData
   for(int proc = 0; proc < numProcsTot; proc++){ 
     if(proc == self) continue;  
     if(mode == 0 && numHalosOnOtherProcs[proc]){
+      assert(recvIDVec[proc].size() == (size_t)numHalosOnOtherProcs[proc]);
+      assert(recvDataVec[proc].size() == recvIDVec[proc].size() * (size_t)numEntries);
       MPI_Request req3, req4;
       MPI_Irecv(recvIDVec[proc].data(), recvIDVec[proc].size(), MPI_INT, proc, 1, comm, &req3);
       MPI_Irecv(recvDataVec[proc].data(), recvDataVec[proc].size(), MPI_DOUBLE, proc, 2, comm, &req4);
@@ -928,6 +1078,9 @@ void MPMesh::communicateFields(const std::vector<std::vector<double>>& fieldData
       requests.push_back(req4);
     }
     if(mode == 0 && numOwnersOnOtherProcs[proc]) {
+      
+      assert(haloOwnerLocalIDs[proc].size() == (size_t)numOwnersOnOtherProcs[proc]);
+      assert(sendDataVec[proc].size() == haloOwnerLocalIDs[proc].size() * (size_t)numEntries);
       MPI_Request req1, req2;
       MPI_Isend(haloOwnerLocalIDs[proc].data(), haloOwnerLocalIDs[proc].size(), MPI_INT, proc, 1, comm, &req1);
       MPI_Isend(sendDataVec[proc].data(), sendDataVec[proc].size(), MPI_DOUBLE, proc, 2, comm, &req2);
@@ -955,29 +1108,40 @@ void MPMesh::communicateFields(const std::vector<std::vector<double>>& fieldData
 
   bool debug = false;
   if(!debug) return;
-  
-  if(self==0 || self==1){
+  static int count_deb=0;
+  if(self==0) std::cout<<"====================="<<count_deb<<"========================"<<std::endl;
+  count_deb++;
+  MPI_Barrier(comm);
+  if((self==0 || self==1) && (count_deb==1)){
     for (int proc = 0; proc < numProcsTot; ++proc) {
       int sendIDs = (int)haloOwnerLocalIDs[proc].size();
       int sendD   = (int)sendDataVec[proc].size();
       int recvIDs = (int)recvIDVec[proc].size();
       int recvD   = (int)recvDataVec[proc].size();
-      printf("[Rank %d]->sending %d %d Receiving<-from [proc %d] %d %d \n", self, sendIDs,sendD, proc, recvIDs, recvD);
+      printf("[Rank %d]->sending %d %d Receiving<-from [proc %d] %d %d \n", self, sendIDs, sendD, proc, recvIDs, recvD);
     }
   }
   MPI_Barrier(comm);  
   if(self==0){ //Rank 0 sending its halos to rank 1
-    for (int i = 0; i < sendIDVec[1].size(); i++) {
-      printf("i %d EntInd %d: D %.15e %.15e Send \n", i, sendIDVec[1][i], sendDataVec[1][i*2], sendDataVec[1][i*2+1]);
-    }
-  }
-  if(self==1){ //Rank 1 receiving from rank 0
-    for (int i = 0; i < recvIDVec[0].size(); i++) {
-      printf("i %d EntInd %d D %.15e %.15e Recv \n", i, recvIDVec[0][i], recvDataVec[0][i*2], recvDataVec[0][i*2+1]);
+    for (int i = 0; i < haloOwnerLocalIDs[1].size(); i++) {
+      if(sendDataVec[1][i*numEntries] == 0 ) continue;
+      printf("i %d EntInd %d sent from rank 0 \n", i, haloOwnerLocalIDs[1][i]);
+      for (int j=0; j<numEntries; j++)
+        printf(" %.15e ", sendDataVec[1][i*numEntries+j]);
+      printf("\n");
     }
   }
   MPI_Barrier(comm);
- 
+  if(self==1){ //Rank 1 receiving from rank 0
+    for (int i = 0; i < recvIDVec[0].size(); i++) {
+      if(recvDataVec[0][i*numEntries] == 0 ) continue;
+      printf("i %d EntInd %d recv in rank 1 \n", i, recvIDVec[0][i]);
+      for (int j = 0; j < numEntries; j++)
+        printf(" %.15e ", recvDataVec[0][i*numEntries+j]);
+      printf("\n");
+    }
+  }
+  MPI_Barrier(comm); 
 }
 
 template <MeshFieldIndex meshFieldIndex>

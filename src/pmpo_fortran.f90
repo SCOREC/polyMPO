@@ -966,6 +966,12 @@ module polympo
     type(c_ptr), value :: array_sub, array_full
   end subroutine
   
+  subroutine polympo_reconstruct_coeff_with_MPI(mpMesh) &
+             bind(C, NAME='polympo_reconstruct_coeff_with_MPI_f')
+    use :: iso_c_binding
+    type(c_ptr), value :: mpMesh
+  end subroutine
+  
   subroutine polympo_reconstruct_iceArea_with_MPI(mpMesh) &
              bind(C, NAME='polympo_reconstruct_iceArea_with_MPI_f')
     use :: iso_c_binding

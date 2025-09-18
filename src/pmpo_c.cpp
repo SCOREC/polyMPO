@@ -1307,6 +1307,12 @@ void polympo_reconstruct_iceArea_with_MPI_f(MPMesh_ptr p_mpmesh){
   mpmesh->reconstruct_full<polyMPO::MeshF_VtxMass>();
 }
 
+void polympo_reconstruct_coeff_with_MPI_f(MPMesh_ptr p_mpmesh){
+  checkMPMeshValid(p_mpmesh);
+  auto mpmesh = ((polyMPO::MPMesh*)p_mpmesh);
+  mpmesh->reconstruct_coeff_full();
+}
+
 void polympo_setOwningProc_f(MPMesh_ptr p_mpmesh, const int nCells, const int* array){
   checkMPMeshValid(p_mpmesh);
   auto p_mesh = ((polyMPO::MPMesh*)p_mpmesh)->p_mesh; 

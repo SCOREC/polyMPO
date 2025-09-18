@@ -44,7 +44,7 @@ class MPMesh{
     void communicateFields(const std::vector<std::vector<double>>& fieldData, const int numEntities, const int numEntries, int mode,
                            std::vector<std::vector<int>>& recvIDVec,  std::vector<std::vector<double>>& recvDataVec);
 
-    void communicate_and_take_halo_contributions(const Kokkos::View<double**>& meshField, int nEntities, int numEntries);
+    void communicate_and_take_halo_contributions(const Kokkos::View<double**>& meshField, int nEntities, int numEntries, int mode, int op);
 
     MPMesh(Mesh* inMesh, MaterialPoints* inMPs):
         p_mesh(inMesh), p_MPs(inMPs) {
@@ -92,7 +92,9 @@ class MPMesh{
 
     template <MeshFieldIndex meshFieldIndex>
     void reconstruct_full();
-    
+    void reconstruct_coeff_full();
+    void solveMatrix(const Kokkos::View<double**>& vtxMatrices, double& radius, bool scaling); 
+ 
     template<MeshFieldIndex meshFieldIndex>
     void setReconstructSlice(int order, MeshFieldType type);
     void reconstructSlices();

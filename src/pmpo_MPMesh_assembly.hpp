@@ -743,9 +743,8 @@ void MPMesh::startCommunication(){
 }
 
 void MPMesh::reconstruct_coeff_full(){   
-  int self, numProcsTot;
+  int numProcsTot;
   MPI_Comm comm = p_MPs->getMPIComm(); 
-  MPI_Comm_rank(comm, &self);
   MPI_Comm_size(comm, &numProcsTot); 
 
   //Mesh Information
@@ -799,27 +798,18 @@ void MPMesh::reconstruct_coeff_full(){
   };
   p_MPs->parallel_for(assemble, "assembly");
 
-  auto ent2global = p_mesh->getVtxGlobal();
-  Kokkos::parallel_for("halo debug", numVertices, KOKKOS_LAMBDA(const int vtx){
-    if(ent2global(vtx)==2282){
-      for (int j=0; j<10; j++)
-        printf("Before Rank %d Vtx %d GLobal %d %.15e \n ", self, vtx, ent2global(vtx), vtxMatrices(vtx, j));
-    }
-  });
- 
   //Mode 0 is Gather:  Halos Send to Owners
   //Mode 1 is Scatter: Owners Send to Halos
+  //Op 0 is addition
+  //Op 1 is replacement
+  int mode = 0;
+  int op = 0;
   if (numProcsTot >1){
-    communicate_and_take_halo_contributions(vtxMatrices, numVertices, numEntriesMatrix, 0, 0);
-    communicate_and_take_halo_contributions(vtxMatrices, numVertices, numEntriesMatrix, 1, 1);
+    communicate_and_take_halo_contributions(vtxMatrices, numVertices, numEntriesMatrix, mode, op);
+    mode=1; 
+    op=1;
+    communicate_and_take_halo_contributions(vtxMatrices, numVertices, numEntriesMatrix, mode, op);
   }
-
-  Kokkos::parallel_for("halo debug", numVertices, KOKKOS_LAMBDA(const int vtx){
-    if(ent2global(vtx)==2282){
-      for (int j=0; j<10; j++)
-        printf("After Rank %d Vtx %d Global %d %.15e \n ", self, vtx, ent2global(vtx), vtxMatrices(vtx, j));
-    }
-  });
 
   solveMatrix(vtxMatrices, radius, scaling);
 }
@@ -862,8 +852,7 @@ void MPMesh::solveMatrix(const Kokkos::View<double**>& vtxMatrices, double& radi
 }
 
 template <MeshFieldIndex meshFieldIndex>
-void MPMesh::reconstruct_full() {
-  
+void MPMesh::reconstruct_full() { 
   Kokkos::Timer timer; 
  
   auto VtxCoeffs=this->precomputedVtxCoeffs;
@@ -918,7 +907,6 @@ void MPMesh::reconstruct_full() {
 }
 
 void MPMesh::communicate_and_take_halo_contributions(const Kokkos::View<double**>& meshField, int nEntities, int numEntries, int mode, int op){
-  // create host mirror and copy device -> host
   auto reconVals_host = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), meshField);
   std::vector<std::vector<double>> fieldData(nEntities, std::vector<double>(numEntries, 0.0));
   for (int i = 0; i < nEntities; ++i) {
@@ -1000,7 +988,6 @@ void MPMesh::communicate_and_take_halo_contributions(const Kokkos::View<double**
 
 void MPMesh::communicateFields(const std::vector<std::vector<double>>& fieldData, const int numEntities, const int numEntries, int mode, 
                                std::vector<std::vector<int>>& recvIDVec,  std::vector<std::vector<double>>& recvDataVec){
-
   int self, numProcsTot;
   MPI_Comm comm = p_MPs->getMPIComm();
   MPI_Comm_rank(comm, &self);
@@ -1064,8 +1051,7 @@ void MPMesh::communicateFields(const std::vector<std::vector<double>>& fieldData
   }
 
   std::vector<MPI_Request> requests;
-  requests.reserve(4*numProcsTot);
-  
+  requests.reserve(4*numProcsTot); 
   for(int proc = 0; proc < numProcsTot; proc++){ 
     if(proc == self) continue;  
     if(mode == 0 && numHalosOnOtherProcs[proc]){

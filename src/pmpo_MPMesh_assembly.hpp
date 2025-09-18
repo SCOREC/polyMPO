@@ -693,9 +693,8 @@ void MPMesh::startCommunication(){
   
   MPI_Waitall(requests.size(), requests.data(), MPI_STATUSES_IGNORE);
 
-  bool debug = false;
-  if(! debug) return;
-
+  if (p_MPs->getOpMode() != polyMPO::MP_DEBUG) 
+   return;
   printf("Rank %d Owners %d Halos %d Total %d \n", self, numOwnersTot, numHalosTot, numEntities);
   for (int i=0; i<numProcsTot; i++){
     printf("Rank %d has %d halos which are owners in other rank %d \n", self, numOwnersOnOtherProcs[i], i);
@@ -970,12 +969,12 @@ void MPMesh::communicate_and_take_halo_contributions(const Kokkos::View<double**
     }
   });
 
-  bool debug = false;
-  if(!debug) return;  
+  if (p_MPs->getOpMode() != polyMPO::MP_DEBUG)
+    return;  
   int self;
   MPI_Comm comm = p_MPs->getMPIComm(); 
   MPI_Comm_rank(comm, &self);
-  if (self==1){
+  if(self==1){
     for (int i=0; i< totalSize; i++){
       if(flatDataVec[i*numEntries]==0) continue;
       printf("FlatIDs %d \n", flatIDVec[i]);
@@ -1092,8 +1091,8 @@ void MPMesh::communicateFields(const std::vector<std::vector<double>>& fieldData
 
   MPI_Waitall(requests.size(), requests.data(), MPI_STATUSES_IGNORE);
 
-  bool debug = false;
-  if(!debug) return;
+  if (p_MPs->getOpMode() != polyMPO::MP_DEBUG)
+    return;
   static int count_deb=0;
   if(self==0) std::cout<<"====================="<<count_deb<<"========================"<<std::endl;
   count_deb++;

@@ -542,17 +542,17 @@ void MPMesh::startCommunication(){
   MPI_Comm_size(comm, &numProcsTot); 
 
   //Owning processes and global Numbering
-  
+
   //For Elements Checked
   //auto entOwners = p_mesh->getElm2Process();
   //auto ent2global = p_mesh->getElmGlobal();
   //int numEntities = p_mesh->getNumElements();
-  
+
   //For Vertices not checked  
   auto entOwners = p_mesh->getVtx2Process();
   auto ent2global = p_mesh->getVtxGlobal();
   int numEntities = p_mesh->getNumVertices();
-  
+
   //Loop over elements and find no of owners and halos
   Kokkos::View<int> owner_count("owner_count");
   Kokkos::View<int> halo_count("halo_count");
@@ -564,7 +564,7 @@ void MPMesh::startCommunication(){
     else
       Kokkos::atomic_add(&halo_count(), 1);
   });
-  
+
   Kokkos::deep_copy(numOwnersTot, owner_count);
   Kokkos::deep_copy(numHalosTot, halo_count);
   assert(numHalosTot+numOwnersTot == numEntities);
@@ -580,7 +580,7 @@ void MPMesh::startCommunication(){
   //For every halo cell find the owning process and the local Id in that process
   haloOwnerProcs.reserve(numHalosTot);
   haloOwnerLocalIDs.resize(numProcsTot);
- 
+
   //Copy owning processes and globalIds to CPU
   auto entOwners_host = Kokkos::create_mirror_view_and_copy(Kokkos::DefaultHostExecutionSpace::memory_space(),
                         entOwners);
@@ -647,7 +647,7 @@ void MPMesh::startCommunication(){
   //numHalosOnOtherProcs[p] tells how many to expect from proc p
   ownerOwnerLocalIDs.resize(numProcsTot);
   ownerHaloLocalIDs.resize(numProcsTot);
-  
+
   for (int proc = 0; proc < numProcsTot; proc++) {
     if (numHalosOnOtherProcs[proc] > 0) {
       ownerOwnerLocalIDs[proc].resize(numHalosOnOtherProcs[proc]);
@@ -678,7 +678,7 @@ void MPMesh::startCommunication(){
       requests.push_back(req);
     }
   }
-  
+
   MPI_Waitall(requests.size(), requests.data(), MPI_STATUSES_IGNORE);
 
   if (p_MPs->getOpMode() != polyMPO::MP_DEBUG) 
@@ -699,7 +699,7 @@ void MPMesh::startCommunication(){
   if(self==0){
     for (int i=0; i<sendBufs[1].size(); i++)
       printf("Sending GIDs to rank 1 %d \n", sendBufs[1][i]);
-  } 
+  }
   MPI_Barrier(comm);
   //Check rank 1 receiving global IDs from rank 0
   if(self==1){
@@ -720,10 +720,10 @@ void MPMesh::startCommunication(){
   }
 }
 
-void MPMesh::reconstruct_coeff_full(){   
+void MPMesh::reconstruct_coeff_full(){
   int numProcsTot;
-  MPI_Comm comm = p_MPs->getMPIComm(); 
-  MPI_Comm_size(comm, &numProcsTot); 
+  MPI_Comm comm = p_MPs->getMPIComm();
+  MPI_Comm_size(comm, &numProcsTot);
 
   //Mesh Information
   auto elm2VtxConn = p_mesh->getElm2VtxConn();  
@@ -749,7 +749,7 @@ void MPMesh::reconstruct_coeff_full(){
     radius=p_mesh->getSphereRadius();
 
   bool scaling=true;
-  
+
   //Assemble matrix for each vertex
   auto assemble = PS_LAMBDA(const int& elm, const int& mp, const int& mask) {
     if(mask) { //if material point is 'active'/'enabled'
@@ -760,7 +760,7 @@ void MPMesh::reconstruct_coeff_full(){
         double mScale=1;
         if(scaling)
           mScale=sqrt(dual_triangle_area(vID,0))/radius;
-        
+
         Kokkos::atomic_add(&vtxMatrices(vID,0), w_vtx*mScale*mScale);
         Kokkos::atomic_add(&vtxMatrices(vID,1), w_vtx*mScale*(vtxCoords(vID,0)-mpPos(mp,0))/radius);
         Kokkos::atomic_add(&vtxMatrices(vID,2), w_vtx*mScale*(vtxCoords(vID,1)-mpPos(mp,1))/radius);
@@ -794,13 +794,13 @@ void MPMesh::reconstruct_coeff_full(){
 
 void MPMesh::solveMatrix(const Kokkos::View<double**>& vtxMatrices, double& radius, bool scaling){
   Kokkos::Timer timer;
-  
+
   auto dual_triangle_area=p_mesh->getMeshField<MeshF_DualTriangleArea>();
   int nVertices = p_mesh->getNumVertices();
 
   //Solutions fo matrix, a0, a1, a2, a3 for each vertex
   Kokkos::View<double*[vec4d_nEntries]> VtxCoeffs("VtxCoeffs", nVertices); 
-  
+
   Kokkos::parallel_for("solveMatrix", nVertices, KOKKOS_LAMBDA(const int vtx){
     Vec4d v0 = {vtxMatrices(vtx, 0), vtxMatrices(vtx, 1), vtxMatrices(vtx, 2), vtxMatrices(vtx, 3)};
     Vec4d v1 = {vtxMatrices(vtx, 1), vtxMatrices(vtx, 4), vtxMatrices(vtx, 5), vtxMatrices(vtx, 6)};
@@ -810,10 +810,10 @@ void MPMesh::solveMatrix(const Kokkos::View<double**>& vtxMatrices, double& radi
     Matrix4d A_regularized = {v0, v1, v2, v3};
     double regParam = sqrt(EPSILON)*(vtxMatrices(vtx, 0) + vtxMatrices(vtx, 4) + vtxMatrices(vtx, 7) + vtxMatrices(vtx, 9));
     A_regularized.addToDiag(regParam);
-    
+
     double coeff[vec4d_nEntries]={0.0, 0.0, 0.0, 0.0};
     CholeskySolve4d_UnitRHS(A_regularized, coeff);
-    
+
     double mScale=sqrt(dual_triangle_area(vtx,0))/radius;
     if (scaling){
       coeff[0]=coeff[0]*mScale*mScale;
@@ -830,33 +830,33 @@ void MPMesh::solveMatrix(const Kokkos::View<double**>& vtxMatrices, double& radi
 }
 
 template <MeshFieldIndex meshFieldIndex>
-void MPMesh::reconstruct_full() { 
-  Kokkos::Timer timer; 
- 
+void MPMesh::reconstruct_full() {
+  Kokkos::Timer timer;
+
   auto VtxCoeffs=this->precomputedVtxCoeffs;
- 
+
   //Mesh Information
   auto elm2VtxConn = p_mesh->getElm2VtxConn();  
   int numVtx = p_mesh->getNumVertices();
   auto vtxCoords = p_mesh->getMeshField<polyMPO::MeshF_VtxCoords>();
   int numVertices = p_mesh->getNumVertices();
-  
+
   //Mesh Field
   constexpr MaterialPointSlice mpfIndex = meshFieldIndexToMPSlice<meshFieldIndex>;
   const int numEntries = mpSliceToNumEntries<mpfIndex>();
   p_mesh->fillMeshField<meshFieldIndex>(numVtx, numEntries, 0.0);
   auto meshField = p_mesh->getMeshField<meshFieldIndex>();
-  
+
   //Material Points
   auto mpData = p_MPs->getData<mpfIndex>();
   auto weight = p_MPs->getData<MPF_Basis_Vals>();
   auto mpPositions = p_MPs->getData<MPF_Cur_Pos_XYZ>();
- 
+
   //Earth Radius
   double radius = 1.0;
   if(p_mesh->getGeomType() == geom_spherical_surf)
     radius=p_mesh->getSphereRadius();
- 
+
   //Reconstruct
   auto reconstruct = PS_LAMBDA(const int& elm, const int& mp, const int& mask) {
     if(mask) { //if material point is 'active'/'enabled'
@@ -871,7 +871,7 @@ void MPMesh::reconstruct_full() {
         auto factor = w_vtx*(VtxCoeffs(vID,0) + VtxCoeffs(vID,1)*CoordDiffs[1] + 
                                                 VtxCoeffs(vID,2)*CoordDiffs[2] + 
                                                 VtxCoeffs(vID,3)*CoordDiffs[3]);
- 
+
         for (int k=0; k<numEntries; k++){
           auto val = factor*mpData(mp,k);
           Kokkos::atomic_add(&meshField(vID,k), val);
@@ -892,45 +892,43 @@ void MPMesh::communicate_and_take_halo_contributions(const Kokkos::View<double**
       fieldData[i][j] = reconVals_host(i, j);
     }
   } 
-  
+
   std::vector<std::vector<int>>    recvIDVec;
   std::vector<std::vector<double>> recvDataVec;
   communicateFields(fieldData, nEntities, numEntries, mode, recvIDVec, recvDataVec);
- 
+
   int numProcsTot =  recvIDVec.size();
-  
+
   //Flatten IDs 
   int totalSize = 0;
-  std::vector<int> offsets(numProcsTot); 
+  std::vector<int> offsets(numProcsTot, 0); 
   for(int i=0; i<numProcsTot; i++) {
     offsets[i] = totalSize;
     totalSize += recvIDVec[i].size();
   }
-  std::vector<int> flatIDVec(totalSize);
+  std::vector<int> flatIDVec(totalSize, 0);
   for(int i=0; i<numProcsTot; i++) {
     std::copy(recvIDVec[i].begin(), recvIDVec[i].end(), flatIDVec.begin() + offsets[i]);
   }
   Kokkos::View<int*> recvIDGPU("recvIDGPU", totalSize);
   auto hostView = Kokkos::View<int*, Kokkos::HostSpace>("recvIDCPU", totalSize);
-  for (int i = 0; i < totalSize; i++) 
-    hostView(i) = flatIDVec[i];
+  std::copy(flatIDVec.begin(), flatIDVec.end(), hostView.data());
   Kokkos::deep_copy(recvIDGPU, hostView);
 
   //Flatten Data
   int totalSize_data=0;
-  std::vector<int> offsets_data(numProcsTot); 
+  std::vector<int> offsets_data(numProcsTot, 0);
   for(int i=0; i<numProcsTot; i++) {
     offsets_data[i] = totalSize_data;
     totalSize_data += recvDataVec[i].size();
   }
-  std::vector<double> flatDataVec(totalSize_data);
+  std::vector<double> flatDataVec(totalSize_data, 0);
   for(int i=0; i<numProcsTot; i++) {
     std::copy(recvDataVec[i].begin(), recvDataVec[i].end(), flatDataVec.begin() + offsets_data[i]);
   }
   Kokkos::View<double*> recvDataGPU("recvDataGPU", totalSize_data);
   auto hostView_data= Kokkos::View<double*, Kokkos::HostSpace>("recvDataCPU", totalSize_data);
-  for (int i = 0; i < totalSize_data; i++) 
-    hostView_data(i) = flatDataVec[i];
+  std::copy(flatDataVec.begin(), flatDataVec.end(), hostView_data.data()); 
   Kokkos::deep_copy(recvDataGPU, hostView_data);
   
   //Assertions
@@ -938,7 +936,7 @@ void MPMesh::communicate_and_take_halo_contributions(const Kokkos::View<double**
   for (int i=0; i<numProcsTot; i++){
     assert(recvDataVec[i].size() == recvIDVec[i].size() * numEntries);
   }
-  
+
   //Take contributions from other procs
   Kokkos::parallel_for("halo contribution", recvIDGPU.size(), KOKKOS_LAMBDA(const int i){
     int vertex = recvIDGPU(i);
@@ -949,9 +947,9 @@ void MPMesh::communicate_and_take_halo_contributions(const Kokkos::View<double**
   });
 
   if (p_MPs->getOpMode() != polyMPO::MP_DEBUG)
-    return;  
+    return;
   int self;
-  MPI_Comm comm = p_MPs->getMPIComm(); 
+  MPI_Comm comm = p_MPs->getMPIComm();
   MPI_Comm_rank(comm, &self);
   if(self==1){
     for (int i=0; i< totalSize; i++){

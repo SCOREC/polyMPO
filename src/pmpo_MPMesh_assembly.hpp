@@ -581,9 +581,6 @@ void MPMesh::startCommunication(){
   haloOwnerProcs.reserve(numHalosTot);
   haloOwnerLocalIDs.resize(numProcsTot);
  
-  //Pair has haloLocalId and ownerLocalId
-  ownerToHalos.resize(numProcsTot);
-  
   //Copy owning processes and globalIds to CPU
   auto entOwners_host = Kokkos::create_mirror_view_and_copy(Kokkos::DefaultHostExecutionSpace::memory_space(),
                         entOwners);
@@ -648,26 +645,17 @@ void MPMesh::startCommunication(){
   //Now the owner process needs to look at these globalIDs convert them to localIds and send it back
   //recvBufs[p] contains global IDs of elements that halo rank p needs
   //numHalosOnOtherProcs[p] tells how many to expect from proc p
-  std::vector<std::vector<int>> localIDBufs(numProcsTot);
+  ownerOwnerLocalIDs.resize(numProcsTot);
+  ownerHaloLocalIDs.resize(numProcsTot);
+  
   for (int proc = 0; proc < numProcsTot; proc++) {
     if (numHalosOnOtherProcs[proc] > 0) {
-      localIDBufs[proc].resize(numHalosOnOtherProcs[proc]);
+      ownerOwnerLocalIDs[proc].resize(numHalosOnOtherProcs[proc]);
+      ownerHaloLocalIDs[proc].resize(numHalosOnOtherProcs[proc]);
       for (int i = 0; i < numHalosOnOtherProcs[proc]; i++) {
         int globalID = recvBufs[proc][i*num_ints_per_copy];
-        localIDBufs[proc][i] = global2local[globalID];
-      }
-    }
-  }
-
-  //Owning process gets the global and local Id from halo process
-  //Conver Global to local in this process and also local ID in halo process
-  //So TODO make ownerTOHaloMap <int, int>
-  for (int proc = 0; proc < numProcsTot; ++proc) {
-    if (!recvBufs[proc].empty()) {
-      for (int i = 0; i < numHalosOnOtherProcs[proc]; ++i) {
-        int ownerLocalID  = localIDBufs[proc][i];
-        int haloLocalID = recvBufs[proc][i*num_ints_per_copy+1];
-        ownerToHalos[proc].push_back(std::make_pair(ownerLocalID, haloLocalID));
+        ownerOwnerLocalIDs[proc][i] = global2local[globalID];
+        ownerHaloLocalIDs[proc][i]  = recvBufs[proc][i*num_ints_per_copy+1];
       }
     }
   }
@@ -684,9 +672,9 @@ void MPMesh::startCommunication(){
 
   //Sends back localID of the owned cells so that HaloToOwner can be done for halo processes
   for (int proc = 0; proc < numProcsTot; proc++) {
-    if (!localIDBufs[proc].empty()) {
+    if (numHalosOnOtherProcs[proc]>0) {
       MPI_Request req;
-      MPI_Isend(localIDBufs[proc].data(), localIDBufs[proc].size(), MPI_INT, proc, 1, comm, &req);
+      MPI_Isend(ownerOwnerLocalIDs[proc].data(), ownerOwnerLocalIDs[proc].size(), MPI_INT, proc, 1, comm, &req);
       requests.push_back(req);
     }
   }
@@ -721,23 +709,14 @@ void MPMesh::startCommunication(){
   MPI_Barrier(comm);
   //Check if now Rank 0 has the lids corresponing to rank 1
   if(self==1){
-    for (int i=0; i<localIDBufs[0].size(); i++)
-      printf("LIDs in owned rank 1 %d \n", localIDBufs[0][i]);
-    //printf("Rank %d local 0 13 Global %d %d\n", self, ent2global_host(0), ent2global_host(13));
+    for (int i=0; i<ownerOwnerLocalIDs[0].size(); i++)
+      printf("LIDs in owned rank 1 %d \n", ownerOwnerLocalIDs[0][i]);
   }
   MPI_Barrier(comm);
   //Checking if they have received them back
   if(self==0){
     for (int i=0; i<haloOwnerLocalIDs[1].size(); i++)
       printf("Owner LID in rank 0 %d \n", haloOwnerLocalIDs[1][i]);
-    //printf("Rank %d local 641 644 Global %d %d\n", self, ent2global_host(641), ent2global_host(644));
-  }
-  MPI_Barrier(comm);
-  //OwnerToHalos
-  if(self==1){
-    for (const auto &p : ownerToHalos[0]) {
-      std::cout << "(" << p.first << ", " << p.second << ")\n";
-    }
   }
 }
 
@@ -994,10 +973,6 @@ void MPMesh::communicateFields(const std::vector<std::vector<double>>& fieldData
 
   assert(numEntities == numOwnersTot + numHalosTot);
   
-  std::vector<MPI_Request> recvRequests;
-  std::vector<MPI_Request> sendRequests;
-
-  std::vector<std::vector<int>>    sendIDVec(numProcsTot);
   std::vector<std::vector<double>> sendDataVec(numProcsTot);
   
   recvIDVec.resize(numProcsTot);
@@ -1020,8 +995,6 @@ void MPMesh::communicateFields(const std::vector<std::vector<double>>& fieldData
  
     if(numToSend > 0){
       sendDataVec[i].reserve(numToSend*numEntries);
-      if (mode == 1) sendIDVec[i].reserve(numToSend);
-        
     }
     if(numToRecv > 0){
       recvDataVec[i].resize(numToRecv*numEntries);
@@ -1040,9 +1013,8 @@ void MPMesh::communicateFields(const std::vector<std::vector<double>>& fieldData
   
   else if(mode == 1){
     // Owner sends to halos
-    for (int iProc=0; iProc<ownerToHalos.size(); iProc++) {
-      for (auto& [ownerID, haloID] : ownerToHalos[iProc]) {
-        sendIDVec[iProc].push_back(haloID);
+    for (int iProc=0; iProc<ownerOwnerLocalIDs.size(); iProc++) {
+      for (auto& ownerID : ownerOwnerLocalIDs[iProc]) {
         for (int iDouble = 0; iDouble < numEntries; iDouble++)
           sendDataVec[iProc].push_back(fieldData[ownerID][iDouble]);
       }
@@ -1063,7 +1035,6 @@ void MPMesh::communicateFields(const std::vector<std::vector<double>>& fieldData
       requests.push_back(req4);
     }
     if(mode == 0 && numOwnersOnOtherProcs[proc]) {
-      
       assert(haloOwnerLocalIDs[proc].size() == (size_t)numOwnersOnOtherProcs[proc]);
       assert(sendDataVec[proc].size() == haloOwnerLocalIDs[proc].size() * (size_t)numEntries);
       MPI_Request req1, req2;
@@ -1082,7 +1053,7 @@ void MPMesh::communicateFields(const std::vector<std::vector<double>>& fieldData
     }
     if(mode == 1 && numHalosOnOtherProcs[proc]) {
       MPI_Request req1, req2;
-      MPI_Isend(sendIDVec[proc].data(), sendIDVec[proc].size(), MPI_INT, proc, 1, comm, &req1);
+      MPI_Isend(ownerHaloLocalIDs[proc].data(), ownerHaloLocalIDs[proc].size(), MPI_INT, proc, 1, comm, &req1);
       MPI_Isend(sendDataVec[proc].data(), sendDataVec[proc].size(), MPI_DOUBLE, proc, 2, comm, &req2);
       requests.push_back(req1);
       requests.push_back(req2);

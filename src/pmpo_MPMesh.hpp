@@ -34,12 +34,19 @@ class MPMesh{
 
     std::map<MeshFieldIndex, std::function<void()>> reconstructSlice = std::map<MeshFieldIndex, std::function<void()>>();
    
+    //For MPI Communication
     int numOwnersTot, numHalosTot;
     std::vector<int> numOwnersOnOtherProcs;
     std::vector<int> numHalosOnOtherProcs;
     std::vector<int>haloOwnerProcs;
+    
     std::vector<std::vector<int>> haloOwnerLocalIDs;
-    std::vector<std::vector<std::pair<int,int>>> ownerToHalos;
+    
+    //Halos send to owners globalIDs which are converted to local IDs of owners
+    //Also keep haloLocalID in owner   
+    std::vector<std::vector<int>> ownerOwnerLocalIDs;
+    std::vector<std::vector<int>> ownerHaloLocalIDs;
+
     void startCommunication();
     void communicateFields(const std::vector<std::vector<double>>& fieldData, const int numEntities, const int numEntries, int mode,
                            std::vector<std::vector<int>>& recvIDVec,  std::vector<std::vector<double>>& recvDataVec);

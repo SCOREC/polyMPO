@@ -536,6 +536,7 @@ void MPMesh::assembleField(int vtxPerElm, int nCells, int nVerticesSolve, int nV
 //Start Communication routine
 void MPMesh::startCommunication(){
 
+  Kokkos::Timer timer;
   int self, numProcsTot;
   MPI_Comm comm = p_MPs->getMPIComm(); 
   MPI_Comm_rank(comm, &self);
@@ -589,7 +590,8 @@ void MPMesh::startCommunication(){
 
   //Do Map of Global To Local ID
   //TODO make ordered map; which faster?
-  std::unordered_map<int, int> global2local;
+  std::map<int, int> global2local;
+  //std::unordered_map<int, int> global2local;
   for (int iEnt = 0; iEnt < numEntities; iEnt++) {
     int globalID = ent2global_host(iEnt);
     global2local[globalID] = iEnt;
@@ -681,6 +683,8 @@ void MPMesh::startCommunication(){
 
   MPI_Waitall(requests.size(), requests.data(), MPI_STATUSES_IGNORE);
 
+  pumipic::RecordTime("Start Communication", timer.seconds());
+   
   if (p_MPs->getOpMode() != polyMPO::MP_DEBUG) 
    return;
   printf("Rank %d Owners %d Halos %d Total %d \n", self, numOwnersTot, numHalosTot, numEntities);
@@ -721,6 +725,8 @@ void MPMesh::startCommunication(){
 }
 
 void MPMesh::reconstruct_coeff_full(){
+  
+  Kokkos::Timer timer;
   int numProcsTot;
   MPI_Comm comm = p_MPs->getMPIComm();
   MPI_Comm_size(comm, &numProcsTot);
@@ -776,10 +782,13 @@ void MPMesh::reconstruct_coeff_full(){
   };
   p_MPs->parallel_for(assemble, "assembly");
 
+  pumipic::RecordTime("Assemble Matrix Per Process", timer.seconds());
   //Mode 0 is Gather:  Halos Send to Owners
   //Mode 1 is Scatter: Owners Send to Halos
   //Op 0 is addition
   //Op 1 is replacement
+  
+  Kokkos::Timer timer2;  
   int mode = 0;
   int op = 0;
   if (numProcsTot >1){
@@ -788,6 +797,7 @@ void MPMesh::reconstruct_coeff_full(){
     op=1;
     communicate_and_take_halo_contributions(vtxMatrices, numVertices, numEntriesMatrix, mode, op);
   }
+  pumipic::RecordTime("Communicate Matrix Values", timer2.seconds());
 
   solveMatrix(vtxMatrices, radius, scaling);
 }
@@ -832,6 +842,10 @@ void MPMesh::solveMatrix(const Kokkos::View<double**>& vtxMatrices, double& radi
 template <MeshFieldIndex meshFieldIndex>
 void MPMesh::reconstruct_full() {
   Kokkos::Timer timer;
+
+  int numProcsTot;
+  MPI_Comm comm = p_MPs->getMPIComm();
+  MPI_Comm_size(comm, &numProcsTot);
 
   auto VtxCoeffs=this->precomputedVtxCoeffs;
 
@@ -880,8 +894,12 @@ void MPMesh::reconstruct_full() {
     }
   };
   p_MPs->parallel_for(reconstruct, "reconstruct");
+  pumipic::RecordTime("Assemble Field per process", timer.seconds());
 
-  communicate_and_take_halo_contributions(meshField, numVertices, numEntries, 0, 0);
+  Kokkos::Timer timer2; 
+  if(numProcsTot>1) 
+    communicate_and_take_halo_contributions(meshField, numVertices, numEntries, 0, 0);
+  pumipic::RecordTime("Communicate Field Values", timer2.seconds());
 }
 
 void MPMesh::communicate_and_take_halo_contributions(const Kokkos::View<double**>& meshField, int nEntities, int numEntries, int mode, int op){

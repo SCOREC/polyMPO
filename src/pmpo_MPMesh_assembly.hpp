@@ -683,7 +683,7 @@ void MPMesh::startCommunication(){
 
   MPI_Waitall(requests.size(), requests.data(), MPI_STATUSES_IGNORE);
 
-  pumipic::RecordTime("Start Communication", timer.seconds());
+  pumipic::RecordTime("Start Communication" + std::to_string(self), timer.seconds());
    
   if (p_MPs->getOpMode() != polyMPO::MP_DEBUG) 
    return;
@@ -727,8 +727,9 @@ void MPMesh::startCommunication(){
 void MPMesh::reconstruct_coeff_full(){
   
   Kokkos::Timer timer;
-  int numProcsTot;
+  int self, numProcsTot;
   MPI_Comm comm = p_MPs->getMPIComm();
+  MPI_Comm_rank(comm, &self);
   MPI_Comm_size(comm, &numProcsTot);
 
   //Mesh Information
@@ -782,13 +783,12 @@ void MPMesh::reconstruct_coeff_full(){
   };
   p_MPs->parallel_for(assemble, "assembly");
 
-  pumipic::RecordTime("Assemble Matrix Per Process", timer.seconds());
+  pumipic::RecordTime("Assemble Matrix Per Process" + std::to_string(self), timer.seconds());
   //Mode 0 is Gather:  Halos Send to Owners
   //Mode 1 is Scatter: Owners Send to Halos
   //Op 0 is addition
   //Op 1 is replacement
-  
-  Kokkos::Timer timer2;  
+  timer.reset();
   int mode = 0;
   int op = 0;
   if (numProcsTot >1){
@@ -797,14 +797,19 @@ void MPMesh::reconstruct_coeff_full(){
     op=1;
     communicate_and_take_halo_contributions(vtxMatrices, numVertices, numEntriesMatrix, mode, op);
   }
-  pumipic::RecordTime("Communicate Matrix Values", timer2.seconds());
+  pumipic::RecordTime("Communicate Matrix Values" + std::to_string(self), timer.seconds());
 
   solveMatrix(vtxMatrices, radius, scaling);
 }
 
 void MPMesh::solveMatrix(const Kokkos::View<double**>& vtxMatrices, double& radius, bool scaling){
+  
   Kokkos::Timer timer;
-
+  
+  int self;
+  MPI_Comm comm = p_MPs->getMPIComm();
+  MPI_Comm_rank(comm, &self);
+  
   auto dual_triangle_area=p_mesh->getMeshField<MeshF_DualTriangleArea>();
   int nVertices = p_mesh->getNumVertices();
 
@@ -836,15 +841,16 @@ void MPMesh::solveMatrix(const Kokkos::View<double**>& vtxMatrices, double& radi
   });
   this->precomputedVtxCoeffs = VtxCoeffs;
   
-  pumipic::RecordTime("polyMPOsolveMatrixCoeffCompute", timer.seconds());
+  pumipic::RecordTime("SolveMatrix" + std::to_string(self), timer.seconds());
 }
 
 template <MeshFieldIndex meshFieldIndex>
 void MPMesh::reconstruct_full() {
   Kokkos::Timer timer;
 
-  int numProcsTot;
+  int self, numProcsTot;
   MPI_Comm comm = p_MPs->getMPIComm();
+  MPI_Comm_rank(comm, &self);
   MPI_Comm_size(comm, &numProcsTot);
 
   auto VtxCoeffs=this->precomputedVtxCoeffs;
@@ -894,15 +900,21 @@ void MPMesh::reconstruct_full() {
     }
   };
   p_MPs->parallel_for(reconstruct, "reconstruct");
-  pumipic::RecordTime("Assemble Field per process", timer.seconds());
+  pumipic::RecordTime("Assemble Field per process" + std::to_string(self), timer.seconds());
 
-  Kokkos::Timer timer2; 
+  timer.reset();
   if(numProcsTot>1) 
     communicate_and_take_halo_contributions(meshField, numVertices, numEntries, 0, 0);
-  pumipic::RecordTime("Communicate Field Values", timer2.seconds());
+  pumipic::RecordTime("Communicate Field Values" + std::to_string(self), timer.seconds());
 }
 
 void MPMesh::communicate_and_take_halo_contributions(const Kokkos::View<double**>& meshField, int nEntities, int numEntries, int mode, int op){
+
+  int self;
+  MPI_Comm comm = p_MPs->getMPIComm();
+  MPI_Comm_rank(comm, &self);
+  
+  Kokkos::Timer timer; 
   auto reconVals_host = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), meshField);
   std::vector<std::vector<double>> fieldData(nEntities, std::vector<double>(numEntries, 0.0));
   for (int i = 0; i < nEntities; ++i) {
@@ -913,10 +925,14 @@ void MPMesh::communicate_and_take_halo_contributions(const Kokkos::View<double**
 
   std::vector<std::vector<int>>    recvIDVec;
   std::vector<std::vector<double>> recvDataVec;
+  pumipic::RecordTime("Communication-GPU to CPU-E-" + std::to_string(numEntries) + std::to_string(self), timer.seconds());
+
+  timer.reset();
   communicateFields(fieldData, nEntities, numEntries, mode, recvIDVec, recvDataVec);
+  pumipic::RecordTime("Communication-InterProcess-E-" + std::to_string(numEntries) + std::to_string(self), timer.seconds());
 
+  timer.reset();
   int numProcsTot =  recvIDVec.size();
-
   //Flatten IDs 
   int totalSize = 0;
   std::vector<int> offsets(numProcsTot, 0); 
@@ -954,8 +970,10 @@ void MPMesh::communicate_and_take_halo_contributions(const Kokkos::View<double**
   for (int i=0; i<numProcsTot; i++){
     assert(recvDataVec[i].size() == recvIDVec[i].size() * numEntries);
   }
-
+  pumipic::RecordTime("Communication-CPU to GPU-E-" + std::to_string(numEntries) + std::to_string(self), timer.seconds());
+  
   //Take contributions from other procs
+  timer.reset();
   Kokkos::parallel_for("halo contribution", recvIDGPU.size(), KOKKOS_LAMBDA(const int i){
     int vertex = recvIDGPU(i);
     for(int k=0; k<numEntries; k++){
@@ -963,12 +981,10 @@ void MPMesh::communicate_and_take_halo_contributions(const Kokkos::View<double**
       if(op==1) meshField(vertex, k) = recvDataGPU(i * numEntries + k);
     }
   });
-
+  pumipic::RecordTime("Communication-GPU reduction-E-" + std::to_string(numEntries) + std::to_string(self), timer.seconds());
+  
   if (p_MPs->getOpMode() != polyMPO::MP_DEBUG)
     return;
-  int self;
-  MPI_Comm comm = p_MPs->getMPIComm();
-  MPI_Comm_rank(comm, &self);
   if(self==1){
     for (int i=0; i< totalSize; i++){
       if(flatDataVec[i*numEntries]==0) continue;

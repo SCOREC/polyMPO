@@ -537,6 +537,10 @@ void polympo_setMPMass_f(MPMesh_ptr p_mpmesh, const int nComps, const int numMPs
   Kokkos::Timer timer;
   checkMPMeshValid(p_mpmesh);
   auto p_MPs = ((polyMPO::MPMesh*)p_mpmesh)->p_MPs;
+  int self;
+  MPI_Comm comm = p_MPs->getMPIComm();
+  MPI_Comm_rank(comm, &self);
+  
   PMT_ALWAYS_ASSERT(nComps == 1); //TODO mp_sclr_t
   PMT_ALWAYS_ASSERT(numMPs >= p_MPs->getCount());
   //PMT_ALWAYS_ASSERT(numMPs >= p_MPs->getMaxAppID());
@@ -552,7 +556,7 @@ void polympo_setMPMass_f(MPMesh_ptr p_mpmesh, const int nComps, const int numMPs
     }
   };
   p_MPs->parallel_for(setMPMass, "setMPMass");
-  pumipic::RecordTime("PolyMPO_setMPMass", timer.seconds());
+  pumipic::RecordTime("PolyMPO_setMPMass" + std::to_string(self), timer.seconds());
 }
 
 void polympo_getMPMass_f(MPMesh_ptr p_mpmesh, const int nComps, const int numMPs, double* mpMassHost) {
@@ -1034,7 +1038,11 @@ void polympo_getMeshVtxMass_f(MPMesh_ptr p_mpmesh, const int nVertices, double* 
   //check mpMesh is valid
   checkMPMeshValid(p_mpmesh);
   auto p_mesh = ((polyMPO::MPMesh*)p_mpmesh)->p_mesh;
-
+  auto p_MPs = ((polyMPO::MPMesh*)p_mpmesh)->p_MPs;
+  int self;
+  MPI_Comm comm = p_MPs->getMPIComm();
+  MPI_Comm_rank(comm, &self);
+  
   //check the size
   PMT_ALWAYS_ASSERT(p_mesh->getNumVertices() == nVertices); 
 
@@ -1044,7 +1052,7 @@ void polympo_getMeshVtxMass_f(MPMesh_ptr p_mpmesh, const int nVertices, double* 
   for(int i=0; i<nVertices; i++){
     vtxMass[i] = h_coordsArray(i,0);
   }
-  pumipic::RecordTime("PolyMPO_getMeshVtxMass", timer.seconds());
+  pumipic::RecordTime("PolyMPO_getMeshVtxMass" + std::to_string(self), timer.seconds());
 }
 
 void polympo_setMeshElmMass_f(MPMesh_ptr p_mpmesh, const int nCells, const double* elmMass){

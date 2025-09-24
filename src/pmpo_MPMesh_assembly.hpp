@@ -569,7 +569,6 @@ void MPMesh::startCommunication(){
   Kokkos::deep_copy(numOwnersTot, owner_count);
   Kokkos::deep_copy(numHalosTot, halo_count);
   assert(numHalosTot+numOwnersTot == numEntities);
-  printf("Rank %d owners %d halo %d\n", self, numOwnersTot, numHalosTot);
   int num_ints_per_copy = 2;
 
   //#Halo Cells/proc which are owners on other process
@@ -782,7 +781,7 @@ void MPMesh::reconstruct_coeff_full(){
     }
   };
   p_MPs->parallel_for(assemble, "assembly");
-
+  Kokkos::fence();
   pumipic::RecordTime("Assemble Matrix Per Process" + std::to_string(self), timer.seconds());
   //Mode 0 is Gather:  Halos Send to Owners
   //Mode 1 is Scatter: Owners Send to Halos
@@ -840,7 +839,7 @@ void MPMesh::solveMatrix(const Kokkos::View<double**>& vtxMatrices, double& radi
       VtxCoeffs(vtx,i)=coeff[i];
   });
   this->precomputedVtxCoeffs = VtxCoeffs;
-  
+  Kokkos::fence();
   pumipic::RecordTime("SolveMatrix" + std::to_string(self), timer.seconds());
 }
 
@@ -900,6 +899,7 @@ void MPMesh::reconstruct_full() {
     }
   };
   p_MPs->parallel_for(reconstruct, "reconstruct");
+  Kokkos::fence();
   pumipic::RecordTime("Assemble Field per process" + std::to_string(self), timer.seconds());
 
   timer.reset();
@@ -916,20 +916,20 @@ void MPMesh::communicate_and_take_halo_contributions(const Kokkos::View<double**
   
   Kokkos::Timer timer; 
   auto reconVals_host = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), meshField);
+  Kokkos::fence();
   std::vector<std::vector<double>> fieldData(nEntities, std::vector<double>(numEntries, 0.0));
   for (int i = 0; i < nEntities; ++i) {
     for (int j = 0; j < numEntries; ++j) {
       fieldData[i][j] = reconVals_host(i, j);
     }
   } 
-
+  pumipic::RecordTime("Communication-GPU to CPU-E-" + std::to_string(numEntries) + "-" + std::to_string(self), timer.seconds());
+  
+  timer.reset();
   std::vector<std::vector<int>>    recvIDVec;
   std::vector<std::vector<double>> recvDataVec;
-  pumipic::RecordTime("Communication-GPU to CPU-E-" + std::to_string(numEntries) + std::to_string(self), timer.seconds());
-
-  timer.reset();
   communicateFields(fieldData, nEntities, numEntries, mode, recvIDVec, recvDataVec);
-  pumipic::RecordTime("Communication-InterProcess-E-" + std::to_string(numEntries) + std::to_string(self), timer.seconds());
+  pumipic::RecordTime("Communication-InterProcess-E-" + std::to_string(numEntries) + "-" + std::to_string(self), timer.seconds());
 
   timer.reset();
   int numProcsTot =  recvIDVec.size();
@@ -964,13 +964,13 @@ void MPMesh::communicate_and_take_halo_contributions(const Kokkos::View<double**
   auto hostView_data= Kokkos::View<double*, Kokkos::HostSpace>("recvDataCPU", totalSize_data);
   std::copy(flatDataVec.begin(), flatDataVec.end(), hostView_data.data()); 
   Kokkos::deep_copy(recvDataGPU, hostView_data);
-  
+  Kokkos::fence();
   //Assertions
   assert(totalSize_data == totalSize*numEntries);
   for (int i=0; i<numProcsTot; i++){
     assert(recvDataVec[i].size() == recvIDVec[i].size() * numEntries);
   }
-  pumipic::RecordTime("Communication-CPU to GPU-E-" + std::to_string(numEntries) + std::to_string(self), timer.seconds());
+  pumipic::RecordTime("Communication-CPU to GPU-E-" + std::to_string(numEntries) + "-" + std::to_string(self), timer.seconds());
   
   //Take contributions from other procs
   timer.reset();
@@ -981,7 +981,8 @@ void MPMesh::communicate_and_take_halo_contributions(const Kokkos::View<double**
       if(op==1) meshField(vertex, k) = recvDataGPU(i * numEntries + k);
     }
   });
-  pumipic::RecordTime("Communication-GPU reduction-E-" + std::to_string(numEntries) + std::to_string(self), timer.seconds());
+  Kokkos::fence();
+  pumipic::RecordTime("Communication-GPU reduction-E-" + std::to_string(numEntries) + "-" + std::to_string(self), timer.seconds());
   
   if (p_MPs->getOpMode() != polyMPO::MP_DEBUG)
     return;

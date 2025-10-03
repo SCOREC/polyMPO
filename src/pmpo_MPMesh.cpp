@@ -155,7 +155,8 @@ void MPMesh::CVTTrackingElmCenterBased(const int printVTPIndex){
                 //go through all the connected elm, calc distance
                 for(int i=1; i<=numConnElms; i++){
                     int elmID = elm2ElmConn(iElm,i)-1;
-                    
+                    if (elmID >= numElms)
+                      continue; 
                     //New delta
                     Vec3d center(elmCenter(elmID, 0), elmCenter(elmID, 1), elmCenter(elmID, 2));
                     delta = MPnew - center;

@@ -684,6 +684,12 @@ void MPMesh::startCommunication(){
 
   pumipic::RecordTime("Start Communication" + std::to_string(self), timer.seconds());
    
+  //Temporary
+  double radius = p_mesh->getSphereRadius();
+  bool isRotated=false;
+  //p_mesh->setGnomonicProjection(isRotated, radius);
+
+
   if (p_MPs->getOpMode() != polyMPO::MP_DEBUG) 
    return;
   printf("Rank %d Owners %d Halos %d Total %d \n", self, numOwnersTot, numHalosTot, numEntities);

@@ -26,7 +26,9 @@ enum MeshFieldIndex{
     MeshF_ElmMass,
     MeshF_OnSurfVeloIncr,
     MeshF_OnSurfDispIncr,
-    MeshF_RotLatLonIncr
+    MeshF_RotLatLonIncr,
+    MeshF_VtxGnomProj,
+    MeshF_ElmCenterGnomProj
 };
 enum MeshFieldType{
     MeshFType_Invalid = -2,
@@ -46,24 +48,28 @@ template <> struct meshFieldToType < MeshF_ElmMass           > { using type = Ko
 template <> struct meshFieldToType < MeshF_OnSurfVeloIncr    > { using type = Kokkos::View<vec2d_t*>; };
 template <> struct meshFieldToType < MeshF_OnSurfDispIncr    > { using type = Kokkos::View<vec2d_t*>; };
 template <> struct meshFieldToType < MeshF_RotLatLonIncr     > { using type = Kokkos::View<vec2d_t*>; };
+template <> struct meshFieldToType < MeshF_VtxGnomProj       > { using type = Kokkos::View<double*[maxVtxsPerElm][2]>; };
+template <> struct meshFieldToType < MeshF_ElmCenterGnomProj > { using type = Kokkos::View<double*[4]>; };
 
 template <MeshFieldIndex index>
 using MeshFView = typename meshFieldToType<index>::type;
 
-const std::map<MeshFieldIndex, std::pair<MeshFieldType,
-                                         std::string>> meshFields2TypeAndString = 
-              {{MeshF_Invalid,          {MeshFType_Invalid,"MeshField_InValid!"}},
-               {MeshF_Unsupported,      {MeshFType_Unsupported,"MeshField_Unsupported"}},
-               {MeshF_VtxCoords,        {MeshFType_VtxBased,"MeshField_VerticesCoords"}},
-               {MeshF_VtxRotLat,        {MeshFType_VtxBased,"MeshField_VerticesLatitude"}},
-               {MeshF_ElmCenterXYZ,     {MeshFType_ElmBased,"MeshField_ElementCenterXYZ"}},
-               {MeshF_DualTriangleArea, {MeshFType_VtxBased,"MeshField_DualTriangleArea"}},
-               {MeshF_Vel,              {MeshFType_VtxBased,"MeshField_Velocity"}},
-               {MeshF_VtxMass,          {MeshFType_VtxBased,"MeshField_VerticesMass"}},
-               {MeshF_ElmMass,          {MeshFType_ElmBased,"MeshField_ElementsMass"}},
-               {MeshF_OnSurfVeloIncr,   {MeshFType_VtxBased,"MeshField_OnSurfaceVelocityIncrement"}},
-               {MeshF_OnSurfDispIncr,   {MeshFType_VtxBased,"MeshField_OnSurfaceDisplacementIncrement"}},
-               {MeshF_RotLatLonIncr,    {MeshFType_VtxBased,"MeshField_RotationalLatitudeLongitudeIncreasement"}}};
+const std::map<MeshFieldIndex, std::pair<MeshFieldType, std::string>> meshFields2TypeAndString = {
+        {MeshF_Invalid,          {MeshFType_Invalid,"MeshField_InValid!"}},
+        {MeshF_Unsupported,      {MeshFType_Unsupported,"MeshField_Unsupported"}},
+        {MeshF_VtxCoords,        {MeshFType_VtxBased,"MeshField_VerticesCoords"}},
+        {MeshF_VtxRotLat,        {MeshFType_VtxBased,"MeshField_VerticesLatitude"}},
+        {MeshF_ElmCenterXYZ,     {MeshFType_ElmBased,"MeshField_ElementCenterXYZ"}},
+        {MeshF_DualTriangleArea, {MeshFType_VtxBased,"MeshField_DualTriangleArea"}},
+        {MeshF_Vel,              {MeshFType_VtxBased,"MeshField_Velocity"}},
+        {MeshF_VtxMass,          {MeshFType_VtxBased,"MeshField_VerticesMass"}},
+        {MeshF_ElmMass,          {MeshFType_ElmBased,"MeshField_ElementsMass"}},
+        {MeshF_OnSurfVeloIncr,   {MeshFType_VtxBased,"MeshField_OnSurfaceVelocityIncrement"}},
+        {MeshF_OnSurfDispIncr,   {MeshFType_VtxBased,"MeshField_OnSurfaceDisplacementIncrement"}},
+        {MeshF_RotLatLonIncr,    {MeshFType_VtxBased,"MeshField_RotationalLatitudeLongitudeIncreasement"}},
+        {MeshF_VtxGnomProj,      {MeshFType_ElmBased,"MeshField_VertexGnomonicProjection"}},
+        {MeshF_ElmCenterGnomProj,{MeshFType_ElmBased,"MeshField_ElementCenterGnomonicprojection"}}
+};
 
 enum mesh_type {mesh_unrecognized_lower = -1,
                 mesh_general_polygonal, //other meshes
@@ -102,6 +108,9 @@ class Mesh {
     MeshFView<MeshF_OnSurfVeloIncr> vtxOnSurfVeloIncr_;
     MeshFView<MeshF_OnSurfDispIncr> vtxOnSurfDispIncr_;
     MeshFView<MeshF_RotLatLonIncr> vtxRotLatLonIncr_;
+    //GnomonicProjection
+    MeshFView<MeshF_VtxGnomProj> vtxGnomProj_;
+    MeshFView<MeshF_ElmCenterGnomProj> elmCenterGnomProj_;
     //DoubleMat2DView vtxStress_;
 
   public:
@@ -126,7 +135,7 @@ class Mesh {
             setMeshElmBasedFieldSize();
             meshEdit_ = false;
             vtxCoords_ = vtxCoords;
-        }
+          }
 
     bool meshEditable(){ return meshEdit_; }
     bool checkMeshType(int meshType);
@@ -177,6 +186,8 @@ class Mesh {
     IntView getElmGlobal() {return globalElm_;}
     IntView getVtxGlobal() {return globalVtx_;}
 
+    void setGnomonicProjection(bool isRotated, double radius);
+
     void computeRotLatLonIncr();
 };
 
@@ -219,6 +230,12 @@ auto Mesh::getMeshField(){
     }
     else if constexpr (index==MeshF_RotLatLonIncr){
         return vtxRotLatLonIncr_;
+    }
+    else if constexpr (index==MeshF_VtxGnomProj){
+        return vtxGnomProj_;
+    }
+    else if constexpr (index==MeshF_ElmCenterGnomProj){
+        return elmCenterGnomProj_;
     }
     fprintf(stderr,"Mesh Field Index error!\n");
     exit(1);

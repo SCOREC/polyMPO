@@ -44,6 +44,7 @@ namespace polyMPO{
 
         auto dualTriangleAreaEntry = meshFields2TypeAndString.at(MeshF_DualTriangleArea);
         PMT_ALWAYS_ASSERT(dualTriangleAreaEntry.first == MeshFType_VtxBased);
+        dualTriangleArea_ = MeshFView<MeshF_DualTriangleArea>(dualTriangleAreaEntry.second,numVtxs_);
     }
     
     void Mesh::setMeshElmBasedFieldSize(){
@@ -78,17 +79,6 @@ namespace polyMPO{
         pumipic::RecordTime("PolyMPO_computeRotLatLonIncr", timer.seconds());
     }
 
-    KOKKOS_INLINE_FUNCTION
-    void computeGnomonicProjectionAtPoint( const Vec3d& vtxCoord, const double gnomProjElmCenter[4], double& outX, double& outY) {
-      const double iDen = 1.0 / ( gnomProjElmCenter[1] * gnomProjElmCenter[3] * vtxCoord[0] +
-                                  gnomProjElmCenter[0] * gnomProjElmCenter[3] * vtxCoord[1] +
-                                  gnomProjElmCenter[2] * vtxCoord[2]);
-      outX = iDen * (vtxCoord[1] * gnomProjElmCenter[1] -
-                    vtxCoord[1] * gnomProjElmCenter[0]);
-      outY = iDen * (vtxCoord[2] * gnomProjElmCenter[3] - vtxCoord[1] * gnomProjElmCenter[2] * gnomProjElmCenter[0] -
-                     vtxCoord[0] * gnomProjElmCenter[1] * gnomProjElmCenter[2]);
-    }
-
     void Mesh::setGnomonicProjection(bool isRotated, double radius){
       std::cout<<__FUNCTION__<<std::endl;
       auto gnomProjVtx = getMeshField<MeshF_VtxGnomProj>();
@@ -114,6 +104,10 @@ namespace polyMPO{
         gnomProjElmCenter(iElm, 2) = invR*elmCenter[2];
         gnomProjElmCenter(iElm, 3) = invR*cosLatR;
 
+        if(iElm < 10)
+          printf("Elm %d, Centres %.15e %.15e %.15e %.15e \n", iElm, gnomProjElmCenter(iElm, 0), gnomProjElmCenter(iElm, 1),
+                                                                     gnomProjElmCenter(iElm, 2), gnomProjElmCenter(iElm, 3) );
+
         int nVtxE = elm2VtxConn(iElm,0);
         for(int i=0; i<nVtxE; i++){
           int vID = elm2VtxConn(iElm, i+1) - 1;
@@ -123,10 +117,14 @@ namespace polyMPO{
           }
 
           double outX, outY;
-          computeGnomonicProjectionAtPoint(vtxCord, &gnomProjElmCenter(iElm, 0), outX, outY);
+          auto gnomProjElmCenter_sub = Kokkos::subview(gnomProjElmCenter, iElm, Kokkos::ALL);
+          computeGnomonicProjectionAtPoint(vtxCord, gnomProjElmCenter_sub, outX, outY);
 
           gnomProjVtx(iElm, i, 0) = outX;
           gnomProjVtx(iElm, i, 1) = outY;
+          
+          if(iElm < 10)
+            printf("Elm %d, Vtx %d -> outX: %.15e, outY: %.15e \n", iElm, i, outX, outY);
         }
       });
     }

@@ -272,7 +272,6 @@ void getBasisByAreaGblFormSpherical2(Vec3d MP, int numVtxs, Vec3d* v,
     calcBasis(numVtxs, a, c, basis);
 }
 
-
 /*
 KOKKOS_INLINE_FUNCTION
 void getBasisByAreaGblForm_1(Vec2d MP, int numVtxs, Vec2d* vtxCoords, double* basis) {
@@ -359,6 +358,13 @@ void sphericalInterpolation(MPMesh& mpMesh){
 }
 
 
+KOKKOS_INLINE_FUNCTION
+void compute2DplanarTriangleArea(int numVtx, 
+     const Kokkos::View<double[maxVtxsPerElm][2], Kokkos::LayoutStride, Kokkos::MemoryTraits<Kokkos::Unmanaged>>& gnom_vtx_subview, 
+     double mpProjX, double mpProjY, double* basis){
+
+}
+
 inline void sphericalInterpolationDispVelIncr(MPMesh& mpMesh){
     Kokkos::Timer timer;
     auto p_mesh = mpMesh.p_mesh;
@@ -386,6 +392,10 @@ inline void sphericalInterpolationDispVelIncr(MPMesh& mpMesh){
     auto mpField1 = p_MPs->getData<mpfIndex1>();
     auto mpField2 = p_MPs->getData<mpfIndex2>();
 
+    // Field required for calculting gnomonic projection of MPs
+    auto gnomProjVtx = p_mesh->getMeshField<polyMPO::MeshF_VtxGnomProj>();
+    auto gnomProjElmCenter = p_mesh->getMeshField<polyMPO::MeshF_ElmCenterGnomProj>();
+      
     auto interpolation = PS_LAMBDA(const int& elm, const int& mp, const int& mask) {
       if(mask) {
         Vec3d position3d(MPsPosition(mp, 0), MPsPosition(mp, 1), MPsPosition(mp, 2));
@@ -404,7 +414,15 @@ inline void sphericalInterpolationDispVelIncr(MPMesh& mpMesh){
         initArray(basisByArea3d, maxVtxsPerElm, 0.0);
 
         getBasisByAreaGblFormSpherical(position3d, numVtx, v3d, radius, basisByArea3d);
-      
+         
+        //if using gnomonic Projection for weights
+        double mpProjX, mpProjY;
+        auto gnomProjElmCenter_sub = Kokkos::subview(gnomProjElmCenter, elm, Kokkos::ALL);
+        computeGnomonicProjectionAtPoint(position3d, gnomProjElmCenter_sub, mpProjX, mpProjY);
+        auto gnom_vtx_subview = Kokkos::subview(gnomProjVtx, elm, Kokkos::ALL, Kokkos::ALL); 
+        double basisbyArea2D[maxVtxsPerElm] = {0.0};
+        compute2DplanarTriangleArea(numVtx, gnom_vtx_subview, mpProjX, mpProjY, basisbyArea2D);
+
         for(int entry=0; entry<numEntries1; entry++){
           double mpValue = 0.0;
           for(int i=1; i<= numVtx; i++){

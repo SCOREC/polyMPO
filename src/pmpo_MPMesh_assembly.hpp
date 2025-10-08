@@ -687,7 +687,7 @@ void MPMesh::startCommunication(){
   //Temporary
   double radius = p_mesh->getSphereRadius();
   bool isRotated=false;
-  //p_mesh->setGnomonicProjection(isRotated, radius);
+  p_mesh->setGnomonicProjection(isRotated, radius);
 
 
   if (p_MPs->getOpMode() != polyMPO::MP_DEBUG) 

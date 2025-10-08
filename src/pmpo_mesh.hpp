@@ -250,6 +250,23 @@ void Mesh::fillMeshField(int size, int numEntries, double val){
     });
 }
 
+KOKKOS_INLINE_FUNCTION
+void computeGnomonicProjectionAtPoint(const Vec3d& Coord, 
+     const Kokkos::View<double[4], Kokkos::LayoutStride, Kokkos::MemoryTraits<Kokkos::Unmanaged>>& gnomProjElmCenter_sub, 
+     double& outX, double& outY){
+   /*
+   printf("Inline %.15e %.15e %.15e %.15e \n", gnomProjElmCenter_sub(0), gnomProjElmCenter_sub(1), gnomProjElmCenter_sub(2),
+          gnomProjElmCenter_sub(3));
+   */
+   const double iDen = 1.0 / (gnomProjElmCenter_sub(1) * gnomProjElmCenter_sub(3) * Coord[0] +
+                              gnomProjElmCenter_sub(0) * gnomProjElmCenter_sub(3) * Coord[1] +
+                              gnomProjElmCenter_sub(2) * Coord[2]);
+   outX = iDen * (Coord[1] * gnomProjElmCenter_sub(1) -
+                  Coord[0] * gnomProjElmCenter_sub(0));
+   outY = iDen * (Coord[2] * gnomProjElmCenter_sub(3) - Coord[1] * gnomProjElmCenter_sub(2) * gnomProjElmCenter_sub(0) -
+                  Coord[0] * gnomProjElmCenter_sub(1) * gnomProjElmCenter_sub(2));
+  }
+
 }
 
 #endif

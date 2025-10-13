@@ -363,6 +363,63 @@ void compute2DplanarTriangleArea(int numVtx,
      const Kokkos::View<double[maxVtxsPerElm][2], Kokkos::LayoutStride, Kokkos::MemoryTraits<Kokkos::Unmanaged>>& gnom_vtx_subview, 
      double mpProjX, double mpProjY, double* basis){
 
+  // Temporary storage
+  double vertCoords[2][maxVtxsPerElm + 1];
+  for (int i = 0; i < numVtx; ++i) {
+    vertCoords[0][i] = gnom_vtx_subview(i, 0);
+    vertCoords[1][i] = gnom_vtx_subview(i, 1);
+  }
+  vertCoords[0][numVtx] = vertCoords[0][0];
+  vertCoords[1][numVtx] = vertCoords[1][0];
+  
+  //Helper lambda for signed triangle area
+  auto triArea = [&](const double p1[2], const double p2[2], const double p3[2]) -> double {
+    return 0.5 * (p1[0] * (p2[1] - p3[1]) - p2[0] * (p1[1] - p3[1]) + p3[0] * (p1[1] - p2[1]));
+  };
+  
+  // Compute areaV and areaXV
+  double areaV[maxVtxsPerElm];
+  double areaXV[maxVtxsPerElm];
+  double xy[2] = { mpProjX, mpProjY };
+  
+  //Special case
+  double p1[2] = { vertCoords[0][numVtx - 1], vertCoords[1][numVtx - 1] };
+  double p2[2] = { vertCoords[0][0], vertCoords[1][0] };
+  double p3[2] = { vertCoords[0][1], vertCoords[1][1] };
+  areaV[0] = triArea(p1, p2, p3);
+  double q1[2] = { vertCoords[0][0], vertCoords[1][0] };
+  double q2[2] = { xy[0], xy[1] };
+  double q3[2] = { vertCoords[0][1], vertCoords[1][1] };
+  areaXV[0] = triArea(q1, q2, q3);
+  
+  for (int i = 1; i < numVtx; ++i) {
+    double p1[2] = { vertCoords[0][i - 1], vertCoords[1][i - 1] };
+    double p2[2] = { vertCoords[0][i], vertCoords[1][i] };
+    double p3[2] = { vertCoords[0][i + 1], vertCoords[1][i + 1] };
+    areaV[i] = triArea(p1, p2, p3);
+    double q1[2] = { vertCoords[0][i], vertCoords[1][i] };
+    double q2[2] = { xy[0], xy[1] };
+    double q3[2] = { vertCoords[0][i + 1], vertCoords[1][i + 1] };
+    areaXV[i] = triArea(q1, q2, q3);
+  }
+  
+  // Compute Wachspress-like weights
+  double denominator = 0.0;
+  for (int i = 0; i < numVtx; ++i){
+    double product = areaV[i];
+    for (int j = 0; j < numVtx - 2; ++j) {
+      int ind1 = (i + j + 1) % numVtx;
+      product *= areaXV[ind1];
+    }
+    basis[i] = product;
+    denominator += product;
+  }
+
+  // Normalize
+  for (int i = 0; i < numVtx; ++i){
+    basis[i] /= denominator;
+    //printf("i %d basis %.15e \n", i, basis[i]);
+  }
 }
 
 inline void sphericalInterpolationDispVelIncr(MPMesh& mpMesh){
@@ -420,13 +477,15 @@ inline void sphericalInterpolationDispVelIncr(MPMesh& mpMesh){
         auto gnomProjElmCenter_sub = Kokkos::subview(gnomProjElmCenter, elm, Kokkos::ALL);
         computeGnomonicProjectionAtPoint(position3d, gnomProjElmCenter_sub, mpProjX, mpProjY);
         auto gnom_vtx_subview = Kokkos::subview(gnomProjVtx, elm, Kokkos::ALL, Kokkos::ALL); 
-        double basisbyArea2D[maxVtxsPerElm] = {0.0};
-        compute2DplanarTriangleArea(numVtx, gnom_vtx_subview, mpProjX, mpProjY, basisbyArea2D);
-
+        double basisByArea2D[maxVtxsPerElm] = {0.0};
+        
+        compute2DplanarTriangleArea(numVtx, gnom_vtx_subview, mpProjX, mpProjY, basisByArea2D);
+        
         for(int entry=0; entry<numEntries1; entry++){
           double mpValue = 0.0;
           for(int i=1; i<= numVtx; i++){
-            mpValue += meshField1(elm2VtxConn(elm,i)-1,entry)*basisByArea3d[i-1];
+            //mpValue += meshField1(elm2VtxConn(elm,i)-1,entry)*basisByArea3d[i-1];
+            mpValue += meshField1(elm2VtxConn(elm,i)-1,entry)*basisByArea2D[i-1];
           }
           mpField1(mp,entry) = mpValue;
         }
@@ -434,7 +493,8 @@ inline void sphericalInterpolationDispVelIncr(MPMesh& mpMesh){
         for(int entry=0; entry<numEntries2; entry++){
           double mpValue = 0.0;
           for(int i=1; i<= numVtx; i++){
-            mpValue += meshField2(elm2VtxConn(elm,i)-1,entry)*basisByArea3d[i-1];
+            //mpValue += meshField2(elm2VtxConn(elm,i)-1,entry)*basisByArea3d[i-1];
+            mpValue += meshField2(elm2VtxConn(elm,i)-1,entry)*basisByArea2D[i-1];
           }
           mpField2(mp,entry) = mpValue;
         }   

@@ -104,10 +104,6 @@ namespace polyMPO{
         gnomProjElmCenter(iElm, 2) = invR*elmCenter[2];
         gnomProjElmCenter(iElm, 3) = invR*cosLatR;
 
-        if(iElm < 10)
-          printf("Elm %d, Centres %.15e %.15e %.15e %.15e \n", iElm, gnomProjElmCenter(iElm, 0), gnomProjElmCenter(iElm, 1),
-                                                                     gnomProjElmCenter(iElm, 2), gnomProjElmCenter(iElm, 3) );
-
         int nVtxE = elm2VtxConn(iElm,0);
         for(int i=0; i<nVtxE; i++){
           int vID = elm2VtxConn(iElm, i+1) - 1;
@@ -122,9 +118,6 @@ namespace polyMPO{
 
           gnomProjVtx(iElm, i, 0) = outX;
           gnomProjVtx(iElm, i, 1) = outY;
-          
-          if(iElm < 10)
-            printf("Elm %d, Vtx %d -> outX: %.15e, outY: %.15e \n", iElm, i, outX, outY);
         }
       });
     }

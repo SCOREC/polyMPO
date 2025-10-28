@@ -7,14 +7,18 @@ namespace polyMPO{
 
 void printVTP_mesh(MPMesh& mpMesh, int printVTPIndex=-1);
 
-void MPMesh::calcBasis() {
+void MPMesh::calcBasis(bool use3DArea) {
     assert(p_mesh->getGeomType() == geom_spherical_surf);
     auto MPsPosition = p_MPs->getPositions();
     auto mp_basis_field = p_MPs->getData<MPF_Basis_Vals>(); // we can implement MPs->getBasisVals() like MPs->getPositions()
+    
     auto elm2VtxConn = p_mesh->getElm2VtxConn();
     auto vtxCoords = p_mesh->getMeshField<MeshF_VtxCoords>();
     double radius = p_mesh->getSphereRadius();
-
+    //For Gnomonic Projection
+    auto gnomProjVtx = p_mesh->getMeshField<polyMPO::MeshF_VtxGnomProj>();
+    auto gnomProjElmCenter = p_mesh->getMeshField<polyMPO::MeshF_ElmCenterGnomProj>();
+     
     auto calcbasis = PS_LAMBDA(const int& elm, const int& mp, const int& mask) {
         if(mask) { //if material point is 'active'/'enabled'
             Vec3d position3d(MPsPosition(mp,0),MPsPosition(mp,1),MPsPosition(mp,2));
@@ -30,15 +34,22 @@ void MPMesh::calcBasis() {
             v3d[numVtx][1] = vtxCoords(elm2VtxConn(elm,1)-1,1);
             v3d[numVtx][2] = vtxCoords(elm2VtxConn(elm,1)-1,2);
             
-            double basisByArea3d[maxVtxsPerElm] = {0.0};
-            initArray(basisByArea3d,maxVtxsPerElm,0.0);
-
-            // calc basis
-            getBasisByAreaGblFormSpherical(position3d, numVtx, v3d, radius, basisByArea3d);
-            
+            double basisByArea[maxVtxsPerElm] = {0.0};
+            initArray(basisByArea,maxVtxsPerElm,0.0);
+          
+            if(!use3DArea){
+              double mpProjX, mpProjY;
+              auto gnomProjElmCenter_sub = Kokkos::subview(gnomProjElmCenter, elm, Kokkos::ALL);
+              computeGnomonicProjectionAtPoint(position3d, gnomProjElmCenter_sub, mpProjX, mpProjY);
+              auto gnom_vtx_subview = Kokkos::subview(gnomProjVtx, elm, Kokkos::ALL, Kokkos::ALL); 
+              compute2DplanarTriangleArea(numVtx, gnom_vtx_subview, mpProjX, mpProjY, basisByArea);
+            }
+            else{
+              getBasisByAreaGblFormSpherical(position3d, numVtx, v3d, radius, basisByArea);
+            }
             // fill step
             for(int i=0; i<= numVtx; i++){
-                mp_basis_field(mp,i) = basisByArea3d[i];
+                mp_basis_field(mp,i) = basisByArea[i];
             }
         }
     };
@@ -302,7 +313,7 @@ void MPMesh::T2LTracking(Vec2dView dx){
 void MPMesh::reconstructSlices() {
     if (reconstructSlice.size() == 0) return;
     Kokkos::Timer timer;
-    calcBasis();
+    calcBasis(true);
     resetPreComputeFlag();
     for (auto const& [index, reconstruct] : reconstructSlice) {
         if (reconstruct) reconstruct();

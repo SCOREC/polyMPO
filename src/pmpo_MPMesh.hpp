@@ -28,6 +28,7 @@ class MPMesh{
     void computeMatricesAndSolve(); 
     void resetPreComputeFlag();
     Kokkos::View<double*[vec4d_nEntries]> precomputedVtxCoeffs;
+    Kokkos::View<double*[vec3d_nEntries][vec4d_nEntries]> precomputedVtxCoeffs_new;
 
     Mesh* p_mesh;
     MaterialPoints* p_MPs;
@@ -70,7 +71,7 @@ class MPMesh{
     void push_swap();
     void push_swap_pos();
     void push();
-    void calcBasis();
+    void calcBasis(bool use3DArea);
 
     DoubleView assemblyV0();
     template <MaterialPointSlice index>
@@ -100,7 +101,8 @@ class MPMesh{
     template <MeshFieldIndex meshFieldIndex>
     void reconstruct_full();
     void reconstruct_coeff_full();
-    void solveMatrix(const Kokkos::View<double**>& vtxMatrices, double& radius, bool scaling); 
+    void solveMatrix(const Kokkos::View<double**>& vtxMatrices, double& radius, bool scaling);
+    void invertMatrix(const Kokkos::View<double**>& vtxMatrices, const double& radius);
  
     template<MeshFieldIndex meshFieldIndex>
     void setReconstructSlice(int order, MeshFieldType type);

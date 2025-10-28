@@ -210,12 +210,95 @@ class Vec4d{
     }
 };
 
+class Matrix3d {
+
+  private:
+    double data_[3][3];
+
+  public:
+
+    // Default constructor: zero initialize
+    KOKKOS_INLINE_FUNCTION
+    Matrix3d() {
+      for (int i = 0; i < 3; ++i)
+        for (int j = 0; j < 3; ++j)
+          data_[i][j] = 0.0;
+    }
+  
+    // Constructor from 3 Vec3d rows
+    KOKKOS_INLINE_FUNCTION
+    Matrix3d(Vec3d v0, Vec3d v1, Vec3d v2) {
+      for (int i = 0; i < 3; ++i) {
+        data_[0][i] = v0[i];
+        data_[1][i] = v1[i];
+        data_[2][i] = v2[i];
+      }
+    }
+    // Element access
+    KOKKOS_INLINE_FUNCTION
+    double& operator()(int i, int j) { return data_[i][j]; }
+    
+    KOKKOS_INLINE_FUNCTION
+    const double& operator()(int i, int j) const { return data_[i][j]; }
+
+    //Matrix multiplication
+    KOKKOS_INLINE_FUNCTION
+    Matrix3d operator*(const Matrix3d& B)const {
+      Matrix3d C;
+      for (int i = 0; i < 3; ++i) {
+        for (int j = 0; j < 3; ++j) {
+          double sum = 0.0;
+          for (int k = 0; k < 3; ++k) {
+            sum += data_[i][k] * B(k, j);
+          }
+          C(i, j) = sum;
+        }
+      }
+      return C;
+    }
+
+    // Vector Matrix multiplication: y = x_Transpose*A
+    KOKKOS_INLINE_FUNCTION
+    Vec3d operator*(const Vec3d& x) const {
+      Vec3d y;
+      for (int j = 0; j < 3; ++j) {
+        double sum = 0.0;
+        for (int i = 0; i < 3; ++i) {
+          sum += x[i] * data_[i][j];
+        }
+        y[j] = sum;
+      }
+      return y;
+    }
+  
+    // Matrix Vector multiplication A*x 
+    KOKKOS_INLINE_FUNCTION
+    Vec3d rightMultiply(const Vec3d& x) const {
+      Vec3d y;
+      for (int i = 0; i < 3; ++i) {
+        double sum = 0.0;
+        for (int j = 0; j < 3; ++j) {
+          sum += data_[i][j]*x[j];
+        }
+        y[i] = sum;
+      }
+      return y;
+    }
+
+    KOKKOS_INLINE_FUNCTION
+    Matrix3d transpose() const {
+      Matrix3d result;
+      for (int i = 0; i < 3; ++i)
+        for (int j = 0; j < 3; ++j)
+          result(i, j) = data_[j][i];
+      return result;
+    }
+};
+
 class Matrix4d {
     
-  private:
-  
+  private:  
     double data_[4][4];
-   
   public:
 			        
     KOKKOS_INLINE_FUNCTION

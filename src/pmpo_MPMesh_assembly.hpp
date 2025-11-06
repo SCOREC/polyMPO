@@ -785,6 +785,9 @@ void MPMesh::reconstruct_coeff_full(){
         Kokkos::atomic_add(&vtxMatrices(vID,7), w_vtx*mScale*(-vtxCoords(vID,1)+mpPos(mp,1))*(-vtxCoords(vID,1)+mpPos(mp,1))/(radius*radius));
         Kokkos::atomic_add(&vtxMatrices(vID,8), w_vtx*mScale*(-vtxCoords(vID,1)+mpPos(mp,1))*(-vtxCoords(vID,2)+mpPos(mp,2))/(radius*radius));
         Kokkos::atomic_add(&vtxMatrices(vID,9), w_vtx*mScale*(-vtxCoords(vID,2)+mpPos(mp,2))*(-vtxCoords(vID,2)+mpPos(mp,2))/(radius*radius));  
+        if(vID==315459){
+          printf("MP %d in Cell %d positions %.15e %.15e %.15e \n", mp, elm, mpPos(mp,0), mpPos(mp,1), mpPos(mp,2));
+        }
       }
     }
   };
@@ -809,29 +812,6 @@ void MPMesh::reconstruct_coeff_full(){
   solveMatrix(vtxMatrices, radius, scaling);
 
   invertMatrix(vtxMatrices, radius);
-  
-  Kokkos::parallel_for("printSymmetricBlock", 185+1, KOKKOS_LAMBDA(const int vtx){
-    if (vtx ==182) {
-        printf("Vertex %d Matrix\n", vtx);
-
-        // Map indices to symmetric 4x4 entries
-        double m11 = vtxMatrices(vtx,0);
-        double m12 = vtxMatrices(vtx,1);
-        double m13 = vtxMatrices(vtx,2);
-        double m14 = vtxMatrices(vtx,3);
-        double m22 = vtxMatrices(vtx,4);
-        double m23 = vtxMatrices(vtx,5);
-        double m24 = vtxMatrices(vtx,6);
-        double m33 = vtxMatrices(vtx,7);
-        double m34 = vtxMatrices(vtx,8);
-        double m44 = vtxMatrices(vtx,9);
-        // Print symmetric 4x4 block
-        printf("%25.15e %25.15e %25.15e %25.15e\n", m11, m12, m13, m14);
-        printf("%25.15e %25.15e %25.15e %25.15e\n", m12, m22, m23, m24);
-        printf("%25.15e %25.15e %25.15e %25.15e\n", m13, m23, m33, m34);
-        printf("%25.15e %25.15e %25.15e %25.15e\n\n", m14, m24, m34, m44);
-    }
-  });
   
 }
 
@@ -879,6 +859,9 @@ void MPMesh::solveMatrix(const Kokkos::View<double**>& vtxMatrices, double& radi
 
 void MPMesh::invertMatrix(const Kokkos::View<double**>& vtxMatrices, const double& radius){
   
+  static int count_deb = 1;
+  std::cout<<__FUNCTION__<<count_deb<<std::endl;
+   
   int nVertices = p_mesh->getNumVertices();
   auto vtxCoords = p_mesh->getMeshField<polyMPO::MeshF_VtxCoords>();
   auto dual_triangle_area = p_mesh->getMeshField<MeshF_DualTriangleArea>();
@@ -954,32 +937,21 @@ void MPMesh::invertMatrix(const Kokkos::View<double**>& vtxMatrices, const doubl
     VtxCoeffs(vtx, 0, 1) = temp[0];
     VtxCoeffs(vtx, 0, 2) = temp[1];
     VtxCoeffs(vtx, 0, 3) = temp[2];
-    
-    if(vtx == 182){
+   
+    //Debugging
+    if(vtx == 315459){
+      printf("Matrices %d vtx \n", vtx);
+      printf("[ %.15e  %.15e  %.15e  %.15e ]\n", vtxMatrices(vtx,0), vtxMatrices(vtx,1), vtxMatrices(vtx,2), vtxMatrices(vtx,3));
+      printf("[ %.15e  %.15e  %.15e  %.15e ]\n", vtxMatrices(vtx,1), vtxMatrices(vtx,4), vtxMatrices(vtx,5), vtxMatrices(vtx,6));
+      printf("[ %.15e  %.15e  %.15e  %.15e ]\n", vtxMatrices(vtx,2), vtxMatrices(vtx,5), vtxMatrices(vtx,7), vtxMatrices(vtx,8));
+      printf("[ %.15e  %.15e  %.15e  %.15e ]\n", vtxMatrices(vtx,3), vtxMatrices(vtx,6), vtxMatrices(vtx,8), vtxMatrices(vtx,9));
       printf("Coefficients %d vtx \n", vtx);
-      //printf("XYZ %.15e %.15e %.15e \n", vtxCoords(vtx, 0), vtxCoords(vtx, 1),  vtxCoords(vtx, 2) );
-      //printf("XYZ/R %.15e %.15e %.15e %.15e %.15e \n", vtxCoords(vtx, 0)/radius, vtxCoords(vtx, 1)/radius,  vtxCoords(vtx, 2)/radius, vtx_area_sqrt, cosLat);
-      //printf("%.15e %.15e %.15e \n", rotateScaleM(0, 0), rotateScaleM(0, 1), rotateScaleM(0, 2));
-      //printf("%.15e %.15e %.15e \n", rotateScaleM(1, 0), rotateScaleM(1, 1), rotateScaleM(1, 2));
-      //printf("%.15e %.15e %.15e \n", rotateScaleM(2, 0), rotateScaleM(2, 1), rotateScaleM(2, 2));
-      //printf("%.15e %.15e %.15e \n", subM(0, 0), subM(0, 1), subM(0, 2));
-      //printf("%.15e %.15e %.15e \n", subM(1, 0), subM(1, 1), subM(1, 2));
-      //printf("%.15e %.15e %.15e \n", subM(2, 0), subM(2, 1), subM(2, 2));
-      //printf("%.15e %.15e %.15e \n", subM1(0, 0), subM1(0, 1), subM1(0, 2));
-      //printf("%.15e %.15e %.15e \n", subM1(1, 0), subM1(1, 1), subM1(1, 2));
-      //printf("%.15e %.15e %.15e \n", subM1(2, 0), subM1(2, 1), subM1(2, 2));
-      //printf("%.15e %.15e %.15e \n", mVec[0], mVec[1], mVec[2]);
-      //printf("%.15e %.15e %.15e \n", blockC[0], blockC[1], blockC[2]);
-      //printf("%.15e %.15e %.15e %.15e \n", relativeScale, trG, delG, minEig);
-      //printf("%.15e %.15e %.15e \n", regularization, minZ2, det);
-      //for (int i=0; i<6; i++) printf("%.15e \n", invM2D[i]);
-      //for (int i=0; i<3; i++) printf("%.15e \n", iBlockC[i]);
-      for (int i=0; i<4; i++) printf("%.15e \n", VtxCoeffs(vtx, 0, i));
-      
+      for (int i=0; i<4; i++) printf("%.15e   ", VtxCoeffs(vtx, 0, i));
+      printf("\n");
     } 
   });
   this->precomputedVtxCoeffs_new = VtxCoeffs;
-
+  count_deb++;
 }
 
 template <MeshFieldIndex meshFieldIndex>
@@ -1035,7 +1007,6 @@ void MPMesh::reconstruct_full() {
                                                        VtxCoeffs_new(vID,0, 2)*CoordDiffs[2] + 
                                                        VtxCoeffs_new(vID,0, 3)*CoordDiffs[3]);
 
-        if(vID == 182) printf("Weight W %.15e\n", w_vtx);
         for (int k=0; k<numEntries; k++){
           auto val = factor*mpData(mp,k);
           Kokkos::atomic_add(&meshField(vID,k), val);
@@ -1053,11 +1024,10 @@ void MPMesh::reconstruct_full() {
   pumipic::RecordTime("Communicate Field Values" + std::to_string(self), timer.seconds());
 
   //Debug Delete
-  Kokkos::parallel_for("printSymmetricBlock", 185+1, KOKKOS_LAMBDA(const int vtx){
-    if (vtx ==182) {
-        printf("IceArea in %d \n", vtx);
-        printf("%.15e %.15e %.15e %.15e \n", VtxCoeffs_new(vtx, 0, 0), VtxCoeffs_new(vtx,0, 1), VtxCoeffs_new(vtx,0, 2), VtxCoeffs_new(vtx, 0, 3));
-        printf("%25.15e \n", meshField(vtx, 0));
+  Kokkos::parallel_for("printSymmetricBlock", numVertices, KOKKOS_LAMBDA(const int vtx){
+    if (vtx ==315459) {
+      printf("IceArea in %d:  ", vtx);
+      printf("%25.15e \n", meshField(vtx, 0));
     }
   });
   

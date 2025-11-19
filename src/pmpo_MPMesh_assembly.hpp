@@ -860,29 +860,44 @@ void MPMesh::solveMatrix(const Kokkos::View<double**>& vtxMatrices, double& radi
 void MPMesh::invertMatrix(const Kokkos::View<double**>& vtxMatrices, const double& radius){
   
   static int count_deb = 1;
-  std::cout<<__FUNCTION__<<count_deb<<std::endl;
+  std::cout<<__FUNCTION__<<count_deb<<"========================="<<std::endl;
    
   int nVertices = p_mesh->getNumVertices();
   auto vtxCoords = p_mesh->getMeshField<polyMPO::MeshF_VtxCoords>();
   auto dual_triangle_area = p_mesh->getMeshField<MeshF_DualTriangleArea>();
   bool isRotated=false; 
 
-  Kokkos::View<double*[3][vec4d_nEntries]> VtxCoeffs("VtxCoeffs", nVertices); 
-  Kokkos::parallel_for("invertMatrix", nVertices, KOKKOS_LAMBDA(const int vtx){
-    auto relativeScale = vtxMatrices(vtx, 0)*dual_triangle_area(vtx, 0)/(radius*radius);
-    if(isRotated){
-      
-    }
-    auto cosLat = sqrt(pow(vtxCoords(vtx,0)/radius, 2) +  pow(vtxCoords(vtx,1)/radius, 2));
-    auto vtx_area_sqrt = sqrt(dual_triangle_area(vtx,0)/(radius*radius));
-    Vec3d v0 = { -vtxCoords(vtx, 1)/(radius*cosLat),  -vtxCoords(vtx, 2)*vtxCoords(vtx, 0)/(radius*radius*cosLat),  vtxCoords(vtx, 0)/(radius*vtx_area_sqrt) };
-    Vec3d v1 = { vtxCoords(vtx, 0)/(radius*cosLat),  -vtxCoords(vtx, 1)*vtxCoords(vtx, 2)/(radius*radius*cosLat),  vtxCoords(vtx, 1)/(radius*vtx_area_sqrt) };
-    Vec3d v2 = { 0,  cosLat,  vtxCoords(vtx, 2)/(radius*vtx_area_sqrt) };
+  double eps = 1e-7;
+  double truncateFactor = 0.05;
 
-    Matrix3d rotateScaleM = {v0, v1, v2};
+  Kokkos::View<double*[3][vec4d_nEntries]> VtxCoeffs("VtxCoeffs", nVertices);
+  Kokkos::deep_copy(VtxCoeffs, 0.0);
+  
+  Kokkos::parallel_for("invertMatrix", nVertices, KOKKOS_LAMBDA(const int vtx){
+    if(vtxMatrices(vtx, 0) < eps)
+      return;
+    
+    auto small = eps * vtxMatrices(vtx, 0) * dual_triangle_area(vtx, 0)/(radius*radius);
+    auto truncate = truncateFactor * vtxMatrices(vtx, 0) * dual_triangle_area(vtx, 0)/(radius*radius);
+    
+    double X = vtxCoords(vtx, 0)/radius;
+    double Y = vtxCoords(vtx, 1)/radius;   
+    double Z = vtxCoords(vtx, 2)/radius;
+    if(isRotated){
+      //Change X and Z         
+    }
+
+    auto cosLat = sqrt(pow(X, 2) +  pow(Y, 2));
+    auto invCosLat = 1.0/cosLat;     
+    auto vtx_area_sqrt = sqrt(dual_triangle_area(vtx,0)/(radius*radius));
+
+    Vec3d v0 = { -Y * invCosLat,  -Z * X * invCosLat,  X / vtx_area_sqrt };
+    Vec3d v1 = { X * invCosLat,  -Y * Z * invCosLat,  Y / vtx_area_sqrt };
+    Vec3d v2 = { 0.0, cosLat, Z /vtx_area_sqrt };
     if(isRotated){
       
     }
+    Matrix3d rotateScaleM = {v0, v1, v2};
 
     double invM11 = 1.0 / vtxMatrices(vtx, 0);
     Matrix3d subM;
@@ -897,24 +912,37 @@ void MPMesh::invertMatrix(const Kokkos::View<double**>& vtxMatrices, const doubl
     subM(2, 1) = subM(1, 2);
 
     auto subM1 = (rotateScaleM.transpose())*(subM*rotateScaleM);
-
-    auto trG = subM1(0, 0) + subM1(1, 1);
-    if((trG < 1e-4 * relativeScale) || (vtxMatrices(vtx, 0)<0.01)){
-      VtxCoeffs(vtx, 0, 0) = invM11;      
-      return;
-    }
-    
+   
     Vec3d mVec = {vtxMatrices(vtx, 1), vtxMatrices(vtx, 2), vtxMatrices(vtx, 3)};
     auto blockC = rotateScaleM * mVec;
     
-    auto delG = sqrt(4.0 * pow(subM1(0, 1), 2) + pow( subM1(0, 0)-subM1(1, 1), 2));
-    auto minEig = 0.5 * (trG-delG);
-    double regularization = max(0.1 * relativeScale - minEig, 0.0);
-    subM1(0, 0) = subM1(0, 0) + regularization;
-    subM1(1, 1) = subM1(1, 1) + regularization;
+    auto trG = subM1(0, 0) + subM1(1, 1);
+    if((trG < small) || (vtxMatrices(vtx, 0) < truncateFactor)){
+      VtxCoeffs(vtx, 0, 0) = invM11;
+      return;
+    }
+  
+    auto diffTr = subM1(0, 0)-subM1(1, 1);
+    auto delG = sqrt(4.0 * pow(subM1(0, 1), 2) + pow(diffTr, 2));
+    if(delG<small){
+      subM1(0, 0) = max(subM1(0, 0), truncate);
+      subM1(1, 1) = max(subM1(1, 1), truncate);
+      subM1(0, 1) = 0.0;
+    }
+    else{
+      auto minEig = max(0.5 * (trG - delG), truncate);
+      auto maxEig = max(0.5 * (trG + delG), truncate);
+      auto trG = minEig + maxEig;
+      auto diffEig = maxEig - minEig;
+      diffTr = diffTr / delG;
+      subM1(0, 0) = 0.5 * (trG + diffTr * diffEig);
+      subM1(1, 1) = 0.5 * (trG - diffTr * diffEig);
+      subM1(0, 1) = (1.0 / delG) * subM1(0, 1) * diffEig;
+    }
     
-    double minZ2 = max(pow(subM1(0, 2), 2)/subM1(0, 0), pow(subM1(1, 2), 2)/subM1(1, 1)) + 0.1 * minEig;
-    subM1(2, 2) = max(subM1(2, 2), minZ2);
+    double denom = subM1(0, 0) * subM1(1, 1) - pow(subM1(0, 1), 2) ;
+    double minZ2 = (subM1(1, 1) * pow(subM1(0, 2), 2) + subM1(0, 0) * pow(subM1(1, 2), 2) - 2.0 * subM1(0, 1) * subM1(0, 2) * subM1(1, 2))/denom;
+    subM1(2, 2) = max(subM1(2, 2), abs(minZ2) +  truncate);
    
     double invM2D[6]={0.0};
     invM2D[0] = subM1(2, 2) * subM1(1, 1) - subM1(1, 2) * subM1(1, 2);
@@ -939,7 +967,7 @@ void MPMesh::invertMatrix(const Kokkos::View<double**>& vtxMatrices, const doubl
     VtxCoeffs(vtx, 0, 3) = temp[2];
    
     //Debugging
-    if(vtx == 315459){
+    if(vtx == 33821){
       printf("Matrices %d vtx \n", vtx);
       printf("[ %.15e  %.15e  %.15e  %.15e ]\n", vtxMatrices(vtx,0), vtxMatrices(vtx,1), vtxMatrices(vtx,2), vtxMatrices(vtx,3));
       printf("[ %.15e  %.15e  %.15e  %.15e ]\n", vtxMatrices(vtx,1), vtxMatrices(vtx,4), vtxMatrices(vtx,5), vtxMatrices(vtx,6));
@@ -948,6 +976,14 @@ void MPMesh::invertMatrix(const Kokkos::View<double**>& vtxMatrices, const doubl
       printf("Coefficients %d vtx \n", vtx);
       for (int i=0; i<4; i++) printf("%.15e   ", VtxCoeffs(vtx, 0, i));
       printf("\n");
+      printf("%.15e \n", invM11);
+      for (int i=0; i<3; i++) printf("%.15e   ", iBlockC[i]);
+      printf("\n");
+      for (int i=0; i<3; i++) printf("%.15e   ", blockC[i]);
+      printf("\n");
+      for (int i=0; i<6; i++) printf("%.15e   ", invM2D[i]);
+      printf("\n");
+      printf("%.15e \n", minZ2);
     } 
   });
   this->precomputedVtxCoeffs_new = VtxCoeffs;
@@ -1025,7 +1061,7 @@ void MPMesh::reconstruct_full() {
 
   //Debug Delete
   Kokkos::parallel_for("printSymmetricBlock", numVertices, KOKKOS_LAMBDA(const int vtx){
-    if (vtx ==315459) {
+    if (vtx == 33821) {
       printf("IceArea in %d:  ", vtx);
       printf("%25.15e \n", meshField(vtx, 0));
     }

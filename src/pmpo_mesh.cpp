@@ -79,7 +79,7 @@ namespace polyMPO{
         pumipic::RecordTime("PolyMPO_computeRotLatLonIncr", timer.seconds());
     }
 
-    void Mesh::setGnomonicProjection(bool isRotated, double radius){
+    void Mesh::setGnomonicProjection(bool isRotated){
       std::cout<<__FUNCTION__<<std::endl;
       auto gnomProjVtx = getMeshField<MeshF_VtxGnomProj>();
       auto gnomProjElmCenter = getMeshField<MeshF_ElmCenterGnomProj>();
@@ -93,7 +93,8 @@ namespace polyMPO{
         
         Vec3d elmCenter(elmCenters(iElm, 0), elmCenters(iElm, 1), elmCenters(iElm, 2));
         if(isRotated){
-        
+          elmCenter[0] = - elmCenters(iElm, 2);
+          elmCenter[2] =   elmCenters(iElm, 0);
         }
         auto cos2LatR = elmCenter[0]*elmCenter[0] + elmCenter[1]*elmCenter[1];
         auto invR = 1.0/ sqrt(cos2LatR + elmCenter[2]*elmCenter[2]);
@@ -108,8 +109,9 @@ namespace polyMPO{
         for(int i=0; i<nVtxE; i++){
           int vID = elm2VtxConn(iElm, i+1) - 1;
           Vec3d vtxCord(vtxCoords(vID, 0), vtxCoords(vID, 1), vtxCoords(vID, 2));
-          if (isRotated){
-
+          if(isRotated){
+            vtxCord[0] = - vtxCoords(vID, 2);
+            vtxCord[2] = vtxCoords(vID, 0);
           }
 
           double outX, outY;

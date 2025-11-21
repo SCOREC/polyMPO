@@ -1249,6 +1249,7 @@ void polympo_setReconstructionOfStress_f(MPMesh_ptr p_mpmesh, const int order, c
   (void)meshEntType;
 }
 
+//TO DO DELETE
 //With MPI communication done via MPAS
 void polympo_vtxSubAssemblyIceArea_f(MPMesh_ptr p_mpmesh, int vtxPerElm, int nCells, int comp, double* array){
   checkMPMeshValid(p_mpmesh);
@@ -1299,7 +1300,6 @@ void polympo_applyReconstruction_f(MPMesh_ptr p_mpmesh){
   mpmesh->reconstructSlices();
 }
 
-//Method 1
 void polympo_fullAssemblyIceArea_f(MPMesh_ptr p_mpmesh, int vtxPerElm, int nCells, int nVerticesSolve, int nVertices, 
                                    double* array_sub, double* array_full){
   checkMPMeshValid(p_mpmesh);
@@ -1308,11 +1308,19 @@ void polympo_fullAssemblyIceArea_f(MPMesh_ptr p_mpmesh, int vtxPerElm, int nCell
   PMT_ALWAYS_ASSERT(nVertices == p_mesh->getNumVertices());
   mpmesh->assembleField(vtxPerElm, nCells, nVerticesSolve, nVertices, array_sub, array_full);
 }
+//
 
+//Only these are needed
 void polympo_reconstruct_iceArea_with_MPI_f(MPMesh_ptr p_mpmesh){
   checkMPMeshValid(p_mpmesh);
   auto mpmesh = ((polyMPO::MPMesh*)p_mpmesh);
   mpmesh->reconstruct_full<polyMPO::MeshF_VtxMass>();
+}
+
+void polympo_reconstruct_velocity_with_MPI_f(MPMesh_ptr p_mpmesh){
+  checkMPMeshValid(p_mpmesh);
+  auto mpmesh = ((polyMPO::MPMesh*)p_mpmesh);
+  mpmesh->reconstruct_full<polyMPO::MeshF_Vel>();
 }
 
 void polympo_reconstruct_coeff_with_MPI_f(MPMesh_ptr p_mpmesh){
@@ -1320,6 +1328,7 @@ void polympo_reconstruct_coeff_with_MPI_f(MPMesh_ptr p_mpmesh){
   auto mpmesh = ((polyMPO::MPMesh*)p_mpmesh);
   mpmesh->reconstruct_coeff_full();
 }
+//Till here
 
 void polympo_setOwningProc_f(MPMesh_ptr p_mpmesh, const int nCells, const int* array){
   checkMPMeshValid(p_mpmesh);

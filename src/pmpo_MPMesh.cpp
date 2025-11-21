@@ -18,7 +18,8 @@ void MPMesh::calcBasis(bool use3DArea) {
     //For Gnomonic Projection
     auto gnomProjVtx = p_mesh->getMeshField<polyMPO::MeshF_VtxGnomProj>();
     auto gnomProjElmCenter = p_mesh->getMeshField<polyMPO::MeshF_ElmCenterGnomProj>();
-     
+
+    bool isRotated = true;    
     auto calcbasis = PS_LAMBDA(const int& elm, const int& mp, const int& mask) {
         if(mask) { //if material point is 'active'/'enabled'
             Vec3d position3d(MPsPosition(mp,0),MPsPosition(mp,1),MPsPosition(mp,2));
@@ -40,6 +41,10 @@ void MPMesh::calcBasis(bool use3DArea) {
             if(!use3DArea){
               double mpProjX, mpProjY;
               auto gnomProjElmCenter_sub = Kokkos::subview(gnomProjElmCenter, elm, Kokkos::ALL);
+              if(isRotated){
+                position3d[0] = -MPsPosition(mp, 2);
+                position3d[2] = MPsPosition(mp, 0);
+              }
               computeGnomonicProjectionAtPoint(position3d, gnomProjElmCenter_sub, mpProjX, mpProjY);
               auto gnom_vtx_subview = Kokkos::subview(gnomProjVtx, elm, Kokkos::ALL, Kokkos::ALL); 
               compute2DplanarTriangleArea(numVtx, gnom_vtx_subview, mpProjX, mpProjY, basisByArea);

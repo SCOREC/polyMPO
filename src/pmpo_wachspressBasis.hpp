@@ -450,7 +450,8 @@ inline void sphericalInterpolationDispVelIncr(MPMesh& mpMesh){
     auto mpField2 = p_MPs->getData<mpfIndex2>();
 
     // Field required for calculting gnomonic projection of MPs
-    bool use3DArea=false;
+    bool use3DArea = false;
+    bool isRotated = true;
     auto gnomProjVtx = p_mesh->getMeshField<polyMPO::MeshF_VtxGnomProj>();
     auto gnomProjElmCenter = p_mesh->getMeshField<polyMPO::MeshF_ElmCenterGnomProj>();
       
@@ -477,6 +478,10 @@ inline void sphericalInterpolationDispVelIncr(MPMesh& mpMesh){
         else{ //if using gnomonic Projection for weights
           double mpProjX, mpProjY;
           auto gnomProjElmCenter_sub = Kokkos::subview(gnomProjElmCenter, elm, Kokkos::ALL);
+          if(isRotated){
+            position3d[0] = -MPsPosition(mp, 2);
+            position3d[2] = MPsPosition(mp, 0);
+          }
           computeGnomonicProjectionAtPoint(position3d, gnomProjElmCenter_sub, mpProjX, mpProjY);
           auto gnom_vtx_subview = Kokkos::subview(gnomProjVtx, elm, Kokkos::ALL, Kokkos::ALL); 
           compute2DplanarTriangleArea(numVtx, gnom_vtx_subview, mpProjX, mpProjY, basisByArea);

@@ -186,7 +186,7 @@ class Mesh {
     IntView getElmGlobal() {return globalElm_;}
     IntView getVtxGlobal() {return globalVtx_;}
 
-    void setGnomonicProjection(bool isRotated, double radius);
+    void setGnomonicProjection(bool isRotated);
 
     void computeRotLatLonIncr();
 };

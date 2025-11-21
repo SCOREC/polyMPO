@@ -977,7 +977,14 @@ module polympo
     use :: iso_c_binding
     type(c_ptr), value :: mpMesh
   end subroutine
+  
+  subroutine polympo_reconstruct_velocity_with_MPI(mpMesh) &
+             bind(C, NAME='polympo_reconstruct_velocity_with_MPI_f')
+    use :: iso_c_binding
+    type(c_ptr), value :: mpMesh
+  end subroutine
    
+
   !---------------------------------------------------------------------------
   !> @brief directly call the reconstruct of the MP fields to mesh fields
   !> @param mpmesh(in/out) MPMesh object

@@ -130,8 +130,8 @@ void polympo_fullAssemblyIceArea_f(MPMesh_ptr p_mpmesh, int vtxPerElm, int nCell
                                    double* array_sub, double* array_full);
 
 void polympo_reconstruct_coeff_with_MPI_f(MPMesh_ptr p_mpmesh);
-
 void polympo_reconstruct_iceArea_with_MPI_f(MPMesh_ptr p_mpmesh);
+void polympo_reconstruct_velocity_with_MPI_f(MPMesh_ptr p_mpmesh);
  
 // Timing
 void polympo_enableTiming_f();

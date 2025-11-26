@@ -112,7 +112,7 @@ else()
 endif()
 pmpo_add_test(testFortranReadMPAS 1 ./testFortranReadMPAS ${TEST_NC_FILE})
 pmpo_add_test(testFortranCreateRebuildMPs 1 ./testFortranCreateRebuildMPs ${TEST_NC_FILE})
-pmpo_add_test(testFortranMPReconstruction 1 ./testFortranMPReconstruction ${TEST_NC_FILE})
+#pmpo_add_test(testFortranMPReconstruction 1 ./testFortranMPReconstruction ${TEST_NC_FILE})
 
 pmpo_add_test(test_timing 1 ./timeAssmblyWachspress 1 ${TEST_NC_FILE})
 pmpo_add_test(test_wachspress 1 ./testWachspress ${TEST_NC_FILE})

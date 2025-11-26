@@ -453,13 +453,13 @@ void MPMesh::invertMatrix(const Kokkos::View<double**>& vtxMatrices, const doubl
     auto diffTr = subM1(0, 0)-subM1(1, 1);
     auto delG = sqrt(4.0 * pow(subM1(0, 1), 2) + pow(diffTr, 2));
     if(delG<small){
-      subM1(0, 0) = max(subM1(0, 0), truncate);
-      subM1(1, 1) = max(subM1(1, 1), truncate);
+      subM1(0, 0) = Kokkos::max(subM1(0, 0), truncate);
+      subM1(1, 1) = Kokkos::max(subM1(1, 1), truncate);
       subM1(0, 1) = 0.0;
     }
     else{
-      auto minEig = max(0.5 * (trG - delG), truncate);
-      auto maxEig = max(0.5 * (trG + delG), truncate);
+      auto minEig = Kokkos::max(0.5 * (trG - delG), truncate);
+      auto maxEig = Kokkos::max(0.5 * (trG + delG), truncate);
       auto trG = minEig + maxEig;
       auto diffEig = maxEig - minEig;
       diffTr = diffTr / delG;
@@ -470,7 +470,7 @@ void MPMesh::invertMatrix(const Kokkos::View<double**>& vtxMatrices, const doubl
     
     double denom = subM1(0, 0) * subM1(1, 1) - pow(subM1(0, 1), 2) ;
     double minZ2 = (subM1(1, 1) * pow(subM1(0, 2), 2) + subM1(0, 0) * pow(subM1(1, 2), 2) - 2.0 * subM1(0, 1) * subM1(0, 2) * subM1(1, 2))/denom;
-    subM1(2, 2) = max(subM1(2, 2), abs(minZ2) +  truncate);
+    subM1(2, 2) = Kokkos::max(subM1(2, 2), abs(minZ2) +  truncate);
    
     double invM2D[6]={0.0};
     invM2D[0] = subM1(2, 2) * subM1(1, 1) - subM1(1, 2) * subM1(1, 2);

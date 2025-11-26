@@ -113,22 +113,6 @@ void polympo_setReconstructionOfStrainRate_f(MPMesh_ptr p_mpmesh, const int orde
 void polympo_setReconstructionOfStress_f(MPMesh_ptr p_mpmesh, const int order, const int meshEntType);
 void polympo_applyReconstruction_f(MPMesh_ptr p_mpmesh);
 
-//Reconstruction using MPAS
-void polympo_vtxSubAssemblyIceArea_f(MPMesh_ptr p_mpmesh, int vtxPerElm, int nCells, int comp, double* array);
-void polympo_vtxSubAssemblyVelocity_f(MPMesh_ptr p_mpmesh, int vtxPerElm, int nCells, int comp, double* array);
-void polympo_subAssemblyCoeffs_f(MPMesh_ptr p_mpmesh, int vtxPerElm, int nCells, double* m11, double* m12, double* m13, double* m14,
-                                                      double* m22, double* m23, double* m24,
-                                                      double* m33, double* m34,
-                                                      double* m44);
-void polympo_regularize_and_solve_matrix_f(MPMesh_ptr p_mpmesh, int nVetices, double* m11, double* m12, double* m13, double* m14,
-                                           double* m22, double* m23, double* m24,
-                                           double* m33, double* m34,
-                                           double* m44);
-
-//Method 1
-void polympo_fullAssemblyIceArea_f(MPMesh_ptr p_mpmesh, int vtxPerElm, int nCells, int nVerticesSolve, int nVertices, 
-                                   double* array_sub, double* array_full);
-
 void polympo_reconstruct_coeff_with_MPI_f(MPMesh_ptr p_mpmesh);
 void polympo_reconstruct_iceArea_with_MPI_f(MPMesh_ptr p_mpmesh);
 void polympo_reconstruct_velocity_with_MPI_f(MPMesh_ptr p_mpmesh);

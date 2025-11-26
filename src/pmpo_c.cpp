@@ -1249,68 +1249,19 @@ void polympo_setReconstructionOfStress_f(MPMesh_ptr p_mpmesh, const int order, c
   (void)meshEntType;
 }
 
-//TO DO DELETE
-//With MPI communication done via MPAS
-void polympo_vtxSubAssemblyIceArea_f(MPMesh_ptr p_mpmesh, int vtxPerElm, int nCells, int comp, double* array){
-  checkMPMeshValid(p_mpmesh);
-  auto mpmesh = ((polyMPO::MPMesh*)p_mpmesh);
-  auto p_mesh = ((polyMPO::MPMesh*)p_mpmesh)->p_mesh;
-  PMT_ALWAYS_ASSERT(vtxPerElm <= maxVtxsPerElm);
-  PMT_ALWAYS_ASSERT(nCells == p_mesh->getNumElements());
-  PMT_ALWAYS_ASSERT(comp == 0 || comp== 1);  //either first or second component
-  mpmesh->subAssemblyVtx1<polyMPO::MeshF_VtxMass>(vtxPerElm, nCells, comp, array);
-}
-
-void polympo_vtxSubAssemblyVelocity_f(MPMesh_ptr p_mpmesh, int vtxPerElm, int nCells, int comp, double* array){
-  checkMPMeshValid(p_mpmesh);
-  auto mpmesh = ((polyMPO::MPMesh*)p_mpmesh);
-  auto p_mesh = ((polyMPO::MPMesh*)p_mpmesh)->p_mesh;
-  PMT_ALWAYS_ASSERT(vtxPerElm <= maxVtxsPerElm);
-  PMT_ALWAYS_ASSERT(nCells == p_mesh->getNumElements());
-  PMT_ALWAYS_ASSERT(comp == 0 || comp== 1);  //either first or second component
-  mpmesh->subAssemblyVtx1<polyMPO::MeshF_Vel>(vtxPerElm, nCells, comp, array);
-}
-
-void polympo_subAssemblyCoeffs_f(MPMesh_ptr p_mpmesh, int vtxPerElm, int nCells, double* m11, double* m12, double* m13, double* m14,
-                                                      double* m22, double* m23, double* m24,
-                                                      double* m33, double* m34,
-                                                      double* m44){
-  checkMPMeshValid(p_mpmesh);
-  auto p_mesh = ((polyMPO::MPMesh*)p_mpmesh)->p_mesh;
-  PMT_ALWAYS_ASSERT(vtxPerElm <= maxVtxsPerElm);
-  PMT_ALWAYS_ASSERT(nCells == p_mesh->getNumElements());
-  auto mpmesh = ((polyMPO::MPMesh*)p_mpmesh);
-  mpmesh->subAssemblyCoeffs(vtxPerElm, nCells, m11, m12, m13, m14, m22, m23, m24, m33, m34, m44); 
-}
-
-void polympo_regularize_and_solve_matrix_f(MPMesh_ptr p_mpmesh, int nVertices, double* m11, double* m12, double* m13, double* m14,
-                                                                double* m22, double* m23, double* m24,
-                                                                double* m33, double* m34,
-                                                                double* m44){
-  checkMPMeshValid(p_mpmesh);
-  auto p_mesh = ((polyMPO::MPMesh*)p_mpmesh)->p_mesh;
-  PMT_ALWAYS_ASSERT(nVertices == p_mesh->getNumVertices());
-  auto mpmesh = ((polyMPO::MPMesh*)p_mpmesh);
-  mpmesh->solveMatrixAndRegularize(nVertices, m11, m12, m13, m14, m22, m23, m24, m33, m34, m44);
-}
-
 void polympo_applyReconstruction_f(MPMesh_ptr p_mpmesh){
   checkMPMeshValid(p_mpmesh);
   auto mpmesh = ((polyMPO::MPMesh*)p_mpmesh);
   mpmesh->reconstructSlices();
 }
 
-void polympo_fullAssemblyIceArea_f(MPMesh_ptr p_mpmesh, int vtxPerElm, int nCells, int nVerticesSolve, int nVertices, 
-                                   double* array_sub, double* array_full){
+//For reconstruction
+void polympo_reconstruct_coeff_with_MPI_f(MPMesh_ptr p_mpmesh){
   checkMPMeshValid(p_mpmesh);
-  auto p_mesh = ((polyMPO::MPMesh*)p_mpmesh)->p_mesh;
   auto mpmesh = ((polyMPO::MPMesh*)p_mpmesh);
-  PMT_ALWAYS_ASSERT(nVertices == p_mesh->getNumVertices());
-  mpmesh->assembleField(vtxPerElm, nCells, nVerticesSolve, nVertices, array_sub, array_full);
+  mpmesh->reconstruct_coeff_full();
 }
-//
 
-//Only these are needed
 void polympo_reconstruct_iceArea_with_MPI_f(MPMesh_ptr p_mpmesh){
   checkMPMeshValid(p_mpmesh);
   auto mpmesh = ((polyMPO::MPMesh*)p_mpmesh);
@@ -1323,13 +1274,7 @@ void polympo_reconstruct_velocity_with_MPI_f(MPMesh_ptr p_mpmesh){
   mpmesh->reconstruct_full<polyMPO::MeshF_Vel>();
 }
 
-void polympo_reconstruct_coeff_with_MPI_f(MPMesh_ptr p_mpmesh){
-  checkMPMeshValid(p_mpmesh);
-  auto mpmesh = ((polyMPO::MPMesh*)p_mpmesh);
-  mpmesh->reconstruct_coeff_full();
-}
-//Till here
-
+//Owning Process and Global IDs
 void polympo_setOwningProc_f(MPMesh_ptr p_mpmesh, const int nCells, const int* array){
   checkMPMeshValid(p_mpmesh);
   auto p_mesh = ((polyMPO::MPMesh*)p_mpmesh)->p_mesh; 

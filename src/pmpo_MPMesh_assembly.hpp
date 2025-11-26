@@ -103,31 +103,8 @@ void MPMesh::resetPreComputeFlag(){
   isPreComputed = false;
 }
 
-void MPMesh::computeMatricesAndSolve(){
-}
-
 template <MeshFieldIndex meshFieldIndex>
 void MPMesh::assemblyVtx1() {
-}
-
-void MPMesh::subAssemblyCoeffs(int vtxPerElm, int nCells, double* m11, double* m12, double* m13, double* m14, 
-                                                          double* m22, double* m23, double* m24, 
-                                                          double* m33, double* m34, 
-                                                          double* m44){
-}
-
-void MPMesh::solveMatrixAndRegularize(int nVertices, double* m11, double* m12, double* m13, double* m14, 
-                                       double* m22, double* m23, double* m24, 
-                                       double* m33, double* m34,
-                                       double* m44){
-}
-
-template <MeshFieldIndex meshFieldIndex>
-void MPMesh::subAssemblyVtx1(int vtxPerElm, int nCells, int comp, double* array) {
-}
-
-// An improvement on the above method by doing the full assembly on GPUs
-void MPMesh::assembleField(int vtxPerElm, int nCells, int nVerticesSolve, int nVertices, double* array_sub, double* array_full){
 }
 
 //Start Communication routine
@@ -405,9 +382,6 @@ void MPMesh::reconstruct_coeff_full(){
   invertMatrix(vtxMatrices, radius);
 }
 
-void MPMesh::solveMatrix(const Kokkos::View<double**>& vtxMatrices, double& radius, bool scaling){
-}
-
 void MPMesh::invertMatrix(const Kokkos::View<double**>& vtxMatrices, const double& radius){
   
   static int count_deb = 1;
@@ -610,9 +584,9 @@ void MPMesh::reconstruct_full() {
     communicate_and_take_halo_contributions(meshField, numVertices, numEntries, 0, 0);
   pumipic::RecordTime("Communicate Field Values" + std::to_string(self), timer.seconds());
 
+  //Debug
   Kokkos::fence();
   assert(cudaDeviceSynchronize() == cudaSuccess);
-  //Debug Delete
   Kokkos::parallel_for("printSymmetricBlock", numVertices, KOKKOS_LAMBDA(const int vtx){
     if (vtx == 2630) {
       printf("Field in %d:  ", vtx);
@@ -700,8 +674,7 @@ void MPMesh::communicate_and_take_halo_contributions(const Kokkos::View<double**
   Kokkos::fence();
   pumipic::RecordTime("Communication-GPU reduction-E-" + std::to_string(numEntries) + "-" + std::to_string(self), timer.seconds());
   
-  if (p_MPs->getOpMode() != polyMPO::MP_DEBUG)
-    return;
+  /*
   if(self==1){
     for (int i=0; i< totalSize; i++){
       if(flatDataVec[i*numEntries]==0) continue;
@@ -711,6 +684,7 @@ void MPMesh::communicate_and_take_halo_contributions(const Kokkos::View<double**
       printf("\n");
     }
   }
+  */
 }
 
 void MPMesh::communicateFields(const std::vector<std::vector<double>>& fieldData, const int numEntities, const int numEntries, int mode, 
@@ -762,7 +736,7 @@ void MPMesh::communicateFields(const std::vector<std::vector<double>>& fieldData
   
   else if(mode == 1){
     // Owner sends to halos
-    for (auto iProc=0; iProc<ownerOwnerLocalIDs.size(); iProc++) {
+    for (size_t iProc=0; iProc<ownerOwnerLocalIDs.size(); iProc++) {
       for (auto& ownerID : ownerOwnerLocalIDs[iProc]) {
         for (int iDouble = 0; iDouble < numEntries; iDouble++)
           sendDataVec[iProc].push_back(fieldData[ownerID][iDouble]);

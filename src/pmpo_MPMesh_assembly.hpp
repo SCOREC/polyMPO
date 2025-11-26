@@ -585,8 +585,8 @@ void MPMesh::reconstruct_full() {
   pumipic::RecordTime("Communicate Field Values" + std::to_string(self), timer.seconds());
 
   //Debug
-  Kokkos::fence();
-  assert(cudaDeviceSynchronize() == cudaSuccess);
+  //Kokkos::fence();
+  //assert(cudaDeviceSynchronize() == cudaSuccess);
   Kokkos::parallel_for("printSymmetricBlock", numVertices, KOKKOS_LAMBDA(const int vtx){
     if (vtx == 2630) {
       printf("Field in %d:  ", vtx);

@@ -495,6 +495,7 @@ void MPMesh::invertMatrix(const Kokkos::View<double**>& vtxMatrices, const doubl
     VtxCoeffs(vtx, 0, 3) = temp[2];
    
     //Debugging
+    /*
     if(vtx == 2630){
       printf("Matrices %d vtx \n", vtx);
       printf("[ %.15e  %.15e  %.15e  %.15e ]\n", vtxMatrices(vtx,0), vtxMatrices(vtx,1), vtxMatrices(vtx,2), vtxMatrices(vtx,3));
@@ -513,7 +514,7 @@ void MPMesh::invertMatrix(const Kokkos::View<double**>& vtxMatrices, const doubl
       printf("\n");
       printf("%.15e \n", minZ2);
     }
-      
+    */
   });
   this->precomputedVtxCoeffs_new = VtxCoeffs;
   count_deb++;

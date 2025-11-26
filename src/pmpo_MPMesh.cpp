@@ -19,7 +19,8 @@ void MPMesh::calcBasis(bool use3DArea) {
     auto gnomProjVtx = p_mesh->getMeshField<polyMPO::MeshF_VtxGnomProj>();
     auto gnomProjElmCenter = p_mesh->getMeshField<polyMPO::MeshF_ElmCenterGnomProj>();
 
-    bool isRotated = true;    
+    bool isRotated = p_mesh->getRotatedFlag();
+
     auto calcbasis = PS_LAMBDA(const int& elm, const int& mp, const int& mask) {
         if(mask) { //if material point is 'active'/'enabled'
             Vec3d position3d(MPsPosition(mp,0),MPsPosition(mp,1),MPsPosition(mp,2));
@@ -351,7 +352,7 @@ void MPMesh::push_ahead(){
   sphericalInterpolationDispVelIncr(*this);
   
   //Push the MPs
-  p_MPs->updateRotLatLonAndXYZ2Tgt(p_mesh->getSphereRadius());
+  p_MPs->updateRotLatLonAndXYZ2Tgt(p_mesh->getSphereRadius(), p_mesh->getRotatedFlag());
   pumipic::RecordTime("PolyMPO_interpolateAndPush", timer.seconds());
 }
 
@@ -387,7 +388,7 @@ void MPMesh::push(){
   
   sphericalInterpolation<MeshF_RotLatLonIncr>(*this);
   
-  p_MPs->updateRotLatLonAndXYZ2Tgt(p_mesh->getSphereRadius()); // set Tgt_XYZ
+  p_MPs->updateRotLatLonAndXYZ2Tgt(p_mesh->getSphereRadius(), p_mesh->getRotatedFlag());
   
   auto elm2Process = p_mesh->getElm2Process();
 

@@ -125,7 +125,6 @@ class MaterialPoints {
     PS* MPs;
     int elmIDoffset = -1;
     int maxAppID = -1;
-    bool isRotatedFlag = false;
     Operating_Mode operating_mode;
     RebuildHelper rebuildFields;
     IntFunc getAppID;
@@ -215,7 +214,8 @@ class MaterialPoints {
         updateMPSlice<MPF_Cur_Pos_Rot_Lat_Lon,MPF_Tgt_Pos_Rot_Lat_Lon>();
         updateMPSlice<MPF_Cur_Pos_XYZ,MPF_Tgt_Pos_XYZ>();
     }
-    void updateRotLatLonAndXYZ2Tgt(const double radius){
+
+    void updateRotLatLonAndXYZ2Tgt(const double radius, const bool isRotated){
         Kokkos::Timer timer;
         auto curPosRotLatLon = MPs->get<MPF_Cur_Pos_Rot_Lat_Lon>();
         auto tgtPosRotLatLon = MPs->get<MPF_Tgt_Pos_Rot_Lat_Lon>();
@@ -224,8 +224,9 @@ class MaterialPoints {
         //Velocity   
         auto velMPs = MPs->get<MPF_Vel>();
         auto velIncr = MPs->get<MPF_Vel_Incr>();
-      
-        auto is_rotated = getRotatedFlag(); 
+
+        auto mpAppID = MPs->get<MPF_MP_APP_ID>();
+         
         auto updateRotLatLon = PS_LAMBDA(const int& elm, const int& mp, const int& mask){
             if(mask){
                 auto rotLat = curPosRotLatLon(mp,0) + rotLatLonIncr(mp,0); // phi
@@ -234,7 +235,7 @@ class MaterialPoints {
                 tgtPosRotLatLon(mp,1) = rotLon;        
                 auto geoLat = rotLat;
                 auto geoLon = rotLon;
-                if(is_rotated){
+                if(isRotated){
                   auto xyz_rot = xyz_from_lat_lon(rotLat, rotLon, radius);
                   auto xyz_geo = grid_rotation_backward(xyz_rot);
                   lat_lon_from_xyz(geoLat, geoLon, xyz_geo, radius);
@@ -243,7 +244,6 @@ class MaterialPoints {
                 tgtPosXYZ(mp,0) = radius * std::cos(geoLon) * std::cos(geoLat);
                 tgtPosXYZ(mp,1) = radius * std::sin(geoLon) * std::cos(geoLat);
                 tgtPosXYZ(mp,2) = radius * std::sin(geoLat);
-                
                 velMPs(mp,0) = velMPs(mp,0) + velIncr(mp,0);
                 velMPs(mp,1) = velMPs(mp,1) + velIncr(mp,1);
             } 
@@ -281,13 +281,6 @@ class MaterialPoints {
       PMT_ALWAYS_ASSERT(maxAppID != -1);
       return maxAppID;
     }
-    bool getRotatedFlag() {
-      return isRotatedFlag;
-    }
-    void setRotatedFlag(bool flagSet) {
-      isRotatedFlag = flagSet;
-    }
-
     // MUTATOR  
     template <MaterialPointSlice index> void fillData(double value);//use PS_LAMBDA fill up to 1
 };// End MaterialPoints

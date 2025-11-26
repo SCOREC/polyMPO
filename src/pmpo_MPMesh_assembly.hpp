@@ -281,7 +281,7 @@ void MPMesh::startCommunication(){
 
   pumipic::RecordTime("Start Communication" + std::to_string(self), timer.seconds());
    
-  bool isRotated=false;
+  bool isRotated = p_mesh->getRotatedFlag();
   p_mesh->setGnomonicProjection(isRotated);
 
   /*
@@ -416,7 +416,7 @@ void MPMesh::invertMatrix(const Kokkos::View<double**>& vtxMatrices, const doubl
   int nVertices = p_mesh->getNumVertices();
   auto vtxCoords = p_mesh->getMeshField<polyMPO::MeshF_VtxCoords>();
   auto dual_triangle_area = p_mesh->getMeshField<MeshF_DualTriangleArea>();
-  bool isRotated=false; 
+  bool isRotated = p_mesh->getRotatedFlag();
 
   double eps = 1e-7;
   double truncateFactor = 0.05;
@@ -435,7 +435,8 @@ void MPMesh::invertMatrix(const Kokkos::View<double**>& vtxMatrices, const doubl
     double Y = vtxCoords(vtx, 1)/radius;   
     double Z = vtxCoords(vtx, 2)/radius;
     if(isRotated){
-      //Change X and Z         
+      X = -vtxCoords(vtx, 2)/radius;
+      Z = vtxCoords(vtx, 0)/radius;
     }
 
     auto cosLat = sqrt(pow(X, 2) +  pow(Y, 2));
@@ -446,7 +447,9 @@ void MPMesh::invertMatrix(const Kokkos::View<double**>& vtxMatrices, const doubl
     Vec3d v1 = { X * invCosLat,  -Y * Z * invCosLat,  Y / vtx_area_sqrt };
     Vec3d v2 = { 0.0, cosLat, Z /vtx_area_sqrt };
     if(isRotated){
-      
+      v0 = {0.0, cosLat, Z / vtx_area_sqrt};
+      v1 = {X * invCosLat, -Y * Z * invCosLat, Y / vtx_area_sqrt};
+      v2 = {Y * invCosLat, X * Z *invCosLat, -X / vtx_area_sqrt};
     }
     Matrix3d rotateScaleM = {v0, v1, v2};
 
@@ -518,7 +521,7 @@ void MPMesh::invertMatrix(const Kokkos::View<double**>& vtxMatrices, const doubl
     VtxCoeffs(vtx, 0, 3) = temp[2];
    
     //Debugging
-    if(vtx == 33821){
+    if(vtx == 2630){
       printf("Matrices %d vtx \n", vtx);
       printf("[ %.15e  %.15e  %.15e  %.15e ]\n", vtxMatrices(vtx,0), vtxMatrices(vtx,1), vtxMatrices(vtx,2), vtxMatrices(vtx,3));
       printf("[ %.15e  %.15e  %.15e  %.15e ]\n", vtxMatrices(vtx,1), vtxMatrices(vtx,4), vtxMatrices(vtx,5), vtxMatrices(vtx,6));
@@ -607,11 +610,15 @@ void MPMesh::reconstruct_full() {
     communicate_and_take_halo_contributions(meshField, numVertices, numEntries, 0, 0);
   pumipic::RecordTime("Communicate Field Values" + std::to_string(self), timer.seconds());
 
+  Kokkos::fence();
+  assert(cudaDeviceSynchronize() == cudaSuccess);
   //Debug Delete
   Kokkos::parallel_for("printSymmetricBlock", numVertices, KOKKOS_LAMBDA(const int vtx){
-    if (vtx == 33821) {
-      printf("IceArea in %d:  ", vtx);
-      printf("%25.15e \n", meshField(vtx, 0));
+    if (vtx == 2630) {
+      printf("Field in %d:  ", vtx);
+      for (int k=0; k<numEntries; k++)
+        printf("  %.15e ", meshField(vtx, k));
+      printf("\n");
     }
   });
   

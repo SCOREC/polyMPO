@@ -303,7 +303,7 @@ void polympo_getMPCurElmID_f(MPMesh_ptr p_mpmesh,
 void polympo_setMPLatLonRotatedFlag_f(MPMesh_ptr p_mpmesh, const int isRotateFlag){
   //chech validity
   checkMPMeshValid(p_mpmesh);
-  ((polyMPO::MPMesh*)p_mpmesh)->p_MPs->setRotatedFlag(isRotateFlag>0);
+  ((polyMPO::MPMesh*)p_mpmesh)->p_mesh->setRotatedFlag(isRotateFlag>0);
 
 }
 

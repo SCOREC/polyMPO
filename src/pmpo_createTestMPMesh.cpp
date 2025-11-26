@@ -217,7 +217,7 @@ MaterialPoints* initTestMPs(Mesh* mesh, int testMPOption){
     }
     if(geomType == geom_spherical_surf){
         auto p_MPs = new MaterialPoints(numElms,numMPs,positions,numMPsPerElement,MPToElement);
-        p_MPs->setRotatedFlag(false);
+        mesh->setRotatedFlag(false);
         auto mpRotLatLonField = p_MPs->getData<MPF_Cur_Pos_Rot_Lat_Lon>();
         auto setRotLatLon = PS_LAMBDA(const int& elm, const int& mp, const int& mask){
             mpRotLatLonField(mp,0) = latLonPositions(mp,0);

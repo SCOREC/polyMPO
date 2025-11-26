@@ -451,7 +451,7 @@ inline void sphericalInterpolationDispVelIncr(MPMesh& mpMesh){
 
     // Field required for calculting gnomonic projection of MPs
     bool use3DArea = false;
-    bool isRotated = true;
+    bool isRotated = p_mesh->getRotatedFlag();
     auto gnomProjVtx = p_mesh->getMeshField<polyMPO::MeshF_VtxGnomProj>();
     auto gnomProjElmCenter = p_mesh->getMeshField<polyMPO::MeshF_ElmCenterGnomProj>();
       

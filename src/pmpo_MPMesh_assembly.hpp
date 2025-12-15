@@ -335,8 +335,6 @@ void MPMesh::reconstruct_coeff_full(){
   if(p_mesh->getGeomType() == geom_spherical_surf)
     radius=p_mesh->getSphereRadius();
 
-  bool scaling=false;
-
   //Assemble matrix for each vertex
   auto assemble = PS_LAMBDA(const int& elm, const int& mp, const int& mask) {
     if(mask) { //if material point is 'active'/'enabled'
@@ -344,20 +342,17 @@ void MPMesh::reconstruct_coeff_full(){
       for(int i=0; i<nVtxE; i++){
         int vID = elm2VtxConn(elm,i+1)-1; //vID = vertex id
         double w_vtx=weight(mp,i);
-        double mScale=1;
-        if(scaling)
-          mScale=sqrt(dual_triangle_area(vID,0))/radius;
 
-        Kokkos::atomic_add(&vtxMatrices(vID,0), w_vtx*mScale*mScale);
-        Kokkos::atomic_add(&vtxMatrices(vID,1), w_vtx*mScale*(-vtxCoords(vID,0)+mpPos(mp,0))/radius);
-        Kokkos::atomic_add(&vtxMatrices(vID,2), w_vtx*mScale*(-vtxCoords(vID,1)+mpPos(mp,1))/radius);
-        Kokkos::atomic_add(&vtxMatrices(vID,3), w_vtx*mScale*(-vtxCoords(vID,2)+mpPos(mp,2))/radius);
-        Kokkos::atomic_add(&vtxMatrices(vID,4), w_vtx*mScale*(-vtxCoords(vID,0)+mpPos(mp,0))*(-vtxCoords(vID,0)+mpPos(mp,0))/(radius*radius));
-        Kokkos::atomic_add(&vtxMatrices(vID,5), w_vtx*mScale*(-vtxCoords(vID,0)+mpPos(mp,0))*(-vtxCoords(vID,1)+mpPos(mp,1))/(radius*radius));
-        Kokkos::atomic_add(&vtxMatrices(vID,6), w_vtx*mScale*(-vtxCoords(vID,0)+mpPos(mp,0))*(-vtxCoords(vID,2)+mpPos(mp,2))/(radius*radius));
-        Kokkos::atomic_add(&vtxMatrices(vID,7), w_vtx*mScale*(-vtxCoords(vID,1)+mpPos(mp,1))*(-vtxCoords(vID,1)+mpPos(mp,1))/(radius*radius));
-        Kokkos::atomic_add(&vtxMatrices(vID,8), w_vtx*mScale*(-vtxCoords(vID,1)+mpPos(mp,1))*(-vtxCoords(vID,2)+mpPos(mp,2))/(radius*radius));
-        Kokkos::atomic_add(&vtxMatrices(vID,9), w_vtx*mScale*(-vtxCoords(vID,2)+mpPos(mp,2))*(-vtxCoords(vID,2)+mpPos(mp,2))/(radius*radius));  
+        Kokkos::atomic_add(&vtxMatrices(vID,0), w_vtx);
+        Kokkos::atomic_add(&vtxMatrices(vID,1), w_vtx*(-vtxCoords(vID,0)+mpPos(mp,0))/radius);
+        Kokkos::atomic_add(&vtxMatrices(vID,2), w_vtx*(-vtxCoords(vID,1)+mpPos(mp,1))/radius);
+        Kokkos::atomic_add(&vtxMatrices(vID,3), w_vtx*(-vtxCoords(vID,2)+mpPos(mp,2))/radius);
+        Kokkos::atomic_add(&vtxMatrices(vID,4), w_vtx*(-vtxCoords(vID,0)+mpPos(mp,0))*(-vtxCoords(vID,0)+mpPos(mp,0))/(radius*radius));
+        Kokkos::atomic_add(&vtxMatrices(vID,5), w_vtx*(-vtxCoords(vID,0)+mpPos(mp,0))*(-vtxCoords(vID,1)+mpPos(mp,1))/(radius*radius));
+        Kokkos::atomic_add(&vtxMatrices(vID,6), w_vtx*(-vtxCoords(vID,0)+mpPos(mp,0))*(-vtxCoords(vID,2)+mpPos(mp,2))/(radius*radius));
+        Kokkos::atomic_add(&vtxMatrices(vID,7), w_vtx*(-vtxCoords(vID,1)+mpPos(mp,1))*(-vtxCoords(vID,1)+mpPos(mp,1))/(radius*radius));
+        Kokkos::atomic_add(&vtxMatrices(vID,8), w_vtx*(-vtxCoords(vID,1)+mpPos(mp,1))*(-vtxCoords(vID,2)+mpPos(mp,2))/(radius*radius));
+        Kokkos::atomic_add(&vtxMatrices(vID,9), w_vtx*(-vtxCoords(vID,2)+mpPos(mp,2))*(-vtxCoords(vID,2)+mpPos(mp,2))/(radius*radius));  
       }
     }
   };
@@ -589,7 +584,7 @@ void MPMesh::reconstruct_full() {
   //Kokkos::fence();
   //assert(cudaDeviceSynchronize() == cudaSuccess);
   Kokkos::parallel_for("printSymmetricBlock", numVertices, KOKKOS_LAMBDA(const int vtx){
-    if (vtx == 2630) {
+    if (vtx >= 10 && vtx <= 10) {
       printf("Field in %d:  ", vtx);
       for (int k=0; k<numEntries; k++)
         printf("  %.15e ", meshField(vtx, k));

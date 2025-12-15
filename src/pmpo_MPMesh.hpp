@@ -112,6 +112,8 @@ class MPMesh{
     void assembleField(int vtxPerElm, int nCells, int nVerticesSolve, int nVertices, double* array_sub, double* array_full);
         
     void printVTP_mesh(int printVTPIndex);
+
+    void calculateStrain();
 };
 
 }//namespace polyMPO end

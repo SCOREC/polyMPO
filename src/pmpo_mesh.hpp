@@ -28,7 +28,8 @@ enum MeshFieldIndex{
     MeshF_OnSurfDispIncr,
     MeshF_RotLatLonIncr,
     MeshF_VtxGnomProj,
-    MeshF_ElmCenterGnomProj
+    MeshF_ElmCenterGnomProj,
+    MeshF_TanLatVertexRotatedOverRadius
 };
 enum MeshFieldType{
     MeshFType_Invalid = -2,
@@ -50,6 +51,7 @@ template <> struct meshFieldToType < MeshF_OnSurfDispIncr    > { using type = Ko
 template <> struct meshFieldToType < MeshF_RotLatLonIncr     > { using type = Kokkos::View<vec2d_t*>; };
 template <> struct meshFieldToType < MeshF_VtxGnomProj       > { using type = Kokkos::View<double*[maxVtxsPerElm][2]>; };
 template <> struct meshFieldToType < MeshF_ElmCenterGnomProj > { using type = Kokkos::View<double*[4]>; };
+template <> struct meshFieldToType < MeshF_TanLatVertexRotatedOverRadius > { using type = Kokkos::View<doubleSclr_t*>; };
 
 template <MeshFieldIndex index>
 using MeshFView = typename meshFieldToType<index>::type;
@@ -68,7 +70,8 @@ const std::map<MeshFieldIndex, std::pair<MeshFieldType, std::string>> meshFields
         {MeshF_OnSurfDispIncr,   {MeshFType_VtxBased,"MeshField_OnSurfaceDisplacementIncrement"}},
         {MeshF_RotLatLonIncr,    {MeshFType_VtxBased,"MeshField_RotationalLatitudeLongitudeIncreasement"}},
         {MeshF_VtxGnomProj,      {MeshFType_ElmBased,"MeshField_VertexGnomonicProjection"}},
-        {MeshF_ElmCenterGnomProj,{MeshFType_ElmBased,"MeshField_ElementCenterGnomonicprojection"}}
+        {MeshF_ElmCenterGnomProj,{MeshFType_ElmBased,"MeshField_ElementCenterGnomonicprojection"}},
+        {MeshF_TanLatVertexRotatedOverRadius, {MeshFType_VtxBased,"MeshField_TanLatVertexRotatedOverRadius"}},
 };
 
 enum mesh_type {mesh_unrecognized_lower = -1,
@@ -112,6 +115,7 @@ class Mesh {
     MeshFView<MeshF_VtxGnomProj> vtxGnomProj_;
     MeshFView<MeshF_ElmCenterGnomProj> elmCenterGnomProj_;
     //DoubleMat2DView vtxStress_;
+    MeshFView<MeshF_TanLatVertexRotatedOverRadius> tanLatVertexRotatedOverRadius_;
     bool isRotatedFlag = false;
 
   public:
@@ -245,6 +249,9 @@ auto Mesh::getMeshField(){
     else if constexpr (index==MeshF_ElmCenterGnomProj){
         return elmCenterGnomProj_;
     }
+    else if constexpr (index==MeshF_TanLatVertexRotatedOverRadius){
+        return tanLatVertexRotatedOverRadius_;
+    }
     fprintf(stderr,"Mesh Field Index error!\n");
     exit(1);
 }
@@ -270,7 +277,6 @@ void computeGnomonicProjectionAtPoint(const Vec3d& Coord,
   outY = iDen * (Coord[2] * gnomProjElmCenter_sub(3) - Coord[1] * gnomProjElmCenter_sub(2) * gnomProjElmCenter_sub(0) -
                  Coord[0] * gnomProjElmCenter_sub(1) * gnomProjElmCenter_sub(2));
 }
-
 }
 
 #endif

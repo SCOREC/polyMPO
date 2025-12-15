@@ -341,6 +341,13 @@ module polympo
     integer(c_int), value :: nComps, numMPs
     type(c_ptr), value :: array
   end subroutine
+
+  subroutine polympo_setMPStrainRate(mpMesh) &
+             bind(C, NAME='polympo_setMPStrainRate_f')
+    use :: iso_c_binding
+    type(c_ptr), value :: mpMesh
+  end subroutine
+
   !---------------------------------------------------------------------------
   !> @brief Enable the setting of mesh topology (number of entities and entity adjacencies). 
   !>        By default, modifying the mesh topology without calling this function first will result
@@ -785,6 +792,15 @@ module polympo
     integer(c_int), value :: nComps, nVertices
     type(c_ptr), value :: array
   end subroutine
+
+  subroutine  polyMPO_setTanLatVertexRotatedOverRadius(mpMesh, nVertices, array) &
+             bind(C, NAME=' polyMPO_setTanLatVertexRotatedOverRadius_f')
+    use :: iso_c_binding
+    type(c_ptr), value :: mpMesh
+    integer(c_int), value :: nVertices
+    type(c_ptr), value :: array
+  end subroutine
+
   !---------------------------------------------------------------------------
   !> @brief set the owning process array
   !> @param mpmesh(in/out) MPMesh object

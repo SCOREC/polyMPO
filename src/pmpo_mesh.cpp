@@ -45,6 +45,11 @@ namespace polyMPO{
         auto dualTriangleAreaEntry = meshFields2TypeAndString.at(MeshF_DualTriangleArea);
         PMT_ALWAYS_ASSERT(dualTriangleAreaEntry.first == MeshFType_VtxBased);
         dualTriangleArea_ = MeshFView<MeshF_DualTriangleArea>(dualTriangleAreaEntry.second,numVtxs_);
+
+        auto tanLatVertexRotOverRadiusEntry = meshFields2TypeAndString.at(MeshF_TanLatVertexRotatedOverRadius);
+        PMT_ALWAYS_ASSERT(tanLatVertexRotOverRadiusEntry.first == MeshFType_VtxBased);
+        tanLatVertexRotatedOverRadius_ = MeshFView<MeshF_TanLatVertexRotatedOverRadius>(tanLatVertexRotOverRadiusEntry.second, numVtxs_);
+
     }
     
     void Mesh::setMeshElmBasedFieldSize(){

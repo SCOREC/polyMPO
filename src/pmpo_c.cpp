@@ -628,30 +628,13 @@ void polympo_getMPVel_f(MPMesh_ptr p_mpmesh, const int nComps, const int numMPs,
 }
 
 //TODO: implement these
-void polympo_setMPStrainRate_f(MPMesh_ptr p_mpmesh, const int nComps, const int numMPs, const double* mpStrainRateIn){
+void polympo_setMPStrainRate_f(MPMesh_ptr p_mpmesh){
   checkMPMeshValid(p_mpmesh);
-  auto p_MPs = ((polyMPO::MPMesh*)p_mpmesh)->p_MPs;
-  PMT_ALWAYS_ASSERT(nComps == 6); //TODO: mp_sym_mat3d_t
-  PMT_ALWAYS_ASSERT(numMPs >= p_MPs->getCount());
-  PMT_ALWAYS_ASSERT(numMPs >= p_MPs->getMaxAppID());
-
-  auto mpStrainRate = p_MPs->getData<polyMPO::MPF_Vel>();
-  auto mpAppID = p_MPs->getData<polyMPO::MPF_MP_APP_ID>();
-  kkViewHostU<const double**> mpStrainRateIn_h(mpStrainRateIn,nComps,numMPs);
-  Kokkos::View<double**> mpStrainRateIn_d("mpStrainRateDevice",nComps,numMPs);
-  Kokkos::deep_copy(mpStrainRateIn_d, mpStrainRateIn_h);
-  auto setMPStrainRate = PS_LAMBDA(const int& elm, const int& mp, const int& mask){
-    if(mask){
-      mpStrainRate(mp,0) = mpStrainRateIn_d(0, mpAppID(mp));
-      mpStrainRate(mp,1) = mpStrainRateIn_d(1, mpAppID(mp));
-      mpStrainRate(mp,2) = mpStrainRateIn_d(2, mpAppID(mp));
-      mpStrainRate(mp,3) = mpStrainRateIn_d(3, mpAppID(mp));
-      mpStrainRate(mp,4) = mpStrainRateIn_d(4, mpAppID(mp));
-      mpStrainRate(mp,5) = mpStrainRateIn_d(5, mpAppID(mp));
-    }
-  };
-  p_MPs->parallel_for(setMPStrainRate, "setMPStrainRate");
+  auto mpMesh = ((polyMPO::MPMesh*)p_mpmesh);
+  mpMesh->calculateStrain(); 
 }
+
+
 void polympo_getMPStrainRate_f(MPMesh_ptr p_mpmesh, const int nComps, const int numMPs, double* mpStrainRateHost){
   checkMPMeshValid(p_mpmesh);
   std::cerr << "Error: This routine is not implemented yet\n";
@@ -1182,6 +1165,20 @@ void polympo_getMeshVtxOnSurfDispIncr_f(MPMesh_ptr p_mpmesh, const int nComps, c
     array_d(1,iVtx) = vtxField(iVtx,1);
   });
   Kokkos::deep_copy(arrayHost, array_d);
+}
+
+void polyMPO_setTanLatVertexRotatedOverRadius_f(MPMesh_ptr p_mpmesh, const int nVertices, double* array){
+  //chech validity
+  checkMPMeshValid(p_mpmesh);
+  auto p_mesh = ((polyMPO::MPMesh*)p_mpmesh)->p_mesh;
+
+  PMT_ALWAYS_ASSERT(p_mesh->getNumVertices()==nVertices);
+  //copy the host array to the device
+  auto tanLatVertexRotatedOverRadius = p_mesh->getMeshField<polyMPO::MeshF_TanLatVertexRotatedOverRadius>();
+  auto h_tanLatVertexRotatedOverRadius = Kokkos::create_mirror_view(tanLatVertexRotatedOverRadius);
+  for(int i=0; i<nVertices; i++)
+    h_tanLatVertexRotatedOverRadius(i, 0) = array[i];
+  Kokkos::deep_copy(tanLatVertexRotatedOverRadius, h_tanLatVertexRotatedOverRadius);
 }
 
 bool polympo_push1P_f(MPMesh_ptr p_mpmesh){

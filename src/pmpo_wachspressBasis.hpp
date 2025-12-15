@@ -302,61 +302,42 @@ void getBasisByAreaGblForm_1(Vec2d MP, int numVtxs, Vec2d* vtxCoords, double* ba
 } 
 */
 
-// spherical interpolation of values from mesh vertices to MPsi
+// spherical interpolation of values from mesh vertices to MPs
 template <MeshFieldIndex meshFieldIndex>
 void sphericalInterpolation(MPMesh& mpMesh){
-    Kokkos::Timer timer;
-    auto p_mesh = mpMesh.p_mesh;
-    auto vtxCoords = p_mesh->getMeshField<polyMPO::MeshF_VtxCoords>();
-    int numVtxs = p_mesh->getNumVertices();
-    auto elm2VtxConn = p_mesh->getElm2VtxConn();
-   
-    auto p_MPs = mpMesh.p_MPs;
-    auto MPsPosition = p_MPs->getPositions();
-    double radius = p_mesh->getSphereRadius();
-    PMT_ALWAYS_ASSERT(radius >0);
-    constexpr MaterialPointSlice mpfIndex = meshFieldIndexToMPSlice<meshFieldIndex>;
-    auto mpField = p_MPs->getData<mpfIndex>();
+  Kokkos::Timer timer;
+  
+  auto p_mesh = mpMesh.p_mesh;
+  auto vtxCoords = p_mesh->getMeshField<polyMPO::MeshF_VtxCoords>();
+  int numVtxs = p_mesh->getNumVertices();
+  auto elm2VtxConn = p_mesh->getElm2VtxConn();
+  double radius = p_mesh->getSphereRadius();
+  PMT_ALWAYS_ASSERT(radius >0);
+
+  auto p_MPs = mpMesh.p_MPs;
+  auto MPsPosition = p_MPs->getPositions();
+  auto MPsBasis = p_MPs->getData<MPF_Basis_Vals>();
+ 
+  constexpr MaterialPointSlice mpfIndex = meshFieldIndexToMPSlice<meshFieldIndex>;
+  auto mpField = p_MPs->getData<mpfIndex>();
     
-    const int numEntries = mpSliceToNumEntries<mpfIndex>();
-    //check field correspondence
-    auto meshField = p_mesh->getMeshField<meshFieldIndex>(); 
+  const int numEntries = mpSliceToNumEntries<mpfIndex>();
+  auto meshField = p_mesh->getMeshField<meshFieldIndex>(); 
 
-    auto interpolation = PS_LAMBDA(const int& elm, const int& mp, const int& mask) {
-        if(mask) { //if material point is 'active'/'enabled'
-            Vec3d position3d(MPsPosition(mp,0),MPsPosition(mp,1),MPsPosition(mp,2));
-            // formating 
-            Vec3d v3d[maxVtxsPerElm+1];
-            int numVtx = elm2VtxConn(elm,0);
-            for(int i = 1; i<=numVtx; i++){
-                v3d[i-1][0] = vtxCoords(elm2VtxConn(elm,i)-1,0);
-                v3d[i-1][1] = vtxCoords(elm2VtxConn(elm,i)-1,1);
-                v3d[i-1][2] = vtxCoords(elm2VtxConn(elm,i)-1,2);
-            }
-            v3d[numVtx][0] = vtxCoords(elm2VtxConn(elm,1)-1,0);
-            v3d[numVtx][1] = vtxCoords(elm2VtxConn(elm,1)-1,1);
-            v3d[numVtx][2] = vtxCoords(elm2VtxConn(elm,1)-1,2);
-            
-            double basisByArea3d[maxVtxsPerElm] = {0.0};
-            initArray(basisByArea3d,maxVtxsPerElm,0.0);
-
-            // calc basis
-            getBasisByAreaGblFormSpherical(position3d, numVtx, v3d, radius, basisByArea3d);
-            
-            // interpolation step
-            for(int entry=0; entry<numEntries; entry++){
-                double mpValue = 0.0;
-                for(int i=1; i<= numVtx; i++){
-                    mpValue += meshField(elm2VtxConn(elm,i)-1,entry)*basisByArea3d[i-1];
-                }
-                mpField(mp,entry) = mpValue;
-            }
-        }
-    };
-    p_MPs->parallel_for(interpolation, "interpolation");
-    pumipic::RecordTime("PolyMPO_sphericalInterpolation", timer.seconds());
+  auto interpolation = PS_LAMBDA(const int& elm, const int& mp, const int& mask) {
+    if(mask) { //if material point is 'active'/'enabled'
+      int numVtx = elm2VtxConn(elm,0);
+      for(int entry=0; entry<numEntries; entry++){
+        double mpValue = 0.0;
+        for(int i=1; i<= numVtx; i++)
+          mpValue += meshField(elm2VtxConn(elm,i)-1,entry)*MPsBasis(mp,i-1);
+        mpField(mp,entry) = mpValue;
+      }
+    }
+  };
+  p_MPs->parallel_for(interpolation, "interpolation");
+  pumipic::RecordTime("PolyMPO_sphericalInterpolation", timer.seconds());
 }
-
 
 KOKKOS_INLINE_FUNCTION
 void compute2DplanarTriangleArea(int numVtx, 
@@ -421,7 +402,6 @@ void compute2DplanarTriangleArea(int numVtx,
     //printf("i %d basis %.15e \n", i, basis[i]);
   }
 }
-
 
 KOKKOS_INLINE_FUNCTION
 void wachpress_weights_grads_2D(int numVtx, 
@@ -513,91 +493,6 @@ void wachpress_weights_grads_2D(int numVtx,
     //printf("GVS %.15e %.15e \n", gnom_vtx_subview(i, 0), gnom_vtx_subview(i, 1));
     //printf("Grad result %.15e %.15e \n", grad_basis[i*2 + 0], grad_basis[i*2 + 1]);
   }
-}
-
-
-inline void sphericalInterpolationDispVelIncr(MPMesh& mpMesh){
-    Kokkos::Timer timer;
-    auto p_mesh = mpMesh.p_mesh;
-    auto vtxCoords = p_mesh->getMeshField<polyMPO::MeshF_VtxCoords>();
-    int numVtxs = p_mesh->getNumVertices();
-    auto elm2VtxConn = p_mesh->getElm2VtxConn();
-    
-    auto p_MPs = mpMesh.p_MPs;
-    auto MPsPosition = p_MPs->getPositions();
-    double radius = p_mesh->getSphereRadius();
-    PMT_ALWAYS_ASSERT(radius > 0);
- 
-    constexpr MeshFieldIndex meshFieldIndex1 = polyMPO::MeshF_RotLatLonIncr;
-    constexpr MeshFieldIndex meshFieldIndex2 = polyMPO::MeshF_OnSurfVeloIncr;
-    
-    auto meshField1 = p_mesh->getMeshField<meshFieldIndex1>();
-    auto meshField2 = p_mesh->getMeshField<meshFieldIndex2>();
-    
-    constexpr MaterialPointSlice mpfIndex1 = meshFieldIndexToMPSlice<meshFieldIndex1>;
-    constexpr MaterialPointSlice mpfIndex2 = meshFieldIndexToMPSlice<meshFieldIndex2>;
-
-    const int numEntries1 = mpSliceToNumEntries<mpfIndex1>();
-    const int numEntries2 = mpSliceToNumEntries<mpfIndex2>();
-
-    auto mpField1 = p_MPs->getData<mpfIndex1>();
-    auto mpField2 = p_MPs->getData<mpfIndex2>();
-
-    // Field required for calculting gnomonic projection of MPs
-    bool use3DArea = false;
-    bool isRotated = p_mesh->getRotatedFlag();
-    auto gnomProjVtx = p_mesh->getMeshField<polyMPO::MeshF_VtxGnomProj>();
-    auto gnomProjElmCenter = p_mesh->getMeshField<polyMPO::MeshF_ElmCenterGnomProj>();
-      
-    auto interpolation = PS_LAMBDA(const int& elm, const int& mp, const int& mask) {
-      if(mask) {
-
-        double basisByArea[maxVtxsPerElm] = {0.0};
-        initArray(basisByArea, maxVtxsPerElm, 0.0);
-        int numVtx = elm2VtxConn(elm, 0);
-        Vec3d position3d(MPsPosition(mp, 0), MPsPosition(mp, 1), MPsPosition(mp, 2));
-
-        if(use3DArea){
-          Vec3d v3d[maxVtxsPerElm + 1];
-          for (int i = 1; i <= numVtx; i++) {
-            v3d[i-1][0] = vtxCoords(elm2VtxConn(elm, i) - 1, 0);
-            v3d[i-1][1] = vtxCoords(elm2VtxConn(elm, i) - 1, 1);
-            v3d[i-1][2] = vtxCoords(elm2VtxConn(elm, i) - 1, 2);
-          }
-          v3d[numVtx][0] = vtxCoords(elm2VtxConn(elm,1)-1,0);
-          v3d[numVtx][1] = vtxCoords(elm2VtxConn(elm,1)-1,1);
-          v3d[numVtx][2] = vtxCoords(elm2VtxConn(elm,1)-1,2);        
-          getBasisByAreaGblFormSpherical(position3d, numVtx, v3d, radius, basisByArea);
-        }
-        else{ //if using gnomonic Projection for weights
-          double mpProjX, mpProjY;
-          auto gnomProjElmCenter_sub = Kokkos::subview(gnomProjElmCenter, elm, Kokkos::ALL);
-          if(isRotated){
-            position3d[0] = -MPsPosition(mp, 2);
-            position3d[2] = MPsPosition(mp, 0);
-          }
-          computeGnomonicProjectionAtPoint(position3d, gnomProjElmCenter_sub, mpProjX, mpProjY);
-          auto gnom_vtx_subview = Kokkos::subview(gnomProjVtx, elm, Kokkos::ALL, Kokkos::ALL); 
-          compute2DplanarTriangleArea(numVtx, gnom_vtx_subview, mpProjX, mpProjY, basisByArea);
-        }
-        
-        for(int entry=0; entry<numEntries1; entry++){
-          double mpValue = 0.0;
-          for(int i=1; i<= numVtx; i++)
-            mpValue += meshField1(elm2VtxConn(elm,i)-1,entry)*basisByArea[i-1];
-          mpField1(mp,entry) = mpValue;
-        }
-        
-        for(int entry=0; entry<numEntries2; entry++){
-          double mpValue = 0.0;
-          for(int i=1; i<= numVtx; i++)
-            mpValue += meshField2(elm2VtxConn(elm,i)-1,entry)*basisByArea[i-1];
-          mpField2(mp,entry) = mpValue;
-        } 
-      }//mask
-    };//lambda
-    p_MPs->parallel_for(interpolation, "sphericalInterpolationMultiField");
-    pumipic::RecordTime("PolyMPO_sphericalInterpolationDispVelIncr", timer.seconds());
 }
 
 } //namespace polyMPO end

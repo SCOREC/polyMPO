@@ -60,6 +60,8 @@ class MPMesh{
     void push_swap_pos();
     void push();
 
+    //Used before advection to interpolate fields from mesh to MPs
+    //And also before reconstruction
     void calcBasis(bool use3DArea);
 
     //Reconstruction

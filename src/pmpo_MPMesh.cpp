@@ -388,7 +388,6 @@ void MPMesh::T2LTracking(Vec2dView dx){
 void MPMesh::reconstructSlices() {
   if (reconstructSlice.size() == 0) return;
   Kokkos::Timer timer;
-  calcBasis(true);
   for (auto const& [index, reconstruct] : reconstructSlice) {
     if (reconstruct) reconstruct();
   }
@@ -415,9 +414,12 @@ void MPMesh::push_ahead(){
   //Latitude Longitude increment at mesh vertices and interpolate to particle position
   p_mesh->computeRotLatLonIncr();   
 
-  //Interpolates latitude longitude increments and mesh velocity increments to
-  //MP positions
-  sphericalInterpolationDispVelIncr(*this);
+  //Interpolates latitude longitude, mesh velocity increments to MPs
+  bool use3DArea=false;
+  calcBasis(use3DArea);
+  sphericalInterpolation<MeshF_RotLatLonIncr>(*this);
+  sphericalInterpolation<MeshF_OnSurfVeloIncr>(*this);
+  //sphericalInterpolationDispVelIncr(*this);
   
   //Push the MPs
   p_MPs->updateRotLatLonAndXYZ2Tgt(p_mesh->getSphereRadius(), p_mesh->getRotatedFlag());

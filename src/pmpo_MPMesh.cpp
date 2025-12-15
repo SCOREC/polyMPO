@@ -386,15 +386,14 @@ void MPMesh::T2LTracking(Vec2dView dx){
 }
 
 void MPMesh::reconstructSlices() {
-    if (reconstructSlice.size() == 0) return;
-    Kokkos::Timer timer;
-    calcBasis(true);
-    resetPreComputeFlag();
-    for (auto const& [index, reconstruct] : reconstructSlice) {
-        if (reconstruct) reconstruct();
-    }
-    reconstructSlice.clear();
-    pumipic::RecordTime("PolyMPO_Reconstruct", timer.seconds());
+  if (reconstructSlice.size() == 0) return;
+  Kokkos::Timer timer;
+  calcBasis(true);
+  for (auto const& [index, reconstruct] : reconstructSlice) {
+    if (reconstruct) reconstruct();
+  }
+  reconstructSlice.clear();
+  pumipic::RecordTime("PolyMPO_Reconstruct", timer.seconds());
 }
 
 bool getAnyIsMigrating(MaterialPoints* p_MPs, bool isMigrating) {
@@ -448,9 +447,7 @@ void MPMesh::push_swap_pos(){
   p_MPs->updateMPSlice<MPF_Cur_Pos_Rot_Lat_Lon, MPF_Tgt_Pos_Rot_Lat_Lon>();
 }
 
-
-void MPMesh::push(){
-  
+void MPMesh::push(){  
   Kokkos::Timer timer;
   
   p_mesh->computeRotLatLonIncr();
@@ -483,43 +480,43 @@ void MPMesh::push(){
 }
 
 void MPMesh::printVTP_mesh(int printVTPIndex){
-    auto vtxCoords = p_mesh->getMeshField<polyMPO::MeshF_VtxCoords>();
-    auto elm2VtxConn = p_mesh->getElm2VtxConn();
+  auto vtxCoords = p_mesh->getMeshField<polyMPO::MeshF_VtxCoords>();
+  auto elm2VtxConn = p_mesh->getElm2VtxConn();
 
-    auto MPsPosition = p_MPs->getPositions();
+  auto MPsPosition = p_MPs->getPositions();
 
-    char* fileOutput = (char *)malloc(sizeof(char) * 256); 
-    sprintf(fileOutput,"polyMPO_MPMesh_mesh_%d.vtp", printVTPIndex);
-    FILE * pFile = fopen(fileOutput,"w");
-    free(fileOutput);
+  char* fileOutput = (char *)malloc(sizeof(char) * 256); 
+  sprintf(fileOutput,"polyMPO_MPMesh_mesh_%d.vtp", printVTPIndex);
+  FILE * pFile = fopen(fileOutput,"w");
+  free(fileOutput);
 
-    auto h_vtxCoords = Kokkos::create_mirror_view(vtxCoords);
-    IntVtx2ElmView::HostMirror h_elm2VtxConn = Kokkos::create_mirror_view(elm2VtxConn);
-    const int nCells = p_mesh->getNumElements();
-    const int nVertices = p_mesh->getNumVertices();
-    Kokkos::deep_copy(h_vtxCoords,vtxCoords);
-    Kokkos::deep_copy(h_elm2VtxConn,elm2VtxConn);
-    fprintf(pFile, "<VTKFile type=\"PolyData\" version=\"1.0\" byte_order=\"LittleEndian\" header_type=\"UInt64\">\n  <PolyData>\n    <Piece NumberOfPoints=\"%d\" NumberOfVerts=\"0\" NumberOfLines=\"0\" NumberOfStrips=\"0\" NumberOfPolys=\"%d\">\n      <Points>\n        <DataArray type=\"Float32\" Name=\"Points\" NumberOfComponents=\"3\" format=\"ascii\">\n",nVertices,nCells);
-    for(int i=0; i<nVertices; i++){
-        fprintf(pFile, "          %f %f %f\n",h_vtxCoords(i,0),h_vtxCoords(i,1),h_vtxCoords(i,2));
-    }
-    fprintf(pFile, "        </DataArray>\n      </Points>\n      <Polys>\n        <DataArray type=\"Int64\" Name=\"connectivity\" format=\"ascii\">\n");
-    for(int i=0; i<nCells; i++){
-        fprintf(pFile, "          ");
-        for(int j=0; j< h_elm2VtxConn(i,0); j++){
-            fprintf(pFile, "%d ", h_elm2VtxConn(i,j+1)-1);
-        } 
-        fprintf(pFile, "\n");
-    }
-    fprintf(pFile, "        </DataArray>\n        <DataArray type=\"Int64\" Name=\"offsets\" format=\"ascii\">\n");
+  auto h_vtxCoords = Kokkos::create_mirror_view(vtxCoords);
+  IntVtx2ElmView::HostMirror h_elm2VtxConn = Kokkos::create_mirror_view(elm2VtxConn);
+  const int nCells = p_mesh->getNumElements();
+  const int nVertices = p_mesh->getNumVertices();
+  Kokkos::deep_copy(h_vtxCoords,vtxCoords);
+  Kokkos::deep_copy(h_elm2VtxConn,elm2VtxConn);
+  fprintf(pFile, "<VTKFile type=\"PolyData\" version=\"1.0\" byte_order=\"LittleEndian\" header_type=\"UInt64\">\n  <PolyData>\n    <Piece NumberOfPoints=\"%d\" NumberOfVerts=\"0\" NumberOfLines=\"0\" NumberOfStrips=\"0\" NumberOfPolys=\"%d\">\n      <Points>\n        <DataArray type=\"Float32\" Name=\"Points\" NumberOfComponents=\"3\" format=\"ascii\">\n",nVertices,nCells);
+  for(int i=0; i<nVertices; i++){
+    fprintf(pFile, "          %f %f %f\n",h_vtxCoords(i,0),h_vtxCoords(i,1),h_vtxCoords(i,2));
+  }
+  fprintf(pFile, "        </DataArray>\n      </Points>\n      <Polys>\n        <DataArray type=\"Int64\" Name=\"connectivity\" format=\"ascii\">\n");
+  for(int i=0; i<nCells; i++){
+    fprintf(pFile, "          ");
+    for(int j=0; j< h_elm2VtxConn(i,0); j++){
+      fprintf(pFile, "%d ", h_elm2VtxConn(i,j+1)-1);
+    } 
+    fprintf(pFile, "\n");
+  }
+  fprintf(pFile, "        </DataArray>\n        <DataArray type=\"Int64\" Name=\"offsets\" format=\"ascii\">\n");
     
-    int count = 0;
-    for(int i=0;i<nCells; i++){
-        count += h_elm2VtxConn(i,0);
-        fprintf(pFile, "          %d\n",count);
-    }
-    fprintf(pFile, "        </DataArray>\n      </Polys>\n    </Piece>\n  </PolyData>\n</VTKFile>\n");
-    fclose(pFile);
+  int count = 0;
+  for(int i=0;i<nCells; i++){
+    count += h_elm2VtxConn(i,0);
+    fprintf(pFile, "          %d\n",count);
+  }
+  fprintf(pFile, "        </DataArray>\n      </Polys>\n    </Piece>\n  </PolyData>\n</VTKFile>\n");
+  fclose(pFile);
 }
 
 }

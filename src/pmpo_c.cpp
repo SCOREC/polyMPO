@@ -1262,13 +1262,13 @@ void polympo_reconstruct_coeff_with_MPI_f(MPMesh_ptr p_mpmesh){
 void polympo_reconstruct_iceArea_with_MPI_f(MPMesh_ptr p_mpmesh){
   checkMPMeshValid(p_mpmesh);
   auto mpmesh = ((polyMPO::MPMesh*)p_mpmesh);
-  mpmesh->reconstruct_full<polyMPO::MeshF_VtxMass>();
+  mpmesh->assemblyVtx1<polyMPO::MeshF_VtxMass>();
 }
 
 void polympo_reconstruct_velocity_with_MPI_f(MPMesh_ptr p_mpmesh){
   checkMPMeshValid(p_mpmesh);
   auto mpmesh = ((polyMPO::MPMesh*)p_mpmesh);
-  mpmesh->reconstruct_full<polyMPO::MeshF_Vel>();
+  mpmesh->assemblyVtx1<polyMPO::MeshF_Vel>();
 }
 
 //Owning Process and Global IDs

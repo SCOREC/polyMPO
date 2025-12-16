@@ -44,67 +44,6 @@ void sphericalInterpolation(MPMesh& mpMesh){
 }
 
 KOKKOS_INLINE_FUNCTION
-void compute2DplanarTriangleArea(int numVtx, 
-                                 const Kokkos::View<double[maxVtxsPerElm][2], Kokkos::LayoutStride, 
-                                 Kokkos::MemoryTraits<Kokkos::Unmanaged>>& gnom_vtx_subview, 
-                                 double mpProjX, double mpProjY, double* basis){
-
-  double vertCoords[2][maxVtxsPerElm + 1];
-  for (int i = 0; i < numVtx; ++i) {
-    vertCoords[0][i] = gnom_vtx_subview(i, 0);
-    vertCoords[1][i] = gnom_vtx_subview(i, 1);
-  }
-  vertCoords[0][numVtx] = vertCoords[0][0];
-  vertCoords[1][numVtx] = vertCoords[1][0];
-  
-  //Helper lambda for 2D triangle area
-  auto triArea = [&](const double p1[2], const double p2[2], const double p3[2]) -> double {
-    return 0.5 * (p1[0] * (p2[1] - p3[1]) - p2[0] * (p1[1] - p3[1]) + p3[0] * (p1[1] - p2[1]));
-  };
-  
-  // Compute areaV and areaXV
-  double areaV[maxVtxsPerElm];
-  double areaXV[maxVtxsPerElm];
-  double xy[2] = {mpProjX, mpProjY};
-  
-  //Special case
-  double p1[2] = { vertCoords[0][numVtx - 1], vertCoords[1][numVtx - 1] };
-  double p2[2] = { vertCoords[0][0], vertCoords[1][0] };
-  double p3[2] = { vertCoords[0][1], vertCoords[1][1] };
-  areaV[0] = triArea(p1, p2, p3);
-  double q1[2] = { vertCoords[0][0], vertCoords[1][0] };
-  double q3[2] = { vertCoords[0][1], vertCoords[1][1] };
-  areaXV[0] = triArea(q1, xy, q3);
-  
-  for (int i = 1; i < numVtx; ++i) {
-    double p1[2] = { vertCoords[0][i - 1], vertCoords[1][i - 1] };
-    double p2[2] = { vertCoords[0][i], vertCoords[1][i] };
-    double p3[2] = { vertCoords[0][i + 1], vertCoords[1][i + 1] };
-    areaV[i] = triArea(p1, p2, p3);
-    double q1[2] = { vertCoords[0][i], vertCoords[1][i] };
-    double q3[2] = { vertCoords[0][i + 1], vertCoords[1][i + 1] };
-    areaXV[i] = triArea(q1, xy, q3);
-  }
-  
-  //Wachspress weights
-  double denominator = 0.0;
-  for (int i = 0; i < numVtx; ++i){
-    double product = areaV[i];
-    for (int j = 0; j < numVtx - 2; ++j) {
-      int ind1 = (i + j + 1) % numVtx;
-      product *= areaXV[ind1];
-    }
-    basis[i] = product;
-    denominator += product;
-  }
-  // Normalize
-  for (int i = 0; i < numVtx; ++i){
-    basis[i] /= denominator;
-    //printf("i %d basis %.15e \n", i, basis[i]);
-  }
-}
-
-KOKKOS_INLINE_FUNCTION
 void wachpress_weights_grads_2D(int numVtx, const Kokkos::View<double[maxVtxsPerElm][2], 
                                 Kokkos::LayoutStride, Kokkos::MemoryTraits<Kokkos::Unmanaged>>& gnom_vtx_subview, 
                                 double mpProjX, double mpProjY, double* basis, double* grad_basis){

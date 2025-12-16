@@ -110,8 +110,7 @@ void MPMesh::reconstruct_coeff_full(){
   auto dual_triangle_area=p_mesh->getMeshField<MeshF_DualTriangleArea>();
 
   //Material Points
-  bool use3DArea=false;
-  calcBasis(use3DArea);
+  calcBasis();
   
   auto weight = p_MPs->getData<MPF_Basis_Vals>();
   auto mpPos = p_MPs->getData<MPF_Cur_Pos_XYZ>();

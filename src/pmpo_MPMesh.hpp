@@ -18,9 +18,6 @@ template <> const MaterialPointSlice meshFieldIndexToMPSlice < MeshF_OnSurfVeloI
 #define maxMPsPerElm 8
 
 class MPMesh{
-  private:
-   
-    bool isPreComputed;
     
   public:
     
@@ -62,7 +59,7 @@ class MPMesh{
 
     //Used before advection to interpolate fields from mesh to MPs
     //And also before reconstruction
-    void calcBasis(bool use3DArea);
+    void calcBasis();
 
     //Reconstruction
     DoubleView assemblyV0();

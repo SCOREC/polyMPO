@@ -6,6 +6,189 @@
 
 namespace polyMPO{
 
+// spherical interpolation of values from mesh vertices to MPs
+template <MeshFieldIndex meshFieldIndex>
+void sphericalInterpolation(MPMesh& mpMesh){
+  Kokkos::Timer timer;
+  
+  auto p_mesh = mpMesh.p_mesh;
+  auto vtxCoords = p_mesh->getMeshField<polyMPO::MeshF_VtxCoords>();
+  int numVtxs = p_mesh->getNumVertices();
+  auto elm2VtxConn = p_mesh->getElm2VtxConn();
+  double radius = p_mesh->getSphereRadius();
+  PMT_ALWAYS_ASSERT(radius >0);
+
+  auto p_MPs = mpMesh.p_MPs;
+  auto MPsPosition = p_MPs->getPositions();
+  auto MPsBasis = p_MPs->getData<MPF_Basis_Vals>();
+ 
+  constexpr MaterialPointSlice mpfIndex = meshFieldIndexToMPSlice<meshFieldIndex>;
+  auto mpField = p_MPs->getData<mpfIndex>();
+    
+  const int numEntries = mpSliceToNumEntries<mpfIndex>();
+  auto meshField = p_mesh->getMeshField<meshFieldIndex>(); 
+
+  auto interpolation = PS_LAMBDA(const int& elm, const int& mp, const int& mask) {
+    if(mask) { //if material point is 'active'/'enabled'
+      int numVtx = elm2VtxConn(elm,0);
+      for(int entry=0; entry<numEntries; entry++){
+        double mpValue = 0.0;
+        for(int i=1; i<= numVtx; i++)
+          mpValue += meshField(elm2VtxConn(elm,i)-1,entry)*MPsBasis(mp,i-1);
+        mpField(mp,entry) = mpValue;
+      }
+    }
+  };
+  p_MPs->parallel_for(interpolation, "interpolation");
+  pumipic::RecordTime("PolyMPO_sphericalInterpolation", timer.seconds());
+}
+
+KOKKOS_INLINE_FUNCTION
+void compute2DplanarTriangleArea(int numVtx, 
+                                 const Kokkos::View<double[maxVtxsPerElm][2], Kokkos::LayoutStride, 
+                                 Kokkos::MemoryTraits<Kokkos::Unmanaged>>& gnom_vtx_subview, 
+                                 double mpProjX, double mpProjY, double* basis){
+
+  double vertCoords[2][maxVtxsPerElm + 1];
+  for (int i = 0; i < numVtx; ++i) {
+    vertCoords[0][i] = gnom_vtx_subview(i, 0);
+    vertCoords[1][i] = gnom_vtx_subview(i, 1);
+  }
+  vertCoords[0][numVtx] = vertCoords[0][0];
+  vertCoords[1][numVtx] = vertCoords[1][0];
+  
+  //Helper lambda for 2D triangle area
+  auto triArea = [&](const double p1[2], const double p2[2], const double p3[2]) -> double {
+    return 0.5 * (p1[0] * (p2[1] - p3[1]) - p2[0] * (p1[1] - p3[1]) + p3[0] * (p1[1] - p2[1]));
+  };
+  
+  // Compute areaV and areaXV
+  double areaV[maxVtxsPerElm];
+  double areaXV[maxVtxsPerElm];
+  double xy[2] = {mpProjX, mpProjY};
+  
+  //Special case
+  double p1[2] = { vertCoords[0][numVtx - 1], vertCoords[1][numVtx - 1] };
+  double p2[2] = { vertCoords[0][0], vertCoords[1][0] };
+  double p3[2] = { vertCoords[0][1], vertCoords[1][1] };
+  areaV[0] = triArea(p1, p2, p3);
+  double q1[2] = { vertCoords[0][0], vertCoords[1][0] };
+  double q3[2] = { vertCoords[0][1], vertCoords[1][1] };
+  areaXV[0] = triArea(q1, xy, q3);
+  
+  for (int i = 1; i < numVtx; ++i) {
+    double p1[2] = { vertCoords[0][i - 1], vertCoords[1][i - 1] };
+    double p2[2] = { vertCoords[0][i], vertCoords[1][i] };
+    double p3[2] = { vertCoords[0][i + 1], vertCoords[1][i + 1] };
+    areaV[i] = triArea(p1, p2, p3);
+    double q1[2] = { vertCoords[0][i], vertCoords[1][i] };
+    double q3[2] = { vertCoords[0][i + 1], vertCoords[1][i + 1] };
+    areaXV[i] = triArea(q1, xy, q3);
+  }
+  
+  //Wachspress weights
+  double denominator = 0.0;
+  for (int i = 0; i < numVtx; ++i){
+    double product = areaV[i];
+    for (int j = 0; j < numVtx - 2; ++j) {
+      int ind1 = (i + j + 1) % numVtx;
+      product *= areaXV[ind1];
+    }
+    basis[i] = product;
+    denominator += product;
+  }
+  // Normalize
+  for (int i = 0; i < numVtx; ++i){
+    basis[i] /= denominator;
+    //printf("i %d basis %.15e \n", i, basis[i]);
+  }
+}
+
+KOKKOS_INLINE_FUNCTION
+void wachpress_weights_grads_2D(int numVtx, const Kokkos::View<double[maxVtxsPerElm][2], 
+                                Kokkos::LayoutStride, Kokkos::MemoryTraits<Kokkos::Unmanaged>>& gnom_vtx_subview, 
+                                double mpProjX, double mpProjY, double* basis, double* grad_basis){
+
+  double vertCoords[2][maxVtxsPerElm + 1];
+  for (int i = 0; i < numVtx; ++i) {
+    vertCoords[0][i] = gnom_vtx_subview(i, 0);
+    vertCoords[1][i] = gnom_vtx_subview(i, 1);
+  }
+  vertCoords[0][numVtx] = vertCoords[0][0];
+  vertCoords[1][numVtx] = vertCoords[1][0];
+  
+  //Compute areaV and areaXV
+  double areaV[maxVtxsPerElm];
+  double areaXV[maxVtxsPerElm];
+  double xy[2] = { mpProjX, mpProjY };
+
+  //Helper lambda for 2D triangle area
+  auto triArea = [&](const double p1[2], const double p2[2], const double p3[2]) -> double {
+    return 0.5 * (p1[0] * (p2[1] - p3[1]) - p2[0] * (p1[1] - p3[1]) + p3[0] * (p1[1] - p2[1]));
+  };
+  
+  //Special case
+  double p1[2] = { vertCoords[0][numVtx - 1], vertCoords[1][numVtx - 1] };
+  double p2[2] = { vertCoords[0][0], vertCoords[1][0] };
+  double p3[2] = { vertCoords[0][1], vertCoords[1][1] };
+  areaV[0] = triArea(p1, p2, p3);
+  areaXV[0] = triArea(p2, xy, p3);
+  
+  for (int i = 1; i < numVtx; ++i) {
+    double p1[2] = { vertCoords[0][i - 1], vertCoords[1][i - 1] };
+    double p2[2] = { vertCoords[0][i], vertCoords[1][i] };
+    double p3[2] = { vertCoords[0][i + 1], vertCoords[1][i + 1] };
+    areaV[i] = triArea(p1, p2, p3);
+    areaXV[i] = triArea(p2, xy, p3);
+  }
+
+  double denominator = 0.0;
+  double derivative_sum[2] = {0.0}; 
+  double derivative[2][maxVtxsPerElm];
+  double W[maxVtxsPerElm];
+
+  for (int i = 0; i < numVtx; ++i){
+    double product = areaV[i];
+    double product_sum[2] = {0.0};
+
+    for (int j = 0; j < numVtx - 2; ++j) {
+      int ind1 = (i + j + 1) % numVtx;
+      product *= areaXV[ind1];
+      double product_dx[2] = {areaV[i], areaV[i]};
+
+      for (int k = 0; k < numVtx - 2;  k++){
+        if (k == j) continue;
+        int ind2 = (i + k + 1) % numVtx;
+        product_dx[0] = product_dx[0] * areaXV[ind2];
+        product_dx[1] = product_dx[1] * areaXV[ind2];
+      }
+      product_dx[0] = product_dx[0] * 0.5 * (vertCoords[1][ind1+1]- vertCoords[1][ind1]);
+      product_dx[1] = -product_dx[1] * 0.5 * (vertCoords[0][ind1+1]- vertCoords[0][ind1]);
+            
+      product_sum[0] += product_dx[0];
+      product_sum[1] += product_dx[1];
+    }
+    W[i] = product;
+    denominator += product;
+    
+    derivative[0][i] = product_sum[0];
+    derivative[1][i] = product_sum[1];
+
+    derivative_sum[0] += product_sum[0];
+    derivative_sum[1] += product_sum[1];
+  }
+  
+  for (int i = 0; i < numVtx; ++i){
+    grad_basis[i*2 + 0] = derivative[0][i] / denominator - (W[i] / (denominator * denominator)) * derivative_sum[0];
+    grad_basis[i*2 + 0] = grad_basis[i*2 + 0] / 6371229;  
+    grad_basis[i*2 + 1] = derivative[1][i] / denominator - (W[i] / (denominator * denominator)) * derivative_sum[1];
+    grad_basis[i*2 + 1] = grad_basis[i*2 + 1] / 6371229; 
+    basis[i] = W[i] / denominator;
+    //printf("GVS %.15e %.15e \n", gnom_vtx_subview(i, 0), gnom_vtx_subview(i, 1));
+    //printf("Grad result %.15e %.15e \n", grad_basis[i*2 + 0], grad_basis[i*2 + 1]);
+  }
+}
+
 /** \brief calculate the basis and gradient of Basis for a give MP with its element Vtxs
  *
  *  \details based on the 4.1 section from:
@@ -301,199 +484,6 @@ void getBasisByAreaGblForm_1(Vec2d MP, int numVtxs, Vec2d* vtxCoords, double* ba
     }
 } 
 */
-
-// spherical interpolation of values from mesh vertices to MPs
-template <MeshFieldIndex meshFieldIndex>
-void sphericalInterpolation(MPMesh& mpMesh){
-  Kokkos::Timer timer;
-  
-  auto p_mesh = mpMesh.p_mesh;
-  auto vtxCoords = p_mesh->getMeshField<polyMPO::MeshF_VtxCoords>();
-  int numVtxs = p_mesh->getNumVertices();
-  auto elm2VtxConn = p_mesh->getElm2VtxConn();
-  double radius = p_mesh->getSphereRadius();
-  PMT_ALWAYS_ASSERT(radius >0);
-
-  auto p_MPs = mpMesh.p_MPs;
-  auto MPsPosition = p_MPs->getPositions();
-  auto MPsBasis = p_MPs->getData<MPF_Basis_Vals>();
- 
-  constexpr MaterialPointSlice mpfIndex = meshFieldIndexToMPSlice<meshFieldIndex>;
-  auto mpField = p_MPs->getData<mpfIndex>();
-    
-  const int numEntries = mpSliceToNumEntries<mpfIndex>();
-  auto meshField = p_mesh->getMeshField<meshFieldIndex>(); 
-
-  auto interpolation = PS_LAMBDA(const int& elm, const int& mp, const int& mask) {
-    if(mask) { //if material point is 'active'/'enabled'
-      int numVtx = elm2VtxConn(elm,0);
-      for(int entry=0; entry<numEntries; entry++){
-        double mpValue = 0.0;
-        for(int i=1; i<= numVtx; i++)
-          mpValue += meshField(elm2VtxConn(elm,i)-1,entry)*MPsBasis(mp,i-1);
-        mpField(mp,entry) = mpValue;
-      }
-    }
-  };
-  p_MPs->parallel_for(interpolation, "interpolation");
-  pumipic::RecordTime("PolyMPO_sphericalInterpolation", timer.seconds());
-}
-
-KOKKOS_INLINE_FUNCTION
-void compute2DplanarTriangleArea(int numVtx, 
-     const Kokkos::View<double[maxVtxsPerElm][2], Kokkos::LayoutStride, Kokkos::MemoryTraits<Kokkos::Unmanaged>>& gnom_vtx_subview, 
-     double mpProjX, double mpProjY, double* basis){
-
-  // Temporary storage
-  double vertCoords[2][maxVtxsPerElm + 1];
-  for (int i = 0; i < numVtx; ++i) {
-    vertCoords[0][i] = gnom_vtx_subview(i, 0);
-    vertCoords[1][i] = gnom_vtx_subview(i, 1);
-  }
-  vertCoords[0][numVtx] = vertCoords[0][0];
-  vertCoords[1][numVtx] = vertCoords[1][0];
-  
-  //Helper lambda for signed triangle area
-  auto triArea = [&](const double p1[2], const double p2[2], const double p3[2]) -> double {
-    return 0.5 * (p1[0] * (p2[1] - p3[1]) - p2[0] * (p1[1] - p3[1]) + p3[0] * (p1[1] - p2[1]));
-  };
-  
-  // Compute areaV and areaXV
-  double areaV[maxVtxsPerElm];
-  double areaXV[maxVtxsPerElm];
-  double xy[2] = { mpProjX, mpProjY };
-  
-  //Special case
-  double p1[2] = { vertCoords[0][numVtx - 1], vertCoords[1][numVtx - 1] };
-  double p2[2] = { vertCoords[0][0], vertCoords[1][0] };
-  double p3[2] = { vertCoords[0][1], vertCoords[1][1] };
-  areaV[0] = triArea(p1, p2, p3);
-  double q1[2] = { vertCoords[0][0], vertCoords[1][0] };
-  double q2[2] = { xy[0], xy[1] };
-  double q3[2] = { vertCoords[0][1], vertCoords[1][1] };
-  areaXV[0] = triArea(q1, q2, q3);
-  
-  for (int i = 1; i < numVtx; ++i) {
-    double p1[2] = { vertCoords[0][i - 1], vertCoords[1][i - 1] };
-    double p2[2] = { vertCoords[0][i], vertCoords[1][i] };
-    double p3[2] = { vertCoords[0][i + 1], vertCoords[1][i + 1] };
-    areaV[i] = triArea(p1, p2, p3);
-    double q1[2] = { vertCoords[0][i], vertCoords[1][i] };
-    double q2[2] = { xy[0], xy[1] };
-    double q3[2] = { vertCoords[0][i + 1], vertCoords[1][i + 1] };
-    areaXV[i] = triArea(q1, q2, q3);
-  }
-  
-  // Compute Wachspress-like weights
-  double denominator = 0.0;
-  for (int i = 0; i < numVtx; ++i){
-    double product = areaV[i];
-    for (int j = 0; j < numVtx - 2; ++j) {
-      int ind1 = (i + j + 1) % numVtx;
-      product *= areaXV[ind1];
-    }
-    basis[i] = product;
-    denominator += product;
-  }
-
-  // Normalize
-  for (int i = 0; i < numVtx; ++i){
-    basis[i] /= denominator;
-    //printf("i %d basis %.15e \n", i, basis[i]);
-  }
-}
-
-KOKKOS_INLINE_FUNCTION
-void wachpress_weights_grads_2D(int numVtx, 
-     const Kokkos::View<double[maxVtxsPerElm][2], Kokkos::LayoutStride, Kokkos::MemoryTraits<Kokkos::Unmanaged>>& gnom_vtx_subview, 
-     double mpProjX, double mpProjY, double* grad_basis){
-
-  // Temporary storage
-  double vertCoords[2][maxVtxsPerElm + 1];
-  for (int i = 0; i < numVtx; ++i) {
-    vertCoords[0][i] = gnom_vtx_subview(i, 0);
-    vertCoords[1][i] = gnom_vtx_subview(i, 1);
-  }
-  vertCoords[0][numVtx] = vertCoords[0][0];
-  vertCoords[1][numVtx] = vertCoords[1][0];
-  
-  // Compute areaV and areaXV
-  double areaV[maxVtxsPerElm];
-  double areaXV[maxVtxsPerElm];
-  double xy[2] = { mpProjX, mpProjY };
-
-  //Helper lambda for signed triangle area
-  auto triArea = [&](const double p1[2], const double p2[2], const double p3[2]) -> double {
-    return 0.5 * (p1[0] * (p2[1] - p3[1]) - p2[0] * (p1[1] - p3[1]) + p3[0] * (p1[1] - p2[1]));
-  };
-  
-  //Special case
-  double p1[2] = { vertCoords[0][numVtx - 1], vertCoords[1][numVtx - 1] };
-  double p2[2] = { vertCoords[0][0], vertCoords[1][0] };
-  double p3[2] = { vertCoords[0][1], vertCoords[1][1] };
-  areaV[0] = triArea(p1, p2, p3);
-  double q1[2] = { vertCoords[0][0], vertCoords[1][0] };
-  double q2[2] = { xy[0], xy[1] };
-  double q3[2] = { vertCoords[0][1], vertCoords[1][1] };
-  areaXV[0] = triArea(q1, q2, q3);
-  
-  for (int i = 1; i < numVtx; ++i) {
-    double p1[2] = { vertCoords[0][i - 1], vertCoords[1][i - 1] };
-    double p2[2] = { vertCoords[0][i], vertCoords[1][i] };
-    double p3[2] = { vertCoords[0][i + 1], vertCoords[1][i + 1] };
-    areaV[i] = triArea(p1, p2, p3);
-    double q1[2] = { vertCoords[0][i], vertCoords[1][i] };
-    double q2[2] = { xy[0], xy[1] };
-    double q3[2] = { vertCoords[0][i + 1], vertCoords[1][i + 1] };
-    areaXV[i] = triArea(q1, q2, q3);
-  }
-
-  double denominator = 0.0;
-  double derivative_sum[2] = {0.0}; 
-  double derivative[2][maxVtxsPerElm];
-  double W[maxVtxsPerElm];
-
-  for (int i = 0; i < numVtx; ++i){
-    double product = areaV[i];
-    double product_sum[2] = {0.0};
-
-    for (int j = 0; j < numVtx - 2; ++j) {
-      int ind1 = (i + j + 1) % numVtx;
-      product *= areaXV[ind1];
-      double product_dx[2] = {areaV[i], areaV[i]};
-
-      for (int k = 0; k < numVtx - 2;  k++){
-        if (k == j) continue;
-        int ind2 = (i + k + 1) % numVtx;
-        product_dx[0] = product_dx[0] * areaXV[ind2];
-        product_dx[1] = product_dx[1] * areaXV[ind2];
-      }
-      product_dx[0] = product_dx[0] * 0.5 * (vertCoords[1][ind1+1]- vertCoords[1][ind1]);
-      product_dx[1] = -product_dx[1] * 0.5 * (vertCoords[0][ind1+1]- vertCoords[0][ind1]);
-            
-      product_sum[0] += product_dx[0];
-      product_sum[1] += product_dx[1];
-    }
-    W[i] = product;
-    denominator += product;
-    
-    derivative[0][i] = product_sum[0];
-    derivative[1][i] = product_sum[1];
-
-    derivative_sum[0] += product_sum[0];
-    derivative_sum[1] += product_sum[1];
-  }
-  
-  //printf("XY %.15e %.15e \n", mpProjX, mpProjY);
-  for (int i = 0; i < numVtx; ++i){
-    grad_basis[i*2 + 0] = derivative[0][i] / denominator - (W[i] / (denominator * denominator)) * derivative_sum[0];
-    grad_basis[i*2 + 0] =  grad_basis[i*2 + 0] / 6371229;  
-    grad_basis[i*2 + 1] = derivative[1][i] / denominator - (W[i] / (denominator * denominator)) * derivative_sum[1];
-    grad_basis[i*2 + 1] =  grad_basis[i*2 + 1] / 6371229; 
-    //printf("GVS %.15e %.15e \n", gnom_vtx_subview(i, 0), gnom_vtx_subview(i, 1));
-    //printf("Grad result %.15e %.15e \n", grad_basis[i*2 + 0], grad_basis[i*2 + 1]);
-  }
-}
 
 } //namespace polyMPO end
 #endif

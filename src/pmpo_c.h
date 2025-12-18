@@ -17,6 +17,7 @@ void polympo_deleteMPMesh_f(MPMesh_ptr p_mpmesh);
 //set MPI communicator
 void polympo_setMPICommunicator_f(MPMesh_ptr p_mpmesh, MPI_Fint fcomm);
 //TODO: add a function to get communicator
+void polympo_startCommunication_f(MPMesh_ptr p_mpmesh);
 
 //MP info
 void polympo_createMPs_f(MPMesh_ptr p_mpmesh, const int numElms, const int numMPs, int* mpsPerElm, const int* mp2Elm, const int* isMPActive);
@@ -28,7 +29,6 @@ void polympo_setAppIDFunc_f(MPMesh_ptr p_mpmesh, IntVoidFunc getNext, void* appI
 void polympo_getMPTgtElmID_f(MPMesh_ptr p_mpmesh, const int numMPs, int* elmIDs);
 void polympo_getMPCurElmID_f(MPMesh_ptr p_mpmesh, const int numMPs, int* elmIDs);
 void polympo_setMPLatLonRotatedFlag_f(MPMesh_ptr p_mpmesh, const int isRotateFlag);
-void polympo_startCommunication_f(MPMesh_ptr p_mpmesh);
 
 //MP slices
 //Positions
@@ -91,13 +91,11 @@ void polympo_setMeshVtxOnSurfDispIncr_f(MPMesh_ptr p_mpmesh, const int nComps, c
 void polympo_getMeshVtxOnSurfDispIncr_f(MPMesh_ptr p_mpmesh, const int nComps, const int nVertices, double* array);//vec2d
 void polympo_setMeshElmCenter_f(MPMesh_ptr p_mpmesh, const int nCells, const double* xArray, const double* yArray, const double* zArray);
 void polympo_getMeshElmCenter_f(MPMesh_ptr p_mpmesh, const int nCells, double* xArray, double* yArray, double* zArray);
-//Area Triangle
 void polympo_setMeshDualTriangleArea_f(MPMesh_ptr p_mpmesh, const int nVertices, const double* areaTriangle);
 void polympo_getMeshDualTriangleArea_f(MPMesh_ptr p_mpmesh, const int nVertices, double* areaTriangle);
-//TanLatRotVertexOverR
 void polyMPO_setTanLatVertexRotatedOverRadius_f(MPMesh_ptr p_mpmesh, const int nVertices, double* array); 
 
-// calculations
+// Advection calculations
 void polympo_push_f(MPMesh_ptr p_mpmesh);
 void polympo_push_ahead_f(MPMesh_ptr p_mpmesh);
 bool polympo_push1P_f(MPMesh_ptr p_mpmesh);

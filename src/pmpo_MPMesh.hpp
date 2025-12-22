@@ -18,7 +18,7 @@ template <> const MaterialPointSlice meshFieldIndexToMPSlice < MeshF_OnSurfVeloI
 #define maxMPsPerElm 8
 
 class MPMesh{
-    
+
   public:
 
     Mesh* p_mesh;
@@ -68,7 +68,7 @@ class MPMesh{
     template <MeshFieldIndex meshFieldIndex>
     void assemblyElm0();
     template <MeshFieldIndex meshFieldIndex>
-    void assemblyVtx1(); 
+    void assemblyVtx1();
     void reconstruct_coeff_full();
     void invertMatrix(const Kokkos::View<double**>& vtxMatrices, const double& radius);
     Kokkos::View<double*[vec3d_nEntries][vec4d_nEntries]> precomputedVtxCoeffs_new;

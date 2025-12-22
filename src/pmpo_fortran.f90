@@ -13,7 +13,7 @@ module polympo
   subroutine polympo_initialize() bind(C, NAME='polympo_initialize_f')
     use :: iso_c_binding
   end subroutine
-  
+
   !---------------------------------------------------------------------------
   !> @brief finalize polympo, no polympo apis may be called after this
   !> @remark the user must not finalize MPI until after this call
@@ -21,7 +21,7 @@ module polympo
   subroutine polympo_finalize() bind(C, NAME='polympo_finalize_f')
     use :: iso_c_binding
   end subroutine
-  
+
   !---------------------------------------------------------------------------
   !> @brief create MPMesh object
   !> @param testMeshOption >0 init a planar test Mesh
@@ -35,7 +35,7 @@ module polympo
     type(c_ptr) polympo_createMPMesh
     integer(c_int), value :: setMeshOption, setMPOption
   end function
-  
+
   !---------------------------------------------------------------------------
   !> @brief delete MPMesh object
   !> @param mpmesh(in/out) MPMesh object
@@ -44,7 +44,7 @@ module polympo
     use :: iso_c_binding
     type(c_ptr), value :: mpMesh
   end subroutine
-  
+
   !---------------------------------------------------------------------------
   !> @brief set the MPI communicator used by polympo
   !> @param comm(in) MPI communicator
@@ -55,13 +55,13 @@ module polympo
     type(c_ptr), value :: mpMesh
     integer(c_int), value :: comm    
   end subroutine
-  
+
   subroutine polympo_startCommunication(mpMesh) &
              bind(C, NAME='polympo_startCommunication_f')
     use :: iso_c_binding
     type(c_ptr), value :: mpMesh
   end subroutine
-  
+
   !---------------------------------------------------------------------------
   !> @brief create the material points
   !> @brief the fields associated with the MPs are NOT initialized
@@ -82,7 +82,7 @@ module polympo
     type(c_ptr), intent(in), value :: mp2Elm
     type(c_ptr), intent(in), value :: isMPActive
   end subroutine
-  
+
   !---------------------------------------------------------------------------
   !> @brief move MPs to a new element, add new MPs, or delete MPs
   !> @brief the fields associated with the MPs are NOT initialized
@@ -128,7 +128,7 @@ module polympo
     use :: iso_c_binding
     type(c_ptr), value :: mpMesh
   end subroutine
-  
+
   !---------------------------------------------------------------------------
   !> @brief Stores pointer to appID data structure and a function to retrieve them used in migration
   !> @param mpmesh(in/out) MPMesh object
@@ -142,7 +142,7 @@ module polympo
     type(c_funptr), value :: getNext
     type(c_ptr), value :: appIDs
   end subroutine
-  
+
   !---------------------------------------------------------------------------
   !> @brief get the current element ID MP array from a polympo array
   !> @param mpmesh(in/out) MPMesh object
@@ -164,7 +164,7 @@ module polympo
     integer(c_int), value :: numMPs
     type(c_ptr), value :: array
   end subroutine
-  
+
   !---------------------------------------------------------------------------
   !> @brief set the mp lat lon is rotational or normal
   !> @param mpmesh(in/out) MPMesh object
@@ -176,7 +176,7 @@ module polympo
     type(c_ptr), value :: mpMesh
     integer(c_int), value :: isRotateFlag
   end subroutine
-  
+
   !---------------------------------------------------------------------------
   !> @brief set the MP positions array from a host array
   !> @param mpmesh(in/out) MPMesh object
@@ -191,7 +191,7 @@ module polympo
     integer(c_int), value :: nComps, numMPs
     type(c_ptr), value :: array
   end subroutine
-  
+
   !---------------------------------------------------------------------------
   !> @brief get the MP positions array from a polympo array
   !> @param mpmesh(in/out) MPMesh object
@@ -207,7 +207,7 @@ module polympo
     integer(c_int), value :: nComps, numMPs
     type(c_ptr), value :: array
   end subroutine
-  
+
   !---------------------------------------------------------------------------
   !> @brief set the MP positions array from a host array
   !> @param mpmesh(in/out) MPMesh object
@@ -222,7 +222,7 @@ module polympo
     integer(c_int), value :: nComps, numMPs
     type(c_ptr), value :: array
   end subroutine
-  
+
   !---------------------------------------------------------------------------
   !> @brief get the MP positions array from a polympo array
   !> @param mpmesh(in/out) MPMesh object
@@ -302,7 +302,7 @@ module polympo
     integer(c_int), value :: nComps, numMPs
     type(c_ptr), value :: array
   end subroutine
- 
+
   !---------------------------------------------------------------------------
   !> @brief set the Mass MP array from a host array
   !> @param mpmesh(in/out) MPMesh object
@@ -372,7 +372,7 @@ module polympo
   !getMPStrainRate
   !setMPStress
   !getMPStress
-  
+
   !---------------------------------------------------------------------------
   !> @brief Enable the setting of mesh topology (number of entities and entity adjacencies). 
   !>        By default, modifying the mesh topology without calling this function first will result
@@ -581,7 +581,7 @@ module polympo
     integer(c_int), value :: nVertices
     type(c_ptr), intent(in), value :: array
   end subroutine
-  
+
   !---------------------------------------------------------------------------
   !> @brief set the owning process array
   !> @param mpmesh(in/out) MPMesh object
@@ -603,7 +603,7 @@ module polympo
     integer(c_int), value :: nVertices
     type(c_ptr), intent(in), value :: array
   end subroutine
-  
+
   !---------------------------------------------------------------------------
   !> @brief get enum for vertex mesh fields
   !---------------------------------------------------------------------------
@@ -661,7 +661,7 @@ module polympo
     integer(c_int), value :: nVertices
     type(c_ptr), intent(in), value :: latitude
   end subroutine
-  
+
   !---------------------------------------------------------------------------
   !> @brief get the polympo mesh vertices latitude and longitude
   !> @param mpmesh(in/out) MPMesh object
@@ -735,7 +735,7 @@ module polympo
     integer(c_int), value :: nVertices
     type(c_ptr), value :: vtxMass
   end subroutine
-  
+
   !---------------------------------------------------------------------------
   !> @brief set the mesh elements mass from a host array
   !> @param mpmesh(in/out) MPMesh object
@@ -932,7 +932,7 @@ module polympo
     use :: iso_c_binding
     type(c_ptr), value :: mpMesh
   end subroutine
-  
+
   subroutine polympo_push_swap_pos(mpMesh) &
              bind(C, NAME='polympo_push_swap_pos_f')
     use :: iso_c_binding
@@ -1000,19 +1000,19 @@ module polympo
     use :: iso_c_binding
     type(c_ptr), value :: mpMesh
   end subroutine
-  
+
   subroutine polympo_reconstruct_iceArea_with_MPI(mpMesh) &
              bind(C, NAME='polympo_reconstruct_iceArea_with_MPI_f')
     use :: iso_c_binding
     type(c_ptr), value :: mpMesh
   end subroutine
-  
+
   subroutine polympo_reconstruct_velocity_with_MPI(mpMesh) &
              bind(C, NAME='polympo_reconstruct_velocity_with_MPI_f')
     use :: iso_c_binding
     type(c_ptr), value :: mpMesh
   end subroutine
-   
+
   !---------------------------------------------------------------------------
   !> @brief directly call the reconstruct of the MP fields to mesh fields
   !> @param mpmesh(in/out) MPMesh object

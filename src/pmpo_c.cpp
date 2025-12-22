@@ -96,7 +96,7 @@ void polympo_createMPs_f(MPMesh_ptr p_mpmesh,
   MPI_Allreduce(&numActiveMPs, &globalNumActiveMPs, 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD); 
   MPI_Allreduce(&minElmID, &globalMinElmID, 1, MPI_INT, MPI_MIN, MPI_COMM_WORLD); 
   PMT_ALWAYS_ASSERT(globalNumActiveMPs>0);
-  
+
   //Loop over all mesh elements 0,1,... and find the first element that has an associated MP
   int firstElmWithMPs=INT_MAX;
   for (int i=0; i<numElms; i++) {
@@ -107,7 +107,7 @@ void polympo_createMPs_f(MPMesh_ptr p_mpmesh,
   }
   int globalFirstElmWithMPs;
   MPI_Allreduce(&firstElmWithMPs, &globalFirstElmWithMPs, 1, MPI_INT, MPI_MIN, MPI_COMM_WORLD);
-  
+
   int offset = -1;
   if(globalMinElmID-globalFirstElmWithMPs==1) {
     offset = 1;
@@ -210,7 +210,7 @@ void polympo_startRebuildMPs2_f(MPMesh_ptr p_mpmesh,
                          const int nMPs_add,
                          int* recvMPs_elm,
                          int* recvMPs_ids) {
-  
+
   Kokkos::Timer timer;
   checkMPMeshValid(p_mpmesh);
   auto p_MPs = ((polyMPO::MPMesh*)p_mpmesh)->p_MPs;
@@ -224,7 +224,7 @@ void polympo_startRebuildMPs2_f(MPMesh_ptr p_mpmesh,
   auto elem_ids_d = create_mirror_view_and_copy(elem_ids, sizeMP2elm);
   auto recvMPs_elm_d = create_mirror_view_and_copy(recvMPs_elm, nMPs_add);
   auto recvMPs_ids_d = create_mirror_view_and_copy(recvMPs_ids, nMPs_add);
-  
+
   Kokkos::View<int*> mp2Elm("mp2Elm", p_MPs->getCapacity());
   Kokkos::View<int*> numDeletedMPs_d("numDeletedMPs", 1);
   auto mpAppID = p_MPs->getData<polyMPO::MPF_MP_APP_ID>();
@@ -1161,7 +1161,7 @@ void polympo_getMeshElmCenter_f(MPMesh_ptr p_mpmesh, const int nCells, double* x
 
   //check the size
   PMT_ALWAYS_ASSERT(p_mesh->getNumElements()==nCells); 
-  
+
   //copy the device to host 
   auto elmCenter = p_mesh->getMeshField<polyMPO::MeshF_ElmCenterXYZ>();
   auto h_elmCenter = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), elmCenter);

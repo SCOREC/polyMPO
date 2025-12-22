@@ -260,6 +260,7 @@ program main
                         verticesOnCell, cellsOnCell)
   if (onSphere .ne. 'YES') then
     write (*,*) "The mesh is not spherical!"
+    write (*,*) "Gnomonic Projection is used currently for spehrical meshes, alternative for planar meshes not supported !"
     call exit(1)
   end if
 
@@ -273,8 +274,9 @@ program main
                         latVertex, &
                         xCell, yCell, zCell, &
                         verticesOnCell, cellsOnCell)
-  
+ 
   call polympo_setGnomonicProjection(mpMesh)
+
   call polympo_setMPICommunicator(mpMesh, mpi_comm_handle);
 
   !createMPs

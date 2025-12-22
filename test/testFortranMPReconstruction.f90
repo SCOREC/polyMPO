@@ -64,6 +64,7 @@ program main
                         verticesOnCell, cellsOnCell, areaTriangle)
   if (onSphere .ne. 'YES') then
     write (*,*) "The mesh is not spherical!"
+    write (*,*) "Gnomonic Projection is used currently for spehrical meshes, alternative for planar meshes not supported !"
     call exit(1)
   end if
 

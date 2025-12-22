@@ -1199,6 +1199,13 @@ void polympo_getMeshDualTriangleArea_f(MPMesh_ptr p_mpmesh, const int nVertices,
     areaTriangle[i] = h_dualArea(i,0);
 }
 
+void polympo_setGnomonicProjection_f(MPMesh_ptr p_mpmesh){
+  checkMPMeshValid(p_mpmesh);
+  auto p_mesh = ((polyMPO::MPMesh*)p_mpmesh)->p_mesh;
+  bool isRotated = p_mesh->getRotatedFlag();
+  p_mesh->setGnomonicProjection(isRotated);
+}
+
 void polyMPO_setTanLatVertexRotatedOverRadius_f(MPMesh_ptr p_mpmesh, const int nVertices, double* array){
   //chech validity
   checkMPMeshValid(p_mpmesh);

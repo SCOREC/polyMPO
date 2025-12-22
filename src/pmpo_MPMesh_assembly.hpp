@@ -28,6 +28,7 @@ DoubleView MPMesh::assemblyV0(){
 template <MeshFieldIndex meshFieldIndex>
 void MPMesh::assemblyVtx0(){
   Kokkos::Timer timer;
+
   constexpr MaterialPointSlice mpfIndex = meshFieldIndexToMPSlice<meshFieldIndex>;
   auto elm2VtxConn = p_mesh->getElm2VtxConn();  
   auto mpData = p_MPs->getData<mpfIndex>();
@@ -94,7 +95,8 @@ void MPMesh::assemblyElm0() {
   pumipic::RecordTime("PolyMPO_Reconstruct_Elm0", timer.seconds());
 }
 
-void MPMesh::reconstruct_coeff_full(){  
+void MPMesh::reconstruct_coeff_full(){
+  std::cout<<__FUNCTION__<<std::endl;
   Kokkos::Timer timer;
   int self, numProcsTot;
   MPI_Comm comm = p_MPs->getMPIComm();
@@ -142,7 +144,7 @@ void MPMesh::reconstruct_coeff_full(){
         Kokkos::atomic_add(&vtxMatrices(vID,6), w_vtx*(-vtxCoords(vID,0)+mpPos(mp,0))*(-vtxCoords(vID,2)+mpPos(mp,2))/(radius*radius));
         Kokkos::atomic_add(&vtxMatrices(vID,7), w_vtx*(-vtxCoords(vID,1)+mpPos(mp,1))*(-vtxCoords(vID,1)+mpPos(mp,1))/(radius*radius));
         Kokkos::atomic_add(&vtxMatrices(vID,8), w_vtx*(-vtxCoords(vID,1)+mpPos(mp,1))*(-vtxCoords(vID,2)+mpPos(mp,2))/(radius*radius));
-        Kokkos::atomic_add(&vtxMatrices(vID,9), w_vtx*(-vtxCoords(vID,2)+mpPos(mp,2))*(-vtxCoords(vID,2)+mpPos(mp,2))/(radius*radius));  
+        Kokkos::atomic_add(&vtxMatrices(vID,9), w_vtx*(-vtxCoords(vID,2)+mpPos(mp,2))*(-vtxCoords(vID,2)+mpPos(mp,2))/(radius*radius));
       }
     }
   };
@@ -278,9 +280,9 @@ void MPMesh::invertMatrix(const Kokkos::View<double**>& vtxMatrices, const doubl
     VtxCoeffs(vtx, 0, 2) = temp[1];
     VtxCoeffs(vtx, 0, 3) = temp[2];
    
-    //Debugging
+    //Debugging 
     /*
-    if(vtx == 2630){
+    if(vtx == 10){
       printf("Matrices %d vtx \n", vtx);
       printf("[ %.15e  %.15e  %.15e  %.15e ]\n", vtxMatrices(vtx,0), vtxMatrices(vtx,1), vtxMatrices(vtx,2), vtxMatrices(vtx,3));
       printf("[ %.15e  %.15e  %.15e  %.15e ]\n", vtxMatrices(vtx,1), vtxMatrices(vtx,4), vtxMatrices(vtx,5), vtxMatrices(vtx,6));
@@ -306,6 +308,7 @@ void MPMesh::invertMatrix(const Kokkos::View<double**>& vtxMatrices, const doubl
 
 template <MeshFieldIndex meshFieldIndex>
 void MPMesh::assemblyVtx1() {
+  std::cout<<__FUNCTION__<<std::endl;
   Kokkos::Timer timer;
 
   int self, numProcsTot;
@@ -368,9 +371,9 @@ void MPMesh::assemblyVtx1() {
     communicate_and_take_halo_contributions(meshField, numVertices, numEntries, 0, 0);
   pumipic::RecordTime("Communicate Field Values" + std::to_string(self), timer.seconds());
 
-  //Debug
-  //Kokkos::fence();
-  //assert(cudaDeviceSynchronize() == cudaSuccess);
+  //Debugging
+  /*
+  assert(cudaDeviceSynchronize() == cudaSuccess);
   Kokkos::parallel_for("printSymmetricBlock", numVertices, KOKKOS_LAMBDA(const int vtx){
     if (vtx >= 10 && vtx <= 10) {
       printf("Field in %d:  ", vtx);
@@ -378,12 +381,13 @@ void MPMesh::assemblyVtx1() {
         printf("  %.15e ", meshField(vtx, k));
       printf("\n");
     }
-  });  
+  });
+  */  
 }
 
 //Start Communication routine
 void MPMesh::startCommunication(){
-
+  std::cout<<__FUNCTION__<<std::endl;
   Kokkos::Timer timer;
   int self, numProcsTot;
   MPI_Comm comm = p_MPs->getMPIComm(); 
@@ -431,7 +435,7 @@ void MPMesh::startCommunication(){
                          ent2global);
 
   //Do Map of Global To Local ID
-  //TODO make ordered map; which faster?
+  //Check unordered vs ordered map; which faster?
   std::map<int, int> global2local;
   //std::unordered_map<int, int> global2local;
   for (int iEnt = 0; iEnt < numEntities; iEnt++) {
@@ -527,12 +531,7 @@ void MPMesh::startCommunication(){
 
   pumipic::RecordTime("Start Communication" + std::to_string(self), timer.seconds());
    
-  bool isRotated = p_mesh->getRotatedFlag();
-  p_mesh->setGnomonicProjection(isRotated);
-
   /*
-  if (p_MPs->getOpMode() != polyMPO::MP_DEBUG) 
-   return;
   printf("Rank %d Owners %d Halos %d Total %d \n", self, numOwnersTot, numHalosTot, numEntities);
   for (int i=0; i<numProcsTot; i++){
     printf("Rank %d has %d halos which are owners in other rank %d \n", self, numOwnersOnOtherProcs[i], i);
@@ -757,8 +756,6 @@ void MPMesh::communicateFields(const std::vector<std::vector<double>>& fieldData
   MPI_Waitall(requests.size(), requests.data(), MPI_STATUSES_IGNORE);
 
   /*
-  if (p_MPs->getOpMode() != polyMPO::MP_DEBUG)
-    return;
   static int count_deb=0;
   if(self==0) std::cout<<"====================="<<count_deb<<"========================"<<std::endl;
   count_deb++;

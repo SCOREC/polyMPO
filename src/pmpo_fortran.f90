@@ -885,15 +885,20 @@ module polympo
     integer(c_int), value :: nVertices
     type(c_ptr), value :: areaTriangle
   end subroutine
-  
+
+  subroutine polympo_setGnomonicProjection(mpMesh) &
+             bind(C, NAME='polympo_setGnomonicProjection_f')
+    use :: iso_c_binding
+    type(c_ptr), value :: mpMesh
+  end subroutine
+
   subroutine  polyMPO_setTanLatVertexRotatedOverRadius(mpMesh, nVertices, array) &
-             bind(C, NAME=' polyMPO_setTanLatVertexRotatedOverRadius_f')
+              bind(C, NAME=' polyMPO_setTanLatVertexRotatedOverRadius_f')
     use :: iso_c_binding
     type(c_ptr), value :: mpMesh
     integer(c_int), value :: nVertices
     type(c_ptr), value :: array
   end subroutine
-
 
   !---------------------------------------------------------------------------
   !> @brief calculate the MPs from given mesh vertices rotational latitude

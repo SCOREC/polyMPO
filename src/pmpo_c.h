@@ -93,6 +93,7 @@ void polympo_setMeshElmCenter_f(MPMesh_ptr p_mpmesh, const int nCells, const dou
 void polympo_getMeshElmCenter_f(MPMesh_ptr p_mpmesh, const int nCells, double* xArray, double* yArray, double* zArray);
 void polympo_setMeshDualTriangleArea_f(MPMesh_ptr p_mpmesh, const int nVertices, const double* areaTriangle);
 void polympo_getMeshDualTriangleArea_f(MPMesh_ptr p_mpmesh, const int nVertices, double* areaTriangle);
+void polympo_setGnomonicProjection_f(MPMesh_ptr p_mpmesh);
 void polyMPO_setTanLatVertexRotatedOverRadius_f(MPMesh_ptr p_mpmesh, const int nVertices, double* array); 
 
 // Advection calculations

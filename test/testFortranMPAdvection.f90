@@ -109,13 +109,16 @@ module advectionTests
     call polympo_setMPMass(mpMesh,1,numMPs,c_loc(mpMass))
     call polympo_setMPVel(mpMesh,2,numMPs,c_loc(mpVel))
     
+    ! Although this test just does 0th order reconstruction testing, and just needs the BasisSlice,
+    ! calculating the coefficeints too as that will involve calculating the Basis Slice
+    call polympo_reconstruct_coeff_with_MPI(mpmesh)
     ! Test push reconstruction
-
     do j = 1, numPush
       call calcSurfDispIncr(mpMesh, latVertex, lonVertex, nEdgesOnCell, verticesOnCell, nVertices, sphereRadius)
       call polympo_setReconstructionOfMass(mpMesh,0,polympo_getMeshFElmType())
       call polympo_setReconstructionOfMass(mpMesh,0,polympo_getMeshFVtxType())
       call polympo_setReconstructionOfVel(mpMesh,0,polympo_getMeshFVtxType())
+      call polympo_applyReconstruction(mpMesh)
       call polympo_push(mpMesh)
       call polympo_getMeshElmMass(mpMesh,nCells,c_loc(meshElmMass))
       call polympo_getMeshVtxMass(mpMesh,nVertices,c_loc(meshVtxMass))
@@ -270,7 +273,8 @@ program main
                         latVertex, &
                         xCell, yCell, zCell, &
                         verticesOnCell, cellsOnCell)
-
+  
+  call polympo_setGnomonicProjection(mpMesh)
   call polympo_setMPICommunicator(mpMesh, mpi_comm_handle);
 
   !createMPs

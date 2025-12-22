@@ -184,8 +184,8 @@ class Mesh {
                                                      elm2VtxConn_ = elm2VtxConn; }
     void setElm2ElmConn(IntElm2ElmView elm2ElmConn) {PMT_ALWAYS_ASSERT(meshEdit_);
                                                      elm2ElmConn_ = elm2ElmConn; }
-    
-    
+
+
     void setElmGlobal(IntView globalElm) {globalElm_ = globalElm;}
     void setVtxGlobal(IntView globalVtx) {globalVtx_ = globalVtx;}
     IntView getElmGlobal() {return globalElm_;}
@@ -194,7 +194,7 @@ class Mesh {
     void setGnomonicProjection(bool isRotated);
 
     void computeRotLatLonIncr();
-    
+
     bool getRotatedFlag() {
       return isRotatedFlag;
     }

@@ -20,7 +20,7 @@ template <> const MaterialPointSlice meshFieldIndexToMPSlice < MeshF_OnSurfVeloI
 class MPMesh{
     
   public:
-    
+
     Mesh* p_mesh;
     MaterialPoints* p_MPs;
 
@@ -41,7 +41,7 @@ class MPMesh{
     MPMesh(Mesh* inMesh, MaterialPoints* inMPs):
       p_mesh(inMesh), p_MPs(inMPs) {
     };
-   
+
     ~MPMesh() {
       delete p_mesh;
       delete p_MPs;
@@ -84,7 +84,7 @@ class MPMesh{
     template<MeshFieldIndex meshFieldIndex>
     void setReconstructSlice(int order, MeshFieldType type);
     void reconstructSlices();
-    
+
     void printVTP_mesh(int printVTPIndex);
     void calculateStrain();
 };

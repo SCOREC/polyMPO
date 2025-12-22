@@ -11,7 +11,7 @@ void MPMesh::calculateStrain(){
   auto MPsPosition = p_MPs->getPositions();
   auto MPsBasis = p_MPs->getData<MPF_Basis_Vals>();
   auto MPsAppID = p_MPs->getData<MPF_MP_APP_ID>();
-  
+
   //Mesh Fields
   auto tanLatVertexRotatedOverRadius = p_mesh->getMeshField<MeshF_TanLatVertexRotatedOverRadius>();
   auto gnomProjVtx = p_mesh->getMeshField<MeshF_VtxGnomProj>();
@@ -19,11 +19,11 @@ void MPMesh::calculateStrain(){
   auto elm2VtxConn = p_mesh->getElm2VtxConn();
   auto velField = p_mesh->getMeshField<MeshF_Vel>();
   bool isRotated = p_mesh->getRotatedFlag();
-  
+
   auto setMPStrainRate = PS_LAMBDA(const int& elm, const int& mp, const int& mask){
     if(mask){
       int numVtx = elm2VtxConn(elm,0);
-      
+
       Vec3d position3d(MPsPosition(mp,0),MPsPosition(mp,1),MPsPosition(mp,2)); 
       if(isRotated){
         position3d[0] = -MPsPosition(mp, 2);
@@ -33,14 +33,14 @@ void MPMesh::calculateStrain(){
       double mpProjX, mpProjY;
       computeGnomonicProjectionAtPoint(position3d, gnomProjElmCenter_sub, mpProjX, mpProjY);
       auto gnom_vtx_subview = Kokkos::subview(gnomProjVtx, elm, Kokkos::ALL, Kokkos::ALL); 
-              
+
       double basisByArea[maxVtxsPerElm] = {0.0};
       initArray(basisByArea,maxVtxsPerElm,0.0);      
       double gradBasisByArea[2*maxVtxsPerElm] = {0.0};
       initArray(gradBasisByArea,maxVtxsPerElm,0.0);
-      
+
       wachpress_weights_grads_2D(numVtx, gnom_vtx_subview, mpProjX, mpProjY, basisByArea, gradBasisByArea);
-      
+
       double v11 = 0.0;
       double v12 = 0.0;
       double v21 = 0.0;
@@ -55,13 +55,6 @@ void MPMesh::calculateStrain(){
         v22 = v22 + gradBasisByArea[i*2 + 1] * velField(iVertex, 1);
         uTanOverR = uTanOverR + basisByArea[i] * tanLatVertexRotatedOverRadius(iVertex, 0) * velField(iVertex, 0);
         vTanOverR = vTanOverR + basisByArea[i] * tanLatVertexRotatedOverRadius(iVertex, 0) * velField(iVertex, 1);
-
-        if(MPsAppID(mp)==0){
-          //printf("i %d Vtx %d Velocity %.15e %.15e \n", i, elm2VtxConn(elm,i+1)-1, velField(elm2VtxConn(elm,i+1)-1, 0), velField(elm2VtxConn(elm,i+1)-1, 1));
-          //printf("Grads %.15e %.15e \n",  gradBasisByArea[i*2 + 0],  gradBasisByArea[i*2 + 1]);
-          printf("Vs %.15e %.15e %.15e %.15e \n",v11, v12, v21, v22);
-          printf("uvTan %.15e %.15e \n", uTanOverR, vTanOverR);
-        }
       }
     }
   };
@@ -70,11 +63,11 @@ void MPMesh::calculateStrain(){
 
 void MPMesh::calcBasis() {
   assert(p_mesh->getGeomType() == geom_spherical_surf);
-    
+
   auto MPsPosition = p_MPs->getPositions();
   auto MPsBasis = p_MPs->getData<MPF_Basis_Vals>();
   auto MPsAppID = p_MPs->getData<MPF_MP_APP_ID>();
-    
+
   auto elm2VtxConn = p_mesh->getElm2VtxConn();
   auto vtxCoords = p_mesh->getMeshField<MeshF_VtxCoords>();
   double radius = p_mesh->getSphereRadius();
@@ -134,10 +127,10 @@ void MPMesh::CVTTrackingEdgeCenterBased(Vec2dView dx){
     auto elm2VtxConn = p_mesh->getElm2VtxConn();
     auto elm2ElmConn = p_mesh->getElm2ElmConn();
     auto MPs2Elm = p_MPs->getData<MPF_Tgt_Elm_ID>();
-    const auto vtxCoords = p_mesh->getMeshField<polyMPO::MeshF_VtxCoords>(); 
+    const auto vtxCoords = p_mesh->getMeshField<polyMPO::MeshF_VtxCoords>();
     auto mpPositions = p_MPs->getData<MPF_Cur_Pos_XYZ>();
     Kokkos::View<Vec2d*[maxVtxsPerElm]> edgeCenters("EdgeCenters",numElms);
-   
+
     Kokkos::parallel_for("calcEdgeCenter", numElms, KOKKOS_LAMBDA(const int elm){  
         int numVtx = elm2VtxConn(elm,0);
         int v[maxVtxsPerElm];
@@ -150,7 +143,7 @@ void MPMesh::CVTTrackingEdgeCenterBased(Vec2dView dx){
             edgeCenters(elm,i) = (v_ip1 + v_i)*0.5;
         }
     });
-   
+
     auto CVTEdgeTracking = PS_LAMBDA(const int& elm, const int& mp, const int& mask){
         Vec2d MP(mpPositions(mp,0),mpPositions(mp,1));//XXX:the input is XYZ, but we only support 2d vector
         if(mask){
@@ -173,7 +166,7 @@ void MPMesh::CVTTrackingEdgeCenterBased(Vec2dView dx){
                     }
                     if(currentDistSq < minDistSq){
                         edgeIndex = i+1;
-                        minDistSq = currentDistSq;    
+                        minDistSq = currentDistSq;
                     }
                 }
                 if(edgeIndex <0){
@@ -232,7 +225,7 @@ void MPMesh::CVTTrackingElmCenterBased(const int printVTPIndex){
                 
                 Vec3d center(elmCenter(iElm, 0), elmCenter(iElm, 1), elmCenter(iElm, 2));
                 Vec3d delta = MPnew - center;
-		
+
                 double minDistSq = delta[0]*delta[0] + delta[1]*delta[1] + delta[2]*delta[2];
                 int closestElm = -1;
                 //go through all the connected elm, calc distance

@@ -8,7 +8,7 @@ namespace polyMPO{
 DoubleView MPMesh::assemblyV0(){
   int numVtxs = p_mesh->getNumVertices();
   auto elm2VtxConn = p_mesh->getElm2VtxConn();
-    
+
   DoubleView vField("vField2",numVtxs);
   auto mpPositions = p_MPs->getData<MPF_Cur_Pos_XYZ>(); //get the array of MP coordinates/positions
   auto assemble = PS_LAMBDA(const int& elm, const int& mp, const int& mask) {
@@ -30,7 +30,7 @@ void MPMesh::assemblyVtx0(){
   Kokkos::Timer timer;
 
   constexpr MaterialPointSlice mpfIndex = meshFieldIndexToMPSlice<meshFieldIndex>;
-  auto elm2VtxConn = p_mesh->getElm2VtxConn();  
+  auto elm2VtxConn = p_mesh->getElm2VtxConn();
   auto mpData = p_MPs->getData<mpfIndex>();
   const int numEntries = mpSliceToNumEntries<mpfIndex>();
 
@@ -88,10 +88,10 @@ void MPMesh::assemblyElm0() {
   
   Kokkos::MDRangePolicy<Kokkos::Rank<2>> policy({0,0},{numElms, numEntries});
   Kokkos::parallel_for("assembly average", policy, KOKKOS_LAMBDA(const int elm, const int entry){
-    if (mpsPerElm(elm) > 0){ 
+    if (mpsPerElm(elm) > 0){
       meshField(elm, entry) /= mpsPerElm(elm);
-    }  
-  }); 
+    }
+  });
   pumipic::RecordTime("PolyMPO_Reconstruct_Elm0", timer.seconds());
 }
 
@@ -104,7 +104,7 @@ void MPMesh::reconstruct_coeff_full(){
   MPI_Comm_size(comm, &numProcsTot);
 
   //Mesh Information
-  auto elm2VtxConn = p_mesh->getElm2VtxConn();  
+  auto elm2VtxConn = p_mesh->getElm2VtxConn();
   int numVtx = p_mesh->getNumVertices();
   auto vtxCoords = p_mesh->getMeshField<polyMPO::MeshF_VtxCoords>();
   int numVertices = p_mesh->getNumVertices();
@@ -113,7 +113,7 @@ void MPMesh::reconstruct_coeff_full(){
 
   //Material Points
   calcBasis();
-  
+
   auto weight = p_MPs->getData<MPF_Basis_Vals>();
   auto mpPos = p_MPs->getData<MPF_Cur_Pos_XYZ>();
 
@@ -169,10 +169,8 @@ void MPMesh::reconstruct_coeff_full(){
   invertMatrix(vtxMatrices, radius);
 }
 
-void MPMesh::invertMatrix(const Kokkos::View<double**>& vtxMatrices, const double& radius){  
-  static int count_deb = 1;
-  std::cout<<__FUNCTION__<<count_deb<<"========================="<<std::endl;
-   
+void MPMesh::invertMatrix(const Kokkos::View<double**>& vtxMatrices, const double& radius){
+  std::cout<<__FUNCTION__<<std::endl;
   int nVertices = p_mesh->getNumVertices();
   auto vtxCoords = p_mesh->getMeshField<polyMPO::MeshF_VtxCoords>();
   auto dual_triangle_area = p_mesh->getMeshField<MeshF_DualTriangleArea>();
@@ -187,12 +185,12 @@ void MPMesh::invertMatrix(const Kokkos::View<double**>& vtxMatrices, const doubl
   Kokkos::parallel_for("invertMatrix", nVertices, KOKKOS_LAMBDA(const int vtx){
     if(vtxMatrices(vtx, 0) < eps)
       return;
-    
+
     auto small = eps * vtxMatrices(vtx, 0) * dual_triangle_area(vtx, 0)/(radius*radius);
     auto truncate = truncateFactor * vtxMatrices(vtx, 0) * dual_triangle_area(vtx, 0)/(radius*radius);
-    
+
     double X = vtxCoords(vtx, 0)/radius;
-    double Y = vtxCoords(vtx, 1)/radius;   
+    double Y = vtxCoords(vtx, 1)/radius;
     double Z = vtxCoords(vtx, 2)/radius;
     if(isRotated){
       X = -vtxCoords(vtx, 2)/radius;
@@ -226,16 +224,16 @@ void MPMesh::invertMatrix(const Kokkos::View<double**>& vtxMatrices, const doubl
     subM(2, 1) = subM(1, 2);
 
     auto subM1 = (rotateScaleM.transpose())*(subM*rotateScaleM);
-   
+
     Vec3d mVec = {vtxMatrices(vtx, 1), vtxMatrices(vtx, 2), vtxMatrices(vtx, 3)};
     auto blockC = rotateScaleM * mVec;
-    
+
     auto trG = subM1(0, 0) + subM1(1, 1);
     if((trG < small) || (vtxMatrices(vtx, 0) < truncateFactor)){
       VtxCoeffs(vtx, 0, 0) = invM11;
       return;
     }
-  
+
     auto diffTr = subM1(0, 0)-subM1(1, 1);
     auto delG = sqrt(4.0 * pow(subM1(0, 1), 2) + pow(diffTr, 2));
     if(delG<small){
@@ -253,11 +251,11 @@ void MPMesh::invertMatrix(const Kokkos::View<double**>& vtxMatrices, const doubl
       subM1(1, 1) = 0.5 * (trG - diffTr * diffEig);
       subM1(0, 1) = (1.0 / delG) * subM1(0, 1) * diffEig;
     }
-    
-    double denom = subM1(0, 0) * subM1(1, 1) - pow(subM1(0, 1), 2) ;
+
+    double denom = subM1(0, 0) * subM1(1, 1) - pow(subM1(0, 1), 2);
     double minZ2 = (subM1(1, 1) * pow(subM1(0, 2), 2) + subM1(0, 0) * pow(subM1(1, 2), 2) - 2.0 * subM1(0, 1) * subM1(0, 2) * subM1(1, 2))/denom;
     subM1(2, 2) = Kokkos::max(subM1(2, 2), abs(minZ2) +  truncate);
-   
+
     double invM2D[6]={0.0};
     invM2D[0] = subM1(2, 2) * subM1(1, 1) - subM1(1, 2) * subM1(1, 2);
     invM2D[1] = subM1(0, 2) * subM1(1, 2) - subM1(2, 2) * subM1(0, 1);
@@ -279,35 +277,12 @@ void MPMesh::invertMatrix(const Kokkos::View<double**>& vtxMatrices, const doubl
     VtxCoeffs(vtx, 0, 1) = temp[0];
     VtxCoeffs(vtx, 0, 2) = temp[1];
     VtxCoeffs(vtx, 0, 3) = temp[2];
-   
-    //Debugging 
-    /*
-    if(vtx == 10){
-      printf("Matrices %d vtx \n", vtx);
-      printf("[ %.15e  %.15e  %.15e  %.15e ]\n", vtxMatrices(vtx,0), vtxMatrices(vtx,1), vtxMatrices(vtx,2), vtxMatrices(vtx,3));
-      printf("[ %.15e  %.15e  %.15e  %.15e ]\n", vtxMatrices(vtx,1), vtxMatrices(vtx,4), vtxMatrices(vtx,5), vtxMatrices(vtx,6));
-      printf("[ %.15e  %.15e  %.15e  %.15e ]\n", vtxMatrices(vtx,2), vtxMatrices(vtx,5), vtxMatrices(vtx,7), vtxMatrices(vtx,8));
-      printf("[ %.15e  %.15e  %.15e  %.15e ]\n", vtxMatrices(vtx,3), vtxMatrices(vtx,6), vtxMatrices(vtx,8), vtxMatrices(vtx,9));
-      printf("Coefficients %d vtx \n", vtx);
-      for (int i=0; i<4; i++) printf("%.15e   ", VtxCoeffs(vtx, 0, i));
-      printf("\n");
-      printf("%.15e \n", invM11);
-      for (int i=0; i<3; i++) printf("%.15e   ", iBlockC[i]);
-      printf("\n");
-      for (int i=0; i<3; i++) printf("%.15e   ", blockC[i]);
-      printf("\n");
-      for (int i=0; i<6; i++) printf("%.15e   ", invM2D[i]);
-      printf("\n");
-      printf("%.15e \n", minZ2);
-    }
-    */
   });
   this->precomputedVtxCoeffs_new = VtxCoeffs;
-  count_deb++;
 }
 
 template <MeshFieldIndex meshFieldIndex>
-void MPMesh::assemblyVtx1() {
+void MPMesh::assemblyVtx1(){
   std::cout<<__FUNCTION__<<std::endl;
   Kokkos::Timer timer;
 
@@ -319,7 +294,7 @@ void MPMesh::assemblyVtx1() {
   auto VtxCoeffs_new=this->precomputedVtxCoeffs_new;
 
   //Mesh Information
-  auto elm2VtxConn = p_mesh->getElm2VtxConn();  
+  auto elm2VtxConn = p_mesh->getElm2VtxConn();
   int numVtx = p_mesh->getNumVertices();
   auto vtxCoords = p_mesh->getMeshField<polyMPO::MeshF_VtxCoords>();
   int numVertices = p_mesh->getNumVertices();
@@ -348,11 +323,11 @@ void MPMesh::assemblyVtx1() {
         int vID = elm2VtxConn(elm,i+1)-1;
         double w_vtx=weight(mp,i); 
         double CoordDiffs[vec4d_nEntries] = {1, (-vtxCoords(vID,0) + mpPositions(mp,0))/radius,
-                                                (-vtxCoords(vID,1) + mpPositions(mp,1))/radius, 
+                                                (-vtxCoords(vID,1) + mpPositions(mp,1))/radius,
                                                 (-vtxCoords(vID,2) + mpPositions(mp,2))/radius};
 
-        auto factor = w_vtx*(VtxCoeffs_new(vID,0, 0) + VtxCoeffs_new(vID,0, 1)*CoordDiffs[1] + 
-                                                       VtxCoeffs_new(vID,0, 2)*CoordDiffs[2] + 
+        auto factor = w_vtx*(VtxCoeffs_new(vID,0, 0) + VtxCoeffs_new(vID,0, 1)*CoordDiffs[1] +
+                                                       VtxCoeffs_new(vID,0, 2)*CoordDiffs[2] +
                                                        VtxCoeffs_new(vID,0, 3)*CoordDiffs[3]);
 
         for (int k=0; k<numEntries; k++){
@@ -370,19 +345,6 @@ void MPMesh::assemblyVtx1() {
   if(numProcsTot>1) 
     communicate_and_take_halo_contributions(meshField, numVertices, numEntries, 0, 0);
   pumipic::RecordTime("Communicate Field Values" + std::to_string(self), timer.seconds());
-
-  //Debugging
-  /*
-  assert(cudaDeviceSynchronize() == cudaSuccess);
-  Kokkos::parallel_for("printSymmetricBlock", numVertices, KOKKOS_LAMBDA(const int vtx){
-    if (vtx >= 10 && vtx <= 10) {
-      printf("Field in %d:  ", vtx);
-      for (int k=0; k<numEntries; k++)
-        printf("  %.15e ", meshField(vtx, k));
-      printf("\n");
-    }
-  });
-  */  
 }
 
 //Start Communication routine
@@ -390,7 +352,7 @@ void MPMesh::startCommunication(){
   std::cout<<__FUNCTION__<<std::endl;
   Kokkos::Timer timer;
   int self, numProcsTot;
-  MPI_Comm comm = p_MPs->getMPIComm(); 
+  MPI_Comm comm = p_MPs->getMPIComm();
   MPI_Comm_rank(comm, &self);
   MPI_Comm_size(comm, &numProcsTot); 
 
@@ -530,52 +492,14 @@ void MPMesh::startCommunication(){
   MPI_Waitall(requests.size(), requests.data(), MPI_STATUSES_IGNORE);
 
   pumipic::RecordTime("Start Communication" + std::to_string(self), timer.seconds());
-   
-  /*
-  printf("Rank %d Owners %d Halos %d Total %d \n", self, numOwnersTot, numHalosTot, numEntities);
-  for (int i=0; i<numProcsTot; i++){
-    printf("Rank %d has %d halos which are owners in other rank %d \n", self, numOwnersOnOtherProcs[i], i);
-    printf("Rank %d has %d owners wicch are halos in other rank %d \n", self, numHalosOnOtherProcs[i], i);
-  }
-  MPI_Barrier(comm);
-  //Check rank 0 sending to rank 1
-  if(self==0){
-    for (int i=0; i<numHalosTot; i++)
-      if( entOwners_host(numOwnersTot+i)==1 )
-        printf("Halo Element with lid %d, gid %d and owner %d \n",  numOwnersTot+i, ent2global_host(numOwnersTot+i), entOwners_host(numOwnersTot+i));
-  }
-  MPI_Barrier(comm);
-  if(self==0){
-    for (int i=0; i<sendBufs[1].size(); i++)
-      printf("Sending GIDs to rank 1 %d \n", sendBufs[1][i]);
-  }
-  MPI_Barrier(comm);
-  //Check rank 1 receiving global IDs from rank 0
-  if(self==1){
-    for (int i=0; i<recvBufs[0].size(); i++)
-      printf("Receving GIDs from rank 0 %d \n", recvBufs[0][i]);
-  }
-  MPI_Barrier(comm);
-  //Check if now Rank 0 has the lids corresponing to rank 1
-  if(self==1){
-    for (int i=0; i<ownerOwnerLocalIDs[0].size(); i++)
-      printf("LIDs in owned rank 1 %d \n", ownerOwnerLocalIDs[0][i]);
-  }
-  MPI_Barrier(comm);
-  //Checking if they have received them back
-  if(self==0){
-    for (int i=0; i<haloOwnerLocalIDs[1].size(); i++)
-      printf("Owner LID in rank 0 %d \n", haloOwnerLocalIDs[1][i]);
-  }
-  */
 }
 
 void MPMesh::communicate_and_take_halo_contributions(const Kokkos::View<double**>& meshField, int nEntities, int numEntries, int mode, int op){
   int self;
   MPI_Comm comm = p_MPs->getMPIComm();
   MPI_Comm_rank(comm, &self);
-  
-  Kokkos::Timer timer; 
+
+  Kokkos::Timer timer;
   auto reconVals_host = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), meshField);
   Kokkos::fence();
   std::vector<std::vector<double>> fieldData(nEntities, std::vector<double>(numEntries, 0.0));
@@ -583,9 +507,9 @@ void MPMesh::communicate_and_take_halo_contributions(const Kokkos::View<double**
     for (int j = 0; j < numEntries; ++j) {
       fieldData[i][j] = reconVals_host(i, j);
     }
-  } 
+  }
   pumipic::RecordTime("Communication-GPU to CPU-E-" + std::to_string(numEntries) + "-" + std::to_string(self), timer.seconds());
-  
+
   timer.reset();
   std::vector<std::vector<int>>    recvIDVec;
   std::vector<std::vector<double>> recvDataVec;
@@ -644,18 +568,6 @@ void MPMesh::communicate_and_take_halo_contributions(const Kokkos::View<double**
   });
   Kokkos::fence();
   pumipic::RecordTime("Communication-GPU reduction-E-" + std::to_string(numEntries) + "-" + std::to_string(self), timer.seconds());
-  
-  /*
-  if(self==1){
-    for (int i=0; i< totalSize; i++){
-      if(flatDataVec[i*numEntries]==0) continue;
-      printf("FlatIDs %d \n", flatIDVec[i]);
-      for (int j=0; j<numEntries; j++)
-        printf(" %.15e ", flatDataVec[i*numEntries+j]);
-      printf("\n");
-    }
-  }
-  */
 }
 
 void MPMesh::communicateFields(const std::vector<std::vector<double>>& fieldData, const int numEntities, const int numEntries, int mode, 
@@ -666,19 +578,19 @@ void MPMesh::communicateFields(const std::vector<std::vector<double>>& fieldData
   MPI_Comm_size(comm, &numProcsTot);
 
   assert(numEntities == numOwnersTot + numHalosTot);
-  
+
   std::vector<std::vector<double>> sendDataVec(numProcsTot);
-  
+
   recvIDVec.resize(numProcsTot);
   recvDataVec.resize(numProcsTot);
 
   for(int i = 0; i < numProcsTot; i++){
     if(i==self) continue;
-    
+
     int numToSend = 0, numToRecv = 0; 
     if(mode == 0) {
       //gather (halos send to owners)
-      numToSend = numOwnersOnOtherProcs[i]; 
+      numToSend = numOwnersOnOtherProcs[i];
       numToRecv = numHalosOnOtherProcs[i];
     }
     else{ 
@@ -686,7 +598,7 @@ void MPMesh::communicateFields(const std::vector<std::vector<double>>& fieldData
       numToSend = numHalosOnOtherProcs[i];
       numToRecv = numOwnersOnOtherProcs[i];
     }
- 
+
     if(numToSend > 0){
       sendDataVec[i].reserve(numToSend*numEntries);
     }
@@ -695,7 +607,7 @@ void MPMesh::communicateFields(const std::vector<std::vector<double>>& fieldData
       recvIDVec[i].resize(numToRecv);
     }
   }
-  
+
   if(mode == 0){
     // Halos sends to owners
     for (int iEnt = 0; iEnt < numHalosTot; iEnt++){
@@ -715,8 +627,8 @@ void MPMesh::communicateFields(const std::vector<std::vector<double>>& fieldData
   }
 
   std::vector<MPI_Request> requests;
-  requests.reserve(4*numProcsTot); 
-  for(int proc = 0; proc < numProcsTot; proc++){ 
+  requests.reserve(4*numProcsTot);
+  for(int proc = 0; proc < numProcsTot; proc++){
     if(proc == self) continue;  
     if(mode == 0 && numHalosOnOtherProcs[proc]){
       assert(recvIDVec[proc].size() == (size_t)numHalosOnOtherProcs[proc]);
@@ -754,43 +666,6 @@ void MPMesh::communicateFields(const std::vector<std::vector<double>>& fieldData
   }
 
   MPI_Waitall(requests.size(), requests.data(), MPI_STATUSES_IGNORE);
-
-  /*
-  static int count_deb=0;
-  if(self==0) std::cout<<"====================="<<count_deb<<"========================"<<std::endl;
-  count_deb++;
-  MPI_Barrier(comm);
-  if((self==0 || self==1) && (count_deb==1)){
-    for (int proc = 0; proc < numProcsTot; ++proc) {
-      int sendIDs = (int)haloOwnerLocalIDs[proc].size();
-      int sendD   = (int)sendDataVec[proc].size();
-      int recvIDs = (int)recvIDVec[proc].size();
-      int recvD   = (int)recvDataVec[proc].size();
-      printf("[Rank %d]->sending %d %d Receiving<-from [proc %d] %d %d \n", self, sendIDs, sendD, proc, recvIDs, recvD);
-    }
-  }
-  MPI_Barrier(comm);  
-  if(self==0){ //Rank 0 sending its halos to rank 1
-    for (int i = 0; i < haloOwnerLocalIDs[1].size(); i++) {
-      if(sendDataVec[1][i*numEntries] == 0 ) continue;
-      printf("i %d EntInd %d sent from rank 0 \n", i, haloOwnerLocalIDs[1][i]);
-      for (int j=0; j<numEntries; j++)
-        printf(" %.15e ", sendDataVec[1][i*numEntries+j]);
-      printf("\n");
-    }
-  }
-  MPI_Barrier(comm);
-  if(self==1){ //Rank 1 receiving from rank 0
-    for (int i = 0; i < recvIDVec[0].size(); i++) {
-      if(recvDataVec[0][i*numEntries] == 0 ) continue;
-      printf("i %d EntInd %d recv in rank 1 \n", i, recvIDVec[0][i]);
-      for (int j = 0; j < numEntries; j++)
-        printf(" %.15e ", recvDataVec[0][i*numEntries+j]);
-      printf("\n");
-    }
-  }
-  MPI_Barrier(comm);
-  */
 }
 
 template <MeshFieldIndex meshFieldIndex>
@@ -818,11 +693,11 @@ DoubleView MPMesh::wtScaAssembly(){
   int numVtxs = p_mesh->getNumVertices(); // total number of vertices of the mesh
   auto elm2VtxConn = p_mesh->getElm2VtxConn();
   auto mpPositions = p_MPs->getData<MPF_Cur_Pos_XYZ>();
-    
+
   DoubleView vField("wtScaField", numVtxs); // Kokkos array of double type, size = numVtxs
 
   auto mpData = p_MPs->getData<index>();
-    
+
   auto assemble = PS_LAMBDA(const int& elm, const int& mp, const int& mask) {
     if (mask) {
       /* get the coordinates of all the vertices of elm */
@@ -830,7 +705,7 @@ DoubleView MPMesh::wtScaAssembly(){
       Vec2d eVtxCoords[maxVtxsPerElm + 1];
       for (int i = 1; i <= nElmVtxs; i++) {
         // elm2VtxConn(elm,i) is the vertex ID (1-based index) of vertex #i of elm
-        eVtxCoords[i-1][0] = vtxCoords(elm2VtxConn(elm,i)-1,0);    
+        eVtxCoords[i-1][0] = vtxCoords(elm2VtxConn(elm,i)-1,0);
         eVtxCoords[i-1][1] = vtxCoords(elm2VtxConn(elm,i)-1,1);
       }
       // last component of eVtxCoords stores the firs vertex (to avoid if-condition in the Wachspress computation)
@@ -863,11 +738,11 @@ Vec2dView MPMesh::wtVec2Assembly(){
   int numVtxs = p_mesh->getNumVertices(); // total number of vertices of the mesh
   auto elm2VtxConn = p_mesh->getElm2VtxConn();
   auto mpPositions = p_MPs->getData<MPF_Cur_Pos_XYZ>();
-   
+
   Vec2dView vField("wtVec2Field", numVtxs); // Kokkos array of Vec2d type, size = numVtxs
 
   auto mpData = p_MPs->getData<index>();
-   
+
   auto assemble = PS_LAMBDA(const int& elm, const int& mp, const int& mask) {
     if (mask) {
       /* collect the coordinates of all the vertices of elm */
@@ -881,7 +756,7 @@ Vec2dView MPMesh::wtVec2Assembly(){
       // last component of eVtxCoords stores the firs vertex (to avoid if-condition in the Wachspress computation)
       eVtxCoords[nElmVtxs][0] = vtxCoords(elm2VtxConn(elm,1)-1,0);
       eVtxCoords[nElmVtxs][1] = vtxCoords(elm2VtxConn(elm,1)-1,1);
-       
+
       /* compute the values of basis functions at mp position */
       double basisByArea[maxElmsPerVtx];
       Vec2d mpCoord(mpPositions(mp,0), mpPositions(mp,1));

@@ -21,10 +21,10 @@ void sphericalInterpolation(MPMesh& mpMesh){
   auto p_MPs = mpMesh.p_MPs;
   auto MPsPosition = p_MPs->getPositions();
   auto MPsBasis = p_MPs->getData<MPF_Basis_Vals>();
- 
+
   constexpr MaterialPointSlice mpfIndex = meshFieldIndexToMPSlice<meshFieldIndex>;
   auto mpField = p_MPs->getData<mpfIndex>();
-    
+
   const int numEntries = mpSliceToNumEntries<mpfIndex>();
   auto meshField = p_mesh->getMeshField<meshFieldIndex>(); 
 
@@ -55,7 +55,7 @@ void wachpress_weights_grads_2D(int numVtx, const Kokkos::View<double[maxVtxsPer
   }
   vertCoords[0][numVtx] = vertCoords[0][0];
   vertCoords[1][numVtx] = vertCoords[1][0];
-  
+
   //Compute areaV and areaXV
   double areaV[maxVtxsPerElm];
   double areaXV[maxVtxsPerElm];
@@ -65,14 +65,14 @@ void wachpress_weights_grads_2D(int numVtx, const Kokkos::View<double[maxVtxsPer
   auto triArea = [&](const double p1[2], const double p2[2], const double p3[2]) -> double {
     return 0.5 * (p1[0] * (p2[1] - p3[1]) - p2[0] * (p1[1] - p3[1]) + p3[0] * (p1[1] - p2[1]));
   };
-  
+
   //Special case
   double p1[2] = { vertCoords[0][numVtx - 1], vertCoords[1][numVtx - 1] };
   double p2[2] = { vertCoords[0][0], vertCoords[1][0] };
   double p3[2] = { vertCoords[0][1], vertCoords[1][1] };
   areaV[0] = triArea(p1, p2, p3);
   areaXV[0] = triArea(p2, xy, p3);
-  
+
   for (int i = 1; i < numVtx; ++i) {
     double p1[2] = { vertCoords[0][i - 1], vertCoords[1][i - 1] };
     double p2[2] = { vertCoords[0][i], vertCoords[1][i] };
@@ -103,7 +103,7 @@ void wachpress_weights_grads_2D(int numVtx, const Kokkos::View<double[maxVtxsPer
       }
       product_dx[0] = product_dx[0] * 0.5 * (vertCoords[1][ind1+1]- vertCoords[1][ind1]);
       product_dx[1] = -product_dx[1] * 0.5 * (vertCoords[0][ind1+1]- vertCoords[0][ind1]);
-            
+
       product_sum[0] += product_dx[0];
       product_sum[1] += product_dx[1];
     }
@@ -116,15 +116,13 @@ void wachpress_weights_grads_2D(int numVtx, const Kokkos::View<double[maxVtxsPer
     derivative_sum[0] += product_sum[0];
     derivative_sum[1] += product_sum[1];
   }
-  
+
   for (int i = 0; i < numVtx; ++i){
     grad_basis[i*2 + 0] = derivative[0][i] / denominator - (W[i] / (denominator * denominator)) * derivative_sum[0];
     grad_basis[i*2 + 0] = grad_basis[i*2 + 0] / 6371229;  
     grad_basis[i*2 + 1] = derivative[1][i] / denominator - (W[i] / (denominator * denominator)) * derivative_sum[1];
     grad_basis[i*2 + 1] = grad_basis[i*2 + 1] / 6371229; 
     basis[i] = W[i] / denominator;
-    //printf("GVS %.15e %.15e \n", gnom_vtx_subview(i, 0), gnom_vtx_subview(i, 1));
-    //printf("Grad result %.15e %.15e \n", grad_basis[i*2 + 0], grad_basis[i*2 + 1]);
   }
 }
 

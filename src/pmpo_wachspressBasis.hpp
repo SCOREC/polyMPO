@@ -10,7 +10,7 @@ namespace polyMPO{
 template <MeshFieldIndex meshFieldIndex>
 void sphericalInterpolation(MPMesh& mpMesh){
   Kokkos::Timer timer;
-  
+
   auto p_mesh = mpMesh.p_mesh;
   auto vtxCoords = p_mesh->getMeshField<polyMPO::MeshF_VtxCoords>();
   int numVtxs = p_mesh->getNumVertices();

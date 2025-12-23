@@ -69,11 +69,11 @@ void polympo_startCommunication_f(MPMesh_ptr p_mpmesh){
 
 //MP info
 void polympo_createMPs_f(MPMesh_ptr p_mpmesh,
-                       const int numElms,
-                       const int numMPs, // total number of MPs which is >= number of active MPs
-                       int* mpsPerElm,
-                       const int* mp2Elm,
-                       const int* isMPActive) {
+                         const int numElms,
+                         const int numMPs, // total number of MPs which is >= number of active MPs
+                         int* mpsPerElm,
+                         const int* mp2Elm,
+                         const int* isMPActive){
   checkMPMeshValid(p_mpmesh);
   //the mesh must be fixed/set before adding MPs
   auto p_mesh = ((polyMPO::MPMesh*)p_mpmesh)->p_mesh;
@@ -204,12 +204,12 @@ void polympo_startRebuildMPs_f(MPMesh_ptr p_mpmesh,
 }
 
 void polympo_startRebuildMPs2_f(MPMesh_ptr p_mpmesh,
-                         const int sizeMP2elm,
-                         const int* elem_ids,
-                         const int nMPs_delete,
-                         const int nMPs_add,
-                         int* recvMPs_elm,
-                         int* recvMPs_ids) {
+                                const int sizeMP2elm,
+                                const int* elem_ids,
+                                const int nMPs_delete,
+                                const int nMPs_add,
+                                int* recvMPs_elm,
+                                int* recvMPs_ids) {
 
   Kokkos::Timer timer;
   checkMPMeshValid(p_mpmesh);
@@ -263,9 +263,7 @@ void polympo_setAppIDFunc_f(MPMesh_ptr p_mpmesh, IntVoidFunc getNext, void* appI
   p_MPs->setAppIDFunc(getNextAppID);
 }
 
-void polympo_getMPTgtElmID_f(MPMesh_ptr p_mpmesh,
-                            const int numMPs,
-                            int* elmIDs){
+void polympo_getMPTgtElmID_f(MPMesh_ptr p_mpmesh, const int numMPs, int* elmIDs){
   Kokkos::Timer timer;
   checkMPMeshValid(p_mpmesh);
   auto p_MPs = ((polyMPO::MPMesh*)p_mpmesh)->p_MPs;
@@ -288,9 +286,7 @@ void polympo_getMPTgtElmID_f(MPMesh_ptr p_mpmesh,
   pumipic::RecordTime("PolyMPO_getMPTgtElmID", timer.seconds());
 }
 
-void polympo_getMPCurElmID_f(MPMesh_ptr p_mpmesh,
-                             const int numMPs,
-                             int* elmIDs){
+void polympo_getMPCurElmID_f(MPMesh_ptr p_mpmesh, const int numMPs, int* elmIDs){
   checkMPMeshValid(p_mpmesh);
   auto p_MPs = ((polyMPO::MPMesh*)p_mpmesh)->p_MPs;
   PMT_ALWAYS_ASSERT(numMPs >= p_MPs->getCount());

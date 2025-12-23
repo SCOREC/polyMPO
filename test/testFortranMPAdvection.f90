@@ -106,7 +106,7 @@ module advectionTests
 
     call polympo_setMPMass(mpMesh,1,numMPs,c_loc(mpMass))
     call polympo_setMPVel(mpMesh,2,numMPs,c_loc(mpVel))
-    
+
     ! Although this test just does 0th order reconstruction testing, and just needs the BasisSlice,
     ! calculating the coefficeints too as that will involve calculating the Basis Slice
     call polympo_reconstruct_coeff_with_MPI(mpmesh)
@@ -164,7 +164,7 @@ module advectionTests
     meshVtxMass = TEST_VAL
     meshElmMass = TEST_VAL
     meshVtxVel = TEST_VAL
-    
+
     do j = 1, numPush
       call polympo_setMPPositions(mpMesh,3,numMPs,c_loc(mpPosition))
       call polympo_setMeshVtxOnSurfDispIncr(mpMesh,nCompsDisp,nVertices,c_loc(dispIncr))

@@ -166,7 +166,6 @@ program main
     end do
   end do
 
-
   call polympo_deleteMPMesh(mpMesh)
   call polympo_finalize()
 

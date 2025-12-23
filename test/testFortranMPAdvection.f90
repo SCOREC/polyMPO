@@ -14,9 +14,9 @@ module advectionTests
     integer, dimension(:,:), pointer :: verticesOnCell
     real(kind=MPAS_RKIND), dimension(:), pointer :: lonCell
     real(kind=MPAS_RKIND) :: normalizedLong, min, max
-    
+
     allocate(owningProc(nCells))
-    
+
     min = 1000
     max = -1000
     do i = 1, nCells
@@ -74,10 +74,8 @@ module advectionTests
 
     call calcSurfDispIncr(mpMesh, latVertex, lonVertex, nEdgesOnCell, verticesOnCell, nVertices, sphereRadius, -numPush)
     call polympo_push(mpMesh)
-   
+
   end subroutine
-
-
 
   subroutine runReconstructionTest(mpMesh, numMPs, numPush, nCells, nVertices, mp2Elm, &
                                   latVertex, lonVertex, nEdgesOnCell, verticesOnCell, sphereRadius)
@@ -274,7 +272,7 @@ program main
                         latVertex, &
                         xCell, yCell, zCell, &
                         verticesOnCell, cellsOnCell)
- 
+
   call polympo_setGnomonicProjection(mpMesh)
 
   call polympo_setMPICommunicator(mpMesh, mpi_comm_handle);
@@ -368,7 +366,7 @@ program main
   call polympo_createMPs(mpMesh,nCells,numMPs,c_loc(mpsPerElm),c_loc(mp2Elm),c_loc(isMPActive))
   call polympo_setMPRotLatLon(mpMesh,2,numMPs,c_loc(mpLatLon))
   call polympo_setMPPositions(mpMesh,3,numMPs,c_loc(mpPosition))
- 
+
   if (testType == "API") then
     call runApiTest(mpMesh, numMPs, nVertices, nCells, numPush, mpLatLon, mpPosition, xVertex, yVertex, zVertex, latVertex)
   else if (testType == "MIGRATION") then

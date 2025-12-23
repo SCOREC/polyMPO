@@ -46,7 +46,7 @@ void sphericalInterpolation(MPMesh& mpMesh){
 KOKKOS_INLINE_FUNCTION
 void wachpress_weights_grads_2D(int numVtx, const Kokkos::View<double[maxVtxsPerElm][2], 
                                 Kokkos::LayoutStride, Kokkos::MemoryTraits<Kokkos::Unmanaged>>& gnom_vtx_subview, 
-                                double mpProjX, double mpProjY, double* basis, double* grad_basis){
+                                double mpProjX, double mpProjY, double radius, double* basis, double* grad_basis){
 
   double vertCoords[2][maxVtxsPerElm + 1];
   for (int i = 0; i < numVtx; ++i) {
@@ -119,9 +119,9 @@ void wachpress_weights_grads_2D(int numVtx, const Kokkos::View<double[maxVtxsPer
 
   for (int i = 0; i < numVtx; ++i){
     grad_basis[i*2 + 0] = derivative[0][i] / denominator - (W[i] / (denominator * denominator)) * derivative_sum[0];
-    grad_basis[i*2 + 0] = grad_basis[i*2 + 0] / 6371229;  
+    grad_basis[i*2 + 0] = grad_basis[i*2 + 0] / radius;  
     grad_basis[i*2 + 1] = derivative[1][i] / denominator - (W[i] / (denominator * denominator)) * derivative_sum[1];
-    grad_basis[i*2 + 1] = grad_basis[i*2 + 1] / 6371229; 
+    grad_basis[i*2 + 1] = grad_basis[i*2 + 1] / radius; 
     basis[i] = W[i] / denominator;
   }
 }

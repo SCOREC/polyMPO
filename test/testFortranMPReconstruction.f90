@@ -29,7 +29,7 @@ program main
   real(kind=MPAS_RKIND), dimension(:), pointer :: latVertex, lonVertex
   real(kind=MPAS_RKIND), dimension(:), pointer :: xCell, yCell, zCell
   real(kind=MPAS_RKIND), dimension(:), pointer :: areaTriangle
-  
+
   integer, dimension(:,:), pointer :: verticesOnCell, cellsOnCell
   integer :: numMPs, vID
   integer, dimension(:), pointer :: mpsPerElm, mp2Elm, isMPActive, globalElms
@@ -79,7 +79,7 @@ program main
                         latVertex, &
                         xCell, yCell, zCell, &
                         verticesOnCell, cellsOnCell, areaTriangle)
-  
+
   call polympo_setGnomonicProjection(mpMesh)
   nCompsDisp = 2
   allocate(dispIncr(nCompsDisp,nVertices))
@@ -112,7 +112,7 @@ program main
     mpPosition(2,i) = yCell(i)
     mpPosition(3,i) = zCell(i)
   end do
-  
+
   call polympo_setElmGlobal(mpMesh, nCells, c_loc(globalElms))
   call polympo_createMPs(mpMesh,nCells,numMPs,c_loc(mpsPerElm),c_loc(mp2Elm),c_loc(isMPActive))
   call polympo_setMPICommunicator(mpMesh, mpi_comm_handle)
@@ -145,7 +145,7 @@ program main
   do i = 1, nVertices
     call assert(meshVtxMass(i) < TEST_VAL+TOLERANCE .and. meshVtxMass(i) > TEST_VAL-TOLERANCE, "Error: wrong vtx mass")
   end do
-  
+
 
   ! Test push reconstruction
   do j = 1, 5
@@ -165,8 +165,8 @@ program main
             .and. meshElmMass(mp2Elm(i)) > TEST_VAL-TOLERANCE, "Error: wrong elm mass")
     end do
   end do
-  
-  
+
+
   call polympo_deleteMPMesh(mpMesh)
   call polympo_finalize()
 

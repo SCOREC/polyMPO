@@ -18,6 +18,10 @@ void MPMesh::calculateStrain(){
   auto gnomProjElmCenter = p_mesh->getMeshField<MeshF_ElmCenterGnomProj>();
   auto elm2VtxConn = p_mesh->getElm2VtxConn();
   auto velField = p_mesh->getMeshField<MeshF_Vel>();
+  double radius = 1.0;
+  if(p_mesh->getGeomType() == geom_spherical_surf)
+    radius=p_mesh->getSphereRadius();
+
   bool isRotated = p_mesh->getRotatedFlag();
 
   auto setMPStrainRate = PS_LAMBDA(const int& elm, const int& mp, const int& mask){
@@ -39,7 +43,7 @@ void MPMesh::calculateStrain(){
       double gradBasisByArea[2*maxVtxsPerElm] = {0.0};
       initArray(gradBasisByArea,maxVtxsPerElm,0.0);
 
-      wachpress_weights_grads_2D(numVtx, gnom_vtx_subview, mpProjX, mpProjY, basisByArea, gradBasisByArea);
+      wachpress_weights_grads_2D(numVtx, gnom_vtx_subview, mpProjX, mpProjY, radius, basisByArea, gradBasisByArea);
 
       double v11 = 0.0;
       double v12 = 0.0;
@@ -70,7 +74,10 @@ void MPMesh::calcBasis() {
 
   auto elm2VtxConn = p_mesh->getElm2VtxConn();
   auto vtxCoords = p_mesh->getMeshField<MeshF_VtxCoords>();
-  double radius = p_mesh->getSphereRadius();
+  double radius = 1.0;
+  if(p_mesh->getGeomType() == geom_spherical_surf)
+    radius=p_mesh->getSphereRadius();
+
   //For Gnomonic Projection
   auto gnomProjVtx = p_mesh->getMeshField<polyMPO::MeshF_VtxGnomProj>();
   auto gnomProjElmCenter = p_mesh->getMeshField<polyMPO::MeshF_ElmCenterGnomProj>();
@@ -90,14 +97,14 @@ void MPMesh::calcBasis() {
       auto gnomProjElmCenter_sub = Kokkos::subview(gnomProjElmCenter, elm, Kokkos::ALL);
       computeGnomonicProjectionAtPoint(position3d, gnomProjElmCenter_sub, mpProjX, mpProjY);
       auto gnom_vtx_subview = Kokkos::subview(gnomProjVtx, elm, Kokkos::ALL, Kokkos::ALL); 
-      
+
       double basisByArea[maxVtxsPerElm] = {0.0};
       initArray(basisByArea,maxVtxsPerElm, 0.0);
       double gradBasisByArea[2*maxVtxsPerElm] = {0.0};
       initArray(gradBasisByArea,maxVtxsPerElm, 0.0);
-            
-      wachpress_weights_grads_2D(numVtx, gnom_vtx_subview, mpProjX, mpProjY, basisByArea, gradBasisByArea);
-      
+
+      wachpress_weights_grads_2D(numVtx, gnom_vtx_subview, mpProjX, mpProjY, radius, basisByArea, gradBasisByArea);
+
       for(int i=0; i<= numVtx; i++){
         MPsBasis(mp,i) = basisByArea[i];
       }

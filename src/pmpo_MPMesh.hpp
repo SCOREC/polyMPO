@@ -29,7 +29,7 @@ class MPMesh{
     std::vector<int> numOwnersOnOtherProcs;
     std::vector<int> numHalosOnOtherProcs;
     std::vector<int>haloOwnerProcs;
-    std::vector<std::vector<int>> haloOwnerLocalIDs; 
+    std::vector<std::vector<int>> haloOwnerLocalIDs;
     std::vector<std::vector<int>> ownerOwnerLocalIDs;
     std::vector<std::vector<int>> ownerHaloLocalIDs;
 
@@ -37,7 +37,7 @@ class MPMesh{
     void communicateFields(const std::vector<std::vector<double>>& fieldData, const int numEntities, const int numEntries, int mode,
                            std::vector<std::vector<int>>& recvIDVec,  std::vector<std::vector<double>>& recvDataVec);
     void communicate_and_take_halo_contributions(const Kokkos::View<double**>& meshField, int nEntities, int numEntries, int mode, int op);
-    
+
     MPMesh(Mesh* inMesh, MaterialPoints* inMPs):
       p_mesh(inMesh), p_MPs(inMPs) {
     };

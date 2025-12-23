@@ -210,47 +210,47 @@ class MaterialPoints {
       ps::parallel_for(MPs, swap, "swap");
     }
     void updateMPSliceAll(){
-        updateMPElmID();
-        updateMPSlice<MPF_Cur_Pos_Rot_Lat_Lon,MPF_Tgt_Pos_Rot_Lat_Lon>();
-        updateMPSlice<MPF_Cur_Pos_XYZ,MPF_Tgt_Pos_XYZ>();
+      updateMPElmID();
+      updateMPSlice<MPF_Cur_Pos_Rot_Lat_Lon,MPF_Tgt_Pos_Rot_Lat_Lon>();
+      updateMPSlice<MPF_Cur_Pos_XYZ,MPF_Tgt_Pos_XYZ>();
     }
 
     void updateRotLatLonAndXYZ2Tgt(const double radius, const bool isRotated){
-        Kokkos::Timer timer;
-        auto curPosRotLatLon = MPs->get<MPF_Cur_Pos_Rot_Lat_Lon>();
-        auto tgtPosRotLatLon = MPs->get<MPF_Tgt_Pos_Rot_Lat_Lon>();
-        auto tgtPosXYZ = MPs->get<MPF_Tgt_Pos_XYZ>();
-        auto rotLatLonIncr = MPs->get<MPF_Rot_Lat_Lon_Incr>();
-        //Velocity   
-        auto velMPs = MPs->get<MPF_Vel>();
-        auto velIncr = MPs->get<MPF_Vel_Incr>();
+      Kokkos::Timer timer;
+      auto curPosRotLatLon = MPs->get<MPF_Cur_Pos_Rot_Lat_Lon>();
+      auto tgtPosRotLatLon = MPs->get<MPF_Tgt_Pos_Rot_Lat_Lon>();
+      auto tgtPosXYZ = MPs->get<MPF_Tgt_Pos_XYZ>();
+      auto rotLatLonIncr = MPs->get<MPF_Rot_Lat_Lon_Incr>();
+      //Velocity
+      auto velMPs = MPs->get<MPF_Vel>();
+      auto velIncr = MPs->get<MPF_Vel_Incr>();
 
-        auto mpAppID = MPs->get<MPF_MP_APP_ID>();
-         
-        auto updateRotLatLon = PS_LAMBDA(const int& elm, const int& mp, const int& mask){
-            if(mask){
-                auto rotLat = curPosRotLatLon(mp,0) + rotLatLonIncr(mp,0); // phi
-                auto rotLon = curPosRotLatLon(mp,1) + rotLatLonIncr(mp,1); // lambda   
-                tgtPosRotLatLon(mp,0) = rotLat;
-                tgtPosRotLatLon(mp,1) = rotLon;        
-                auto geoLat = rotLat;
-                auto geoLon = rotLon;
-                if(isRotated){
-                  auto xyz_rot = xyz_from_lat_lon(rotLat, rotLon, radius);
-                  auto xyz_geo = grid_rotation_backward(xyz_rot);
-                  lat_lon_from_xyz(geoLat, geoLon, xyz_geo, radius);
-                }	
-                // x=cosLon cosLat, y=sinLon cosLat, z= sinLat
-                tgtPosXYZ(mp,0) = radius * std::cos(geoLon) * std::cos(geoLat);
-                tgtPosXYZ(mp,1) = radius * std::sin(geoLon) * std::cos(geoLat);
-                tgtPosXYZ(mp,2) = radius * std::sin(geoLat);
-                velMPs(mp,0) = velMPs(mp,0) + velIncr(mp,0);
-                velMPs(mp,1) = velMPs(mp,1) + velIncr(mp,1);
-            } 
-        };
-        ps::parallel_for(MPs, updateRotLatLon,"updateRotationalLatitudeLongitude"); 
-        pumipic::RecordTime("PolyMPO_updateRotLatLonAndXYZ2Tgt", timer.seconds());
-    } 
+      auto mpAppID = MPs->get<MPF_MP_APP_ID>();
+
+      auto updateRotLatLon = PS_LAMBDA(const int& elm, const int& mp, const int& mask){
+        if(mask){
+          auto rotLat = curPosRotLatLon(mp,0) + rotLatLonIncr(mp,0); // phi
+          auto rotLon = curPosRotLatLon(mp,1) + rotLatLonIncr(mp,1); // lambda
+          tgtPosRotLatLon(mp,0) = rotLat;
+          tgtPosRotLatLon(mp,1) = rotLon;
+          auto geoLat = rotLat;
+          auto geoLon = rotLon;
+          if(isRotated){
+            auto xyz_rot = xyz_from_lat_lon(rotLat, rotLon, radius);
+            auto xyz_geo = grid_rotation_backward(xyz_rot);
+            lat_lon_from_xyz(geoLat, geoLon, xyz_geo, radius);
+          }
+          // x=cosLon cosLat, y=sinLon cosLat, z= sinLat
+          tgtPosXYZ(mp,0) = radius * std::cos(geoLon) * std::cos(geoLat);
+          tgtPosXYZ(mp,1) = radius * std::sin(geoLon) * std::cos(geoLat);
+          tgtPosXYZ(mp,2) = radius * std::sin(geoLat);
+          velMPs(mp,0) = velMPs(mp,0) + velIncr(mp,0);
+          velMPs(mp,1) = velMPs(mp,1) + velIncr(mp,1);
+        } 
+      };
+      ps::parallel_for(MPs, updateRotLatLon,"updateRotationalLatitudeLongitude"); 
+      pumipic::RecordTime("PolyMPO_updateRotLatLonAndXYZ2Tgt", timer.seconds());
+    }
 
     template <int index>
     auto getData() {

@@ -17,18 +17,15 @@ void polympo_deleteMPMesh_f(MPMesh_ptr p_mpmesh);
 //set MPI communicator
 void polympo_setMPICommunicator_f(MPMesh_ptr p_mpmesh, MPI_Fint fcomm);
 //TODO: add a function to get communicator
+void polympo_startCommunication_f(MPMesh_ptr p_mpmesh);
 
 //MP info
 void polympo_createMPs_f(MPMesh_ptr p_mpmesh, const int numElms, const int numMPs, int* mpsPerElm, const int* mp2Elm, const int* isMPActive);
 void polympo_startRebuildMPs_f(MPMesh_ptr p_mpmesh, const int numMPs, const int* allTgtMpElmIn, const int* addedMPMask);
 void polympo_startRebuildMPs2_f(MPMesh_ptr p_mpmesh, const int size1, const int* arg1, const int size2, const int size3, int* arg2, int* arg3);
-
 int polympo_getMPCount_f(MPMesh_ptr p_mpmesh);
-
 void polympo_finishRebuildMPs_f(MPMesh_ptr p_mpmesh);
-
 void polympo_setAppIDFunc_f(MPMesh_ptr p_mpmesh, IntVoidFunc getNext, void* appIDs);
-
 void polympo_getMPTgtElmID_f(MPMesh_ptr p_mpmesh, const int numMPs, int* elmIDs);
 void polympo_getMPCurElmID_f(MPMesh_ptr p_mpmesh, const int numMPs, int* elmIDs);
 void polympo_setMPLatLonRotatedFlag_f(MPMesh_ptr p_mpmesh, const int isRotateFlag);
@@ -44,12 +41,12 @@ void polympo_setMPRotLatLon_f(MPMesh_ptr p_mpmesh, const int nComps, const int n
 void polympo_getMPRotLatLon_f(MPMesh_ptr p_mpmesh, const int nComps, const int numMPs, double* mpRotLatLonHost);
 void polympo_setMPTgtRotLatLon_f(MPMesh_ptr p_mpmesh, const int nComps, const int numMPs, const double* mpRotLatLonIn);
 void polympo_getMPTgtRotLatLon_f(MPMesh_ptr p_mpmesh, const int nComps, const int numMPs, double* mpRotLatLonHost);
-
+//MP fields
 void polympo_setMPMass_f(MPMesh_ptr p_mpmesh, const int nComps, const int numMPs, const double* mpMassIn);
 void polympo_getMPMass_f(MPMesh_ptr p_mpmesh, const int nComps, const int numMPs, double* mpMassHost);
 void polympo_setMPVel_f(MPMesh_ptr p_mpmesh, const int nComps, const int numMPs, const double* mpVelIn);
 void polympo_getMPVel_f(MPMesh_ptr p_mpmesh, const int nComps, const int numMPs, double* mpVelHost);
-void polympo_setMPStrainRate_f(MPMesh_ptr p_mpmesh, const int nComps, const int numMPs, const double* mpStrainRateIn);
+void polympo_setMPStrainRate_f(MPMesh_ptr p_mpmesh);
 void polympo_getMPStrainRate_f(MPMesh_ptr p_mpmesh, const int nComps, const int numMPs, double* mpStrainRateHost);
 void polympo_setMPStress_f(MPMesh_ptr p_mpmesh, const int nComps, const int numMPs, const double* mpStressIn);
 void polympo_getMPStress_f(MPMesh_ptr p_mpmesh, const int nComps, const int numMPs, double* mpStressHost);
@@ -71,9 +68,9 @@ void polympo_setMeshNumEdgesPerElm_f(MPMesh_ptr p_mpmesh, const int nCells, cons
 void polympo_setMeshElm2VtxConn_f(MPMesh_ptr p_mpmesh, const int maxEdges, const int nCells, const int* array);
 void polympo_setMeshElm2ElmConn_f(MPMesh_ptr p_mpmesh, const int maxEdges, const int nCells, const int* array);
 void polympo_setOwningProc_f(MPMesh_ptr p_mpmesh, const int nCells, const int* array);
+void polympo_setOwningProcVertex_f(MPMesh_ptr p_mpmesh, const int nVertices, const int* array);
 void polympo_setElmGlobal_f(MPMesh_ptr p_mpmesh, const int nCells, const int* array);
 void polympo_setVtxGlobal_f(MPMesh_ptr p_mpmesh, const int nVertices, const int* array);
-
 
 //Mesh fields
 int polympo_getMeshFVtxType_f();
@@ -94,11 +91,12 @@ void polympo_setMeshVtxOnSurfDispIncr_f(MPMesh_ptr p_mpmesh, const int nComps, c
 void polympo_getMeshVtxOnSurfDispIncr_f(MPMesh_ptr p_mpmesh, const int nComps, const int nVertices, double* array);//vec2d
 void polympo_setMeshElmCenter_f(MPMesh_ptr p_mpmesh, const int nCells, const double* xArray, const double* yArray, const double* zArray);
 void polympo_getMeshElmCenter_f(MPMesh_ptr p_mpmesh, const int nCells, double* xArray, double* yArray, double* zArray);
-//Area Triangle
 void polympo_setMeshDualTriangleArea_f(MPMesh_ptr p_mpmesh, const int nVertices, const double* areaTriangle);
 void polympo_getMeshDualTriangleArea_f(MPMesh_ptr p_mpmesh, const int nVertices, double* areaTriangle);
-  
-// calculations
+void polympo_setGnomonicProjection_f(MPMesh_ptr p_mpmesh);
+void polyMPO_setTanLatVertexRotatedOverRadius_f(MPMesh_ptr p_mpmesh, const int nVertices, double* array); 
+
+// Advection calculations
 void polympo_push_f(MPMesh_ptr p_mpmesh);
 void polympo_push_ahead_f(MPMesh_ptr p_mpmesh);
 bool polympo_push1P_f(MPMesh_ptr p_mpmesh);
@@ -111,19 +109,11 @@ void polympo_setReconstructionOfVel_f(MPMesh_ptr p_mpmesh, const int order, cons
 void polympo_setReconstructionOfStrainRate_f(MPMesh_ptr p_mpmesh, const int order, const int meshEntType);
 void polympo_setReconstructionOfStress_f(MPMesh_ptr p_mpmesh, const int order, const int meshEntType);
 void polympo_applyReconstruction_f(MPMesh_ptr p_mpmesh);
+//Simpler/cleaner way of calling reconstruction
+void polympo_reconstruct_coeff_with_MPI_f(MPMesh_ptr p_mpmesh);
+void polympo_reconstruct_iceArea_with_MPI_f(MPMesh_ptr p_mpmesh);
+void polympo_reconstruct_velocity_with_MPI_f(MPMesh_ptr p_mpmesh);
 
-//Reconstruction using MPAS
-void polympo_vtxSubAssemblyIceArea_f(MPMesh_ptr p_mpmesh, int vtxPerElm, int nCells, int comp, double* array);
-void polympo_vtxSubAssemblyVelocity_f(MPMesh_ptr p_mpmesh, int vtxPerElm, int nCells, int comp, double* array);
-void polympo_subAssemblyCoeffs_f(MPMesh_ptr p_mpmesh, int vtxPerElm, int nCells, double* m11, double* m12, double* m13, double* m14,
-                                                      double* m22, double* m23, double* m24,
-                                                      double* m33, double* m34,
-                                                      double* m44);
-void polympo_regularize_and_solve_matrix_f(MPMesh_ptr p_mpmesh, int nVetices, double* m11, double* m12, double* m13, double* m14,
-                                                                double* m22, double* m23, double* m24,
-                                                                double* m33, double* m34,
-                                                                double* m44);
- 
 // Timing
 void polympo_enableTiming_f();
 void polympo_summarizeTime_f();

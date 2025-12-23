@@ -29,7 +29,7 @@ program main
   real(kind=MPAS_RKIND), dimension(:), pointer :: latVertex, lonVertex
   real(kind=MPAS_RKIND), dimension(:), pointer :: xCell, yCell, zCell
   real(kind=MPAS_RKIND), dimension(:), pointer :: areaTriangle
-  
+
   integer, dimension(:,:), pointer :: verticesOnCell, cellsOnCell
   integer :: numMPs, vID
   integer, dimension(:), pointer :: mpsPerElm, mp2Elm, isMPActive, globalElms
@@ -64,6 +64,7 @@ program main
                         verticesOnCell, cellsOnCell, areaTriangle)
   if (onSphere .ne. 'YES') then
     write (*,*) "The mesh is not spherical!"
+    write (*,*) "Gnomonic Projection is used currently for spehrical meshes, alternative for planar meshes not supported !"
     call exit(1)
   end if
 
@@ -78,7 +79,8 @@ program main
                         latVertex, &
                         xCell, yCell, zCell, &
                         verticesOnCell, cellsOnCell, areaTriangle)
- 
+
+  call polympo_setGnomonicProjection(mpMesh)
   nCompsDisp = 2
   allocate(dispIncr(nCompsDisp,nVertices))
   !createMPs
@@ -110,7 +112,7 @@ program main
     mpPosition(2,i) = yCell(i)
     mpPosition(3,i) = zCell(i)
   end do
-  
+
   call polympo_setElmGlobal(mpMesh, nCells, c_loc(globalElms))
   call polympo_createMPs(mpMesh,nCells,numMPs,c_loc(mpsPerElm),c_loc(mp2Elm),c_loc(isMPActive))
   call polympo_setMPICommunicator(mpMesh, mpi_comm_handle)
@@ -120,17 +122,10 @@ program main
   call polympo_setMPMass(mpMesh,1,numMPs,c_loc(mpMass))
   call polympo_setMPVel(mpMesh,2,numMPs,c_loc(mpVel))
 
-  ! Test vtx reconstruction
-  call polympo_setReconstructionOfMass(mpMesh,0,polympo_getMeshFVtxType())
-  call polympo_applyReconstruction(mpMesh)
-  call polympo_getMeshVtxMass(mpMesh,nVertices,c_loc(meshVtxMass))
-
-  do i = 1, nVertices
-    call assert(meshVtxMass(i) < TEST_VAL+TOLERANCE .and. meshVtxMass(i) > TEST_VAL-TOLERANCE, "Error: wrong vtx mass")
-    !write(*, *) 'The value of LRV is:', meshVtxMass(i)
-  end do
-  
+  !First Order reconstruction done before 0th order reconstruction as calculation of coefficients will
+  !fill the MpBasis slice
   !Test vtx order 1 reconstruction
+  call polympo_reconstruct_coeff_with_MPI(mpmesh)
   call polympo_setReconstructionOfMass(mpMesh,1,polympo_getMeshFVtxType())
   call polympo_setReconstructionOfVel(mpMesh, 1, polympo_getMeshFVtxType())
   call polympo_applyReconstruction(mpMesh)
@@ -138,9 +133,17 @@ program main
   call polympo_getMeshVtxVel(mpMesh, nVertices, c_loc(meshVtxVelu), c_loc(meshVtxVelv))
   do i = 1, nVertices
     call assert(meshVtxMass1(i) < TEST_VAL+TOLERANCE1 .and. meshVtxMass1(i) > TEST_VAL-TOLERANCE1, "Error: wrong vtx mass order 1")
-    call assert(meshVtxVelu(i) < TEST_VAL+TOLERANCE1 .and. meshVtxVelu(i) > TEST_VAL-TOLERANCE1, "Error: wrong vtx velU order 1")
-    call assert(meshVtxVelv(i) < TEST_VAL+TOLERANCE1 .and. meshVtxVelv(i) > TEST_VAL-TOLERANCE1, "Error: wrong vtx velV order 1")
-    write(*, *) 'The value of LRV is:', meshVtxVelu(i)-TEST_VAL, meshVtxVelv(i)-TEST_VAL
+    call assert(meshVtxVelu(i)  < TEST_VAL+TOLERANCE1 .and. meshVtxVelu(i)  > TEST_VAL-TOLERANCE1, "Error: wrong vtx velU order 1")
+    call assert(meshVtxVelv(i)  < TEST_VAL+TOLERANCE1 .and. meshVtxVelv(i)  > TEST_VAL-TOLERANCE1, "Error: wrong vtx velV order 1")
+  end do
+
+  ! Test vtx order 0  reconstruction
+  call polympo_setReconstructionOfMass(mpMesh,0,polympo_getMeshFVtxType())
+  call polympo_applyReconstruction(mpMesh)
+  call polympo_getMeshVtxMass(mpMesh,nVertices,c_loc(meshVtxMass))
+
+  do i = 1, nVertices
+    call assert(meshVtxMass(i) < TEST_VAL+TOLERANCE .and. meshVtxMass(i) > TEST_VAL-TOLERANCE, "Error: wrong vtx mass")
   end do
 
 
@@ -162,8 +165,7 @@ program main
             .and. meshElmMass(mp2Elm(i)) > TEST_VAL-TOLERANCE, "Error: wrong elm mass")
     end do
   end do
-  
-  
+
   call polympo_deleteMPMesh(mpMesh)
   call polympo_finalize()
 

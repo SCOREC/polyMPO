@@ -7,42 +7,125 @@ namespace polyMPO{
 
 void printVTP_mesh(MPMesh& mpMesh, int printVTPIndex=-1);
 
+void MPMesh::calculateStrain(){
+  auto MPsPosition = p_MPs->getPositions();
+  auto MPsBasis = p_MPs->getData<MPF_Basis_Vals>();
+  auto MPsAppID = p_MPs->getData<MPF_MP_APP_ID>();
+
+  //Mesh Fields
+  auto tanLatVertexRotatedOverRadius = p_mesh->getMeshField<MeshF_TanLatVertexRotatedOverRadius>();
+  auto gnomProjVtx = p_mesh->getMeshField<MeshF_VtxGnomProj>();
+  auto gnomProjElmCenter = p_mesh->getMeshField<MeshF_ElmCenterGnomProj>();
+  auto elm2VtxConn = p_mesh->getElm2VtxConn();
+  auto velField = p_mesh->getMeshField<MeshF_Vel>();
+  double radius = 1.0;
+  if(p_mesh->getGeomType() == geom_spherical_surf)
+    radius=p_mesh->getSphereRadius();
+
+  bool isRotated = p_mesh->getRotatedFlag();
+
+  auto setMPStrainRate = PS_LAMBDA(const int& elm, const int& mp, const int& mask){
+    if(mask){
+      int numVtx = elm2VtxConn(elm,0);
+
+      Vec3d position3d(MPsPosition(mp,0),MPsPosition(mp,1),MPsPosition(mp,2)); 
+      if(isRotated){
+        position3d[0] = -MPsPosition(mp, 2);
+        position3d[2] = MPsPosition(mp, 0);
+      }
+      auto gnomProjElmCenter_sub = Kokkos::subview(gnomProjElmCenter, elm, Kokkos::ALL);
+      double mpProjX, mpProjY;
+      computeGnomonicProjectionAtPoint(position3d, gnomProjElmCenter_sub, mpProjX, mpProjY);
+      auto gnom_vtx_subview = Kokkos::subview(gnomProjVtx, elm, Kokkos::ALL, Kokkos::ALL); 
+
+      double basisByArea[maxVtxsPerElm] = {0.0};
+      initArray(basisByArea,maxVtxsPerElm,0.0);      
+      double gradBasisByArea[2*maxVtxsPerElm] = {0.0};
+      initArray(gradBasisByArea,maxVtxsPerElm,0.0);
+
+      wachpress_weights_grads_2D(numVtx, gnom_vtx_subview, mpProjX, mpProjY, radius, basisByArea, gradBasisByArea);
+
+      double v11 = 0.0;
+      double v12 = 0.0;
+      double v21 = 0.0;
+      double v22 = 0.0;
+      double uTanOverR = 0.0;
+      double vTanOverR = 0.0;
+      for (int i = 0; i < numVtx; i++){
+        int iVertex = elm2VtxConn(elm, i+1)-1;
+        v11 = v11 + gradBasisByArea[i*2 + 0] * velField(iVertex, 0);
+        v12 = v12 + gradBasisByArea[i*2 + 1] * velField(iVertex, 0);
+        v21 = v21 + gradBasisByArea[i*2 + 0] * velField(iVertex, 1);
+        v22 = v22 + gradBasisByArea[i*2 + 1] * velField(iVertex, 1);
+        uTanOverR = uTanOverR + basisByArea[i] * tanLatVertexRotatedOverRadius(iVertex, 0) * velField(iVertex, 0);
+        vTanOverR = vTanOverR + basisByArea[i] * tanLatVertexRotatedOverRadius(iVertex, 0) * velField(iVertex, 1);
+      }
+    }
+  };
+  p_MPs->parallel_for(setMPStrainRate, "setMPStrainRate");
+}
+
 void MPMesh::calcBasis() {
-    assert(p_mesh->getGeomType() == geom_spherical_surf);
-    auto MPsPosition = p_MPs->getPositions();
-    auto mp_basis_field = p_MPs->getData<MPF_Basis_Vals>(); // we can implement MPs->getBasisVals() like MPs->getPositions()
-    auto elm2VtxConn = p_mesh->getElm2VtxConn();
-    auto vtxCoords = p_mesh->getMeshField<MeshF_VtxCoords>();
-    double radius = p_mesh->getSphereRadius();
+  assert(p_mesh->getGeomType() == geom_spherical_surf);
 
-    auto calcbasis = PS_LAMBDA(const int& elm, const int& mp, const int& mask) {
-        if(mask) { //if material point is 'active'/'enabled'
-            Vec3d position3d(MPsPosition(mp,0),MPsPosition(mp,1),MPsPosition(mp,2));
-            // formating
-            Vec3d v3d[maxVtxsPerElm+1];
-            int numVtx = elm2VtxConn(elm,0);
-            for(int i = 1; i<=numVtx; i++){
-                v3d[i-1][0] = vtxCoords(elm2VtxConn(elm,i)-1,0);
-                v3d[i-1][1] = vtxCoords(elm2VtxConn(elm,i)-1,1);
-                v3d[i-1][2] = vtxCoords(elm2VtxConn(elm,i)-1,2);
-            }
-            v3d[numVtx][0] = vtxCoords(elm2VtxConn(elm,1)-1,0);
-            v3d[numVtx][1] = vtxCoords(elm2VtxConn(elm,1)-1,1);
-            v3d[numVtx][2] = vtxCoords(elm2VtxConn(elm,1)-1,2);
-            
-            double basisByArea3d[maxVtxsPerElm] = {0.0};
-            initArray(basisByArea3d,maxVtxsPerElm,0.0);
+  auto MPsPosition = p_MPs->getPositions();
+  auto MPsBasis = p_MPs->getData<MPF_Basis_Vals>();
+  auto MPsAppID = p_MPs->getData<MPF_MP_APP_ID>();
 
-            // calc basis
-            getBasisByAreaGblFormSpherical(position3d, numVtx, v3d, radius, basisByArea3d);
-            
-            // fill step
-            for(int i=0; i<= numVtx; i++){
-                mp_basis_field(mp,i) = basisByArea3d[i];
-            }
-        }
-    };
-    p_MPs->parallel_for(calcbasis, "calcbasis");
+  auto elm2VtxConn = p_mesh->getElm2VtxConn();
+  auto vtxCoords = p_mesh->getMeshField<MeshF_VtxCoords>();
+  double radius = 1.0;
+  if(p_mesh->getGeomType() == geom_spherical_surf)
+    radius=p_mesh->getSphereRadius();
+
+  //For Gnomonic Projection
+  auto gnomProjVtx = p_mesh->getMeshField<polyMPO::MeshF_VtxGnomProj>();
+  auto gnomProjElmCenter = p_mesh->getMeshField<polyMPO::MeshF_ElmCenterGnomProj>();
+
+  bool isRotated = p_mesh->getRotatedFlag();
+
+  auto calcbasis = PS_LAMBDA(const int& elm, const int& mp, const int& mask) {
+    if(mask) { //if material point is 'active'/'enabled'
+      int numVtx = elm2VtxConn(elm,0);
+      Vec3d position3d(MPsPosition(mp, 0),MPsPosition(mp, 1),MPsPosition(mp, 2));
+      if(isRotated){
+        position3d[0] = -MPsPosition(mp, 2);
+        position3d[2] = MPsPosition(mp, 0);
+      }
+
+      double mpProjX, mpProjY;
+      auto gnomProjElmCenter_sub = Kokkos::subview(gnomProjElmCenter, elm, Kokkos::ALL);
+      computeGnomonicProjectionAtPoint(position3d, gnomProjElmCenter_sub, mpProjX, mpProjY);
+      auto gnom_vtx_subview = Kokkos::subview(gnomProjVtx, elm, Kokkos::ALL, Kokkos::ALL); 
+
+      double basisByArea[maxVtxsPerElm] = {0.0};
+      initArray(basisByArea,maxVtxsPerElm, 0.0);
+      double gradBasisByArea[2*maxVtxsPerElm] = {0.0};
+      initArray(gradBasisByArea,maxVtxsPerElm, 0.0);
+
+      wachpress_weights_grads_2D(numVtx, gnom_vtx_subview, mpProjX, mpProjY, radius, basisByArea, gradBasisByArea);
+
+      for(int i=0; i<= numVtx; i++){
+        MPsBasis(mp,i) = basisByArea[i];
+      }
+
+      //Old method where basis functions calculated using 3D Area
+      /*
+      Vec3d v3d[maxVtxsPerElm+1];
+      int numVtx = elm2VtxConn(elm,0);
+      for(int i = 1; i<=numVtx; i++){
+        v3d[i-1][0] = vtxCoords(elm2VtxConn(elm,i)-1,0);
+        v3d[i-1][1] = vtxCoords(elm2VtxConn(elm,i)-1,1);
+        v3d[i-1][2] = vtxCoords(elm2VtxConn(elm,i)-1,2);
+      }
+      v3d[numVtx][0] = vtxCoords(elm2VtxConn(elm,1)-1,0);
+      v3d[numVtx][1] = vtxCoords(elm2VtxConn(elm,1)-1,1);
+      v3d[numVtx][2] = vtxCoords(elm2VtxConn(elm,1)-1,2); 
+      getBasisByAreaGblFormSpherical(position3d, numVtx, v3d, radius, basisByArea);
+      */
+    }
+  };
+  p_MPs->parallel_for(calcbasis, "calcbasis");
 }
 
 void MPMesh::CVTTrackingEdgeCenterBased(Vec2dView dx){
@@ -51,10 +134,10 @@ void MPMesh::CVTTrackingEdgeCenterBased(Vec2dView dx){
     auto elm2VtxConn = p_mesh->getElm2VtxConn();
     auto elm2ElmConn = p_mesh->getElm2ElmConn();
     auto MPs2Elm = p_MPs->getData<MPF_Tgt_Elm_ID>();
-    const auto vtxCoords = p_mesh->getMeshField<polyMPO::MeshF_VtxCoords>(); 
+    const auto vtxCoords = p_mesh->getMeshField<polyMPO::MeshF_VtxCoords>();
     auto mpPositions = p_MPs->getData<MPF_Cur_Pos_XYZ>();
     Kokkos::View<Vec2d*[maxVtxsPerElm]> edgeCenters("EdgeCenters",numElms);
-   
+
     Kokkos::parallel_for("calcEdgeCenter", numElms, KOKKOS_LAMBDA(const int elm){  
         int numVtx = elm2VtxConn(elm,0);
         int v[maxVtxsPerElm];
@@ -67,7 +150,7 @@ void MPMesh::CVTTrackingEdgeCenterBased(Vec2dView dx){
             edgeCenters(elm,i) = (v_ip1 + v_i)*0.5;
         }
     });
-   
+
     auto CVTEdgeTracking = PS_LAMBDA(const int& elm, const int& mp, const int& mask){
         Vec2d MP(mpPositions(mp,0),mpPositions(mp,1));//XXX:the input is XYZ, but we only support 2d vector
         if(mask){
@@ -90,7 +173,7 @@ void MPMesh::CVTTrackingEdgeCenterBased(Vec2dView dx){
                     }
                     if(currentDistSq < minDistSq){
                         edgeIndex = i+1;
-                        minDistSq = currentDistSq;    
+                        minDistSq = currentDistSq;
                     }
                 }
                 if(edgeIndex <0){
@@ -149,13 +232,14 @@ void MPMesh::CVTTrackingElmCenterBased(const int printVTPIndex){
                 
                 Vec3d center(elmCenter(iElm, 0), elmCenter(iElm, 1), elmCenter(iElm, 2));
                 Vec3d delta = MPnew - center;
-		
+
                 double minDistSq = delta[0]*delta[0] + delta[1]*delta[1] + delta[2]*delta[2];
                 int closestElm = -1;
                 //go through all the connected elm, calc distance
                 for(int i=1; i<=numConnElms; i++){
                     int elmID = elm2ElmConn(iElm,i)-1;
-                    
+                    if (elmID >= numElms)
+                      continue; 
                     //New delta
                     Vec3d center(elmCenter(elmID, 0), elmCenter(elmID, 1), elmCenter(elmID, 2));
                     delta = MPnew - center;
@@ -243,7 +327,7 @@ void MPMesh::T2LTracking(Vec2dView dx){
     auto mpPositions = p_MPs->getData<MPF_Cur_Pos_XYZ>();
     auto MPs2Elm = p_MPs->getData<MPF_Tgt_Elm_ID>();
     auto mpStatus = p_MPs->getData<MPF_Status>();
-   
+
     auto T2LCalc = PS_LAMBDA(const int& elm, const int& mp, const int&mask){
         Vec2d MP(mpPositions(mp,0),mpPositions(mp,1));//XXX:the input is XYZ, but we only support 2d vector
         if(mask){
@@ -299,15 +383,13 @@ void MPMesh::T2LTracking(Vec2dView dx){
 }
 
 void MPMesh::reconstructSlices() {
-    if (reconstructSlice.size() == 0) return;
-    Kokkos::Timer timer;
-    calcBasis();
-    resetPreComputeFlag();
-    for (auto const& [index, reconstruct] : reconstructSlice) {
-        if (reconstruct) reconstruct();
-    }
-    reconstructSlice.clear();
-    pumipic::RecordTime("PolyMPO_Reconstruct", timer.seconds());
+  if (reconstructSlice.size() == 0) return;
+  Kokkos::Timer timer;
+  for (auto const& [index, reconstruct] : reconstructSlice) {
+    if (reconstruct) reconstruct();
+  }
+  reconstructSlice.clear();
+  pumipic::RecordTime("PolyMPO_Reconstruct", timer.seconds());
 }
 
 bool getAnyIsMigrating(MaterialPoints* p_MPs, bool isMigrating) {
@@ -329,12 +411,13 @@ void MPMesh::push_ahead(){
   //Latitude Longitude increment at mesh vertices and interpolate to particle position
   p_mesh->computeRotLatLonIncr();   
 
-  //Interpolates latitude longitude increments and mesh velocity increments to
-  //MP positions
-  sphericalInterpolationDispVelIncr(*this);
+  //Interpolates latitude longitude, mesh velocity increments to MPs
+  calcBasis();
+  sphericalInterpolation<MeshF_RotLatLonIncr>(*this);
+  sphericalInterpolation<MeshF_OnSurfVeloIncr>(*this);
   
   //Push the MPs
-  p_MPs->updateRotLatLonAndXYZ2Tgt(p_mesh->getSphereRadius());
+  p_MPs->updateRotLatLonAndXYZ2Tgt(p_mesh->getSphereRadius(), p_mesh->getRotatedFlag());
   pumipic::RecordTime("PolyMPO_interpolateAndPush", timer.seconds());
 }
 
@@ -361,16 +444,14 @@ void MPMesh::push_swap_pos(){
   p_MPs->updateMPSlice<MPF_Cur_Pos_Rot_Lat_Lon, MPF_Tgt_Pos_Rot_Lat_Lon>();
 }
 
-
-void MPMesh::push(){
-  
+void MPMesh::push(){  
   Kokkos::Timer timer;
   
   p_mesh->computeRotLatLonIncr();
   
   sphericalInterpolation<MeshF_RotLatLonIncr>(*this);
   
-  p_MPs->updateRotLatLonAndXYZ2Tgt(p_mesh->getSphereRadius()); // set Tgt_XYZ
+  p_MPs->updateRotLatLonAndXYZ2Tgt(p_mesh->getSphereRadius(), p_mesh->getRotatedFlag());
   
   auto elm2Process = p_mesh->getElm2Process();
 
@@ -396,43 +477,43 @@ void MPMesh::push(){
 }
 
 void MPMesh::printVTP_mesh(int printVTPIndex){
-    auto vtxCoords = p_mesh->getMeshField<polyMPO::MeshF_VtxCoords>();
-    auto elm2VtxConn = p_mesh->getElm2VtxConn();
+  auto vtxCoords = p_mesh->getMeshField<polyMPO::MeshF_VtxCoords>();
+  auto elm2VtxConn = p_mesh->getElm2VtxConn();
 
-    auto MPsPosition = p_MPs->getPositions();
+  auto MPsPosition = p_MPs->getPositions();
 
-    char* fileOutput = (char *)malloc(sizeof(char) * 256); 
-    sprintf(fileOutput,"polyMPO_MPMesh_mesh_%d.vtp", printVTPIndex);
-    FILE * pFile = fopen(fileOutput,"w");
-    free(fileOutput);
+  char* fileOutput = (char *)malloc(sizeof(char) * 256); 
+  sprintf(fileOutput,"polyMPO_MPMesh_mesh_%d.vtp", printVTPIndex);
+  FILE * pFile = fopen(fileOutput,"w");
+  free(fileOutput);
 
-    auto h_vtxCoords = Kokkos::create_mirror_view(vtxCoords);
-    IntVtx2ElmView::HostMirror h_elm2VtxConn = Kokkos::create_mirror_view(elm2VtxConn);
-    const int nCells = p_mesh->getNumElements();
-    const int nVertices = p_mesh->getNumVertices();
-    Kokkos::deep_copy(h_vtxCoords,vtxCoords);
-    Kokkos::deep_copy(h_elm2VtxConn,elm2VtxConn);
-    fprintf(pFile, "<VTKFile type=\"PolyData\" version=\"1.0\" byte_order=\"LittleEndian\" header_type=\"UInt64\">\n  <PolyData>\n    <Piece NumberOfPoints=\"%d\" NumberOfVerts=\"0\" NumberOfLines=\"0\" NumberOfStrips=\"0\" NumberOfPolys=\"%d\">\n      <Points>\n        <DataArray type=\"Float32\" Name=\"Points\" NumberOfComponents=\"3\" format=\"ascii\">\n",nVertices,nCells);
-    for(int i=0; i<nVertices; i++){
-        fprintf(pFile, "          %f %f %f\n",h_vtxCoords(i,0),h_vtxCoords(i,1),h_vtxCoords(i,2));
-    }
-    fprintf(pFile, "        </DataArray>\n      </Points>\n      <Polys>\n        <DataArray type=\"Int64\" Name=\"connectivity\" format=\"ascii\">\n");
-    for(int i=0; i<nCells; i++){
-        fprintf(pFile, "          ");
-        for(int j=0; j< h_elm2VtxConn(i,0); j++){
-            fprintf(pFile, "%d ", h_elm2VtxConn(i,j+1)-1);
-        } 
-        fprintf(pFile, "\n");
-    }
-    fprintf(pFile, "        </DataArray>\n        <DataArray type=\"Int64\" Name=\"offsets\" format=\"ascii\">\n");
+  auto h_vtxCoords = Kokkos::create_mirror_view(vtxCoords);
+  IntVtx2ElmView::HostMirror h_elm2VtxConn = Kokkos::create_mirror_view(elm2VtxConn);
+  const int nCells = p_mesh->getNumElements();
+  const int nVertices = p_mesh->getNumVertices();
+  Kokkos::deep_copy(h_vtxCoords,vtxCoords);
+  Kokkos::deep_copy(h_elm2VtxConn,elm2VtxConn);
+  fprintf(pFile, "<VTKFile type=\"PolyData\" version=\"1.0\" byte_order=\"LittleEndian\" header_type=\"UInt64\">\n  <PolyData>\n    <Piece NumberOfPoints=\"%d\" NumberOfVerts=\"0\" NumberOfLines=\"0\" NumberOfStrips=\"0\" NumberOfPolys=\"%d\">\n      <Points>\n        <DataArray type=\"Float32\" Name=\"Points\" NumberOfComponents=\"3\" format=\"ascii\">\n",nVertices,nCells);
+  for(int i=0; i<nVertices; i++){
+    fprintf(pFile, "          %f %f %f\n",h_vtxCoords(i,0),h_vtxCoords(i,1),h_vtxCoords(i,2));
+  }
+  fprintf(pFile, "        </DataArray>\n      </Points>\n      <Polys>\n        <DataArray type=\"Int64\" Name=\"connectivity\" format=\"ascii\">\n");
+  for(int i=0; i<nCells; i++){
+    fprintf(pFile, "          ");
+    for(int j=0; j< h_elm2VtxConn(i,0); j++){
+      fprintf(pFile, "%d ", h_elm2VtxConn(i,j+1)-1);
+    } 
+    fprintf(pFile, "\n");
+  }
+  fprintf(pFile, "        </DataArray>\n        <DataArray type=\"Int64\" Name=\"offsets\" format=\"ascii\">\n");
     
-    int count = 0;
-    for(int i=0;i<nCells; i++){
-        count += h_elm2VtxConn(i,0);
-        fprintf(pFile, "          %d\n",count);
-    }
-    fprintf(pFile, "        </DataArray>\n      </Polys>\n    </Piece>\n  </PolyData>\n</VTKFile>\n");
-    fclose(pFile);
+  int count = 0;
+  for(int i=0;i<nCells; i++){
+    count += h_elm2VtxConn(i,0);
+    fprintf(pFile, "          %d\n",count);
+  }
+  fprintf(pFile, "        </DataArray>\n      </Polys>\n    </Piece>\n  </PolyData>\n</VTKFile>\n");
+  fclose(pFile);
 }
 
 }

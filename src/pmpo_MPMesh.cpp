@@ -2,6 +2,7 @@
 #include "pmpo_utils.hpp"
 #include "pmpo_MPMesh.hpp"
 #include "pmpo_wachspressBasis.hpp"
+#include "pmpo_const_relation.hpp"
 
 namespace polyMPO{
 
@@ -11,7 +12,7 @@ void MPMesh::calculateStrain(){
   auto MPsPosition = p_MPs->getPositions();
   auto MPsBasis = p_MPs->getData<MPF_Basis_Vals>();
   auto MPsAppID = p_MPs->getData<MPF_MP_APP_ID>();
-
+  auto MPsStrainRate = p_MPs->getData<MPF_Strain_Rate>();
   //Mesh Fields
   auto tanLatVertexRotatedOverRadius = p_mesh->getMeshField<MeshF_TanLatVertexRotatedOverRadius>();
   auto gnomProjVtx = p_mesh->getMeshField<MeshF_VtxGnomProj>();
@@ -59,11 +60,45 @@ void MPMesh::calculateStrain(){
         v22 = v22 + gradBasisByArea[i*2 + 1] * velField(iVertex, 1);
         uTanOverR = uTanOverR + basisByArea[i] * tanLatVertexRotatedOverRadius(iVertex, 0) * velField(iVertex, 0);
         vTanOverR = vTanOverR + basisByArea[i] * tanLatVertexRotatedOverRadius(iVertex, 0) * velField(iVertex, 1);
+        MPsStrainRate(mp, 0) =  v11 - vTanOverR;
+        MPsStrainRate(mp, 1) =  v22;
+        MPsStrainRate(mp, 2) =  0.5*(v12 + v21 + uTanOverR);
       }
+      MPsStrainRate(mp, 0) =  v11 - vTanOverR;
+      MPsStrainRate(mp, 1) =  v22;
+      MPsStrainRate(mp, 2) =  0.5*(v12 + v21 + uTanOverR);
     }
   };
   p_MPs->parallel_for(setMPStrainRate, "setMPStrainRate");
 }
+
+void MPMesh::calculateStress(){
+  //MeshFields
+  auto solveStress = p_mesh->getMeshField<polyMPO::MeshF_SolveStress>();
+  auto elasticTimeStep = p_mesh->getElasticTimeStep();
+  auto dynamicTimeStep = p_mesh->getDynamicTimeStep();
+  auto dampingTimescale = polyMPO::dampingTimescaleParameter * dynamicTimeStep;
+  //MPFields
+  auto MPsAppID = p_MPs->getData<MPF_MP_APP_ID>();
+  auto MPsStrainRate = p_MPs->getData<MPF_Strain_Rate>();
+  auto MPsArea = p_MPs->getData<polyMPO::MPF_Area>();
+  auto MPsIcePressure = p_MPs->getData<polyMPO::MPF_IcePressure>();
+  auto MPsRepPressure = p_MPs->getData<polyMPO::MPF_ReplacementPressure>();
+  
+  auto setMPStress = PS_LAMBDA(const int& elm, const int& mp, const int& mask){
+    if(mask){
+      //Debugging
+      if(MPsAppID(mp)==0){
+        printf("Strain %.15e %.15e %.15e\n", MPsStrainRate(mp, 0), MPsStrainRate(mp, 1), MPsStrainRate(mp, 2));
+        printf("Mesh:%.15e %d, MP:%.15e %.15e %.15e\n",elasticTimeStep,solveStress(elm),MPsArea(mp,0),MPsIcePressure(mp,0),MPsRepPressure(mp,0));
+        Vec3d strain_rate (MPsStrainRate(mp, 0), MPsStrainRate(mp, 1), MPsStrainRate(mp, 2));
+        Vec3d stress(0, 0, 0);  
+        constitutive_evp(strain_rate, stress, MPsIcePressure(mp, 0), MPsRepPressure(mp, 0), MPsArea(mp, 0), elasticTimeStep, dampingTimescale);
+      }
+    }
+  };
+  p_MPs->parallel_for(setMPStress, "setMPStress");
+} 
 
 void MPMesh::calcBasis() {
   assert(p_mesh->getGeomType() == geom_spherical_surf);

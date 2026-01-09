@@ -87,6 +87,7 @@ class MPMesh{
 
     void printVTP_mesh(int printVTPIndex);
     void calculateStrain();
+    void calculateStress();
 };
 
 }//namespace polyMPO end

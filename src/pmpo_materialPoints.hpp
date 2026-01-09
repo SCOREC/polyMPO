@@ -41,7 +41,10 @@ enum MaterialPointSlice {
   MPF_Shear_Traction,
   MPF_Constv_Mdl_Param,
   MPF_MP_APP_ID,
-  MPF_Tgt_Proc_ID
+  MPF_Tgt_Proc_ID,
+  MPF_Area,
+  MPF_IcePressure,
+  MPF_ReplacementPressure
 };
 
 enum Operating_Mode{
@@ -64,13 +67,16 @@ template <> struct mpSliceToMeshField < MPF_Mass                > { using type =
 template <> struct mpSliceToMeshField < MPF_Vel                 > { using type = vec2d_t; };
 template <> struct mpSliceToMeshField < MPF_Rot_Lat_Lon_Incr    > { using type = vec2d_t; };
 template <> struct mpSliceToMeshField < MPF_Vel_Incr            > { using type = vec2d_t; };
-template <> struct mpSliceToMeshField < MPF_Strain_Rate         > { using type = double[6]; };
+template <> struct mpSliceToMeshField < MPF_Strain_Rate         > { using type = double[3]; };
 template <> struct mpSliceToMeshField < MPF_Stress              > { using type = double[6]; };
 template <> struct mpSliceToMeshField < MPF_Stress_Div          > { using type = vec3d_t; };
 template <> struct mpSliceToMeshField < MPF_Shear_Traction      > { using type = vec3d_t; };
 template <> struct mpSliceToMeshField < MPF_Constv_Mdl_Param    > { using type = double[12]; };
 template <> struct mpSliceToMeshField < MPF_MP_APP_ID           > { using type = int; };
 template <> struct mpSliceToMeshField < MPF_Tgt_Proc_ID         > { using type = int; };
+template <> struct mpSliceToMeshField < MPF_Area                > { using type = doubleSclr_t; };
+template <> struct mpSliceToMeshField < MPF_IcePressure         > { using type = doubleSclr_t; };
+template <> struct mpSliceToMeshField < MPF_ReplacementPressure > { using type = doubleSclr_t; };
 
 template <MaterialPointSlice slice> 
 static constexpr int mpSliceToNumEntries() {
@@ -107,7 +113,10 @@ typedef MemberTypes<mpSliceToMeshField < MPF_Status              >::type,
                     mpSliceToMeshField < MPF_Shear_Traction      >::type,
                     mpSliceToMeshField < MPF_Constv_Mdl_Param    >::type,
                     mpSliceToMeshField < MPF_MP_APP_ID           >::type,
-                    mpSliceToMeshField < MPF_Tgt_Proc_ID         >::type
+                    mpSliceToMeshField < MPF_Tgt_Proc_ID         >::type,
+                    mpSliceToMeshField < MPF_Area                >::type,
+                    mpSliceToMeshField < MPF_IcePressure         >::type,
+                    mpSliceToMeshField < MPF_ReplacementPressure >::type
                     >MaterialPointTypes;
 typedef ps::ParticleStructure<MaterialPointTypes> PS;
 

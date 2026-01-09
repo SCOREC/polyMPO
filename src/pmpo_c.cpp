@@ -624,14 +624,10 @@ void polympo_getMPStrainRate_f(MPMesh_ptr p_mpmesh, const int nComps, const int 
   (void)mpStrainRateHost;
 }
 
-void polympo_setMPStress_f(MPMesh_ptr p_mpmesh, const int nComps, const int numMPs, const double* mpStressIn){
+void polympo_setMPStress_f(MPMesh_ptr p_mpmesh){
   checkMPMeshValid(p_mpmesh);
-  std::cerr << "Error: This routine is not implemented yet\n";
-  exit(1);
-  (void)p_mpmesh;
-  (void)nComps;
-  (void)numMPs;
-  (void)mpStressIn;
+  auto mpMesh = ((polyMPO::MPMesh*)p_mpmesh);
+  mpMesh->calculateStress(); 
 }
 
 void polympo_getMPStress_f(MPMesh_ptr p_mpmesh, const int nComps, const int numMPs, double* mpStressHost){
@@ -642,6 +638,93 @@ void polympo_getMPStress_f(MPMesh_ptr p_mpmesh, const int nComps, const int numM
   (void)nComps;
   (void)numMPs;
   (void)mpStressHost;
+}
+
+void polympo_setAreaMP_f(MPMesh_ptr p_mpmesh, const int nComps, const int numMPs, double* areaMPHost){
+  Kokkos::Timer timer;
+  checkMPMeshValid(p_mpmesh);
+  
+  auto p_MPs = ((polyMPO::MPMesh*)p_mpmesh)->p_MPs;
+  //Rank information
+  int self;
+  MPI_Comm comm = p_MPs->getMPIComm();
+  MPI_Comm_rank(comm, &self);
+  //Asserts
+  PMT_ALWAYS_ASSERT(nComps == 1);
+  PMT_ALWAYS_ASSERT(numMPs >= p_MPs->getCount());
+  //MP Data
+  auto mpArea = p_MPs->getData<polyMPO::MPF_Area>();
+  auto mpAppID = p_MPs->getData<polyMPO::MPF_MP_APP_ID>();
+  //Copy to device
+  kkViewHostU<const double**> mpAreaIn_h(areaMPHost, nComps, numMPs);
+  Kokkos::View<double**> mpAreaIn_d("mpAreaDevice", nComps, numMPs);
+  Kokkos::deep_copy(mpAreaIn_d, mpAreaIn_h);
+  //Set in PS
+  auto setMPArea = PS_LAMBDA(const int& elm, const int& mp, const int& mask){
+    if(mask){
+      mpArea(mp,0) = mpAreaIn_d(0, mpAppID(mp));
+    }
+  };
+  p_MPs->parallel_for(setMPArea, "setMPArea");
+  pumipic::RecordTime("PolyMPO_setMPArea" + std::to_string(self), timer.seconds());
+}
+
+void polympo_setIcePressureMP_f(MPMesh_ptr p_mpmesh, const int nComps, const int numMPs, double* icePressureMPHost){
+  Kokkos::Timer timer;
+  checkMPMeshValid(p_mpmesh);
+  
+  auto p_MPs = ((polyMPO::MPMesh*)p_mpmesh)->p_MPs;
+  //Rank information
+  int self;
+  MPI_Comm comm = p_MPs->getMPIComm();
+  MPI_Comm_rank(comm, &self);
+  //Asserts
+  PMT_ALWAYS_ASSERT(nComps == 1);
+  PMT_ALWAYS_ASSERT(numMPs >= p_MPs->getCount());
+  //MP Data
+  auto mpIcePressure = p_MPs->getData<polyMPO::MPF_IcePressure>();
+  auto mpAppID = p_MPs->getData<polyMPO::MPF_MP_APP_ID>();
+  //Copy to device
+  kkViewHostU<const double**> mpIcePressure_h(icePressureMPHost, nComps, numMPs);
+  Kokkos::View<double**> mpIcePressure_d("mpIcePressureDevice", nComps, numMPs);
+  Kokkos::deep_copy(mpIcePressure_d, mpIcePressure_h);
+  //Set in PS
+  auto setMPIcePressure = PS_LAMBDA(const int& elm, const int& mp, const int& mask){
+    if(mask){
+      mpIcePressure(mp,0) = mpIcePressure_d(0, mpAppID(mp));
+    }
+  };
+  p_MPs->parallel_for(setMPIcePressure, "setIcePressure");
+  pumipic::RecordTime("PolyMPO_setIcePressure" + std::to_string(self), timer.seconds());
+}
+
+void polympo_setReplacementPressureMP_f(MPMesh_ptr p_mpmesh, const int nComps, const int numMPs, double* replacementPressureMPHost){
+  Kokkos::Timer timer;
+  checkMPMeshValid(p_mpmesh);
+  
+  auto p_MPs = ((polyMPO::MPMesh*)p_mpmesh)->p_MPs;
+  //Rank information
+  int self;
+  MPI_Comm comm = p_MPs->getMPIComm();
+  MPI_Comm_rank(comm, &self);
+  //Asserts
+  PMT_ALWAYS_ASSERT(nComps == 1);
+  PMT_ALWAYS_ASSERT(numMPs >= p_MPs->getCount());
+  //MP Data
+  auto mpReplacementPressure = p_MPs->getData<polyMPO::MPF_ReplacementPressure>();
+  auto mpAppID = p_MPs->getData<polyMPO::MPF_MP_APP_ID>();
+  //Copy to device
+  kkViewHostU<const double**> mpReplacementPressure_h(replacementPressureMPHost, nComps, numMPs);
+  Kokkos::View<double**> mpReplacementPressure_d("mpIcePressureDevice", nComps, numMPs);
+  Kokkos::deep_copy(mpReplacementPressure_d, mpReplacementPressure_h);
+  //Set in PS
+  auto setMPReplacementPressure = PS_LAMBDA(const int& elm, const int& mp, const int& mask){
+    if(mask){
+      mpReplacementPressure(mp,0) = mpReplacementPressure_d(0, mpAppID(mp));
+    }
+  };
+  p_MPs->parallel_for(setMPReplacementPressure, "setReplacementPressure");
+  pumipic::RecordTime("PolyMPO_setReplacementPressure" + std::to_string(self), timer.seconds());
 }
 
 void polympo_startMeshFill_f(MPMesh_ptr p_mpmesh){
@@ -1214,6 +1297,34 @@ void polyMPO_setTanLatVertexRotatedOverRadius_f(MPMesh_ptr p_mpmesh, const int n
   for(int i=0; i<nVertices; i++)
     h_tanLatVertexRotatedOverRadius(i, 0) = array[i];
   Kokkos::deep_copy(tanLatVertexRotatedOverRadius, h_tanLatVertexRotatedOverRadius);
+}
+
+void polympo_setElasticTimeStep_f(MPMesh_ptr p_mpmesh, const double elasticTimeStep){
+  //chech validity
+  checkMPMeshValid(p_mpmesh);
+  auto p_mesh = ((polyMPO::MPMesh*)p_mpmesh)->p_mesh;
+  p_mesh->setElasticTimeStep(elasticTimeStep);
+}
+
+void polympo_setDynamicTimeStep_f(MPMesh_ptr p_mpmesh, const double dynamicTimeStep){
+  //chech validity
+  checkMPMeshValid(p_mpmesh);
+  auto p_mesh = ((polyMPO::MPMesh*)p_mpmesh)->p_mesh;
+  p_mesh->setDynamicTimeStep(dynamicTimeStep);
+}
+
+void polympo_setSolveStressMesh_f(MPMesh_ptr p_mpmesh, const int nCells, int* array){
+  //chech validity
+  checkMPMeshValid(p_mpmesh);
+  auto p_mesh = ((polyMPO::MPMesh*)p_mpmesh)->p_mesh;
+
+  PMT_ALWAYS_ASSERT(p_mesh->getNumElements()==nCells);
+  //copy the host array to the device
+  auto solveStress = p_mesh->getMeshField<polyMPO::MeshF_SolveStress>();
+  auto h_solveStress = Kokkos::create_mirror_view(solveStress);
+  for(int i=0; i<nCells; i++)
+    h_solveStress(i) = array[i];
+  Kokkos::deep_copy(solveStress, h_solveStress);
 }
 
 //Advection Calcualtions

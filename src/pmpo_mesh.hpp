@@ -29,7 +29,8 @@ enum MeshFieldIndex{
     MeshF_RotLatLonIncr,
     MeshF_VtxGnomProj,
     MeshF_ElmCenterGnomProj,
-    MeshF_TanLatVertexRotatedOverRadius
+    MeshF_TanLatVertexRotatedOverRadius,
+    MeshF_SolveStress
 };
 enum MeshFieldType{
     MeshFType_Invalid = -2,
@@ -52,6 +53,7 @@ template <> struct meshFieldToType < MeshF_RotLatLonIncr     > { using type = Ko
 template <> struct meshFieldToType < MeshF_VtxGnomProj       > { using type = Kokkos::View<double*[maxVtxsPerElm][2]>; };
 template <> struct meshFieldToType < MeshF_ElmCenterGnomProj > { using type = Kokkos::View<double*[4]>; };
 template <> struct meshFieldToType < MeshF_TanLatVertexRotatedOverRadius > { using type = Kokkos::View<doubleSclr_t*>; };
+template <> struct meshFieldToType < MeshF_SolveStress       > { using type = IntView; };
 
 template <MeshFieldIndex index>
 using MeshFView = typename meshFieldToType<index>::type;
@@ -72,6 +74,7 @@ const std::map<MeshFieldIndex, std::pair<MeshFieldType, std::string>> meshFields
         {MeshF_VtxGnomProj,      {MeshFType_ElmBased,"MeshField_VertexGnomonicProjection"}},
         {MeshF_ElmCenterGnomProj,{MeshFType_ElmBased,"MeshField_ElementCenterGnomonicprojection"}},
         {MeshF_TanLatVertexRotatedOverRadius, {MeshFType_VtxBased,"MeshField_TanLatVertexRotatedOverRadius"}},
+        {MeshF_SolveStress,      {MeshFType_ElmBased,"MeshField_SolveStress"}},
 };
 
 enum mesh_type {mesh_unrecognized_lower = -1,
@@ -116,8 +119,10 @@ class Mesh {
     MeshFView<MeshF_ElmCenterGnomProj> elmCenterGnomProj_;
     //DoubleMat2DView vtxStress_;
     MeshFView<MeshF_TanLatVertexRotatedOverRadius> tanLatVertexRotatedOverRadius_;
+    MeshFView<MeshF_SolveStress> solveStress_;
     bool isRotatedFlag = false;
-
+    double elasticTimeStep_;
+    double dynamicTimeStep_;
   public:
     Mesh(){};
     Mesh( mesh_type meshType,
@@ -152,7 +157,7 @@ class Mesh {
     }
     void setOwningProcVertex(IntView owningProcVertex){
       owningProcVertex_ = owningProcVertex; 
-     } 
+    } 
     IntView getElm2Process() {return owningProc_;}
     IntView getVtx2Process() {return owningProcVertex_;}
 
@@ -200,6 +205,20 @@ class Mesh {
     }
     void setRotatedFlag(bool flagSet) {
       isRotatedFlag = flagSet;
+    }
+    
+    void setElasticTimeStep(double elasticTimeStep){
+      elasticTimeStep_ = elasticTimeStep;
+    }
+    double getElasticTimeStep(){
+      return elasticTimeStep_;
+    }
+   
+    void setDynamicTimeStep(double dynamicTimeStep){
+      dynamicTimeStep_ = dynamicTimeStep;
+    }
+    double getDynamicTimeStep(){
+      return dynamicTimeStep_;
     }
 };
 
@@ -251,6 +270,9 @@ auto Mesh::getMeshField(){
     }
     else if constexpr (index==MeshF_TanLatVertexRotatedOverRadius){
         return tanLatVertexRotatedOverRadius_;
+    }
+    else if constexpr (index==MeshF_SolveStress){
+        return solveStress_;
     }
     fprintf(stderr,"Mesh Field Index error!\n");
     exit(1);

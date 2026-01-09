@@ -62,6 +62,8 @@ namespace polyMPO{
     elmCenterGnomProj_= MeshFView<MeshF_ElmCenterGnomProj>(meshFields2TypeAndString.at(MeshF_ElmCenterGnomProj).second, numElms_);
 
     vtxGnomProj_ = MeshFView<MeshF_VtxGnomProj>(meshFields2TypeAndString.at(MeshF_VtxGnomProj).second, numElms_);
+
+    solveStress_ = MeshFView<MeshF_SolveStress>(meshFields2TypeAndString.at(MeshF_SolveStress).second, numElms_);
   }
 
   void Mesh::computeRotLatLonIncr(){

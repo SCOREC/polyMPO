@@ -363,15 +363,43 @@ module polympo
     type(c_ptr), value :: array
   end subroutine
 
+  !MP Strain
   subroutine polympo_setMPStrainRate(mpMesh) &
              bind(C, NAME='polympo_setMPStrainRate_f')
     use :: iso_c_binding
     type(c_ptr), value :: mpMesh
   end subroutine
+  
+  !MP Stress
+  subroutine polympo_setMPStress(mpMesh) &
+             bind(C, NAME='polympo_setMPStress_f')
+    use :: iso_c_binding
+    type(c_ptr), value :: mpMesh
+  end subroutine
 
-  !getMPStrainRate
-  !setMPStress
-  !getMPStress
+  subroutine polympo_setAreaMP(mpMesh, nComps, numMPs, array) &
+             bind(C, NAME='polympo_setAreaMP_f')
+    use :: iso_c_binding
+    type(c_ptr), value :: mpMesh
+    integer(c_int), value :: nComps, numMPs
+    type(c_ptr), value :: array
+  end subroutine
+
+  subroutine polympo_setIcePressureMP(mpMesh, nComps, numMPs, array) &
+             bind(C, NAME='polympo_setIcePressureMP_f')
+    use :: iso_c_binding
+    type(c_ptr), value :: mpMesh
+    integer(c_int), value :: nComps, numMPs
+    type(c_ptr), value :: array
+  end subroutine
+  
+  subroutine polympo_setReplacementPressureMP(mpMesh, nComps, numMPs, array) &
+             bind(C, NAME='polympo_setReplacementPressureMP_f')
+    use :: iso_c_binding
+    type(c_ptr), value :: mpMesh
+    integer(c_int), value :: nComps, numMPs
+    type(c_ptr), value :: array
+  end subroutine
 
   !---------------------------------------------------------------------------
   !> @brief Enable the setting of mesh topology (number of entities and entity adjacencies). 
@@ -897,6 +925,28 @@ module polympo
     use :: iso_c_binding
     type(c_ptr), value :: mpMesh
     integer(c_int), value :: nVertices
+    type(c_ptr), value :: array
+  end subroutine
+
+  subroutine polympo_setElasticTimeStep(mpMesh, elasticTimeStep) &
+             bind(C, NAME='polympo_setElasticTimeStep_f')
+    use :: iso_c_binding
+    type(c_ptr), value :: mpMesh
+    real(c_double), value :: elasticTimeStep
+  end subroutine
+
+  subroutine polympo_setDynamicTimeStep(mpMesh, dynamicTimeStep) &
+             bind(C, NAME='polympo_setDynamicTimeStep_f')
+    use :: iso_c_binding
+    type(c_ptr), value :: mpMesh
+    real(c_double), value :: dynamicTimeStep
+  end subroutine
+  
+  subroutine polympo_setSolveStressMesh(mpMesh, nCells, array) &
+             bind(C, NAME='polympo_setSolveStressMesh_f')
+    use :: iso_c_binding
+    type(c_ptr), value :: mpMesh
+    integer(c_int), value :: nCells
     type(c_ptr), value :: array
   end subroutine
 

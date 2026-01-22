@@ -14,7 +14,6 @@ static constexpr double dampingTimescaleParameter = 0.36;
 KOKKOS_INLINE_FUNCTION
 void constitutive_evp(const Vec3d& strain, Vec3d& stress, const double& icePressure, double& replacementPressure, 
                       const double& areaMP, const double& dtElastic, const double& dampingTimescale){
-  printf("In the Constitutive model\n");
   auto strainDivergence = strain[0] + strain[1];
   auto strainTension = strain[0] - strain[1];
   auto strainShearing = 2*strain[2];
@@ -36,8 +35,6 @@ void constitutive_evp(const Vec3d& strain, Vec3d& stress, const double& icePress
  
   stress[0] = 0.5 * (stress1 + stress2);
   stress[1] = 0.5 * (stress1 - stress2);
-
-  printf("Stress %.15e %.15e %.15e \n", stress[0], stress[1], stress[2]);
 }
 
 }

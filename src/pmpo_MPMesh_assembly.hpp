@@ -270,13 +270,23 @@ void MPMesh::invertMatrix(const Kokkos::View<double**>& vtxMatrices, const doubl
     iBlockC[0] = blockC[0] * invM2D[0] +  blockC[1] * invM2D[1] +  blockC[2] * invM2D[2];
     iBlockC[1] = blockC[0] * invM2D[1] +  blockC[1] * invM2D[3] +  blockC[2] * invM2D[4];
     iBlockC[2] = blockC[0] * invM2D[2] +  blockC[1] * invM2D[4] +  blockC[2] * invM2D[5];
-    iBlockC = iBlockC*invM11;   
+    iBlockC = iBlockC*invM11; 
 
     VtxCoeffs(vtx, 0, 0) = invM11 + invM11*iBlockC.dot(blockC);
     auto temp = -rotateScaleM.rightMultiply(iBlockC);
     VtxCoeffs(vtx, 0, 1) = temp[0];
     VtxCoeffs(vtx, 0, 2) = temp[1];
     VtxCoeffs(vtx, 0, 3) = temp[2];
+
+    VtxCoeffs(vtx, 1, 0) = -iBlockC[0];
+    VtxCoeffs(vtx, 1, 1) = invM2D[0] * rotateScaleM(0, 0) + invM2D[1] * rotateScaleM(0, 1) + invM2D[2] * rotateScaleM(0, 2);
+    VtxCoeffs(vtx, 1, 2) = invM2D[0] * rotateScaleM(1, 0) + invM2D[1] * rotateScaleM(1, 1) + invM2D[2] * rotateScaleM(1, 2);
+    VtxCoeffs(vtx, 1, 3) = invM2D[0] * rotateScaleM(2, 0) + invM2D[1] * rotateScaleM(2, 1) + invM2D[2] * rotateScaleM(2, 2);
+   
+    VtxCoeffs(vtx, 2, 0) = -iBlockC[1];
+    VtxCoeffs(vtx, 2, 1) = invM2D[1] * rotateScaleM(0, 0) + invM2D[3] * rotateScaleM(0, 1) + invM2D[4] * rotateScaleM(0, 2);
+    VtxCoeffs(vtx, 2, 2) = invM2D[1] * rotateScaleM(1, 0) + invM2D[3] * rotateScaleM(1, 1) + invM2D[4] * rotateScaleM(1, 2);
+    VtxCoeffs(vtx, 2, 3) = invM2D[1] * rotateScaleM(2, 0) + invM2D[3] * rotateScaleM(2, 1) + invM2D[4] * rotateScaleM(2, 2);
   });
   this->precomputedVtxCoeffs_new = VtxCoeffs;
 }

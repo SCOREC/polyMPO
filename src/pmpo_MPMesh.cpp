@@ -11,6 +11,7 @@ void printVTP_mesh(MPMesh& mpMesh, int printVTPIndex=-1);
 void MPMesh::calculateStrain(){
   auto MPsPosition = p_MPs->getPositions();
   auto MPsBasis = p_MPs->getData<MPF_Basis_Vals>();
+  auto MPsBasisGrads = p_MPs->getData<MPF_Basis_Grad_Vals>();
   auto MPsAppID = p_MPs->getData<MPF_MP_APP_ID>();
   auto MPsStrainRate = p_MPs->getData<MPF_Strain_Rate>();
   //Mesh Fields
@@ -19,9 +20,6 @@ void MPMesh::calculateStrain(){
   auto gnomProjElmCenter = p_mesh->getMeshField<MeshF_ElmCenterGnomProj>();
   auto elm2VtxConn = p_mesh->getElm2VtxConn();
   auto velField = p_mesh->getMeshField<MeshF_Vel>();
-  double radius = 1.0;
-  if(p_mesh->getGeomType() == geom_spherical_surf)
-    radius=p_mesh->getSphereRadius();
 
   bool isRotated = p_mesh->getRotatedFlag();
 
@@ -39,30 +37,28 @@ void MPMesh::calculateStrain(){
       computeGnomonicProjectionAtPoint(position3d, gnomProjElmCenter_sub, mpProjX, mpProjY);
       auto gnom_vtx_subview = Kokkos::subview(gnomProjVtx, elm, Kokkos::ALL, Kokkos::ALL); 
 
-      double basisByArea[maxVtxsPerElm] = {0.0};
-      initArray(basisByArea,maxVtxsPerElm,0.0);      
-      double gradBasisByArea[2*maxVtxsPerElm] = {0.0};
-      initArray(gradBasisByArea,maxVtxsPerElm,0.0);
-
-      wachpress_weights_grads_2D(numVtx, gnom_vtx_subview, mpProjX, mpProjY, radius, basisByArea, gradBasisByArea);
-
       double v11 = 0.0;
       double v12 = 0.0;
       double v21 = 0.0;
       double v22 = 0.0;
       double uTanOverR = 0.0;
       double vTanOverR = 0.0;
+     
       for (int i = 0; i < numVtx; i++){
         int iVertex = elm2VtxConn(elm, i+1)-1;
-        v11 = v11 + gradBasisByArea[i*2 + 0] * velField(iVertex, 0);
-        v12 = v12 + gradBasisByArea[i*2 + 1] * velField(iVertex, 0);
-        v21 = v21 + gradBasisByArea[i*2 + 0] * velField(iVertex, 1);
-        v22 = v22 + gradBasisByArea[i*2 + 1] * velField(iVertex, 1);
-        uTanOverR = uTanOverR + basisByArea[i] * tanLatVertexRotatedOverRadius(iVertex, 0) * velField(iVertex, 0);
-        vTanOverR = vTanOverR + basisByArea[i] * tanLatVertexRotatedOverRadius(iVertex, 0) * velField(iVertex, 1);
+        v11 = v11 + MPsBasisGrads(mp, i*2 + 0) * velField(iVertex, 0);
+        v12 = v12 + MPsBasisGrads(mp, i*2 + 1) * velField(iVertex, 0);
+        v21 = v21 + MPsBasisGrads(mp, i*2 + 0) * velField(iVertex, 1);
+        v22 = v22 + MPsBasisGrads(mp, i*2 + 1) * velField(iVertex, 1);
+        uTanOverR = uTanOverR + MPsBasis(mp, i) * tanLatVertexRotatedOverRadius(iVertex, 0) * velField(iVertex, 0);
+        vTanOverR = vTanOverR + MPsBasis(mp, i) * tanLatVertexRotatedOverRadius(iVertex, 0) * velField(iVertex, 1);
         MPsStrainRate(mp, 0) =  v11 - vTanOverR;
         MPsStrainRate(mp, 1) =  v22;
         MPsStrainRate(mp, 2) =  0.5*(v12 + v21 + uTanOverR);
+        //Debugging
+        if(MPsAppID(mp)==0){
+          printf("Strain Calc: iVertex %d vel field %.15e %.15e \n", iVertex, velField(iVertex, 0), velField(iVertex, 1));
+        }
       }
       MPsStrainRate(mp, 0) =  v11 - vTanOverR;
       MPsStrainRate(mp, 1) =  v22;
@@ -79,32 +75,133 @@ void MPMesh::calculateStress(){
   auto dynamicTimeStep = p_mesh->getDynamicTimeStep();
   auto dampingTimescale = polyMPO::dampingTimescaleParameter * dynamicTimeStep;
   //MPFields
-  auto MPsAppID = p_MPs->getData<MPF_MP_APP_ID>();
-  auto MPsStrainRate = p_MPs->getData<MPF_Strain_Rate>();
-  auto MPsArea = p_MPs->getData<polyMPO::MPF_Area>();
+  auto MPsAppID       = p_MPs->getData<MPF_MP_APP_ID>();
+  auto MPsStrainRate  = p_MPs->getData<MPF_Strain_Rate>();
+  auto MPsStress      = p_MPs->getData<MPF_Stress>();
+  auto MPsArea        = p_MPs->getData<polyMPO::MPF_Area>();
   auto MPsIcePressure = p_MPs->getData<polyMPO::MPF_IcePressure>();
   auto MPsRepPressure = p_MPs->getData<polyMPO::MPF_ReplacementPressure>();
   
   auto setMPStress = PS_LAMBDA(const int& elm, const int& mp, const int& mask){
     if(mask){
+      
+      Vec3d strain_rate (MPsStrainRate(mp, 0), MPsStrainRate(mp, 1), MPsStrainRate(mp, 2));
+      Vec3d stress(MPsStress(mp, 0), MPsStress(mp, 1), MPsStress(mp, 1));
+      constitutive_evp(strain_rate, stress, MPsIcePressure(mp, 0), MPsRepPressure(mp, 0), MPsArea(mp, 0), elasticTimeStep, dampingTimescale);
+      for (int m=0 ; m<3; m++)
+        MPsStress(mp, m) = stress[m];
       //Debugging
       if(MPsAppID(mp)==0){
-        printf("Strain %.15e %.15e %.15e\n", MPsStrainRate(mp, 0), MPsStrainRate(mp, 1), MPsStrainRate(mp, 2));
-        printf("Mesh:%.15e %d, MP:%.15e %.15e %.15e\n",elasticTimeStep,solveStress(elm),MPsArea(mp,0),MPsIcePressure(mp,0),MPsRepPressure(mp,0));
-        Vec3d strain_rate (MPsStrainRate(mp, 0), MPsStrainRate(mp, 1), MPsStrainRate(mp, 2));
-        Vec3d stress(0, 0, 0);  
-        constitutive_evp(strain_rate, stress, MPsIcePressure(mp, 0), MPsRepPressure(mp, 0), MPsArea(mp, 0), elasticTimeStep, dampingTimescale);
+        printf("Stress in GPU: %.15e %.15e %.15e\n", MPsStress(mp, 0), MPsStress(mp, 1), MPsStress(mp, 2));
       }
     }
   };
   p_MPs->parallel_for(setMPStress, "setMPStress");
 } 
 
+void MPMesh::calculateStressDivergence(){
+  
+  //Mesh Information
+  auto elm2VtxConn = p_mesh->getElm2VtxConn();
+  int numVtx = p_mesh->getNumVertices();
+  auto vtxCoords = p_mesh->getMeshField<polyMPO::MeshF_VtxCoords>();
+  int numVertices = p_mesh->getNumVertices();
+  auto tanLatVertexRotatedOverRadius = p_mesh->getMeshField<MeshF_TanLatVertexRotatedOverRadius>();
+
+  //Material Points
+  auto MPsAppID  = p_MPs->getData<MPF_MP_APP_ID>();
+  auto weight = p_MPs->getData<MPF_Basis_Vals>();
+  auto weight_grads = p_MPs->getData<MPF_Basis_Grad_Vals>(); 
+  auto mpPos = p_MPs->getData<MPF_Cur_Pos_XYZ>();
+  auto MPsStress = p_MPs->getData<MPF_Stress>();
+  auto mpPositions = p_MPs->getData<MPF_Cur_Pos_XYZ>(); 
+
+  auto VtxCoeffs_new = this->precomputedVtxCoeffs_new;
+
+  //Earth Radius
+  double radius = 1.0;
+  if(p_mesh->getGeomType() == geom_spherical_surf)
+    radius=p_mesh->getSphereRadius();
+
+  //Reconstructed the stress
+  Kokkos::View<double*[3]> stress_rec("stress_rec", p_mesh->getNumVertices()); 
+  Kokkos::View<double*> stress_divU("stress_divu", p_mesh->getNumVertices());
+  Kokkos::View<double*> stress_divV("stress_divv", p_mesh->getNumVertices());
+  Kokkos::View<double*> dSdX("dSdX", p_mesh->getNumVertices());
+  Kokkos::View<double*> dSdY("dSdY", p_mesh->getNumVertices());
+  
+  //Assemble fields for Stress Divergence
+  auto stress_div = PS_LAMBDA(const int& elm, const int& mp, const int& mask) {
+    if(mask) { //if material point is 'active'/'enabled'
+      int nVtxE = elm2VtxConn(elm,0); //number of vertices bounding the element
+      for(int i=0; i<nVtxE; i++){
+        int vID = elm2VtxConn(elm,i+1)-1;
+        double w_vtx=weight(mp,i); 
+        double CoordDiffs[vec4d_nEntries] = {1, (-vtxCoords(vID,0) + mpPositions(mp,0))/radius,
+                                                (-vtxCoords(vID,1) + mpPositions(mp,1))/radius,
+                                                (-vtxCoords(vID,2) + mpPositions(mp,2))/radius};
+
+        auto factor = w_vtx*(VtxCoeffs_new(vID,0, 0) + VtxCoeffs_new(vID,0, 1)*CoordDiffs[1] +
+                                                       VtxCoeffs_new(vID,0, 2)*CoordDiffs[2] +
+                                                       VtxCoeffs_new(vID,0, 3)*CoordDiffs[3]);
+
+        auto factor1 = (w_vtx/radius)*(VtxCoeffs_new(vID,1, 0) + VtxCoeffs_new(vID,1, 1)*CoordDiffs[1] +
+                                                                 VtxCoeffs_new(vID,1, 2)*CoordDiffs[2] +
+                                                                 VtxCoeffs_new(vID,1, 3)*CoordDiffs[3]);
+        auto factor2 = (w_vtx/radius)*(VtxCoeffs_new(vID,2, 0) + VtxCoeffs_new(vID,2, 1)*CoordDiffs[1] +
+                                                                 VtxCoeffs_new(vID,2, 2)*CoordDiffs[2] +
+                                                                 VtxCoeffs_new(vID,2, 3)*CoordDiffs[3]);
+                                                              
+        for (int k=0; k<3; k++){
+          auto val = factor*MPsStress(mp,k);
+          Kokkos::atomic_add(&stress_rec(vID,k), val);
+        }
+        Kokkos::atomic_add(&stress_divU(vID), factor1 * MPsStress(mp, 0) + factor2 * MPsStress(mp, 2) -
+                                              2 * tanLatVertexRotatedOverRadius(vID, 0) * factor * MPsStress(mp, 2));
+        Kokkos::atomic_add(&stress_divV(vID), factor2 * MPsStress(mp, 1) + factor1*MPsStress(mp, 2) +
+                                              factor * tanLatVertexRotatedOverRadius(vID, 0) * (MPsStress(mp, 0)-MPsStress(mp, 1)));
+        Kokkos::atomic_add(&dSdX(vID), -factor * weight_grads(mp, i*2 + 0));
+        Kokkos::atomic_add(&dSdY(vID), -factor * weight_grads(mp, i*2 + 1));
+      }
+    }
+  };
+  p_MPs->parallel_for(stress_div, "assembly");
+
+  //TODO
+  //COMMUNICATE THE VERTEX FIELDS
+
+  //TODO put as mesh field
+  Kokkos::View<doubleSclr_t*> stressDivergence("stressDivergence", p_mesh->getNumVertices());
+  auto areaVertex = p_mesh->getMeshField<MeshF_DualTriangleArea>(); 
+
+  Kokkos::parallel_for("calculate_divergence", numVtx, KOKKOS_LAMBDA(const int vtx){
+    double threshold = 0.15 / Kokkos::sqrt(areaVertex(vtx, 0));
+    double valX = Kokkos::max(Kokkos::abs(dSdX(vtx)) - threshold, 0.0);
+    double dSdX_filtered = Kokkos::copysign(valX, dSdX(vtx));
+    double valY = Kokkos::max(Kokkos::abs(dSdY(vtx)) - threshold, 0.0);
+    double dSdY_filtered = Kokkos::copysign(valY, dSdY(vtx));
+   
+    stressDivergence(vtx, 0) = stress_divU(vtx) + dSdX_filtered * stress_rec(vtx, 0) + dSdY_filtered * stress_rec(vtx, 2);
+    stressDivergence(vtx, 1) = stress_divV(vtx) + dSdY_filtered * stress_rec(vtx, 1) + dSdX_filtered * stress_rec(vtx, 2);
+    //Debugging
+    if (vtx >= 10 && vtx <= 11) {
+      printf("Vtx %d Area %.15e ds: %.15e %.15e \n", vtx, areaVertex(vtx, 0), dSdX_filtered, dSdY_filtered);
+      printf("Vtx %d Divergence %.15e %.15e \n", vtx, stressDivergence(vtx, 0), stressDivergence(vtx, 1));
+    }
+  });
+   
+  //TODO
+  //COMMUNICATE THE VERTEX FIELDS
+
+}
+
+
 void MPMesh::calcBasis() {
   assert(p_mesh->getGeomType() == geom_spherical_surf);
 
   auto MPsPosition = p_MPs->getPositions();
   auto MPsBasis = p_MPs->getData<MPF_Basis_Vals>();
+  auto MPsBasisGrads = p_MPs->getData<MPF_Basis_Grad_Vals>();
   auto MPsAppID = p_MPs->getData<MPF_MP_APP_ID>();
 
   auto elm2VtxConn = p_mesh->getElm2VtxConn();
@@ -141,7 +238,9 @@ void MPMesh::calcBasis() {
       wachpress_weights_grads_2D(numVtx, gnom_vtx_subview, mpProjX, mpProjY, radius, basisByArea, gradBasisByArea);
 
       for(int i=0; i<= numVtx; i++){
-        MPsBasis(mp,i) = basisByArea[i];
+        MPsBasis(mp, i) = basisByArea[i];
+        MPsBasisGrads(mp, i*2+0) = gradBasisByArea[i*2 + 0];
+        MPsBasisGrads(mp, i*2+1) = gradBasisByArea[i*2 + 1];
       }
 
       //Old method where basis functions calculated using 3D Area

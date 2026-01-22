@@ -52,7 +52,7 @@ void polympo_setMPStress_f(MPMesh_ptr p_mpmesh);
 void polympo_getMPStress_f(MPMesh_ptr p_mpmesh, const int nComps, const int numMPs, double* mpStressHost);
 void polympo_setAreaMP_f(MPMesh_ptr p_mpmesh, const int nComps, const int numMPs, double* areaMPHost);
 void polympo_setIcePressureMP_f(MPMesh_ptr p_mpmesh, const int nComps, const int numMPs, double* icePressureMPHost);
-void polympo_setReplacementPressureMP_f(MPMesh_ptr p_mpmesh, const int nComps, const int numMPs, double* replacementPressureMPHost);
+void polympo_getReplacementPressureMP_f(MPMesh_ptr p_mpmesh, const int nComps, const int numMPs, double* replacementPressureMPHost);
 
 //Mesh info
 void polympo_startMeshFill_f(MPMesh_ptr p_mpmesh);
@@ -101,6 +101,7 @@ void polyMPO_setTanLatVertexRotatedOverRadius_f(MPMesh_ptr p_mpmesh, const int n
 void polympo_setElasticTimeStep_f(MPMesh_ptr p_mpmesh, const double elasticTimeStep);
 void polympo_setDynamicTimeStep_f(MPMesh_ptr p_mpmesh, const double dynamicTimeStep);
 void polympo_setSolveStressMesh_f(MPMesh_ptr p_mpmesh, const int nCells, int* array);
+void polympo_calculateStressDivergence_f(MPMesh_ptr p_mpmesh);
 
 // Advection calculations
 void polympo_push_f(MPMesh_ptr p_mpmesh);

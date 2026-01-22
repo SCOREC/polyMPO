@@ -698,7 +698,7 @@ void polympo_setIcePressureMP_f(MPMesh_ptr p_mpmesh, const int nComps, const int
   pumipic::RecordTime("PolyMPO_setIcePressure" + std::to_string(self), timer.seconds());
 }
 
-void polympo_setReplacementPressureMP_f(MPMesh_ptr p_mpmesh, const int nComps, const int numMPs, double* replacementPressureMPHost){
+void polympo_getReplacementPressureMP_f(MPMesh_ptr p_mpmesh, const int nComps, const int numMPs, double* replacementPressureMPHost){
   Kokkos::Timer timer;
   checkMPMeshValid(p_mpmesh);
   
@@ -713,18 +713,20 @@ void polympo_setReplacementPressureMP_f(MPMesh_ptr p_mpmesh, const int nComps, c
   //MP Data
   auto mpReplacementPressure = p_MPs->getData<polyMPO::MPF_ReplacementPressure>();
   auto mpAppID = p_MPs->getData<polyMPO::MPF_MP_APP_ID>();
-  //Copy to device
-  kkViewHostU<const double**> mpReplacementPressure_h(replacementPressureMPHost, nComps, numMPs);
-  Kokkos::View<double**> mpReplacementPressure_d("mpIcePressureDevice", nComps, numMPs);
-  Kokkos::deep_copy(mpReplacementPressure_d, mpReplacementPressure_h);
-  //Set in PS
-  auto setMPReplacementPressure = PS_LAMBDA(const int& elm, const int& mp, const int& mask){
+  //Copy to host
+  Kokkos::View<double**> mpReplacementPressure_d("mpIcePressureDevice", nComps, numMPs); 
+  //From PS to array
+  auto getMPReplacementPressure = PS_LAMBDA(const int& elm, const int& mp, const int& mask){
     if(mask){
-      mpReplacementPressure(mp,0) = mpReplacementPressure_d(0, mpAppID(mp));
+      mpReplacementPressure_d(0, mpAppID(mp)) =   mpReplacementPressure(mp,0);
     }
   };
-  p_MPs->parallel_for(setMPReplacementPressure, "setReplacementPressure");
-  pumipic::RecordTime("PolyMPO_setReplacementPressure" + std::to_string(self), timer.seconds());
+  p_MPs->parallel_for(getMPReplacementPressure, "setReplacementPressure");
+  //GPU to CPU
+  kkDbl2dViewHostU arrayHost(replacementPressureMPHost, nComps, numMPs);
+  Kokkos::deep_copy(arrayHost, mpReplacementPressure_d);
+  pumipic::RecordTime("PolyMPO_getReplacementPressure" + std::to_string(self), timer.seconds());
+
 }
 
 void polympo_startMeshFill_f(MPMesh_ptr p_mpmesh){
@@ -1325,6 +1327,12 @@ void polympo_setSolveStressMesh_f(MPMesh_ptr p_mpmesh, const int nCells, int* ar
   for(int i=0; i<nCells; i++)
     h_solveStress(i) = array[i];
   Kokkos::deep_copy(solveStress, h_solveStress);
+}
+
+void polympo_calculateStressDivergence_f(MPMesh_ptr p_mpmesh){
+  //chech validity
+  checkMPMeshValid(p_mpmesh);
+  ((polyMPO::MPMesh*)p_mpmesh) -> calculateStressDivergence();
 }
 
 //Advection Calcualtions

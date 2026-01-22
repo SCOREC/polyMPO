@@ -393,8 +393,8 @@ module polympo
     type(c_ptr), value :: array
   end subroutine
   
-  subroutine polympo_setReplacementPressureMP(mpMesh, nComps, numMPs, array) &
-             bind(C, NAME='polympo_setReplacementPressureMP_f')
+  subroutine polympo_getReplacementPressureMP(mpMesh, nComps, numMPs, array) &
+             bind(C, NAME='polympo_getReplacementPressureMP_f')
     use :: iso_c_binding
     type(c_ptr), value :: mpMesh
     integer(c_int), value :: nComps, numMPs
@@ -948,6 +948,12 @@ module polympo
     type(c_ptr), value :: mpMesh
     integer(c_int), value :: nCells
     type(c_ptr), value :: array
+  end subroutine
+
+  subroutine polympo_calculateStressDivergence(mpMesh) &
+             bind(C, NAME='polympo_calculateStressDivergence_f')
+    use :: iso_c_binding
+    type(c_ptr), value :: mpMesh
   end subroutine
 
   !---------------------------------------------------------------------------

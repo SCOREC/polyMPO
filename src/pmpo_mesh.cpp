@@ -47,7 +47,10 @@ namespace polyMPO{
     auto tanLatVertexRotOverRadiusEntry = meshFields2TypeAndString.at(MeshF_TanLatVertexRotatedOverRadius);
     PMT_ALWAYS_ASSERT(tanLatVertexRotOverRadiusEntry.first == MeshFType_VtxBased);
     tanLatVertexRotatedOverRadius_ = MeshFView<MeshF_TanLatVertexRotatedOverRadius>(tanLatVertexRotOverRadiusEntry.second, numVtxs_);
-
+    
+    auto interiorVertexEntry = meshFields2TypeAndString.at(MeshF_InteriorVertex);
+    PMT_ALWAYS_ASSERT(interiorVertexEntry.first == MeshFType_VtxBased);
+    interiorVertex_ = MeshFView<MeshF_InteriorVertex>(interiorVertexEntry.second, numVtxs_);
   }
 
   void Mesh::setMeshElmBasedFieldSize(){

@@ -74,6 +74,7 @@ void polympo_setOwningProc_f(MPMesh_ptr p_mpmesh, const int nCells, const int* a
 void polympo_setOwningProcVertex_f(MPMesh_ptr p_mpmesh, const int nVertices, const int* array);
 void polympo_setElmGlobal_f(MPMesh_ptr p_mpmesh, const int nCells, const int* array);
 void polympo_setVtxGlobal_f(MPMesh_ptr p_mpmesh, const int nVertices, const int* array);
+void polympo_setInteriorVertex_f(MPMesh_ptr p_mpmesh, const int nVertices, const int* array);
 
 //Mesh fields
 int polympo_getMeshFVtxType_f();

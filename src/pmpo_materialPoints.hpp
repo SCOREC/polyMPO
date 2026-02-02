@@ -37,7 +37,6 @@ enum MaterialPointSlice {
   MPF_Vel_Incr,
   MPF_Strain_Rate,
   MPF_Stress,
-  MPF_Stress_Div,
   MPF_Shear_Traction,
   MPF_Constv_Mdl_Param,
   MPF_MP_APP_ID,
@@ -69,7 +68,6 @@ template <> struct mpSliceToMeshField < MPF_Rot_Lat_Lon_Incr    > { using type =
 template <> struct mpSliceToMeshField < MPF_Vel_Incr            > { using type = vec2d_t; };
 template <> struct mpSliceToMeshField < MPF_Strain_Rate         > { using type = double[3]; };
 template <> struct mpSliceToMeshField < MPF_Stress              > { using type = double[3]; };
-template <> struct mpSliceToMeshField < MPF_Stress_Div          > { using type = vec3d_t; };
 template <> struct mpSliceToMeshField < MPF_Shear_Traction      > { using type = vec3d_t; };
 template <> struct mpSliceToMeshField < MPF_Constv_Mdl_Param    > { using type = double[12]; };
 template <> struct mpSliceToMeshField < MPF_MP_APP_ID           > { using type = int; };
@@ -109,7 +107,6 @@ typedef MemberTypes<mpSliceToMeshField < MPF_Status              >::type,
                     mpSliceToMeshField < MPF_Vel_Incr            >::type,
                     mpSliceToMeshField < MPF_Strain_Rate         >::type,
                     mpSliceToMeshField < MPF_Stress              >::type,
-                    mpSliceToMeshField < MPF_Stress_Div          >::type,
                     mpSliceToMeshField < MPF_Shear_Traction      >::type,
                     mpSliceToMeshField < MPF_Constv_Mdl_Param    >::type,
                     mpSliceToMeshField < MPF_MP_APP_ID           >::type,

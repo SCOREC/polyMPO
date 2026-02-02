@@ -92,6 +92,7 @@ void MPMesh::calculateStress(){
         MPsStress(mp, m) = stress[m];
       //Debugging
       if(MPsAppID(mp)==0){
+        printf("Strain in GPU: %.15e %.15e %.15e\n", MPsStrainRate(mp, 0), MPsStrainRate(mp, 1), MPsStrainRate(mp, 2));
         printf("Stress in GPU: %.15e %.15e %.15e\n", MPsStress(mp, 0), MPsStress(mp, 1), MPsStress(mp, 2));
       }
     }
@@ -107,7 +108,8 @@ void MPMesh::calculateStressDivergence(){
   auto vtxCoords = p_mesh->getMeshField<polyMPO::MeshF_VtxCoords>();
   int numVertices = p_mesh->getNumVertices();
   auto tanLatVertexRotatedOverRadius = p_mesh->getMeshField<MeshF_TanLatVertexRotatedOverRadius>();
-
+  auto interiorVertex = p_mesh->getMeshField<MeshF_InteriorVertex>();
+  
   //Material Points
   auto MPsAppID  = p_MPs->getData<MPF_MP_APP_ID>();
   auto weight = p_MPs->getData<MPF_Basis_Vals>();
@@ -116,7 +118,9 @@ void MPMesh::calculateStressDivergence(){
   auto MPsStress = p_MPs->getData<MPF_Stress>();
   auto mpPositions = p_MPs->getData<MPF_Cur_Pos_XYZ>(); 
 
-  auto VtxCoeffs_new = this->precomputedVtxCoeffs_new;
+  auto VtxCoeffs_new   = this->precomputedVtxCoeffs_new;
+  auto vtxMatrixMass_l = this->vtxMatrixMass;
+  auto nearAnEdge_l    = this->nearAnEdge;
 
   //Earth Radius
   double radius = 1.0;
@@ -124,12 +128,12 @@ void MPMesh::calculateStressDivergence(){
     radius=p_mesh->getSphereRadius();
 
   //Reconstructed the stress
-  Kokkos::View<double*[3]> stress_rec("stress_rec", p_mesh->getNumVertices()); 
   Kokkos::View<double*> stress_divU("stress_divu", p_mesh->getNumVertices());
   Kokkos::View<double*> stress_divV("stress_divv", p_mesh->getNumVertices());
-  Kokkos::View<double*> dSdX("dSdX", p_mesh->getNumVertices());
-  Kokkos::View<double*> dSdY("dSdY", p_mesh->getNumVertices());
-  
+
+  Kokkos::View<double*> divU_edge("divUedge", p_mesh->getNumVertices());
+  Kokkos::View<double*> divV_edge("divVedge", p_mesh->getNumVertices());
+
   //Assemble fields for Stress Divergence
   auto stress_div = PS_LAMBDA(const int& elm, const int& mp, const int& mask) {
     if(mask) { //if material point is 'active'/'enabled'
@@ -152,16 +156,17 @@ void MPMesh::calculateStressDivergence(){
                                                                  VtxCoeffs_new(vID,2, 2)*CoordDiffs[2] +
                                                                  VtxCoeffs_new(vID,2, 3)*CoordDiffs[3]);
                                                               
-        for (int k=0; k<3; k++){
-          auto val = factor*MPsStress(mp,k);
-          Kokkos::atomic_add(&stress_rec(vID,k), val);
-        }
         Kokkos::atomic_add(&stress_divU(vID), factor1 * MPsStress(mp, 0) + factor2 * MPsStress(mp, 2) -
                                               2 * tanLatVertexRotatedOverRadius(vID, 0) * factor * MPsStress(mp, 2));
         Kokkos::atomic_add(&stress_divV(vID), factor2 * MPsStress(mp, 1) + factor1*MPsStress(mp, 2) +
                                               factor * tanLatVertexRotatedOverRadius(vID, 0) * (MPsStress(mp, 0)-MPsStress(mp, 1)));
-        Kokkos::atomic_add(&dSdX(vID), -factor * weight_grads(mp, i*2 + 0));
-        Kokkos::atomic_add(&dSdY(vID), -factor * weight_grads(mp, i*2 + 1));
+
+
+        Kokkos::atomic_add(&divU_edge(vID), - weight_grads(mp, i*2 + 0) *  MPsStress(mp, 0)  - weight_grads(mp, i*2 + 1) *  MPsStress(mp, 2) -
+                                              2 * tanLatVertexRotatedOverRadius(vID, 0) * w_vtx * MPsStress(mp, 2));
+        Kokkos::atomic_add(&divV_edge(vID), - weight_grads(mp, i*2 + 1)  * MPsStress(mp, 1)  - weight_grads(mp, i*2 + 0) *  MPsStress(mp, 2) +
+                                              w_vtx * tanLatVertexRotatedOverRadius(vID, 0) * (MPsStress(mp, 0)- MPsStress(mp, 1)));
+
       }
     }
   };
@@ -171,22 +176,17 @@ void MPMesh::calculateStressDivergence(){
   //COMMUNICATE THE VERTEX FIELDS
 
   //TODO put as mesh field
-  Kokkos::View<doubleSclr_t*> stressDivergence("stressDivergence", p_mesh->getNumVertices());
-  auto areaVertex = p_mesh->getMeshField<MeshF_DualTriangleArea>(); 
+  Kokkos::View<vec2d_t*> stressDivergence("stressDivergence", p_mesh->getNumVertices());
 
   Kokkos::parallel_for("calculate_divergence", numVtx, KOKKOS_LAMBDA(const int vtx){
-    double threshold = 0.15 / Kokkos::sqrt(areaVertex(vtx, 0));
-    double valX = Kokkos::max(Kokkos::abs(dSdX(vtx)) - threshold, 0.0);
-    double dSdX_filtered = Kokkos::copysign(valX, dSdX(vtx));
-    double valY = Kokkos::max(Kokkos::abs(dSdY(vtx)) - threshold, 0.0);
-    double dSdY_filtered = Kokkos::copysign(valY, dSdY(vtx));
    
-    stressDivergence(vtx, 0) = stress_divU(vtx) + dSdX_filtered * stress_rec(vtx, 0) + dSdY_filtered * stress_rec(vtx, 2);
-    stressDivergence(vtx, 1) = stress_divV(vtx) + dSdY_filtered * stress_rec(vtx, 1) + dSdX_filtered * stress_rec(vtx, 2);
+    stressDivergence(vtx, 0) = stress_divU(vtx);
+    stressDivergence(vtx, 1) = stress_divV(vtx); 
     //Debugging
     if (vtx >= 10 && vtx <= 11) {
-      printf("Vtx %d Area %.15e ds: %.15e %.15e \n", vtx, areaVertex(vtx, 0), dSdX_filtered, dSdY_filtered);
-      printf("Vtx %d Divergence %.15e %.15e \n", vtx, stressDivergence(vtx, 0), stressDivergence(vtx, 1));
+      printf("Vtx %d Divergence %.15e %.15e %.15e %.15e %.15e %.15e \n", vtx, nearAnEdge_l(vtx), vtxMatrixMass_l(vtx),
+                                                                         stress_divU(vtx), stress_divV(vtx),
+                                                                         divU_edge(vtx), divV_edge(vtx));
     }
   });
    

@@ -72,6 +72,8 @@ class MPMesh{
     void reconstruct_coeff_full();
     void invertMatrix(const Kokkos::View<double**>& vtxMatrices, const double& radius);
     Kokkos::View<double*[vec3d_nEntries][vec4d_nEntries]> precomputedVtxCoeffs_new;
+    Kokkos::View<double*> nearAnEdge;   
+    Kokkos::View<double*> vtxMatrixMass;
 
     //Not used currently
     std::map<MeshFieldIndex, std::function<void()>> reconstructSlice = std::map<MeshFieldIndex, std::function<void()>>();

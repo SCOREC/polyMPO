@@ -30,7 +30,8 @@ enum MeshFieldIndex{
     MeshF_VtxGnomProj,
     MeshF_ElmCenterGnomProj,
     MeshF_TanLatVertexRotatedOverRadius,
-    MeshF_SolveStress
+    MeshF_SolveStress,
+    MeshF_InteriorVertex
 };
 enum MeshFieldType{
     MeshFType_Invalid = -2,
@@ -54,6 +55,7 @@ template <> struct meshFieldToType < MeshF_VtxGnomProj       > { using type = Ko
 template <> struct meshFieldToType < MeshF_ElmCenterGnomProj > { using type = Kokkos::View<double*[4]>; };
 template <> struct meshFieldToType < MeshF_TanLatVertexRotatedOverRadius > { using type = Kokkos::View<doubleSclr_t*>; };
 template <> struct meshFieldToType < MeshF_SolveStress       > { using type = IntView; };
+template <> struct meshFieldToType < MeshF_InteriorVertex    > { using type = IntView; };
 
 template <MeshFieldIndex index>
 using MeshFView = typename meshFieldToType<index>::type;
@@ -75,6 +77,7 @@ const std::map<MeshFieldIndex, std::pair<MeshFieldType, std::string>> meshFields
         {MeshF_ElmCenterGnomProj,{MeshFType_ElmBased,"MeshField_ElementCenterGnomonicprojection"}},
         {MeshF_TanLatVertexRotatedOverRadius, {MeshFType_VtxBased,"MeshField_TanLatVertexRotatedOverRadius"}},
         {MeshF_SolveStress,      {MeshFType_ElmBased,"MeshField_SolveStress"}},
+        {MeshF_InteriorVertex,   {MeshFType_VtxBased,"MeshField_InteriorVertex"}}
 };
 
 enum mesh_type {mesh_unrecognized_lower = -1,
@@ -120,6 +123,7 @@ class Mesh {
     //DoubleMat2DView vtxStress_;
     MeshFView<MeshF_TanLatVertexRotatedOverRadius> tanLatVertexRotatedOverRadius_;
     MeshFView<MeshF_SolveStress> solveStress_;
+    MeshFView<MeshF_InteriorVertex> interiorVertex_;
     bool isRotatedFlag = false;
     double elasticTimeStep_;
     double dynamicTimeStep_;
@@ -273,6 +277,9 @@ auto Mesh::getMeshField(){
     }
     else if constexpr (index==MeshF_SolveStress){
         return solveStress_;
+    }
+    else if constexpr (index==MeshF_InteriorVertex){
+        return interiorVertex_;
     }
     fprintf(stderr,"Mesh Field Index error!\n");
     exit(1);

@@ -632,6 +632,15 @@ module polympo
     type(c_ptr), intent(in), value :: array
   end subroutine
 
+  subroutine polympo_setInteriorVertex(mpMesh, nVertices, array) &
+    bind(C, NAME='polympo_setInteriorVertex_f')
+    use :: iso_c_binding
+    type(c_ptr), value :: mpMesh
+    integer(c_int), value :: nVertices
+    type(c_ptr), intent(in), value :: array
+  end subroutine
+
+
   !---------------------------------------------------------------------------
   !> @brief get enum for vertex mesh fields
   !---------------------------------------------------------------------------
@@ -913,6 +922,7 @@ module polympo
     integer(c_int), value :: nVertices
     type(c_ptr), value :: areaTriangle
   end subroutine
+
 
   subroutine polympo_setGnomonicProjection(mpMesh) &
              bind(C, NAME='polympo_setGnomonicProjection_f')

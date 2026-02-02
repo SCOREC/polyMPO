@@ -927,6 +927,20 @@ void polympo_setVtxGlobal_f(MPMesh_ptr p_mpmesh, const int nVertices, const int*
   p_mesh->setVtxGlobal(vtxGlobal);
 }
 
+void polympo_setInteriorVertex_f(MPMesh_ptr p_mpmesh, const int nVertices, const int* array){
+  checkMPMeshValid(p_mpmesh);
+  auto p_mesh = ((polyMPO::MPMesh*)p_mpmesh)->p_mesh; 
+  PMT_ALWAYS_ASSERT(nVertices==p_mesh->getNumVertices());
+  Kokkos::View<int*, Kokkos::HostSpace> arrayHost("arrayHost", nVertices);
+  for (int i = 0; i < nVertices; i++) {
+    arrayHost(i) = array[i];
+  }
+
+  auto vtxInterior = p_mesh->getMeshField<polyMPO::MeshF_InteriorVertex>();
+  Kokkos::deep_copy(vtxInterior, arrayHost);
+}
+
+
 //Mesh Fields
 int polympo_getMeshFVtxType_f() {
   return polyMPO::MeshFType_VtxBased;

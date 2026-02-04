@@ -31,7 +31,8 @@ enum MeshFieldIndex{
     MeshF_ElmCenterGnomProj,
     MeshF_TanLatVertexRotatedOverRadius,
     MeshF_SolveStress,
-    MeshF_InteriorVertex
+    MeshF_InteriorVertex,
+    MeshF_StressDivergence
 };
 enum MeshFieldType{
     MeshFType_Invalid = -2,
@@ -56,6 +57,7 @@ template <> struct meshFieldToType < MeshF_ElmCenterGnomProj > { using type = Ko
 template <> struct meshFieldToType < MeshF_TanLatVertexRotatedOverRadius > { using type = Kokkos::View<doubleSclr_t*>; };
 template <> struct meshFieldToType < MeshF_SolveStress       > { using type = IntView; };
 template <> struct meshFieldToType < MeshF_InteriorVertex    > { using type = IntView; };
+template <> struct meshFieldToType < MeshF_StressDivergence  > { using type = Kokkos::View<vec2d_t*>; };
 
 template <MeshFieldIndex index>
 using MeshFView = typename meshFieldToType<index>::type;
@@ -77,7 +79,8 @@ const std::map<MeshFieldIndex, std::pair<MeshFieldType, std::string>> meshFields
         {MeshF_ElmCenterGnomProj,{MeshFType_ElmBased,"MeshField_ElementCenterGnomonicprojection"}},
         {MeshF_TanLatVertexRotatedOverRadius, {MeshFType_VtxBased,"MeshField_TanLatVertexRotatedOverRadius"}},
         {MeshF_SolveStress,      {MeshFType_ElmBased,"MeshField_SolveStress"}},
-        {MeshF_InteriorVertex,   {MeshFType_VtxBased,"MeshField_InteriorVertex"}}
+        {MeshF_InteriorVertex,   {MeshFType_VtxBased,"MeshField_InteriorVertex"}},
+        {MeshF_StressDivergence, {MeshFType_VtxBased,"MeshField_StressDivergence"}},
 };
 
 enum mesh_type {mesh_unrecognized_lower = -1,
@@ -111,6 +114,7 @@ class Mesh {
     MeshFView<MeshF_VtxRotLat> vtxRotLat_;
     MeshFView<MeshF_ElmCenterXYZ> elmCenterXYZ_;
     MeshFView<MeshF_DualTriangleArea> dualTriangleArea_;
+    MeshFView<MeshF_StressDivergence> stressDivergence_;
     MeshFView<MeshF_Vel> vtxVel_;
     MeshFView<MeshF_VtxMass> vtxMass_;
     MeshFView<MeshF_ElmMass> elmMass_;
@@ -280,6 +284,9 @@ auto Mesh::getMeshField(){
     }
     else if constexpr (index==MeshF_InteriorVertex){
         return interiorVertex_;
+    }
+    else if constexpr (index==MeshF_StressDivergence){
+        return stressDivergence_;
     }
     fprintf(stderr,"Mesh Field Index error!\n");
     exit(1);

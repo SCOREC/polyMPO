@@ -382,15 +382,6 @@ void MPMesh::assemblyVtx1(){
   if(numProcsTot>1) 
     communicate_and_take_halo_contributions(meshField, numVertices, numEntries, 0, 0);
   pumipic::RecordTime("Communicate Field Values" + std::to_string(self), timer.seconds());
-
-  Kokkos::parallel_for("printSymmetricBlock", numVertices, KOKKOS_LAMBDA(const int vtx){
-    if (vtx >= 10 && vtx <= 10) {
-      printf("Field in %d:  ", vtx);
-      for (int k=0; k<numEntries; k++)
-        printf("  %.15e ", meshField(vtx, k));
-      printf("\n");
-    }
-  });
 }
 
 //Start Communication routine

@@ -1349,6 +1349,24 @@ void polympo_calculateStressDivergence_f(MPMesh_ptr p_mpmesh){
   ((polyMPO::MPMesh*)p_mpmesh) -> calculateStressDivergence();
 }
 
+void polympo_getStressDivergence_f(MPMesh_ptr p_mpmesh, const int nVertices, double* uArray, double* vArray){
+  //chech validity
+  checkMPMeshValid(p_mpmesh);
+  auto p_mesh = ((polyMPO::MPMesh*)p_mpmesh)->p_mesh;
+
+  //check the size
+  PMT_ALWAYS_ASSERT(p_mesh->getNumVertices()==nVertices); 
+
+  //copy the device to host 
+  auto stressDivergence = p_mesh->getMeshField<polyMPO::MeshF_StressDivergence>();
+  auto h_stressDivergence = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), stressDivergence);
+  for(int i=0; i<nVertices; i++){
+    uArray[i] = h_stressDivergence(i,0);
+    vArray[i] = h_stressDivergence(i,1);
+  }
+}
+
+
 //Advection Calcualtions
 void polympo_push_f(MPMesh_ptr p_mpmesh){
   checkMPMeshValid(p_mpmesh);

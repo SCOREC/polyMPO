@@ -103,6 +103,8 @@ void polympo_setElasticTimeStep_f(MPMesh_ptr p_mpmesh, const double elasticTimeS
 void polympo_setDynamicTimeStep_f(MPMesh_ptr p_mpmesh, const double dynamicTimeStep);
 void polympo_setSolveStressMesh_f(MPMesh_ptr p_mpmesh, const int nCells, int* array);
 void polympo_calculateStressDivergence_f(MPMesh_ptr p_mpmesh);
+void polympo_getStressDivergence_f(MPMesh_ptr p_mpmesh, const int nVertices, double* uArray, double* vArray);
+
 
 // Advection calculations
 void polympo_push_f(MPMesh_ptr p_mpmesh);

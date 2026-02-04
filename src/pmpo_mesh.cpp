@@ -51,6 +51,10 @@ namespace polyMPO{
     auto interiorVertexEntry = meshFields2TypeAndString.at(MeshF_InteriorVertex);
     PMT_ALWAYS_ASSERT(interiorVertexEntry.first == MeshFType_VtxBased);
     interiorVertex_ = MeshFView<MeshF_InteriorVertex>(interiorVertexEntry.second, numVtxs_);
+
+    auto stressDivergenceEntry = meshFields2TypeAndString.at(MeshF_StressDivergence);
+    PMT_ALWAYS_ASSERT(stressDivergenceEntry.first == MeshFType_VtxBased);
+    stressDivergence_ = MeshFView<MeshF_StressDivergence>(stressDivergenceEntry.second, numVtxs_);
   }
 
   void Mesh::setMeshElmBasedFieldSize(){

@@ -52,9 +52,6 @@ void MPMesh::calculateStrain(){
         v22 = v22 + MPsBasisGrads(mp, i*2 + 1) * velField(iVertex, 1);
         uTanOverR = uTanOverR + MPsBasis(mp, i) * tanLatVertexRotatedOverRadius(iVertex, 0) * velField(iVertex, 0);
         vTanOverR = vTanOverR + MPsBasis(mp, i) * tanLatVertexRotatedOverRadius(iVertex, 0) * velField(iVertex, 1);
-        MPsStrainRate(mp, 0) =  v11 - vTanOverR;
-        MPsStrainRate(mp, 1) =  v22;
-        MPsStrainRate(mp, 2) =  0.5*(v12 + v21 + uTanOverR);
         //Debugging
         if(MPsAppID(mp)==0){
           printf("Strain Calc: iVertex %d vel field %.15e %.15e \n", iVertex, velField(iVertex, 0), velField(iVertex, 1));
@@ -86,7 +83,7 @@ void MPMesh::calculateStress(){
     if(mask){
       
       Vec3d strain_rate (MPsStrainRate(mp, 0), MPsStrainRate(mp, 1), MPsStrainRate(mp, 2));
-      Vec3d stress(MPsStress(mp, 0), MPsStress(mp, 1), MPsStress(mp, 1));
+      Vec3d stress(MPsStress(mp, 0), MPsStress(mp, 1), MPsStress(mp, 2));
       constitutive_evp(strain_rate, stress, MPsIcePressure(mp, 0), MPsRepPressure(mp, 0), MPsArea(mp, 0), elasticTimeStep, dampingTimescale);
       for (int m=0 ; m<3; m++)
         MPsStress(mp, m) = stress[m];
@@ -172,26 +169,24 @@ void MPMesh::calculateStressDivergence(){
   };
   p_MPs->parallel_for(stress_div, "assembly");
 
-  //TODO
-  //COMMUNICATE THE VERTEX FIELDS
+  //TODO COMMUNICATE THE VERTEX FIELDS
 
-  //TODO put as mesh field
-  Kokkos::View<vec2d_t*> stressDivergence("stressDivergence", p_mesh->getNumVertices());
+ 
+  auto stressDivergence = p_mesh->getMeshField<MeshF_StressDivergence>();
 
-  Kokkos::parallel_for("calculate_divergence", numVtx, KOKKOS_LAMBDA(const int vtx){
-   
+  Kokkos::parallel_for("calculate_divergence", numVtx, KOKKOS_LAMBDA(const int vtx){  
     stressDivergence(vtx, 0) = stress_divU(vtx);
     stressDivergence(vtx, 1) = stress_divV(vtx); 
     //Debugging
     if (vtx >= 10 && vtx <= 11) {
-      printf("Vtx %d Divergence %.15e %.15e %.15e %.15e %.15e %.15e \n", vtx, nearAnEdge_l(vtx), vtxMatrixMass_l(vtx),
-                                                                         stress_divU(vtx), stress_divV(vtx),
-                                                                         divU_edge(vtx), divV_edge(vtx));
+      //printf("Vtx %d Divergence %.15e %.15e %.15e %.15e %.15e %.15e \n", vtx, nearAnEdge_l(vtx), vtxMatrixMass_l(vtx),
+      //                                                                   stress_divU(vtx), stress_divV(vtx),
+      //                                                                   divU_edge(vtx), divV_edge(vtx));
+      printf("Vtx %d Divergence %.15e %.15e \n", vtx, stressDivergence(vtx, 0), stressDivergence(vtx, 1));
     }
   });
-   
-  //TODO
-  //COMMUNICATE THE VERTEX FIELDS
+  
+  //TODO COMMUNICATE THE VERTEX FIELDS
 
 }
 

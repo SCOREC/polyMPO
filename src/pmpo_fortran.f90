@@ -966,6 +966,15 @@ module polympo
     type(c_ptr), value :: mpMesh
   end subroutine
 
+  subroutine polympo_getStressDivergence(mpMesh, nVertices, uArray, vArray) &
+             bind(C, NAME='polympo_getStressDivergence_f')
+    use :: iso_c_binding
+    type(c_ptr), value :: mpMesh
+    integer(c_int), value :: nVertices
+    type(c_ptr), value :: uArray, vArray
+  end subroutine
+
+
   !---------------------------------------------------------------------------
   !> @brief calculate the MPs from given mesh vertices rotational latitude
   !>        longitude, update the MP slices

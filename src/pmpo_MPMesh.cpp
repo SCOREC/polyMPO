@@ -54,7 +54,7 @@ void MPMesh::calculateStrain(){
         vTanOverR = vTanOverR + MPsBasis(mp, i) * tanLatVertexRotatedOverRadius(iVertex, 0) * velField(iVertex, 1);
         //Debugging
         if(MPsAppID(mp)==0){
-          printf("Strain Calc: iVertex %d vel field %.15e %.15e \n", iVertex, velField(iVertex, 0), velField(iVertex, 1));
+         printf("Strain Calc: iVertex %d vel field %.15e %.15e \n", iVertex, velField(iVertex, 0), velField(iVertex, 1));
         }
       }
       MPsStrainRate(mp, 0) =  v11 - vTanOverR;
@@ -66,7 +66,10 @@ void MPMesh::calculateStrain(){
 }
 
 void MPMesh::calculateStress(){
-  //MeshFields
+  static int int_xx =0;
+  //std::cout<<"Counting stress:  "<< int_xx << std::endl;
+  
+  //MeshFields  
   auto solveStress = p_mesh->getMeshField<polyMPO::MeshF_SolveStress>();
   auto elasticTimeStep = p_mesh->getElasticTimeStep();
   auto dynamicTimeStep = p_mesh->getDynamicTimeStep();
@@ -89,12 +92,13 @@ void MPMesh::calculateStress(){
         MPsStress(mp, m) = stress[m];
       //Debugging
       if(MPsAppID(mp)==0){
-        printf("Strain in GPU: %.15e %.15e %.15e\n", MPsStrainRate(mp, 0), MPsStrainRate(mp, 1), MPsStrainRate(mp, 2));
-        printf("Stress in GPU: %.15e %.15e %.15e\n", MPsStress(mp, 0), MPsStress(mp, 1), MPsStress(mp, 2));
+        //printf("Strain in GPU: %.15e %.15e %.15e\n", MPsStrainRate(mp, 0), MPsStrainRate(mp, 1), MPsStrainRate(mp, 2));
+        //printf("Stress in GPU: %.15e %.15e %.15e\n", MPsStress(mp, 0), MPsStress(mp, 1), MPsStress(mp, 2));
       }
     }
   };
   p_MPs->parallel_for(setMPStress, "setMPStress");
+  int_xx++;
 } 
 
 void MPMesh::calculateStressDivergence(){
@@ -170,19 +174,20 @@ void MPMesh::calculateStressDivergence(){
   p_MPs->parallel_for(stress_div, "assembly");
 
   //TODO COMMUNICATE THE VERTEX FIELDS
-
  
   auto stressDivergence = p_mesh->getMeshField<MeshF_StressDivergence>();
 
-  Kokkos::parallel_for("calculate_divergence", numVtx, KOKKOS_LAMBDA(const int vtx){  
-    stressDivergence(vtx, 0) = stress_divU(vtx);
-    stressDivergence(vtx, 1) = stress_divV(vtx); 
+  Kokkos::parallel_for("calculate_divergence", numVtx, KOKKOS_LAMBDA(const int vtx){
+
+    double ramp = nearAnEdge_l(vtx);
+    double invM = 1.0/vtxMatrixMass_l(vtx);
+    invM = vtxMatrixMass_l(vtx) >1e-4 ? invM : 0;
+
+    stressDivergence(vtx, 0) = ramp * stress_divU(vtx) + (1 - ramp) * divU_edge(vtx) * invM ;
+    stressDivergence(vtx, 1) = ramp * stress_divV(vtx) + (1 - ramp) * divV_edge(vtx) * invM ; 
     //Debugging
-    if (vtx >= 10 && vtx <= 11) {
-      //printf("Vtx %d Divergence %.15e %.15e %.15e %.15e %.15e %.15e \n", vtx, nearAnEdge_l(vtx), vtxMatrixMass_l(vtx),
-      //                                                                   stress_divU(vtx), stress_divV(vtx),
-      //                                                                   divU_edge(vtx), divV_edge(vtx));
-      printf("Vtx %d Divergence %.15e %.15e \n", vtx, stressDivergence(vtx, 0), stressDivergence(vtx, 1));
+    if (vtx == 10 || vtx == 11 || vtx == 1476 || vtx == 1481) {
+      //printf("Vtx %d Divergence %.15e %.15e \n", vtx, stressDivergence(vtx, 0), stressDivergence(vtx, 1));
     }
   });
   
@@ -544,7 +549,7 @@ void MPMesh::push_ahead(){
   calcBasis();
   sphericalInterpolation<MeshF_RotLatLonIncr>(*this);
   sphericalInterpolation<MeshF_OnSurfVeloIncr>(*this);
-  
+  sphericalInterpolation2Fields(*this);
   //Push the MPs
   p_MPs->updateRotLatLonAndXYZ2Tgt(p_mesh->getSphereRadius(), p_mesh->getRotatedFlag());
   pumipic::RecordTime("PolyMPO_interpolateAndPush", timer.seconds());

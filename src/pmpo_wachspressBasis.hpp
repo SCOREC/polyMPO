@@ -15,8 +15,6 @@ void sphericalInterpolation(MPMesh& mpMesh){
   auto vtxCoords = p_mesh->getMeshField<polyMPO::MeshF_VtxCoords>();
   int numVtxs = p_mesh->getNumVertices();
   auto elm2VtxConn = p_mesh->getElm2VtxConn();
-  double radius = p_mesh->getSphereRadius();
-  PMT_ALWAYS_ASSERT(radius >0);
 
   auto p_MPs = mpMesh.p_MPs;
   auto MPsPosition = p_MPs->getPositions();
@@ -42,6 +40,46 @@ void sphericalInterpolation(MPMesh& mpMesh){
   p_MPs->parallel_for(interpolation, "interpolation");
   pumipic::RecordTime("PolyMPO_sphericalInterpolation", timer.seconds());
 }
+
+inline void sphericalInterpolation2Fields(MPMesh& mpMesh){
+  
+  Kokkos::Timer timer;
+
+  auto p_mesh = mpMesh.p_mesh;
+  auto vtxCoords = p_mesh->getMeshField<polyMPO::MeshF_VtxCoords>();
+  int numVtxs = p_mesh->getNumVertices();
+  auto elm2VtxConn = p_mesh->getElm2VtxConn();
+  
+  //Material Points Data
+  auto p_MPs = mpMesh.p_MPs;
+  auto MPsPosition = p_MPs->getPositions();
+  auto MPsBasis = p_MPs->getData<MPF_Basis_Vals>();
+  
+  constexpr MaterialPointSlice mpfIndex = MPF_Vel_IncrTimesTanLatVertexOverRadius;
+  auto mpField = p_MPs->getData<mpfIndex>();
+  const int numEntries = mpSliceToNumEntries<mpfIndex>();
+
+  constexpr MeshFieldIndex mfIndex1 = MeshF_OnSurfVeloIncr; 
+  auto meshField1 = p_mesh->getMeshField<mfIndex1>();
+  constexpr MeshFieldIndex mfIndex2 = MeshF_TanLatVertexRotatedOverRadius;
+  auto meshField2 = p_mesh->getMeshField<mfIndex2>();
+
+  auto interpolation2 = PS_LAMBDA(const int& elm, const int& mp, const int& mask) {
+    if(mask) { //if material point is 'active'/'enabled'
+      int numVtx = elm2VtxConn(elm,0);
+      for(int entry=0; entry<numEntries; entry++){
+        double mpValue = 0.0;
+        for(int i=1; i<= numVtx; i++)
+          mpValue += meshField1(elm2VtxConn(elm,i)-1, entry) * meshField2(elm2VtxConn(elm,i)-1, 0) * MPsBasis(mp,i-1);
+        mpField(mp,entry) = mpValue;
+      }
+    }
+  };
+  p_MPs->parallel_for(interpolation2, "interpolation");
+  
+  pumipic::RecordTime("PolyMPO_sphericalInterpolation2Fields", timer.seconds()); 
+}
+
 
 KOKKOS_INLINE_FUNCTION
 void wachpress_weights_grads_2D(int numVtx, const Kokkos::View<double[maxVtxsPerElm][2], 

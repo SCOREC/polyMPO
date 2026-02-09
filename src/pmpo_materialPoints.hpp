@@ -43,7 +43,8 @@ enum MaterialPointSlice {
   MPF_Tgt_Proc_ID,
   MPF_Area,
   MPF_IcePressure,
-  MPF_ReplacementPressure
+  MPF_ReplacementPressure,
+  MPF_Vel_IncrTimesTanLatVertexOverRadius
 };
 
 enum Operating_Mode{
@@ -75,6 +76,7 @@ template <> struct mpSliceToMeshField < MPF_Tgt_Proc_ID         > { using type =
 template <> struct mpSliceToMeshField < MPF_Area                > { using type = doubleSclr_t; };
 template <> struct mpSliceToMeshField < MPF_IcePressure         > { using type = doubleSclr_t; };
 template <> struct mpSliceToMeshField < MPF_ReplacementPressure > { using type = doubleSclr_t; };
+template <> struct mpSliceToMeshField < MPF_Vel_IncrTimesTanLatVertexOverRadius> { using type = vec2d_t; };
 
 template <MaterialPointSlice slice> 
 static constexpr int mpSliceToNumEntries() {
@@ -113,7 +115,8 @@ typedef MemberTypes<mpSliceToMeshField < MPF_Status              >::type,
                     mpSliceToMeshField < MPF_Tgt_Proc_ID         >::type,
                     mpSliceToMeshField < MPF_Area                >::type,
                     mpSliceToMeshField < MPF_IcePressure         >::type,
-                    mpSliceToMeshField < MPF_ReplacementPressure >::type
+                    mpSliceToMeshField < MPF_ReplacementPressure >::type,
+                    mpSliceToMeshField < MPF_Vel_IncrTimesTanLatVertexOverRadius >::type
                     >MaterialPointTypes;
 typedef ps::ParticleStructure<MaterialPointTypes> PS;
 
@@ -230,7 +233,10 @@ class MaterialPoints {
       //Velocity
       auto velMPs = MPs->get<MPF_Vel>();
       auto velIncr = MPs->get<MPF_Vel_Incr>();
-
+      //Stress
+      auto MPsStress = MPs->get<MPF_Stress>();
+      auto MPsStressMetric = MPs->get<MPF_Vel_IncrTimesTanLatVertexOverRadius>();     
+ 
       auto mpAppID = MPs->get<MPF_MP_APP_ID>();
 
       auto updateRotLatLon = PS_LAMBDA(const int& elm, const int& mp, const int& mask){
@@ -252,6 +258,16 @@ class MaterialPoints {
           tgtPosXYZ(mp,2) = radius * std::sin(geoLat);
           velMPs(mp,0) = velMPs(mp,0) + velIncr(mp,0);
           velMPs(mp,1) = velMPs(mp,1) + velIncr(mp,1);
+          //Stress MP term
+          Vec3d stress_prev(MPsStress(mp,0), MPsStress(mp,1), MPsStress(mp,2));
+          MPsStress(mp,0) = stress_prev[0] * (1 - MPsStressMetric(mp, 1)) + 2 * MPsStressMetric(mp, 1) * stress_prev[2];
+          MPsStress(mp,1) = stress_prev[1] + 2*MPsStressMetric(mp, 0) * stress_prev[2];
+          MPsStress(mp,2) = stress_prev[2] +   MPsStressMetric(mp, 0) * (stress_prev[0] - stress_prev[1]);
+
+          if(mpAppID(mp)==0){
+          //  printf("Correction: %.15e %.15e\n", MPsStressMetric(mp, 0), MPsStressMetric(mp, 1));
+          //  printf("Stress in GPU After Correction: %.15e %.15e %.15e\n", MPsStress(mp, 0), MPsStress(mp, 1), MPsStress(mp, 2)); 
+          }
         } 
       };
       ps::parallel_for(MPs, updateRotLatLon,"updateRotationalLatitudeLongitude"); 

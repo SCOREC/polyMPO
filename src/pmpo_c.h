@@ -46,10 +46,8 @@ void polympo_setMPMass_f(MPMesh_ptr p_mpmesh, const int nComps, const int numMPs
 void polympo_getMPMass_f(MPMesh_ptr p_mpmesh, const int nComps, const int numMPs, double* mpMassHost);
 void polympo_setMPVel_f(MPMesh_ptr p_mpmesh, const int nComps, const int numMPs, const double* mpVelIn);
 void polympo_getMPVel_f(MPMesh_ptr p_mpmesh, const int nComps, const int numMPs, double* mpVelHost);
-void polympo_setMPStrainRate_f(MPMesh_ptr p_mpmesh);
-void polympo_getMPStrainRate_f(MPMesh_ptr p_mpmesh, const int nComps, const int numMPs, double* mpStrainRateHost);
-void polympo_setMPStress_f(MPMesh_ptr p_mpmesh);
-void polympo_getMPStress_f(MPMesh_ptr p_mpmesh, const int nComps, const int numMPs, double* mpStressHost);
+void polympo_calculateMPStrainRate_f(MPMesh_ptr p_mpmesh);
+void polympo_calculateMPStress_f(MPMesh_ptr p_mpmesh);
 void polympo_setAreaMP_f(MPMesh_ptr p_mpmesh, const int nComps, const int numMPs, double* areaMPHost);
 void polympo_setIcePressureMP_f(MPMesh_ptr p_mpmesh, const int nComps, const int numMPs, double* icePressureMPHost);
 void polympo_getReplacementPressureMP_f(MPMesh_ptr p_mpmesh, const int nComps, const int numMPs, double* replacementPressureMPHost);

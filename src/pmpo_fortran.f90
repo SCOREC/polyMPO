@@ -364,15 +364,15 @@ module polympo
   end subroutine
 
   !MP Strain
-  subroutine polympo_setMPStrainRate(mpMesh) &
-             bind(C, NAME='polympo_setMPStrainRate_f')
+  subroutine polympo_calculateMPStrainRate(mpMesh) &
+             bind(C, NAME='polympo_calculateMPStrainRate_f')
     use :: iso_c_binding
     type(c_ptr), value :: mpMesh
   end subroutine
   
   !MP Stress
-  subroutine polympo_setMPStress(mpMesh) &
-             bind(C, NAME='polympo_setMPStress_f')
+  subroutine polympo_calculateMPStress(mpMesh) &
+             bind(C, NAME='polympo_calculateMPStress_f')
     use :: iso_c_binding
     type(c_ptr), value :: mpMesh
   end subroutine

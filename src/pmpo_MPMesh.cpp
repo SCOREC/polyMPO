@@ -54,7 +54,7 @@ void MPMesh::calculateStrain(){
         vTanOverR = vTanOverR + MPsBasis(mp, i) * tanLatVertexRotatedOverRadius(iVertex, 0) * velField(iVertex, 1);
         //Debugging
         if(MPsAppID(mp)==0){
-         printf("Strain Calc: iVertex %d vel field %.15e %.15e \n", iVertex, velField(iVertex, 0), velField(iVertex, 1));
+         //printf("Strain Calc: iVertex %d vel field %.15e %.15e \n", iVertex, velField(iVertex, 0), velField(iVertex, 1));
         }
       }
       MPsStrainRate(mp, 0) =  v11 - vTanOverR;
@@ -66,9 +66,6 @@ void MPMesh::calculateStrain(){
 }
 
 void MPMesh::calculateStress(){
-  static int int_xx =0;
-  //std::cout<<"Counting stress:  "<< int_xx << std::endl;
-  
   //MeshFields  
   auto solveStress = p_mesh->getMeshField<polyMPO::MeshF_SolveStress>();
   auto elasticTimeStep = p_mesh->getElasticTimeStep();
@@ -98,7 +95,6 @@ void MPMesh::calculateStress(){
     }
   };
   p_MPs->parallel_for(setMPStress, "setMPStress");
-  int_xx++;
 } 
 
 void MPMesh::calculateStressDivergence(){

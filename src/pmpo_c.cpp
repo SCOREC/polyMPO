@@ -608,36 +608,16 @@ void polympo_getMPVel_f(MPMesh_ptr p_mpmesh, const int nComps, const int numMPs,
   pumipic::RecordTime("PolyMPO_getMPVel", timer.seconds());
 }
 
-void polympo_setMPStrainRate_f(MPMesh_ptr p_mpmesh){
+void polympo_calculateMPStrainRate_f(MPMesh_ptr p_mpmesh){
   checkMPMeshValid(p_mpmesh);
   auto mpMesh = ((polyMPO::MPMesh*)p_mpmesh);
   mpMesh->calculateStrain(); 
 }
 
-void polympo_getMPStrainRate_f(MPMesh_ptr p_mpmesh, const int nComps, const int numMPs, double* mpStrainRateHost){
-  checkMPMeshValid(p_mpmesh);
-  std::cerr << "Error: This routine is not implemented yet\n";
-  exit(1);
-  (void)p_mpmesh;
-  (void)nComps;
-  (void)numMPs;
-  (void)mpStrainRateHost;
-}
-
-void polympo_setMPStress_f(MPMesh_ptr p_mpmesh){
+void polympo_calculateMPStress_f(MPMesh_ptr p_mpmesh){
   checkMPMeshValid(p_mpmesh);
   auto mpMesh = ((polyMPO::MPMesh*)p_mpmesh);
   mpMesh->calculateStress(); 
-}
-
-void polympo_getMPStress_f(MPMesh_ptr p_mpmesh, const int nComps, const int numMPs, double* mpStressHost){
-  checkMPMeshValid(p_mpmesh);
-  std::cerr << "Error: This routine is not implemented yet\n";
-  exit(1);
-  (void)p_mpmesh;
-  (void)nComps;
-  (void)numMPs;
-  (void)mpStressHost;
 }
 
 void polympo_setAreaMP_f(MPMesh_ptr p_mpmesh, const int nComps, const int numMPs, double* areaMPHost){

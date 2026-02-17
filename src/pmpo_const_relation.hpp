@@ -37,6 +37,14 @@ void constitutive_evp(const Vec3d& strain, Vec3d& stress, const double& icePress
   stress[1] = 0.5 * (stress1 - stress2);
 }
 
+KOKKOS_INLINE_FUNCTION
+void constitutive_linear(const Vec3d& strain, Vec3d& stress){
+  double lambda = 1.0;  
+  stress[0] = lambda * strain[0];
+  stress[1] = lambda * strain[1];
+  stress[2] = lambda * strain[2];
+}
+
 }
 #endif
 

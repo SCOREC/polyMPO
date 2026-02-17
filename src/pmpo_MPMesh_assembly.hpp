@@ -96,13 +96,15 @@ void MPMesh::assemblyElm0() {
 }
 
 void MPMesh::reconstruct_coeff_full(){
-  std::cout<<__FUNCTION__<<std::endl;
   Kokkos::Timer timer;
   int self, numProcsTot;
   MPI_Comm comm = p_MPs->getMPIComm();
   MPI_Comm_rank(comm, &self);
   MPI_Comm_size(comm, &numProcsTot);
-
+  
+  static int coeff_count=0;
+  if(!self) std::cout<<"===="<<__FUNCTION__<<" "<<coeff_count<<"===="<<std::endl;
+  coeff_count++;
   //Mesh Information
   auto elm2VtxConn = p_mesh->getElm2VtxConn();
   int numVtx = p_mesh->getNumVertices();
@@ -177,7 +179,6 @@ void MPMesh::reconstruct_coeff_full(){
 }
 
 void MPMesh::invertMatrix(const Kokkos::View<double**>& vtxMatrices, const double& radius){
-  std::cout<<__FUNCTION__<<std::endl;
   
   int nVertices = p_mesh->getNumVertices();
   auto vtxCoords = p_mesh->getMeshField<polyMPO::MeshF_VtxCoords>();
@@ -320,7 +321,6 @@ void MPMesh::invertMatrix(const Kokkos::View<double**>& vtxMatrices, const doubl
 
 template <MeshFieldIndex meshFieldIndex>
 void MPMesh::assemblyVtx1(){
-  std::cout<<__FUNCTION__<<std::endl;
   Kokkos::Timer timer;
 
   int self, numProcsTot;
@@ -379,8 +379,10 @@ void MPMesh::assemblyVtx1(){
   pumipic::RecordTime("Assemble Field per process" + std::to_string(self), timer.seconds());
 
   timer.reset();
-  if(numProcsTot>1) 
+  if(numProcsTot>1){ 
     communicate_and_take_halo_contributions(meshField, numVertices, numEntries, 0, 0);
+    communicate_and_take_halo_contributions(meshField, numVertices, numEntries, 1, 1);
+  }
   pumipic::RecordTime("Communicate Field Values" + std::to_string(self), timer.seconds());
 }
 

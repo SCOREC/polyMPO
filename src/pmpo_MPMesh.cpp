@@ -52,10 +52,6 @@ void MPMesh::calculateStrain(){
         v22 = v22 + MPsBasisGrads(mp, i*2 + 1) * velField(iVertex, 1);
         uTanOverR = uTanOverR + MPsBasis(mp, i) * tanLatVertexRotatedOverRadius(iVertex, 0) * velField(iVertex, 0);
         vTanOverR = vTanOverR + MPsBasis(mp, i) * tanLatVertexRotatedOverRadius(iVertex, 0) * velField(iVertex, 1);
-        /*
-        if(MPsAppID(mp)==0)
-          printf("Strain Calc: iVertex %d vel field %.15e %.15e \n", iVertex, velField(iVertex, 0), velField(iVertex, 1));
-        */
       }
       MPsStrainRate(mp, 0) =  v11 - vTanOverR;
       MPsStrainRate(mp, 1) =  v22;
@@ -78,21 +74,19 @@ void MPMesh::calculateStress(){
   auto MPsArea        = p_MPs->getData<polyMPO::MPF_Area>();
   auto MPsIcePressure = p_MPs->getData<polyMPO::MPF_IcePressure>();
   auto MPsRepPressure = p_MPs->getData<polyMPO::MPF_ReplacementPressure>();
+    
+  int model_no = 2; //TODO get from MPAS
   
   auto setMPStress = PS_LAMBDA(const int& elm, const int& mp, const int& mask){
     if(mask){
       Vec3d strain_rate (MPsStrainRate(mp, 0), MPsStrainRate(mp, 1), MPsStrainRate(mp, 2));
       Vec3d stress(MPsStress(mp, 0), MPsStress(mp, 1), MPsStress(mp, 2));
-      constitutive_evp(strain_rate, stress, MPsIcePressure(mp, 0), MPsRepPressure(mp, 0), MPsArea(mp, 0), elasticTimeStep, dampingTimescale);
-      //constitutive_linear(strain_rate, stress);
+      if (model_no == 1)
+        constitutive_linear(strain_rate, stress);
+      else if(model_no == 2)
+        constitutive_evp(strain_rate, stress, MPsIcePressure(mp, 0), MPsRepPressure(mp, 0), MPsArea(mp, 0), elasticTimeStep, dampingTimescale);
       for (int m=0 ; m<3; m++)
         MPsStress(mp, m) = stress[m];
-      /*
-      if(MPsAppID(mp)==0){
-        printf("Strain in GPU: %.15e %.15e %.15e\n", MPsStrainRate(mp, 0), MPsStrainRate(mp, 1), MPsStrainRate(mp, 2));
-        printf("Stress in GPU: %.15e %.15e %.15e\n", MPsStress(mp, 0), MPsStress(mp, 1), MPsStress(mp, 2));
-      }
-      */
     }
   };
   p_MPs->parallel_for(setMPStress, "setMPStress");

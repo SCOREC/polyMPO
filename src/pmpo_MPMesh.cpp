@@ -81,7 +81,6 @@ void MPMesh::calculateStress(){
   
   auto setMPStress = PS_LAMBDA(const int& elm, const int& mp, const int& mask){
     if(mask){
-      
       Vec3d strain_rate (MPsStrainRate(mp, 0), MPsStrainRate(mp, 1), MPsStrainRate(mp, 2));
       Vec3d stress(MPsStress(mp, 0), MPsStress(mp, 1), MPsStress(mp, 2));
       constitutive_evp(strain_rate, stress, MPsIcePressure(mp, 0), MPsRepPressure(mp, 0), MPsArea(mp, 0), elasticTimeStep, dampingTimescale);
@@ -132,11 +131,8 @@ void MPMesh::calculateStressDivergence(){
     radius=p_mesh->getSphereRadius();
 
   //Reconstructed the stress
-  Kokkos::View<doubleSclr_t*> stress_divU("stress_divu", p_mesh->getNumVertices());
-  Kokkos::View<doubleSclr_t*> stress_divV("stress_divv", p_mesh->getNumVertices());
-
-  Kokkos::View<doubleSclr_t*> divU_edge("divUedge", p_mesh->getNumVertices());
-  Kokkos::View<doubleSclr_t*> divV_edge("divVedge", p_mesh->getNumVertices());
+  Kokkos::View<vec2d_t*> stress_divUV("stress_divUV", p_mesh->getNumVertices());
+  Kokkos::View<vec2d_t*> divUV_edge("divUVedge", p_mesh->getNumVertices());
 
   //Assemble fields for Stress Divergence
   auto stress_div = PS_LAMBDA(const int& elm, const int& mp, const int& mask) {
@@ -160,15 +156,14 @@ void MPMesh::calculateStressDivergence(){
                                                                  VtxCoeffs_new(vID,2, 2)*CoordDiffs[2] +
                                                                  VtxCoeffs_new(vID,2, 3)*CoordDiffs[3]);
                                                               
-        Kokkos::atomic_add(&stress_divU(vID, 0), factor1 * MPsStress(mp, 0) + factor2 * MPsStress(mp, 2) -
+        Kokkos::atomic_add(&stress_divUV(vID, 0), factor1 * MPsStress(mp, 0) + factor2 * MPsStress(mp, 2) -
                                               2 * tanLatVertexRotatedOverRadius(vID, 0) * factor * MPsStress(mp, 2));
-        Kokkos::atomic_add(&stress_divV(vID, 0), factor2 * MPsStress(mp, 1) + factor1*MPsStress(mp, 2) +
+        Kokkos::atomic_add(&stress_divUV(vID, 1), factor2 * MPsStress(mp, 1) + factor1*MPsStress(mp, 2) +
                                               factor * tanLatVertexRotatedOverRadius(vID, 0) * (MPsStress(mp, 0)-MPsStress(mp, 1)));
 
-
-        Kokkos::atomic_add(&divU_edge(vID, 0), - weight_grads(mp, i*2 + 0) *  MPsStress(mp, 0)  - weight_grads(mp, i*2 + 1) *  MPsStress(mp, 2) -
+        Kokkos::atomic_add(&divUV_edge(vID, 0), - weight_grads(mp, i*2 + 0) *  MPsStress(mp, 0)  - weight_grads(mp, i*2 + 1) *  MPsStress(mp, 2) -
                                               2 * tanLatVertexRotatedOverRadius(vID, 0) * w_vtx * MPsStress(mp, 2));
-        Kokkos::atomic_add(&divV_edge(vID, 0), - weight_grads(mp, i*2 + 1)  * MPsStress(mp, 1)  - weight_grads(mp, i*2 + 0) *  MPsStress(mp, 2) +
+        Kokkos::atomic_add(&divUV_edge(vID, 1), - weight_grads(mp, i*2 + 1)  * MPsStress(mp, 1)  - weight_grads(mp, i*2 + 0) *  MPsStress(mp, 2) +
                                               w_vtx * tanLatVertexRotatedOverRadius(vID, 0) * (MPsStress(mp, 0)- MPsStress(mp, 1)));
 
       }
@@ -176,35 +171,23 @@ void MPMesh::calculateStressDivergence(){
   };
   p_MPs->parallel_for(stress_div, " stress_div_assembly");
 
-  if(numProcsTot>1){
-    
+  if(numProcsTot>1){ 
     //Takes contribution of halo vertices and adds it in owner procs
-    communicate_and_take_halo_contributions(stress_divU, numVertices, 1, 0, 0);
-    communicate_and_take_halo_contributions(stress_divV, numVertices, 1, 0, 0);
-    communicate_and_take_halo_contributions(divU_edge, numVertices, 1, 0, 0);
-    communicate_and_take_halo_contributions(divV_edge, numVertices, 1, 0, 0);
-    //Does it need to transfer the correct values at owned vertices to halo vertices
-    communicate_and_take_halo_contributions(stress_divU, numVertices, 1, 1, 1);
-    communicate_and_take_halo_contributions(stress_divV, numVertices, 1, 1, 1);
-    communicate_and_take_halo_contributions(divU_edge, numVertices, 1, 1, 1);
-    communicate_and_take_halo_contributions(divV_edge, numVertices, 1, 1, 1);
-    
+    communicate_and_take_halo_contributions(stress_divUV, numVertices, 2, 0, 0);
+    communicate_and_take_halo_contributions(divUV_edge, numVertices, 2, 0, 0);
+    //Transfer the correct values at owned vertices to halo vertices
+    communicate_and_take_halo_contributions(stress_divUV, numVertices, 2, 1, 1);
+    communicate_and_take_halo_contributions(divUV_edge, numVertices, 2, 1, 1);
   }
   
   auto stressDivergence = p_mesh->getMeshField<MeshF_StressDivergence>();
   Kokkos::parallel_for("calculate_divergence", numVtx, KOKKOS_LAMBDA(const int vtx){
-
     double ramp = nearAnEdge_l(vtx);
     double invM = 1.0/vtxMatrixMass_l(vtx);
     invM = vtxMatrixMass_l(vtx) >1e-4 ? invM : 0;
 
-    stressDivergence(vtx, 0) = ramp * stress_divU(vtx, 0) + (1 - ramp) * divU_edge(vtx, 0) * invM ;
-    stressDivergence(vtx, 1) = ramp * stress_divV(vtx, 0) + (1 - ramp) * divV_edge(vtx, 0) * invM ; 
-    /*
-    if (ent2global(vtx) == 1714) {
-      printf("Vtx %d Divergence %.15e %.15e %.15e %.15e \n", vtx, stressDivergence(vtx, 0), stressDivergence(vtx, 1));
-    }
-    */
+    stressDivergence(vtx, 0) = ramp * stress_divUV(vtx, 0) + (1 - ramp) * divUV_edge(vtx, 0) * invM ;
+    stressDivergence(vtx, 1) = ramp * stress_divUV(vtx, 1) + (1 - ramp) * divUV_edge(vtx, 1) * invM ; 
   });
 }
 

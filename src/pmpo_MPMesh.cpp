@@ -84,8 +84,8 @@ void MPMesh::calculateStress(){
       
       Vec3d strain_rate (MPsStrainRate(mp, 0), MPsStrainRate(mp, 1), MPsStrainRate(mp, 2));
       Vec3d stress(MPsStress(mp, 0), MPsStress(mp, 1), MPsStress(mp, 2));
-      //constitutive_evp(strain_rate, stress, MPsIcePressure(mp, 0), MPsRepPressure(mp, 0), MPsArea(mp, 0), elasticTimeStep, dampingTimescale);
-      constitutive_linear(strain_rate, stress);
+      constitutive_evp(strain_rate, stress, MPsIcePressure(mp, 0), MPsRepPressure(mp, 0), MPsArea(mp, 0), elasticTimeStep, dampingTimescale);
+      //constitutive_linear(strain_rate, stress);
       for (int m=0 ; m<3; m++)
         MPsStress(mp, m) = stress[m];
       /*
@@ -176,9 +176,9 @@ void MPMesh::calculateStressDivergence(){
   };
   p_MPs->parallel_for(stress_div, " stress_div_assembly");
 
-  //TO DO make to 2 fields instrad of 4 to reduce latency
   if(numProcsTot>1){
-    //Takes contribution of halo vertices and adds it in halo cells
+    
+    //Takes contribution of halo vertices and adds it in owner procs
     communicate_and_take_halo_contributions(stress_divU, numVertices, 1, 0, 0);
     communicate_and_take_halo_contributions(stress_divV, numVertices, 1, 0, 0);
     communicate_and_take_halo_contributions(divU_edge, numVertices, 1, 0, 0);
@@ -188,6 +188,7 @@ void MPMesh::calculateStressDivergence(){
     communicate_and_take_halo_contributions(stress_divV, numVertices, 1, 1, 1);
     communicate_and_take_halo_contributions(divU_edge, numVertices, 1, 1, 1);
     communicate_and_take_halo_contributions(divV_edge, numVertices, 1, 1, 1);
+    
   }
   
   auto stressDivergence = p_mesh->getMeshField<MeshF_StressDivergence>();

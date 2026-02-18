@@ -620,6 +620,54 @@ void polympo_calculateMPStress_f(MPMesh_ptr p_mpmesh){
   mpMesh->calculateStress(); 
 }
 
+void polympo_setMPStress_f(MPMesh_ptr p_mpmesh, const int nComps, const int numMPs, const double* mpStressIn) {
+  Kokkos::Timer timer;
+  checkMPMeshValid(p_mpmesh);
+  auto p_MPs = ((polyMPO::MPMesh*)p_mpmesh)->p_MPs;
+  PMT_ALWAYS_ASSERT(nComps == vec3d_nEntries);
+  PMT_ALWAYS_ASSERT(numMPs >= p_MPs->getCount());
+  //PMT_ALWAYS_ASSERT(numMPs >= p_MPs->getMaxAppID());
+
+  auto mpStress = p_MPs->getData<polyMPO::MPF_Stress>();
+  auto mpAppID = p_MPs->getData<polyMPO::MPF_MP_APP_ID>();
+  kkViewHostU<const double**> mpStressIn_h(mpStressIn, nComps, numMPs);
+  Kokkos::View<double**> mpStressIn_d("mpStressDevice", vec3d_nEntries, numMPs);
+  Kokkos::deep_copy(mpStressIn_d, mpStressIn_h);
+  auto setMPStress = PS_LAMBDA(const int& elm, const int& mp, const int& mask){
+    if(mask){
+      mpStress(mp,0) = mpStressIn_d(0, mpAppID(mp));
+      mpStress(mp,1) = mpStressIn_d(1, mpAppID(mp));
+      mpStress(mp,2) = mpStressIn_d(2, mpAppID(mp));
+    }
+  };
+  p_MPs->parallel_for(setMPStress, "setMPStress");
+  pumipic::RecordTime("PolyMPO_setMPStress", timer.seconds());
+}
+
+void polympo_getMPStress_f(MPMesh_ptr p_mpmesh, const int nComps, const int numMPs, double* mpStressHost) {
+  Kokkos::Timer timer;
+  checkMPMeshValid(p_mpmesh);
+  auto p_MPs = ((polyMPO::MPMesh*)p_mpmesh)->p_MPs;
+  PMT_ALWAYS_ASSERT(nComps == vec3d_nEntries);
+  PMT_ALWAYS_ASSERT(numMPs >= p_MPs->getCount());
+  //PMT_ALWAYS_ASSERT(numMPs >= p_MPs->getMaxAppID());
+
+  auto mpStress = p_MPs->getData<polyMPO::MPF_Stress>();
+  auto mpAppID = p_MPs->getData<polyMPO::MPF_MP_APP_ID>();
+  Kokkos::View<double**> mpStressCopy("mpStressCopy", vec3d_nEntries, numMPs);
+  auto getMPStress = PS_LAMBDA(const int& elm, const int& mp, const int& mask){
+    if(mask){
+      mpStressCopy(0,mpAppID(mp)) = mpStress(mp,0);
+      mpStressCopy(1,mpAppID(mp)) = mpStress(mp,1);
+      mpStressCopy(2,mpAppID(mp)) = mpStress(mp,2);
+    }
+  };
+  p_MPs->parallel_for(getMPStress, "getMPStress");
+  kkDbl2dViewHostU arrayHost(mpStressHost, nComps, numMPs);
+  Kokkos::deep_copy(arrayHost, mpStressCopy);
+  pumipic::RecordTime("PolyMPO_getMPStress", timer.seconds());
+}
+
 void polympo_setAreaMP_f(MPMesh_ptr p_mpmesh, const int nComps, const int numMPs, double* areaMPHost){
   Kokkos::Timer timer;
   checkMPMeshValid(p_mpmesh);

@@ -377,6 +377,22 @@ module polympo
     type(c_ptr), value :: mpMesh
   end subroutine
 
+  subroutine polympo_setMPStress(mpMesh, nComps, numMPs, array) &
+             bind(C, NAME='polympo_setMPStress_f')
+    use :: iso_c_binding
+    type(c_ptr), value :: mpMesh
+    integer(c_int), value :: nComps, numMPs
+    type(c_ptr), value :: array
+  end subroutine
+
+  subroutine polympo_getMPStress(mpMesh, nComps, numMPs, array) &
+             bind(C, NAME='polympo_getMPStress_f')
+    use :: iso_c_binding
+    type(c_ptr), value :: mpMesh
+    integer(c_int), value :: nComps, numMPs
+    type(c_ptr), value :: array
+  end subroutine
+
   subroutine polympo_setAreaMP(mpMesh, nComps, numMPs, array) &
              bind(C, NAME='polympo_setAreaMP_f')
     use :: iso_c_binding

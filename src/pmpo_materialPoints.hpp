@@ -37,11 +37,14 @@ enum MaterialPointSlice {
   MPF_Vel_Incr,
   MPF_Strain_Rate,
   MPF_Stress,
-  MPF_Stress_Div,
   MPF_Shear_Traction,
   MPF_Constv_Mdl_Param,
   MPF_MP_APP_ID,
-  MPF_Tgt_Proc_ID
+  MPF_Tgt_Proc_ID,
+  MPF_Area,
+  MPF_IcePressure,
+  MPF_ReplacementPressure,
+  MPF_Vel_IncrTimesTanLatVertexOverRadius
 };
 
 enum Operating_Mode{
@@ -64,13 +67,16 @@ template <> struct mpSliceToMeshField < MPF_Mass                > { using type =
 template <> struct mpSliceToMeshField < MPF_Vel                 > { using type = vec2d_t; };
 template <> struct mpSliceToMeshField < MPF_Rot_Lat_Lon_Incr    > { using type = vec2d_t; };
 template <> struct mpSliceToMeshField < MPF_Vel_Incr            > { using type = vec2d_t; };
-template <> struct mpSliceToMeshField < MPF_Strain_Rate         > { using type = double[6]; };
-template <> struct mpSliceToMeshField < MPF_Stress              > { using type = double[6]; };
-template <> struct mpSliceToMeshField < MPF_Stress_Div          > { using type = vec3d_t; };
+template <> struct mpSliceToMeshField < MPF_Strain_Rate         > { using type = double[3]; };
+template <> struct mpSliceToMeshField < MPF_Stress              > { using type = double[3]; };
 template <> struct mpSliceToMeshField < MPF_Shear_Traction      > { using type = vec3d_t; };
 template <> struct mpSliceToMeshField < MPF_Constv_Mdl_Param    > { using type = double[12]; };
 template <> struct mpSliceToMeshField < MPF_MP_APP_ID           > { using type = int; };
 template <> struct mpSliceToMeshField < MPF_Tgt_Proc_ID         > { using type = int; };
+template <> struct mpSliceToMeshField < MPF_Area                > { using type = doubleSclr_t; };
+template <> struct mpSliceToMeshField < MPF_IcePressure         > { using type = doubleSclr_t; };
+template <> struct mpSliceToMeshField < MPF_ReplacementPressure > { using type = doubleSclr_t; };
+template <> struct mpSliceToMeshField < MPF_Vel_IncrTimesTanLatVertexOverRadius> { using type = vec2d_t; };
 
 template <MaterialPointSlice slice> 
 static constexpr int mpSliceToNumEntries() {
@@ -103,11 +109,14 @@ typedef MemberTypes<mpSliceToMeshField < MPF_Status              >::type,
                     mpSliceToMeshField < MPF_Vel_Incr            >::type,
                     mpSliceToMeshField < MPF_Strain_Rate         >::type,
                     mpSliceToMeshField < MPF_Stress              >::type,
-                    mpSliceToMeshField < MPF_Stress_Div          >::type,
                     mpSliceToMeshField < MPF_Shear_Traction      >::type,
                     mpSliceToMeshField < MPF_Constv_Mdl_Param    >::type,
                     mpSliceToMeshField < MPF_MP_APP_ID           >::type,
-                    mpSliceToMeshField < MPF_Tgt_Proc_ID         >::type
+                    mpSliceToMeshField < MPF_Tgt_Proc_ID         >::type,
+                    mpSliceToMeshField < MPF_Area                >::type,
+                    mpSliceToMeshField < MPF_IcePressure         >::type,
+                    mpSliceToMeshField < MPF_ReplacementPressure >::type,
+                    mpSliceToMeshField < MPF_Vel_IncrTimesTanLatVertexOverRadius >::type
                     >MaterialPointTypes;
 typedef ps::ParticleStructure<MaterialPointTypes> PS;
 
@@ -125,7 +134,6 @@ class MaterialPoints {
     PS* MPs;
     int elmIDoffset = -1;
     int maxAppID = -1;
-    bool isRotatedFlag = false;
     Operating_Mode operating_mode;
     RebuildHelper rebuildFields;
     IntFunc getAppID;
@@ -211,46 +219,60 @@ class MaterialPoints {
       ps::parallel_for(MPs, swap, "swap");
     }
     void updateMPSliceAll(){
-        updateMPElmID();
-        updateMPSlice<MPF_Cur_Pos_Rot_Lat_Lon,MPF_Tgt_Pos_Rot_Lat_Lon>();
-        updateMPSlice<MPF_Cur_Pos_XYZ,MPF_Tgt_Pos_XYZ>();
+      updateMPElmID();
+      updateMPSlice<MPF_Cur_Pos_Rot_Lat_Lon,MPF_Tgt_Pos_Rot_Lat_Lon>();
+      updateMPSlice<MPF_Cur_Pos_XYZ,MPF_Tgt_Pos_XYZ>();
     }
-    void updateRotLatLonAndXYZ2Tgt(const double radius){
-        Kokkos::Timer timer;
-        auto curPosRotLatLon = MPs->get<MPF_Cur_Pos_Rot_Lat_Lon>();
-        auto tgtPosRotLatLon = MPs->get<MPF_Tgt_Pos_Rot_Lat_Lon>();
-        auto tgtPosXYZ = MPs->get<MPF_Tgt_Pos_XYZ>();
-        auto rotLatLonIncr = MPs->get<MPF_Rot_Lat_Lon_Incr>();
-        //Velocity   
-        auto velMPs = MPs->get<MPF_Vel>();
-        auto velIncr = MPs->get<MPF_Vel_Incr>();
-      
-        auto is_rotated = getRotatedFlag(); 
-        auto updateRotLatLon = PS_LAMBDA(const int& elm, const int& mp, const int& mask){
-            if(mask){
-                auto rotLat = curPosRotLatLon(mp,0) + rotLatLonIncr(mp,0); // phi
-                auto rotLon = curPosRotLatLon(mp,1) + rotLatLonIncr(mp,1); // lambda   
-                tgtPosRotLatLon(mp,0) = rotLat;
-                tgtPosRotLatLon(mp,1) = rotLon;        
-                auto geoLat = rotLat;
-                auto geoLon = rotLon;
-                if(is_rotated){
-                  auto xyz_rot = xyz_from_lat_lon(rotLat, rotLon, radius);
-                  auto xyz_geo = grid_rotation_backward(xyz_rot);
-                  lat_lon_from_xyz(geoLat, geoLon, xyz_geo, radius);
-                }	
-                // x=cosLon cosLat, y=sinLon cosLat, z= sinLat
-                tgtPosXYZ(mp,0) = radius * std::cos(geoLon) * std::cos(geoLat);
-                tgtPosXYZ(mp,1) = radius * std::sin(geoLon) * std::cos(geoLat);
-                tgtPosXYZ(mp,2) = radius * std::sin(geoLat);
-                
-                velMPs(mp,0) = velMPs(mp,0) + velIncr(mp,0);
-                velMPs(mp,1) = velMPs(mp,1) + velIncr(mp,1);
-            } 
-        };
-        ps::parallel_for(MPs, updateRotLatLon,"updateRotationalLatitudeLongitude"); 
-        pumipic::RecordTime("PolyMPO_updateRotLatLonAndXYZ2Tgt", timer.seconds());
-    } 
+
+    void updateRotLatLonAndXYZ2Tgt(const double radius, const bool isRotated){
+      Kokkos::Timer timer;
+      auto curPosRotLatLon = MPs->get<MPF_Cur_Pos_Rot_Lat_Lon>();
+      auto tgtPosRotLatLon = MPs->get<MPF_Tgt_Pos_Rot_Lat_Lon>();
+      auto tgtPosXYZ = MPs->get<MPF_Tgt_Pos_XYZ>();
+      auto rotLatLonIncr = MPs->get<MPF_Rot_Lat_Lon_Incr>();
+      //Velocity
+      auto velMPs = MPs->get<MPF_Vel>();
+      auto velIncr = MPs->get<MPF_Vel_Incr>();
+      //Stress
+      auto MPsStress = MPs->get<MPF_Stress>();
+      auto MPsStressMetric = MPs->get<MPF_Vel_IncrTimesTanLatVertexOverRadius>();     
+ 
+      auto mpAppID = MPs->get<MPF_MP_APP_ID>();
+
+      auto updateRotLatLon = PS_LAMBDA(const int& elm, const int& mp, const int& mask){
+        if(mask){
+          auto rotLat = curPosRotLatLon(mp,0) + rotLatLonIncr(mp,0); // phi
+          auto rotLon = curPosRotLatLon(mp,1) + rotLatLonIncr(mp,1); // lambda
+          tgtPosRotLatLon(mp,0) = rotLat;
+          tgtPosRotLatLon(mp,1) = rotLon;
+          auto geoLat = rotLat;
+          auto geoLon = rotLon;
+          if(isRotated){
+            auto xyz_rot = xyz_from_lat_lon(rotLat, rotLon, radius);
+            auto xyz_geo = grid_rotation_backward(xyz_rot);
+            lat_lon_from_xyz(geoLat, geoLon, xyz_geo, radius);
+          }
+          // x=cosLon cosLat, y=sinLon cosLat, z= sinLat
+          tgtPosXYZ(mp,0) = radius * std::cos(geoLon) * std::cos(geoLat);
+          tgtPosXYZ(mp,1) = radius * std::sin(geoLon) * std::cos(geoLat);
+          tgtPosXYZ(mp,2) = radius * std::sin(geoLat);
+          velMPs(mp,0) = velMPs(mp,0) + velIncr(mp,0);
+          velMPs(mp,1) = velMPs(mp,1) + velIncr(mp,1);
+          //Stress MP term
+          Vec3d stress_prev(MPsStress(mp,0), MPsStress(mp,1), MPsStress(mp,2));
+          MPsStress(mp,0) = stress_prev[0] * (1 - MPsStressMetric(mp, 1)) + 2 * MPsStressMetric(mp, 1) * stress_prev[2];
+          MPsStress(mp,1) = stress_prev[1] + 2*MPsStressMetric(mp, 0) * stress_prev[2];
+          MPsStress(mp,2) = stress_prev[2] +   MPsStressMetric(mp, 0) * (stress_prev[0] - stress_prev[1]);
+
+          if(mpAppID(mp)==0){
+          //  printf("Correction: %.15e %.15e\n", MPsStressMetric(mp, 0), MPsStressMetric(mp, 1));
+          //  printf("Stress in GPU After Correction: %.15e %.15e %.15e\n", MPsStress(mp, 0), MPsStress(mp, 1), MPsStress(mp, 2)); 
+          }
+        } 
+      };
+      ps::parallel_for(MPs, updateRotLatLon,"updateRotationalLatitudeLongitude"); 
+      pumipic::RecordTime("PolyMPO_updateRotLatLonAndXYZ2Tgt", timer.seconds());
+    }
 
     template <int index>
     auto getData() {
@@ -281,13 +303,6 @@ class MaterialPoints {
       PMT_ALWAYS_ASSERT(maxAppID != -1);
       return maxAppID;
     }
-    bool getRotatedFlag() {
-      return isRotatedFlag;
-    }
-    void setRotatedFlag(bool flagSet) {
-      isRotatedFlag = flagSet;
-    }
-
     // MUTATOR  
     template <MaterialPointSlice index> void fillData(double value);//use PS_LAMBDA fill up to 1
 };// End MaterialPoints

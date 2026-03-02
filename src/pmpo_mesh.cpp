@@ -47,7 +47,7 @@ namespace polyMPO{
     auto tanLatVertexRotOverRadiusEntry = meshFields2TypeAndString.at(MeshF_TanLatVertexRotatedOverRadius);
     PMT_ALWAYS_ASSERT(tanLatVertexRotOverRadiusEntry.first == MeshFType_VtxBased);
     tanLatVertexRotatedOverRadius_ = MeshFView<MeshF_TanLatVertexRotatedOverRadius>(tanLatVertexRotOverRadiusEntry.second, numVtxs_);
-    
+
     auto interiorVertexEntry = meshFields2TypeAndString.at(MeshF_InteriorVertex);
     PMT_ALWAYS_ASSERT(interiorVertexEntry.first == MeshFType_VtxBased);
     interiorVertex_ = MeshFView<MeshF_InteriorVertex>(interiorVertexEntry.second, numVtxs_);
@@ -55,6 +55,25 @@ namespace polyMPO{
     auto stressDivergenceEntry = meshFields2TypeAndString.at(MeshF_StressDivergence);
     PMT_ALWAYS_ASSERT(stressDivergenceEntry.first == MeshFType_VtxBased);
     stressDivergence_ = MeshFView<MeshF_StressDivergence>(stressDivergenceEntry.second, numVtxs_);
+
+    auto solveVelocityEntry = meshFields2TypeAndString.at(MeshF_SolveVelocity);
+    PMT_ALWAYS_ASSERT(solveVelocityEntry.first == MeshFType_VtxBased);
+    solveVelocity_ = MeshFView<MeshF_SolveVelocity>(solveVelocityEntry.second, numVtxs_);
+
+    auto totalMassVtxEntry = meshFields2TypeAndString.at(MeshF_TotalMassVtx);
+    PMT_ALWAYS_ASSERT(totalMassVtxEntry.first == MeshFType_VtxBased);
+    totalMassVtx_ = MeshFView<MeshF_TotalMassVtx>(totalMassVtxEntry.second, numVtxs_);
+    
+    //For grid solve, the source terms
+    airStress_ = MeshFView<MeshF_AirStress>(meshFields2TypeAndString.at(MeshF_AirStress).second, numVtxs_);
+
+    surfaceTilt_ = MeshFView<MeshF_SurfaceTilt>(meshFields2TypeAndString.at(MeshF_SurfaceTilt).second, numVtxs_);
+    
+    totalMassFVtx_ = MeshFView<MeshF_TotalMassFVtx>(meshFields2TypeAndString.at(MeshF_TotalMassFVtx).second, numVtxs_);
+    
+    oceanStress_ = MeshFView<MeshF_OceanStress>(meshFields2TypeAndString.at(MeshF_OceanStress).second, numVtxs_);
+    
+    oceanStressCoeff_ = MeshFView<MeshF_OceanStressCoeff>(meshFields2TypeAndString.at(MeshF_OceanStressCoeff).second, numVtxs_);
   }
 
   void Mesh::setMeshElmBasedFieldSize(){
@@ -131,6 +150,53 @@ namespace polyMPO{
         gnomProjVtx(iElm, i, 0) = outX;
         gnomProjVtx(iElm, i, 1) = outY;
       }
+    });
+  }
+
+  void Mesh::gridSolveGPU(){
+    std::cout<<__FUNCTION__<<std::endl;
+    //Mesh Fields
+    int numVertices = getNumVertices(); 
+    auto totalMassVtx = getMeshField<MeshF_TotalMassVtx>();
+    auto totalMassFVtx = getMeshField<MeshF_TotalMassFVtx>();
+    auto airStress = getMeshField<MeshF_AirStress>();
+    auto surfaceTiltForce = getMeshField<MeshF_SurfaceTilt>();
+    auto oceanStress = getMeshField<MeshF_OceanStress>();
+    auto oceanStressCoeff = getMeshField<MeshF_OceanStressCoeff>();
+    auto solve_velocity = getMeshField<MeshF_SolveVelocity>();
+    auto stressDivergence = getMeshField<MeshF_StressDivergence>();
+    auto velocity = getMeshField<MeshF_Vel>();
+    auto elasticTimeStep = getElasticTimeStep(); 
+    
+    double sinOceanTurningAngle=0.0;
+    double cosOceanTurningAngle=1.0;   
+
+    Kokkos::parallel_for("SolveGridVelocity", numVertices, KOKKOS_LAMBDA(const int vtx){
+      if(solve_velocity(vtx) == 0) return;
+      double a, b, c, d, s, rhs_u, rhs_v, denom ;
+      
+      s = (totalMassFVtx(vtx, 0) >= 0) ? 1.0 : -1.0;
+      a = totalMassVtx(vtx, 0)/elasticTimeStep + oceanStressCoeff(vtx, 0) * cosOceanTurningAngle;
+      b = -totalMassFVtx(vtx, 0) - oceanStressCoeff(vtx, 0) * sinOceanTurningAngle * s * totalMassFVtx(vtx, 0);
+      c = totalMassFVtx(vtx, 0)  + oceanStressCoeff(vtx, 0) * sinOceanTurningAngle * s * totalMassFVtx(vtx, 0);
+      d = totalMassVtx(vtx, 0)/elasticTimeStep + oceanStressCoeff(vtx, 0) * cosOceanTurningAngle; 
+      rhs_u = stressDivergence(vtx, 0) + airStress(vtx, 0) + surfaceTiltForce(vtx, 0) + oceanStressCoeff(vtx, 0)*oceanStress(vtx, 0) +
+              (totalMassVtx(vtx, 0) * velocity(vtx, 0))/elasticTimeStep;
+      rhs_v = stressDivergence(vtx, 1) + airStress(vtx, 1) + surfaceTiltForce(vtx, 1) + oceanStressCoeff(vtx, 0)*oceanStress(vtx, 1) +
+              (totalMassVtx(vtx, 0) * velocity(vtx, 1))/elasticTimeStep;
+      denom = a*d - b*c;
+      
+      velocity(vtx, 0) = (d*rhs_u-b*rhs_v)/denom;
+      velocity(vtx, 1) = (a*rhs_v-c*rhs_u)/denom;
+
+      //Debug
+      if(vtx == 10 || vtx == 11){
+        /*
+        printf("Vtx %d F: %.15e %.15e %.15e %.15e %.15e %.15e %.15e %.15e %.15e \n", vtx, totalMassVtx(vtx,0), totalMassFVtx(vtx,0), 
+        airStress(vtx,0), airStress(vtx,1), surfaceTiltForce(vtx,0), surfaceTiltForce(vtx,1), oceanStress(vtx,0), oceanStress(vtx,1), 
+        oceanStressCoeff(vtx, 0));*/
+        printf("Vtx %d V: %.15e %.15e \n", vtx, velocity(vtx,0), velocity(vtx,1));
+      }  
     });
   }
 

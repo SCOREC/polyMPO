@@ -976,6 +976,14 @@ module polympo
     type(c_ptr), value :: array
   end subroutine
 
+  subroutine polympo_setSolveVelocityMesh(mpMesh, nVertices, array) &
+             bind(C, NAME='polympo_setSolveVelocityMesh_f')
+    use :: iso_c_binding
+    type(c_ptr), value :: mpMesh
+    integer(c_int), value :: nVertices
+    type(c_ptr), value :: array
+  end subroutine
+
   subroutine polympo_calculateStressDivergence(mpMesh) &
              bind(C, NAME='polympo_calculateStressDivergence_f')
     use :: iso_c_binding
@@ -989,6 +997,61 @@ module polympo
     integer(c_int), value :: nVertices
     type(c_ptr), value :: uArray, vArray
   end subroutine
+
+  subroutine polympo_setTotalMassVtx(mpMesh, nVertices, array) &
+             bind(C, NAME='polympo_setTotalMassVtx_f')
+    use :: iso_c_binding
+    type(c_ptr), value :: mpMesh
+    integer(c_int), value :: nVertices
+    type(c_ptr), value :: array
+  end subroutine
+
+  subroutine polympo_set_airStress(mpMesh, nVertices, uArray, vArray) &
+             bind(C, NAME='polympo_set_airStress_f')
+    use :: iso_c_binding
+    type(c_ptr), value :: mpMesh
+    integer(c_int), value :: nVertices
+    type(c_ptr), value :: uArray, vArray
+  end subroutine
+  
+  subroutine polympo_set_surfaceTiltForce(mpMesh, nVertices, uArray, vArray) &
+             bind(C, NAME='polympo_set_surfaceTiltForce_f')
+    use :: iso_c_binding
+    type(c_ptr), value :: mpMesh
+    integer(c_int), value :: nVertices
+    type(c_ptr), value :: uArray, vArray
+  end subroutine
+
+  subroutine polympo_set_totalMassVertexfVertex(mpMesh, nVertices, array) &
+             bind(C, NAME='polympo_set_totalMassVertexfVertex_f')
+    use :: iso_c_binding
+    type(c_ptr), value :: mpMesh
+    integer(c_int), value :: nVertices
+    type(c_ptr), value :: array
+  end subroutine
+
+  subroutine polympo_set_oceanStress(mpMesh, nVertices, uArray, vArray) &
+             bind(C, NAME='polympo_set_oceanStress_f')
+    use :: iso_c_binding
+    type(c_ptr), value :: mpMesh
+    integer(c_int), value :: nVertices
+    type(c_ptr), value :: uArray, vArray
+  end subroutine
+
+  subroutine polympo_set_oceanStressCoefficient(mpMesh, nVertices, array) &
+             bind(C, NAME='polympo_set_oceanStressCoefficient_f')
+    use :: iso_c_binding
+    type(c_ptr), value :: mpMesh
+    integer(c_int), value :: nVertices
+    type(c_ptr), value :: array
+  end subroutine
+
+  subroutine  polympo_velocity_grid_solve(mpMesh) &
+             bind(C, NAME='polympo_velocity_grid_solve_f')
+    use :: iso_c_binding
+    type(c_ptr), value :: mpMesh
+  end subroutine
+
 
 
   !---------------------------------------------------------------------------

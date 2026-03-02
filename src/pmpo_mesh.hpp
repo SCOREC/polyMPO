@@ -31,9 +31,17 @@ enum MeshFieldIndex{
     MeshF_ElmCenterGnomProj,
     MeshF_TanLatVertexRotatedOverRadius,
     MeshF_SolveStress,
+    MeshF_SolveVelocity,
     MeshF_InteriorVertex,
-    MeshF_StressDivergence
+    MeshF_StressDivergence,
+    MeshF_TotalMassVtx,
+    MeshF_AirStress,
+    MeshF_SurfaceTilt,
+    MeshF_TotalMassFVtx,
+    MeshF_OceanStress,
+    MeshF_OceanStressCoeff
 };
+
 enum MeshFieldType{
     MeshFType_Invalid = -2,
     MeshFType_Unsupported,
@@ -56,8 +64,15 @@ template <> struct meshFieldToType < MeshF_VtxGnomProj       > { using type = Ko
 template <> struct meshFieldToType < MeshF_ElmCenterGnomProj > { using type = Kokkos::View<double*[4]>; };
 template <> struct meshFieldToType < MeshF_TanLatVertexRotatedOverRadius > { using type = Kokkos::View<doubleSclr_t*>; };
 template <> struct meshFieldToType < MeshF_SolveStress       > { using type = IntView; };
+template <> struct meshFieldToType < MeshF_SolveVelocity     > { using type = IntView; };
 template <> struct meshFieldToType < MeshF_InteriorVertex    > { using type = IntView; };
 template <> struct meshFieldToType < MeshF_StressDivergence  > { using type = Kokkos::View<vec2d_t*>; };
+template <> struct meshFieldToType < MeshF_TotalMassVtx      > { using type = Kokkos::View<doubleSclr_t*>; };
+template <> struct meshFieldToType < MeshF_AirStress         > { using type = Kokkos::View<vec2d_t*>; };
+template <> struct meshFieldToType < MeshF_SurfaceTilt       > { using type = Kokkos::View<vec2d_t*>; };
+template <> struct meshFieldToType < MeshF_TotalMassFVtx     > { using type = Kokkos::View<doubleSclr_t*>; };
+template <> struct meshFieldToType < MeshF_OceanStress       > { using type = Kokkos::View<vec2d_t*>; };
+template <> struct meshFieldToType < MeshF_OceanStressCoeff  > { using type = Kokkos::View<doubleSclr_t*>; };
 
 template <MeshFieldIndex index>
 using MeshFView = typename meshFieldToType<index>::type;
@@ -79,8 +94,15 @@ const std::map<MeshFieldIndex, std::pair<MeshFieldType, std::string>> meshFields
         {MeshF_ElmCenterGnomProj,{MeshFType_ElmBased,"MeshField_ElementCenterGnomonicprojection"}},
         {MeshF_TanLatVertexRotatedOverRadius, {MeshFType_VtxBased,"MeshField_TanLatVertexRotatedOverRadius"}},
         {MeshF_SolveStress,      {MeshFType_ElmBased,"MeshField_SolveStress"}},
+        {MeshF_SolveVelocity,    {MeshFType_VtxBased,"MeshField_SolveVelocity"}},
         {MeshF_InteriorVertex,   {MeshFType_VtxBased,"MeshField_InteriorVertex"}},
         {MeshF_StressDivergence, {MeshFType_VtxBased,"MeshField_StressDivergence"}},
+        {MeshF_TotalMassVtx,     {MeshFType_VtxBased,"MeshField_TotalMassVtx"}},
+        {MeshF_AirStress,        {MeshFType_VtxBased,"MeshField_AirStress"}},
+        {MeshF_SurfaceTilt,      {MeshFType_VtxBased,"MeshField_SurfaceTilt"}},
+        {MeshF_TotalMassFVtx,    {MeshFType_VtxBased,"MeshField_TotalMassFVtx"}},
+        {MeshF_OceanStress,      {MeshFType_VtxBased,"MeshField_OceanStress"}},
+        {MeshF_OceanStressCoeff, {MeshFType_VtxBased,"MeshField_OceanStressCoeff"}}
 };
 
 enum mesh_type {mesh_unrecognized_lower = -1,
@@ -124,10 +146,18 @@ class Mesh {
     //GnomonicProjection
     MeshFView<MeshF_VtxGnomProj> vtxGnomProj_;
     MeshFView<MeshF_ElmCenterGnomProj> elmCenterGnomProj_;
-    //DoubleMat2DView vtxStress_;
+    
     MeshFView<MeshF_TanLatVertexRotatedOverRadius> tanLatVertexRotatedOverRadius_;
     MeshFView<MeshF_SolveStress> solveStress_;
+    MeshFView<MeshF_SolveVelocity> solveVelocity_;
     MeshFView<MeshF_InteriorVertex> interiorVertex_;
+    MeshFView<MeshF_TotalMassVtx> totalMassVtx_;
+    MeshFView<MeshF_AirStress> airStress_;
+    MeshFView<MeshF_SurfaceTilt> surfaceTilt_;
+    MeshFView<MeshF_TotalMassFVtx> totalMassFVtx_;
+    MeshFView<MeshF_OceanStress> oceanStress_;
+    MeshFView<MeshF_OceanStressCoeff> oceanStressCoeff_;
+
     bool isRotatedFlag = false;
     double elasticTimeStep_;
     double dynamicTimeStep_;
@@ -228,6 +258,8 @@ class Mesh {
     double getDynamicTimeStep(){
       return dynamicTimeStep_;
     }
+
+    void gridSolveGPU();
 };
 
 template<MeshFieldIndex index>
@@ -282,11 +314,32 @@ auto Mesh::getMeshField(){
     else if constexpr (index==MeshF_SolveStress){
         return solveStress_;
     }
+    else if constexpr (index==MeshF_SolveVelocity){
+        return solveVelocity_;
+    }
     else if constexpr (index==MeshF_InteriorVertex){
         return interiorVertex_;
     }
     else if constexpr (index==MeshF_StressDivergence){
         return stressDivergence_;
+    }
+    else if constexpr (index==MeshF_TotalMassVtx){
+        return totalMassVtx_;
+    }
+    else if constexpr (index==MeshF_AirStress){
+        return airStress_;
+    }
+    else if constexpr (index==MeshF_SurfaceTilt){
+        return surfaceTilt_;
+    }
+    else if constexpr (index==MeshF_TotalMassFVtx){
+        return totalMassFVtx_;
+    }
+    else if constexpr (index==MeshF_OceanStress){
+        return oceanStress_;
+    }
+    else if constexpr (index==MeshF_OceanStressCoeff){
+        return oceanStressCoeff_;
     }
     fprintf(stderr,"Mesh Field Index error!\n");
     exit(1);

@@ -1371,11 +1371,26 @@ void polympo_setSolveStressMesh_f(MPMesh_ptr p_mpmesh, const int nCells, int* ar
   Kokkos::deep_copy(solveStress, h_solveStress);
 }
 
+void polympo_setSolveVelocityMesh_f(MPMesh_ptr p_mpmesh, const int nVertices, int* array){
+  //chech validity
+  checkMPMeshValid(p_mpmesh);
+  auto p_mesh = ((polyMPO::MPMesh*)p_mpmesh)->p_mesh;
+
+  PMT_ALWAYS_ASSERT(p_mesh->getNumVertices()==nVertices);
+  //copy the host array to the device
+  auto solveVelocity = p_mesh->getMeshField<polyMPO::MeshF_SolveVelocity>();
+  auto h_solveVelocity = Kokkos::create_mirror_view(solveVelocity);
+  for(int i=0; i<nVertices; i++)
+    h_solveVelocity(i) = array[i];
+  Kokkos::deep_copy(solveVelocity, h_solveVelocity);
+}
+
 void polympo_calculateStressDivergence_f(MPMesh_ptr p_mpmesh){
   //chech validity
   checkMPMeshValid(p_mpmesh);
   ((polyMPO::MPMesh*)p_mpmesh) -> calculateStressDivergence();
-}
+
+ }
 
 void polympo_getStressDivergence_f(MPMesh_ptr p_mpmesh, const int nVertices, double* uArray, double* vArray){
   //chech validity
@@ -1394,6 +1409,109 @@ void polympo_getStressDivergence_f(MPMesh_ptr p_mpmesh, const int nVertices, dou
   }
 }
 
+void polympo_setTotalMassVtx_f(MPMesh_ptr p_mpmesh, const int nVertices, double* array){
+  checkMPMeshValid(p_mpmesh);
+  auto p_mesh = ((polyMPO::MPMesh*)p_mpmesh)->p_mesh;
+
+  PMT_ALWAYS_ASSERT(p_mesh->getNumVertices()==nVertices);
+  //copy the host array to the device
+  auto totalMassVtx = p_mesh->getMeshField<polyMPO::MeshF_TotalMassVtx>();
+  auto h_totalMassVtx = Kokkos::create_mirror_view(totalMassVtx);
+  for(int i=0; i<nVertices; i++)
+    h_totalMassVtx(i, 0) = array[i];
+  Kokkos::deep_copy(totalMassVtx, h_totalMassVtx);
+}
+
+void polympo_set_airStress_f(MPMesh_ptr p_mpmesh, const int nVertices, double* uArray, double* vArray){
+  //check mpMesh is valid
+  checkMPMeshValid(p_mpmesh);
+  auto p_mesh = ((polyMPO::MPMesh*)p_mpmesh)->p_mesh;
+
+  //check the size
+  PMT_ALWAYS_ASSERT(p_mesh->getNumVertices()==nVertices);
+
+  //copy the host array to the device
+  auto airStress = p_mesh->getMeshField<polyMPO::MeshF_AirStress>();
+  auto h_airStress = Kokkos::create_mirror_view(airStress);
+  for(int i=0; i<nVertices; i++){
+    h_airStress(i,0) = uArray[i];
+    h_airStress(i,1) = vArray[i];
+  }
+  Kokkos::deep_copy(airStress, h_airStress);
+}
+
+void polympo_set_surfaceTiltForce_f(MPMesh_ptr p_mpmesh, const int nVertices, double* uArray, double* vArray){
+  //check mpMesh is valid
+  checkMPMeshValid(p_mpmesh);
+  auto p_mesh = ((polyMPO::MPMesh*)p_mpmesh)->p_mesh;
+
+  //check the size
+  PMT_ALWAYS_ASSERT(p_mesh->getNumVertices()==nVertices);
+
+  //copy the host array to the device
+  auto surfTiltForce = p_mesh->getMeshField<polyMPO::MeshF_SurfaceTilt>();
+  auto h_surfTiltForce = Kokkos::create_mirror_view(surfTiltForce);
+  for(int i=0; i<nVertices; i++){
+    h_surfTiltForce(i,0) = uArray[i];
+    h_surfTiltForce(i,1) = vArray[i];
+  }
+  Kokkos::deep_copy(surfTiltForce, h_surfTiltForce);
+}
+
+void polympo_set_totalMassVertexfVertex_f(MPMesh_ptr p_mpmesh, const int nVertices, double* array){
+  //check mpMesh is valid
+  checkMPMeshValid(p_mpmesh);
+  auto p_mesh = ((polyMPO::MPMesh*)p_mpmesh)->p_mesh;
+
+  //check the size
+  PMT_ALWAYS_ASSERT(p_mesh->getNumVertices()==nVertices);
+
+  //copy the host array to the device
+  auto totalMassFVtx = p_mesh->getMeshField<polyMPO::MeshF_TotalMassFVtx>();
+  auto h_totalMassFVtx = Kokkos::create_mirror_view(totalMassFVtx);
+  for(int i=0; i<nVertices; i++)
+    h_totalMassFVtx(i,0) = array[i];
+  Kokkos::deep_copy(totalMassFVtx, h_totalMassFVtx);
+}
+
+void polympo_set_oceanStress_f(MPMesh_ptr p_mpmesh, const int nVertices, double* uArray, double* vArray){
+  //check mpMesh is valid
+  checkMPMeshValid(p_mpmesh);
+  auto p_mesh = ((polyMPO::MPMesh*)p_mpmesh)->p_mesh;
+  //check the size
+  PMT_ALWAYS_ASSERT(p_mesh->getNumVertices()==nVertices);
+
+  //copy the host array to the device
+  auto oceanStress = p_mesh->getMeshField<polyMPO::MeshF_OceanStress>();
+  auto h_oceanStress = Kokkos::create_mirror_view(oceanStress);
+  for(int i=0; i<nVertices; i++){
+    h_oceanStress(i,0) = uArray[i];
+    h_oceanStress(i,1) = vArray[i];
+  }
+  Kokkos::deep_copy(oceanStress, h_oceanStress);
+}
+
+void polympo_set_oceanStressCoefficient_f(MPMesh_ptr p_mpmesh, const int nVertices, double* array){
+  //check mpMesh is valid
+  checkMPMeshValid(p_mpmesh);
+  auto p_mesh = ((polyMPO::MPMesh*)p_mpmesh)->p_mesh;
+  //check the size
+  PMT_ALWAYS_ASSERT(p_mesh->getNumVertices()==nVertices);
+
+  //copy the host array to the device
+  auto oceanStressCoeff = p_mesh->getMeshField<polyMPO::MeshF_OceanStressCoeff>();
+  auto h_oceanStressCoeff = Kokkos::create_mirror_view(oceanStressCoeff);
+  for(int i=0; i<nVertices; i++)
+    h_oceanStressCoeff(i,0) = array[i];
+  
+  Kokkos::deep_copy(oceanStressCoeff, h_oceanStressCoeff);
+}
+
+void polympo_velocity_grid_solve_f(MPMesh_ptr p_mpmesh){
+  //Temporary grid Solve after calculateDivergence
+  auto p_mesh = ((polyMPO::MPMesh*)p_mpmesh)->p_mesh;
+  p_mesh->gridSolveGPU();
+}
 
 //Advection Calcualtions
 void polympo_push_f(MPMesh_ptr p_mpmesh){

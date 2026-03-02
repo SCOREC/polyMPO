@@ -94,6 +94,7 @@ void MPMesh::calculateStress(){
 
 void MPMesh::calculateStressDivergence(){
  
+  Kokkos::Timer timer;
   int self, numProcsTot;
   MPI_Comm comm = p_MPs->getMPIComm();
   MPI_Comm_rank(comm, &self);
@@ -183,6 +184,8 @@ void MPMesh::calculateStressDivergence(){
     stressDivergence(vtx, 0) = ramp * stress_divUV(vtx, 0) + (1 - ramp) * divUV_edge(vtx, 0) * invM ;
     stressDivergence(vtx, 1) = ramp * stress_divUV(vtx, 1) + (1 - ramp) * divUV_edge(vtx, 1) * invM ; 
   });
+ 
+  pumipic::RecordTime("Stress_Divergence_Reconstruction" + std::to_string(self), timer.seconds()); 
 }
 
 void MPMesh::calcBasis() {

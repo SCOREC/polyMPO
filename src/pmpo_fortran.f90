@@ -371,10 +371,11 @@ module polympo
   end subroutine
   
   !MP Stress
-  subroutine polympo_calculateMPStress(mpMesh) &
+  subroutine polympo_calculateMPStress(mpMesh, constitutive_model) &
              bind(C, NAME='polympo_calculateMPStress_f')
     use :: iso_c_binding
     type(c_ptr), value :: mpMesh
+    integer(c_int), value :: constitutive_model
   end subroutine
 
   subroutine polympo_setMPStress(mpMesh, nComps, numMPs, array) &

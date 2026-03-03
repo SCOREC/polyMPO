@@ -614,10 +614,10 @@ void polympo_calculateMPStrainRate_f(MPMesh_ptr p_mpmesh){
   mpMesh->calculateStrain(); 
 }
 
-void polympo_calculateMPStress_f(MPMesh_ptr p_mpmesh){
+void polympo_calculateMPStress_f(MPMesh_ptr p_mpmesh, const int constitutive_model){
   checkMPMeshValid(p_mpmesh);
   auto mpMesh = ((polyMPO::MPMesh*)p_mpmesh);
-  mpMesh->calculateStress(); 
+  mpMesh->calculateStress(constitutive_model); 
 }
 
 void polympo_setMPStress_f(MPMesh_ptr p_mpmesh, const int nComps, const int numMPs, const double* mpStressIn) {

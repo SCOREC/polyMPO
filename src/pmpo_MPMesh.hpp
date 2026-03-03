@@ -89,7 +89,7 @@ class MPMesh{
 
     void printVTP_mesh(int printVTPIndex);
     void calculateStrain();
-    void calculateStress();
+    void calculateStress(const int constitutive_relation);
     void calculateStressDivergence();
 };
 

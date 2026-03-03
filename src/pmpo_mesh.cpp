@@ -154,7 +154,6 @@ namespace polyMPO{
   }
 
   void Mesh::gridSolveGPU(){
-    std::cout<<__FUNCTION__<<std::endl;
     //Mesh Fields
     int numVerticesOwned = getNumVerticesOwned(); 
     auto totalMassVtx = getMeshField<MeshF_TotalMassVtx>();

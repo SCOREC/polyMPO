@@ -522,6 +522,15 @@ module polympo
     integer(c_int), value :: numVtxs
   end subroutine
 
+
+  subroutine polympo_setMeshNumVtxsOwned(mpMesh,numVtxsOwned) &
+             bind(C, NAME='polympo_setMeshNumVtxsOwned_f')
+    use :: iso_c_binding
+    type(c_ptr), value :: mpMesh
+    integer(c_int), value :: numVtxsOwned
+  end subroutine
+
+
   !---------------------------------------------------------------------------
   !> @brief get the number of mesh vertices
   !> @param mpMesh(in) mpMesh object

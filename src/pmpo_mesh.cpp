@@ -156,7 +156,7 @@ namespace polyMPO{
   void Mesh::gridSolveGPU(){
     std::cout<<__FUNCTION__<<std::endl;
     //Mesh Fields
-    int numVertices = getNumVertices(); 
+    int numVerticesOwned = getNumVerticesOwned(); 
     auto totalMassVtx = getMeshField<MeshF_TotalMassVtx>();
     auto totalMassFVtx = getMeshField<MeshF_TotalMassFVtx>();
     auto airStress = getMeshField<MeshF_AirStress>();
@@ -171,7 +171,7 @@ namespace polyMPO{
     double sinOceanTurningAngle=0.0;
     double cosOceanTurningAngle=1.0;   
 
-    Kokkos::parallel_for("SolveGridVelocity", numVertices, KOKKOS_LAMBDA(const int vtx){
+    Kokkos::parallel_for("SolveGridVelocity", numVerticesOwned, KOKKOS_LAMBDA(const int vtx){
       if(solve_velocity(vtx) == 0) return;
       double a, b, c, d, s, rhs_u, rhs_v, denom ;
       
@@ -195,7 +195,7 @@ namespace polyMPO{
         printf("Vtx %d F: %.15e %.15e %.15e %.15e %.15e %.15e %.15e %.15e %.15e \n", vtx, totalMassVtx(vtx,0), totalMassFVtx(vtx,0), 
         airStress(vtx,0), airStress(vtx,1), surfaceTiltForce(vtx,0), surfaceTiltForce(vtx,1), oceanStress(vtx,0), oceanStress(vtx,1), 
         oceanStressCoeff(vtx, 0));*/
-        printf("Vtx %d V: %.15e %.15e \n", vtx, velocity(vtx,0), velocity(vtx,1));
+        //printf("Vtx %d V: %.15e %.15e \n", vtx, velocity(vtx,0), velocity(vtx,1));
       }  
     });
   }

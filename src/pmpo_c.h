@@ -64,6 +64,7 @@ void polympo_setMeshGeomTypePlanar_f(MPMesh_ptr p_mpmesh);
 void polympo_setMeshGeomTypeSpherical_f(MPMesh_ptr p_mpmesh);
 void polympo_setMeshSphereRadius_f(MPMesh_ptr p_mpmesh, const double sphereRadius);
 void polympo_setMeshNumVtxs_f(MPMesh_ptr p_mpmesh, const int numVtxs);
+void polympo_setMeshNumVtxsOwned_f(MPMesh_ptr p_mpmesh, const int numVtxsOwned);
 void polympo_getMeshNumVtxs_f(MPMesh_ptr p_mpmesh, int & numVtxs);
 void polympo_setMeshNumElms_f(MPMesh_ptr p_mpmesh, const int numElms);
 void polympo_getMeshNumElms_f(MPMesh_ptr p_mpmesh, int & numElms);

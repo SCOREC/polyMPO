@@ -123,6 +123,7 @@ class Mesh {
 
     double sphereRadius_;
     int numVtxs_;
+    int numVtxsOwned_;
     int numElms_;
     //IntView nEdgesPerElm_;
     IntVtx2ElmView elm2VtxConn_;
@@ -203,6 +204,7 @@ class Mesh {
     geom_type getGeomType() { return geomType_; }
     double getSphereRadius() { return sphereRadius_; }
     int getNumVertices() { return numVtxs_; }
+    int getNumVerticesOwned() { return numVtxsOwned_; }
     int getNumElements() { return numElms_; }
     IntVtx2ElmView getElm2VtxConn() { return elm2VtxConn_; }
     IntElm2ElmView getElm2ElmConn() { return elm2ElmConn_; }
@@ -221,6 +223,8 @@ class Mesh {
                                                sphereRadius_ = sphereRadius;}
     void setNumVtxs(int numVtxs) {PMT_ALWAYS_ASSERT(meshEdit_);
                                   numVtxs_ = numVtxs;}
+    void setNumVtxsOwned(int numVtxsOwned) {PMT_ALWAYS_ASSERT(meshEdit_);
+                                  numVtxsOwned_ = numVtxsOwned;}
     void setNumElms(int numElms) {PMT_ALWAYS_ASSERT(meshEdit_);
                                   numElms_ = numElms;}
     void setElm2VtxConn(IntVtx2ElmView elm2VtxConn) {PMT_ALWAYS_ASSERT(meshEdit_);

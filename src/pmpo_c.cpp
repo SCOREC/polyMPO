@@ -814,6 +814,12 @@ void polympo_setMeshNumVtxs_f(MPMesh_ptr p_mpmesh, const int numVtxs){
   p_mesh->setMeshVtxBasedFieldSize(); 
 }
 
+void polympo_setMeshNumVtxsOwned_f(MPMesh_ptr p_mpmesh, const int numVtxsOwned){
+  checkMPMeshValid(p_mpmesh);
+  auto p_mesh = ((polyMPO::MPMesh*)p_mpmesh)->p_mesh;
+  p_mesh->setNumVtxsOwned(numVtxsOwned);
+}
+
 void polympo_getMeshNumVtxs_f(MPMesh_ptr p_mpmesh, int & numVtxs) {
   checkMPMeshValid(p_mpmesh); //chech vailidity
   auto p_mesh = ((polyMPO::MPMesh*)p_mpmesh)->p_mesh;

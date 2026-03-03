@@ -102,7 +102,7 @@ void MPMesh::calculateStressDivergence(){
 
   //Mesh Information
   auto elm2VtxConn = p_mesh->getElm2VtxConn();
-  int numVtx = p_mesh->getNumVertices();
+  int numVtxOwned = p_mesh->getNumVerticesOwned();
   auto vtxCoords = p_mesh->getMeshField<polyMPO::MeshF_VtxCoords>();
   int numVertices = p_mesh->getNumVertices();
   auto tanLatVertexRotatedOverRadius = p_mesh->getMeshField<MeshF_TanLatVertexRotatedOverRadius>();
@@ -176,7 +176,7 @@ void MPMesh::calculateStressDivergence(){
   }
   
   auto stressDivergence = p_mesh->getMeshField<MeshF_StressDivergence>();
-  Kokkos::parallel_for("calculate_divergence", numVtx, KOKKOS_LAMBDA(const int vtx){
+  Kokkos::parallel_for("calculate_divergence", numVtxOwned, KOKKOS_LAMBDA(const int vtx){
     double ramp = nearAnEdge_l(vtx);
     double invM = 1.0/vtxMatrixMass_l(vtx);
     invM = vtxMatrixMass_l(vtx) >1e-4 ? invM : 0;

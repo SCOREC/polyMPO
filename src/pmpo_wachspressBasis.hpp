@@ -34,7 +34,6 @@ void sphericalInterpolation(MPMesh& mpMesh){
         double mpValue = 0.0;
         for(int i=1; i<= numVtx; i++){
           mpValue += meshField(elm2VtxConn(elm,i)-1,entry)*MPsBasis(mp,i-1);
-          //if(MPsAppID(mp) == 4372) printf("Vertex %d F %.15e \n", elm2VtxConn(elm,i)-1, meshField(elm2VtxConn(elm,i)-1,entry) );
         }
         mpField(mp,entry) = mpValue;
       }

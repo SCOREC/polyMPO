@@ -264,13 +264,6 @@ class MaterialPoints {
           MPsStress(mp,0) = stress_prev[0] * (1 - MPsStressMetric(mp, 1)) + 2 * MPsStressMetric(mp, 1) * stress_prev[2];
           MPsStress(mp,1) = stress_prev[1] + 2*MPsStressMetric(mp, 0) * stress_prev[2];
           MPsStress(mp,2) = stress_prev[2] +   MPsStressMetric(mp, 0) * (stress_prev[0] - stress_prev[1]);
-
-          if(mpAppID(mp)==4372){
-            printf("Current Position %.15e %.15e %.15e \n", curPosXYZ(mp, 0), curPosXYZ(mp, 1), curPosXYZ(mp, 2));
-            printf("Final Position   %.15e %.15e %.15e \n", tgtPosXYZ(mp, 0), tgtPosXYZ(mp, 1), tgtPosXYZ(mp, 2));
-            printf("Final Velocity   %.15e %.15e \n", velMPs(mp, 0), velMPs(mp, 1));
-              
-          }
         } 
       };
       ps::parallel_for(MPs, updateRotLatLon,"updateRotationalLatitudeLongitude"); 

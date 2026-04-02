@@ -384,6 +384,13 @@ void MPMesh::assemblyVtx1(){
     communicate_and_take_halo_contributions(meshField, numVertices, numEntries, 1, 1);
   }
   pumipic::RecordTime("Communicate Field Values" + std::to_string(self), timer.seconds());
+
+  //Debugging
+  Kokkos::parallel_for("debug_rec", numVertices, KOKKOS_LAMBDA(const int iVertex){
+    if(iVertex ==45028)
+      printf("Reconstructed velocity for strain rate %.15e %.15e \n", meshField(iVertex, 0), meshField(iVertex, 1));
+  });
+
 }
 
 //Start Communication routine

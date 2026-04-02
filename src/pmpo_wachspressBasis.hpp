@@ -19,6 +19,7 @@ void sphericalInterpolation(MPMesh& mpMesh){
   auto p_MPs = mpMesh.p_MPs;
   auto MPsPosition = p_MPs->getPositions();
   auto MPsBasis = p_MPs->getData<MPF_Basis_Vals>();
+  auto MPsAppID = p_MPs->getData<MPF_MP_APP_ID>();
 
   constexpr MaterialPointSlice mpfIndex = meshFieldIndexToMPSlice<meshFieldIndex>;
   auto mpField = p_MPs->getData<mpfIndex>();
@@ -31,8 +32,10 @@ void sphericalInterpolation(MPMesh& mpMesh){
       int numVtx = elm2VtxConn(elm,0);
       for(int entry=0; entry<numEntries; entry++){
         double mpValue = 0.0;
-        for(int i=1; i<= numVtx; i++)
+        for(int i=1; i<= numVtx; i++){
           mpValue += meshField(elm2VtxConn(elm,i)-1,entry)*MPsBasis(mp,i-1);
+          //if(MPsAppID(mp) == 4372) printf("Vertex %d F %.15e \n", elm2VtxConn(elm,i)-1, meshField(elm2VtxConn(elm,i)-1,entry) );
+        }
         mpField(mp,entry) = mpValue;
       }
     }

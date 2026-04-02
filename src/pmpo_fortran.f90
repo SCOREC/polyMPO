@@ -369,7 +369,24 @@ module polympo
     use :: iso_c_binding
     type(c_ptr), value :: mpMesh
   end subroutine
-  
+ 
+  subroutine polympo_setMPStrainRate(mpMesh, nComps, numMPs, array) &
+             bind(C, NAME='polympo_setMPStrainRate_f')
+    use :: iso_c_binding
+    type(c_ptr), value :: mpMesh
+    integer(c_int), value :: nComps, numMPs
+    type(c_ptr), value :: array
+  end subroutine
+
+  subroutine polympo_getMPStrainRate(mpMesh, nComps, numMPs, array) &
+             bind(C, NAME='polympo_getMPStrainRate_f')
+    use :: iso_c_binding
+    type(c_ptr), value :: mpMesh
+    integer(c_int), value :: nComps, numMPs
+    type(c_ptr), value :: array
+  end subroutine
+
+ 
   !MP Stress
   subroutine polympo_calculateMPStress(mpMesh, constitutive_model) &
              bind(C, NAME='polympo_calculateMPStress_f')

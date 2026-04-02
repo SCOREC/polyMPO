@@ -229,6 +229,7 @@ class MaterialPoints {
       auto curPosRotLatLon = MPs->get<MPF_Cur_Pos_Rot_Lat_Lon>();
       auto tgtPosRotLatLon = MPs->get<MPF_Tgt_Pos_Rot_Lat_Lon>();
       auto tgtPosXYZ = MPs->get<MPF_Tgt_Pos_XYZ>();
+      auto curPosXYZ = MPs->get<MPF_Cur_Pos_XYZ>();
       auto rotLatLonIncr = MPs->get<MPF_Rot_Lat_Lon_Incr>();
       //Velocity
       auto velMPs = MPs->get<MPF_Vel>();
@@ -264,9 +265,11 @@ class MaterialPoints {
           MPsStress(mp,1) = stress_prev[1] + 2*MPsStressMetric(mp, 0) * stress_prev[2];
           MPsStress(mp,2) = stress_prev[2] +   MPsStressMetric(mp, 0) * (stress_prev[0] - stress_prev[1]);
 
-          if(mpAppID(mp)==0){
-          //  printf("Correction: %.15e %.15e\n", MPsStressMetric(mp, 0), MPsStressMetric(mp, 1));
-          //  printf("Stress in GPU After Correction: %.15e %.15e %.15e\n", MPsStress(mp, 0), MPsStress(mp, 1), MPsStress(mp, 2)); 
+          if(mpAppID(mp)==4372){
+            printf("Current Position %.15e %.15e %.15e \n", curPosXYZ(mp, 0), curPosXYZ(mp, 1), curPosXYZ(mp, 2));
+            printf("Final Position   %.15e %.15e %.15e \n", tgtPosXYZ(mp, 0), tgtPosXYZ(mp, 1), tgtPosXYZ(mp, 2));
+            printf("Final Velocity   %.15e %.15e \n", velMPs(mp, 0), velMPs(mp, 1));
+              
           }
         } 
       };

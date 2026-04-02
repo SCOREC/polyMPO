@@ -20,11 +20,26 @@ void MPMesh::calculateStrain(){
   auto gnomProjElmCenter = p_mesh->getMeshField<MeshF_ElmCenterGnomProj>();
   auto elm2VtxConn = p_mesh->getElm2VtxConn();
   auto velField = p_mesh->getMeshField<MeshF_Vel>();
+  auto solveStress = p_mesh->getMeshField<polyMPO::MeshF_SolveStress>();
 
   bool isRotated = p_mesh->getRotatedFlag();
 
+  static int strain_count=0;
+  strain_count ++; 
+  bool debug = false;
+  if (strain_count < 3) debug = true;
+  if (debug) printf("Strain count %d ===========\n", strain_count);
+
   auto setMPStrainRate = PS_LAMBDA(const int& elm, const int& mp, const int& mask){
     if(mask){
+
+      if(solveStress(elm)==0){
+        MPsStrainRate(mp, 0) =  0.0;
+        MPsStrainRate(mp, 1) =  0.0;
+        MPsStrainRate(mp, 2) =  0.0;
+        return;
+      }
+
       int numVtx = elm2VtxConn(elm,0);
 
       Vec3d position3d(MPsPosition(mp,0),MPsPosition(mp,1),MPsPosition(mp,2)); 
@@ -52,10 +67,17 @@ void MPMesh::calculateStrain(){
         v22 = v22 + MPsBasisGrads(mp, i*2 + 1) * velField(iVertex, 1);
         uTanOverR = uTanOverR + MPsBasis(mp, i) * tanLatVertexRotatedOverRadius(iVertex, 0) * velField(iVertex, 0);
         vTanOverR = vTanOverR + MPsBasis(mp, i) * tanLatVertexRotatedOverRadius(iVertex, 0) * velField(iVertex, 1);
+        if(debug && MPsAppID(mp)==4372){
+          printf("Velocity %.15e %.15e \n", velField(iVertex, 0), velField(iVertex, 1));
+        }
       }
       MPsStrainRate(mp, 0) =  v11 - vTanOverR;
       MPsStrainRate(mp, 1) =  v22;
       MPsStrainRate(mp, 2) =  0.5*(v12 + v21 + uTanOverR);
+
+      if(debug && MPsAppID(mp)==4372){
+        printf("Strain %.15e %.15e %.15e \n", MPsStrainRate(mp, 0), MPsStrainRate(mp, 1), MPsStrainRate(mp, 2));
+      }
     }
   };
   p_MPs->parallel_for(setMPStrainRate, "setMPStrainRate");
@@ -74,17 +96,27 @@ void MPMesh::calculateStress(const int constitutive_relation){
   auto MPsArea        = p_MPs->getData<polyMPO::MPF_Area>();
   auto MPsIcePressure = p_MPs->getData<polyMPO::MPF_IcePressure>();
   auto MPsRepPressure = p_MPs->getData<polyMPO::MPF_ReplacementPressure>();
-    
+  
+  static int stress_count=0;
+  stress_count ++;
+  bool debug = false;
+  if (stress_count < 3) debug = true;
+
   auto setMPStress = PS_LAMBDA(const int& elm, const int& mp, const int& mask){
     if(mask){
       Vec3d strain_rate (MPsStrainRate(mp, 0), MPsStrainRate(mp, 1), MPsStrainRate(mp, 2));
       Vec3d stress(MPsStress(mp, 0), MPsStress(mp, 1), MPsStress(mp, 2));
+      
       if (constitutive_relation == 1)
         constitutive_evp(strain_rate, stress, MPsIcePressure(mp, 0), MPsRepPressure(mp, 0), MPsArea(mp, 0), elasticTimeStep, dampingTimescale);
       else if(constitutive_relation == 3)
 	constitutive_linear(strain_rate, stress);
       for (int m=0 ; m<3; m++)
-        MPsStress(mp, m) = stress[m];
+        MPsStress(mp, m) = stress[m]*solveStress(elm);
+ 
+      if(debug && MPsAppID(mp)==4372){
+        printf("Stress %.15e %.15e %.15e \n", MPsStress(mp, 0), MPsStress(mp, 1), MPsStress(mp, 2));
+      } 
     }
   };
   p_MPs->parallel_for(setMPStress, "setMPStress");
@@ -184,6 +216,16 @@ void MPMesh::calculateStressDivergence(){
   });
  
   pumipic::RecordTime("Stress_Divergence_Reconstruction" + std::to_string(self), timer.seconds()); 
+ 
+  static int strain_count=0;
+  strain_count ++; 
+  if (strain_count >= 3) return; 
+  
+  Kokkos::parallel_for("debug_rec", numVertices, KOKKOS_LAMBDA(const int vtx){
+    if(vtx ==45028)
+      printf("Reconstructed SD %.15e %.15e \n", stressDivergence(vtx, 0), stressDivergence(vtx, 1));
+  });
+
 }
 
 void MPMesh::calcBasis() {

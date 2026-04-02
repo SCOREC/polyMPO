@@ -23,7 +23,7 @@ void MPMesh::calculateStrain(){
   auto solveStress = p_mesh->getMeshField<polyMPO::MeshF_SolveStress>();
 
   bool isRotated = p_mesh->getRotatedFlag();
-  
+
   auto setMPStrainRate = PS_LAMBDA(const int& elm, const int& mp, const int& mask){
     if(mask){
 
@@ -84,25 +84,25 @@ void MPMesh::calculateStress(const int constitutive_relation){
   auto MPsArea        = p_MPs->getData<polyMPO::MPF_Area>();
   auto MPsIcePressure = p_MPs->getData<polyMPO::MPF_IcePressure>();
   auto MPsRepPressure = p_MPs->getData<polyMPO::MPF_ReplacementPressure>();
-  
+
   auto setMPStress = PS_LAMBDA(const int& elm, const int& mp, const int& mask){
     if(mask){
       Vec3d strain_rate (MPsStrainRate(mp, 0), MPsStrainRate(mp, 1), MPsStrainRate(mp, 2));
       Vec3d stress(MPsStress(mp, 0), MPsStress(mp, 1), MPsStress(mp, 2));
-      
+
       if (constitutive_relation == 1)
         constitutive_evp(strain_rate, stress, MPsIcePressure(mp,0), MPsRepPressure(mp,0), MPsArea(mp,0), elasticTimeStep, dampingTimescale);
       else if(constitutive_relation == 3)
-	constitutive_linear(strain_rate, stress);
+        constitutive_linear(strain_rate, stress);
       for (int m=0 ; m<3; m++)
         MPsStress(mp, m) = stress[m]*solveStress(elm);
     }
   };
   p_MPs->parallel_for(setMPStress, "setMPStress");
-} 
+}
 
 void MPMesh::calculateStressDivergence(){
- 
+
   Kokkos::Timer timer;
   int self, numProcsTot;
   MPI_Comm comm = p_MPs->getMPIComm();
@@ -116,7 +116,7 @@ void MPMesh::calculateStressDivergence(){
   int numVertices = p_mesh->getNumVertices();
   auto tanLatVertexRotatedOverRadius = p_mesh->getMeshField<MeshF_TanLatVertexRotatedOverRadius>();
   auto interiorVertex = p_mesh->getMeshField<MeshF_InteriorVertex>();
-  
+
   //Material Points
   auto MPsAppID  = p_MPs->getData<MPF_MP_APP_ID>();
   auto weight = p_MPs->getData<MPF_Basis_Vals>();
@@ -159,7 +159,7 @@ void MPMesh::calculateStressDivergence(){
         auto factor2 = (w_vtx/radius)*(VtxCoeffs_new(vID,2, 0) + VtxCoeffs_new(vID,2, 1)*CoordDiffs[1] +
                                                                  VtxCoeffs_new(vID,2, 2)*CoordDiffs[2] +
                                                                  VtxCoeffs_new(vID,2, 3)*CoordDiffs[3]);
-                                                              
+
         Kokkos::atomic_add(&stress_divUV(vID, 0), factor1 * MPsStress(mp, 0) + factor2 * MPsStress(mp, 2) -
                                               2 * tanLatVertexRotatedOverRadius(vID, 0) * factor * MPsStress(mp, 2));
         Kokkos::atomic_add(&stress_divUV(vID, 1), factor2 * MPsStress(mp, 1) + factor1*MPsStress(mp, 2) +
@@ -182,7 +182,7 @@ void MPMesh::calculateStressDivergence(){
     communicate_and_take_halo_contributions(stress_divUV, numVertices, 2, 1, 1);
     communicate_and_take_halo_contributions(divUV_edge, numVertices, 2, 1, 1);
   }
-  
+
   auto stressDivergence = p_mesh->getMeshField<MeshF_StressDivergence>();
   Kokkos::parallel_for("calculate_divergence", numVtxOwned, KOKKOS_LAMBDA(const int vtx){
     double ramp = nearAnEdge_l(vtx);
@@ -192,7 +192,7 @@ void MPMesh::calculateStressDivergence(){
     stressDivergence(vtx, 0) = ramp * stress_divUV(vtx, 0) + (1 - ramp) * divUV_edge(vtx, 0) * invM ;
     stressDivergence(vtx, 1) = ramp * stress_divUV(vtx, 1) + (1 - ramp) * divUV_edge(vtx, 1) * invM ; 
   });
- 
+
   pumipic::RecordTime("Stress_Divergence_Reconstruction" + std::to_string(self), timer.seconds()); 
 }
 
@@ -580,13 +580,13 @@ void MPMesh::push_swap_pos(){
 
 void MPMesh::push(){  
   Kokkos::Timer timer;
-  
+
   p_mesh->computeRotLatLonIncr();
-  
+
   sphericalInterpolation<MeshF_RotLatLonIncr>(*this);
-  
+
   p_MPs->updateRotLatLonAndXYZ2Tgt(p_mesh->getSphereRadius(), p_mesh->getRotatedFlag());
-  
+
   auto elm2Process = p_mesh->getElm2Process();
 
   bool anyIsMigrating = false;
@@ -596,15 +596,15 @@ void MPMesh::push(){
     p_MPs->updateMPSlice<MPF_Cur_Pos_Rot_Lat_Lon, MPF_Tgt_Pos_Rot_Lat_Lon>(); // Tgt becomes Cur
     
     bool anyIsMigrating = getAnyIsMigrating(p_MPs, p_MPs->check_migrate());
-   
+
     if(anyIsMigrating)
       p_MPs->migrate();
     else
       p_MPs->rebuild();
-    
+
     p_MPs->updateMPElmID(); //update mpElm IDs slices
     reconstructSlices(); 
-  } 
+  }
   while (anyIsMigrating);
 
   pumipic::RecordTime("PolyMPO_push", timer.seconds());

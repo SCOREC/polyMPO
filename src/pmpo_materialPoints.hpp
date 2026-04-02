@@ -207,7 +207,7 @@ class MaterialPoints {
       const int numEntriesCur = mpSliceToNumEntries<mpfIndexCur>();
       const int numEntriesTgt = mpSliceToNumEntries<mpfIndexTgt>();
       PMT_ALWAYS_ASSERT(numEntriesCur == numEntriesTgt);
-      
+
       auto swap = PS_LAMBDA(const int&, const int& mp, const int& mask) {
         if(mask){
           for(int i=0; i<numEntriesCur; i++){
@@ -229,7 +229,6 @@ class MaterialPoints {
       auto curPosRotLatLon = MPs->get<MPF_Cur_Pos_Rot_Lat_Lon>();
       auto tgtPosRotLatLon = MPs->get<MPF_Tgt_Pos_Rot_Lat_Lon>();
       auto tgtPosXYZ = MPs->get<MPF_Tgt_Pos_XYZ>();
-      auto curPosXYZ = MPs->get<MPF_Cur_Pos_XYZ>();
       auto rotLatLonIncr = MPs->get<MPF_Rot_Lat_Lon_Incr>();
       //Velocity
       auto velMPs = MPs->get<MPF_Vel>();
@@ -237,7 +236,7 @@ class MaterialPoints {
       //Stress
       auto MPsStress = MPs->get<MPF_Stress>();
       auto MPsStressMetric = MPs->get<MPF_Vel_IncrTimesTanLatVertexOverRadius>();     
- 
+
       auto mpAppID = MPs->get<MPF_MP_APP_ID>();
 
       auto updateRotLatLon = PS_LAMBDA(const int& elm, const int& mp, const int& mask){

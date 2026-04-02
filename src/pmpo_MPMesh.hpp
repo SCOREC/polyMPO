@@ -88,6 +88,10 @@ class MPMesh{
     void reconstructSlices();
 
     void printVTP_mesh(int printVTPIndex);
+    void writeMPTrackingVTP(int printVTPIndex, int numMPs, const Vec3dView& history, const Vec3dView& resultLeft,
+                            const Vec3dView& resultRight, const Vec3dView& mpTgtPosArray);
+
+
     void calculateStrain();
     void calculateStress(const int constitutive_relation);
     void calculateStressDivergence();

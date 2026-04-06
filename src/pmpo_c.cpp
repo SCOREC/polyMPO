@@ -154,7 +154,6 @@ void polympo_startRebuildMPs_f(MPMesh_ptr p_mpmesh,
   
   PMT_ALWAYS_ASSERT(numMPs >= p_MPs->getCount());
   //PMT_ALWAYS_ASSERT(numMPs >= p_MPs->getMaxAppID());
-  printf("Rank %d numMPs %d \n", self, numMPs);
 
   int offset = p_MPs->getElmIDoffset();
   std::vector<int> added_mpIDs(numMPs);

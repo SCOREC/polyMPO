@@ -4,6 +4,7 @@
 #include "pmpo_utils.hpp"
 #include "pmpo_mesh.hpp"
 #include "pmpo_materialPoints.hpp"
+#include "pmpo_materialPointsCPU.hpp"
 
 namespace polyMPO{
 
@@ -23,6 +24,7 @@ class MPMesh{
 
     Mesh* p_mesh;
     MaterialPoints* p_MPs;
+    MaterialPointsCPU* p_MPsCPU=nullptr;
 
     //For MPI Communication
     int numOwnersTot, numHalosTot;
@@ -39,12 +41,17 @@ class MPMesh{
     void communicate_and_take_halo_contributions(const Kokkos::View<double**>& meshField, int nEntities, int numEntries, int mode, int op);
 
     MPMesh(Mesh* inMesh, MaterialPoints* inMPs):
-      p_mesh(inMesh), p_MPs(inMPs) {
+      p_mesh(inMesh), p_MPs(inMPs), p_MPsCPU(nullptr) {
+    };
+
+    MPMesh(Mesh* inMesh, MaterialPoints* inMPs, MaterialPointsCPU* inMPsCPU):
+      p_mesh(inMesh), p_MPs(inMPs), p_MPsCPU(inMPsCPU) {
     };
 
     ~MPMesh() {
       delete p_mesh;
       delete p_MPs;
+      delete p_MPsCPU;
     }
 
     //MP advection and tracking

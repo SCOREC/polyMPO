@@ -8,6 +8,7 @@ set(HEADERS
   pmpo_c.h
   pmpo_createTestMPMesh.hpp
   pmpo_const_relation.hpp
+  pmpo_materialPointsCPU.hpp
 )
 
 set(SOURCES

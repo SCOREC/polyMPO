@@ -41,7 +41,10 @@ MPMesh_ptr polympo_createMPMesh_f(const int testMeshOption, const int testMPOpti
   }else{
     p_mps = new polyMPO::MaterialPoints();  
   }
-  MPMesh_ptr p_mpMeshReturn = (MPMesh_ptr) new polyMPO::MPMesh(p_mesh, p_mps);
+  
+  polyMPO::MaterialPointsCPU* p_mpsCPU = new polyMPO::MaterialPointsCPU();
+
+  MPMesh_ptr p_mpMeshReturn = (MPMesh_ptr) new polyMPO::MPMesh(p_mesh, p_mps, p_mpsCPU);
   p_mpmeshes.push_back(p_mpMeshReturn);
   return p_mpMeshReturn;
 }
@@ -138,7 +141,11 @@ void polympo_createMPs_f(MPMesh_ptr p_mpmesh,
      new polyMPO::MaterialPoints(numElms, numActiveMPs, mpsPerElm_d, active_mp2Elm_d, active_mpIDs_d, elm2global);
 
   auto p_MPs = ((polyMPO::MPMesh*)p_mpmesh)->p_MPs;
-  p_MPs->setElmIDoffset(offset);  
+  p_MPs->setElmIDoffset(offset);
+
+  delete ((polyMPO::MPMesh*)p_mpmesh)->p_MPsCPU;
+  ((polyMPO::MPMesh*)p_mpmesh)->p_MPsCPU = new polyMPO::MaterialPointsCPU(p_MPs);
+
 }
 
 void polympo_startRebuildMPs_f(MPMesh_ptr p_mpmesh,
@@ -1570,11 +1577,19 @@ void polympo_set_oceanStressCoefficient_f(MPMesh_ptr p_mpmesh, const int nVertic
   Kokkos::deep_copy(oceanStressCoeff, h_oceanStressCoeff);
 }
 
+
 void polympo_velocity_grid_solve_f(MPMesh_ptr p_mpmesh){
-  //Temporary grid Solve after calculateDivergence
   auto p_mesh = ((polyMPO::MPMesh*)p_mpmesh)->p_mesh;
   p_mesh->gridSolveGPU();
 }
+
+
+//Set CPU Fields
+void polympo_setCPUField_f(MPMesh_ptr p_mpmesh, const int nParticles, const double* array){
+  auto p_MPsCPU = ((polyMPO::MPMesh*)p_mpmesh)->p_MPsCPU;
+  p_MPsCPU->setFields(nParticles, array);
+}
+
 
 //Advection Calcualtions
 void polympo_push_f(MPMesh_ptr p_mpmesh){

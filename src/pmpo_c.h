@@ -116,6 +116,9 @@ void polympo_set_oceanStress_f(MPMesh_ptr p_mpmesh, const int nVertices, double*
 void polympo_set_oceanStressCoefficient_f(MPMesh_ptr p_mpmesh, const int nVertices, double* array);
 void polympo_velocity_grid_solve_f(MPMesh_ptr p_mpmesh);
 
+//CPU Fields
+void polympo_setCPUField_f(MPMesh_ptr p_mpmesh, const int nParticles, const double* array);
+
 // Advection calculations
 void polympo_push_f(MPMesh_ptr p_mpmesh);
 void polympo_push_ahead_f(MPMesh_ptr p_mpmesh);

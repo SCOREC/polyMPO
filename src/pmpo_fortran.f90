@@ -1079,6 +1079,14 @@ module polympo
     type(c_ptr), value :: mpMesh
   end subroutine
 
+   
+  subroutine  polympo_setCPUField(mpMesh, nParticles, array) &
+             bind(C, NAME='polympo_setCPUField_f')
+    use :: iso_c_binding
+    type(c_ptr), value :: mpMesh
+    integer(c_int), value :: nParticles
+    type(c_ptr), value :: array
+  end subroutine
 
 
   !---------------------------------------------------------------------------

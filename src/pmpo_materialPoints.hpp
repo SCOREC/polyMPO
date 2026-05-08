@@ -234,8 +234,8 @@ class MaterialPoints {
       auto velMPs = MPs->get<MPF_Vel>();
       auto velIncr = MPs->get<MPF_Vel_Incr>();
       //Stress
-      auto MPsStress = MPs->get<MPF_Stress>();
-      auto MPsStressMetric = MPs->get<MPF_Vel_IncrTimesTanLatVertexOverRadius>();     
+      auto stressMP = MPs->get<MPF_Stress>();
+      auto MPsStressMetric = MPs->get<MPF_Vel_IncrTimesTanLatVertexOverRadius>(); 
 
       auto mpAppID = MPs->get<MPF_MP_APP_ID>();
 
@@ -258,11 +258,22 @@ class MaterialPoints {
           tgtPosXYZ(mp,2) = radius * std::sin(geoLat);
           velMPs(mp,0) = velMPs(mp,0) + velIncr(mp,0);
           velMPs(mp,1) = velMPs(mp,1) + velIncr(mp,1);
-          //Stress MP term
-          Vec3d stress_prev(MPsStress(mp,0), MPsStress(mp,1), MPsStress(mp,2));
+
+          //Stress MP transport
+          Vec3d stress_prev(stressMP(mp,0), stressMP(mp,1), stressMP(mp,2));
+          /*
+          //Euler's Method Update
           MPsStress(mp,0) = stress_prev[0] * (1 - MPsStressMetric(mp, 1)) + 2 * MPsStressMetric(mp, 1) * stress_prev[2];
           MPsStress(mp,1) = stress_prev[1] + 2*MPsStressMetric(mp, 0) * stress_prev[2];
           MPsStress(mp,2) = stress_prev[2] +   MPsStressMetric(mp, 0) * (stress_prev[0] - stress_prev[1]);
+          */
+          auto Del = MPsStressMetric(mp, 0);
+          auto cos2Del = cos(Del) * cos(Del);
+          auto sin2Del = sin(Del) * sin(Del);
+          auto cosSinDel = cos(Del) * sin(Del);
+          stressMP(mp, 0) = cos2Del * stress_prev[0] + sin2Del * stress_prev[1] + 2.0 * cosSinDel * stress_prev[2];
+          stressMP(mp, 1) = sin2Del * stress_prev[0] + cos2Del * stress_prev[1] - 2.0 * cosSinDel * stress_prev[2];
+          stressMP(mp, 2) = -cosSinDel * stress_prev[0] + cosSinDel * stress_prev[1] + (cos2Del - sin2Del) * stress_prev[2];
         } 
       };
       ps::parallel_for(MPs, updateRotLatLon,"updateRotationalLatitudeLongitude"); 

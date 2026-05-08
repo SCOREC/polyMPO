@@ -59,7 +59,7 @@ inline void sphericalInterpolation2Fields(MPMesh& mpMesh){
   auto mpField = p_MPs->getData<mpfIndex>();
   const int numEntries = mpSliceToNumEntries<mpfIndex>();
 
-  constexpr MeshFieldIndex mfIndex1 = MeshF_OnSurfVeloIncr; 
+  constexpr MeshFieldIndex mfIndex1 = MeshF_OnSurfDispIncr; 
   auto meshField1 = p_mesh->getMeshField<mfIndex1>();
   constexpr MeshFieldIndex mfIndex2 = MeshF_TanLatVertexRotatedOverRadius;
   auto meshField2 = p_mesh->getMeshField<mfIndex2>();

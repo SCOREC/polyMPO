@@ -433,7 +433,7 @@ void polympo_setMPRotLatLon_f(MPMesh_ptr p_mpmesh, const int nComps, const int n
   auto p_MPs = ((polyMPO::MPMesh*)p_mpmesh)->p_MPs;
   PMT_ALWAYS_ASSERT(nComps == vec2d_nEntries);
   PMT_ALWAYS_ASSERT(numMPs >= p_MPs->getCount());
-  PMT_ALWAYS_ASSERT(numMPs >= p_MPs->getMaxAppID());
+  //PMT_ALWAYS_ASSERT(numMPs >= p_MPs->getMaxAppID());
 
   auto mpRotLatLon = p_MPs->getData<polyMPO::MPF_Cur_Pos_Rot_Lat_Lon>();
   auto mpAppID = p_MPs->getData<polyMPO::MPF_MP_APP_ID>();

@@ -16,13 +16,9 @@ void MPMesh::calculateStrain(){
   auto MPsStrainRate = p_MPs->getData<MPF_Strain_Rate>();
   //Mesh Fields
   auto tanLatVertexRotatedOverRadius = p_mesh->getMeshField<MeshF_TanLatVertexRotatedOverRadius>();
-  auto gnomProjVtx = p_mesh->getMeshField<MeshF_VtxGnomProj>();
-  auto gnomProjElmCenter = p_mesh->getMeshField<MeshF_ElmCenterGnomProj>();
   auto elm2VtxConn = p_mesh->getElm2VtxConn();
   auto velField = p_mesh->getMeshField<MeshF_Vel>();
   auto solveStress = p_mesh->getMeshField<polyMPO::MeshF_SolveStress>();
-
-  bool isRotated = p_mesh->getRotatedFlag();
 
   auto setMPStrainRate = PS_LAMBDA(const int& elm, const int& mp, const int& mask){
     if(mask){
@@ -35,16 +31,6 @@ void MPMesh::calculateStrain(){
       }
 
       int numVtx = elm2VtxConn(elm,0);
-
-      Vec3d position3d(MPsPosition(mp,0),MPsPosition(mp,1),MPsPosition(mp,2)); 
-      if(isRotated){
-        position3d[0] = -MPsPosition(mp, 2);
-        position3d[2] = MPsPosition(mp, 0);
-      }
-      auto gnomProjElmCenter_sub = Kokkos::subview(gnomProjElmCenter, elm, Kokkos::ALL);
-      double mpProjX, mpProjY;
-      computeGnomonicProjectionAtPoint(position3d, gnomProjElmCenter_sub, mpProjX, mpProjY);
-      auto gnom_vtx_subview = Kokkos::subview(gnomProjVtx, elm, Kokkos::ALL, Kokkos::ALL); 
 
       double v11 = 0.0;
       double v12 = 0.0;
@@ -134,9 +120,8 @@ void MPMesh::calculateStressDivergence(){
   if(p_mesh->getGeomType() == geom_spherical_surf)
     radius=p_mesh->getSphereRadius();
 
-  //Reconstructed the stress
-  Kokkos::View<vec2d_t*> stress_divUV("stress_divUV", p_mesh->getNumVertices());
-  Kokkos::View<vec2d_t*> divUV_edge("divUVedge", p_mesh->getNumVertices());
+  auto stress_divUV = p_mesh->getMeshField<MeshF_StressDivergence>();
+  Kokkos::deep_copy(stress_divUV, 0.0);
 
   //Assemble fields for Stress Divergence
   auto stress_div = PS_LAMBDA(const int& elm, const int& mp, const int& mask) {
@@ -144,55 +129,51 @@ void MPMesh::calculateStressDivergence(){
       int nVtxE = elm2VtxConn(elm,0); //number of vertices bounding the element
       for(int i=0; i<nVtxE; i++){
         int vID = elm2VtxConn(elm,i+1)-1;
+        
+        double ramp = nearAnEdge_l(vID);
+        double invM = 1.0/vtxMatrixMass_l(vID);
+        invM = vtxMatrixMass_l(vID) >1e-4 ? invM : 0; 
+
         double w_vtx=weight(mp,i); 
         double CoordDiffs[vec4d_nEntries] = {1, (-vtxCoords(vID,0) + mpPositions(mp,0))/radius,
                                                 (-vtxCoords(vID,1) + mpPositions(mp,1))/radius,
                                                 (-vtxCoords(vID,2) + mpPositions(mp,2))/radius};
 
-        auto factor = w_vtx*(VtxCoeffs_new(vID,0, 0) + VtxCoeffs_new(vID,0, 1)*CoordDiffs[1] +
-                                                       VtxCoeffs_new(vID,0, 2)*CoordDiffs[2] +
-                                                       VtxCoeffs_new(vID,0, 3)*CoordDiffs[3]);
+        auto factor = ramp * w_vtx * (VtxCoeffs_new(vID,0, 0) + VtxCoeffs_new(vID,0, 1)*CoordDiffs[1]  +
+                                                                VtxCoeffs_new(vID,0, 2)*CoordDiffs[2]  +
+                                                                VtxCoeffs_new(vID,0, 3)*CoordDiffs[3]) +
+                                                                (1.0 - ramp) * invM * w_vtx;
 
-        auto factor1 = (w_vtx/radius)*(VtxCoeffs_new(vID,1, 0) + VtxCoeffs_new(vID,1, 1)*CoordDiffs[1] +
-                                                                 VtxCoeffs_new(vID,1, 2)*CoordDiffs[2] +
-                                                                 VtxCoeffs_new(vID,1, 3)*CoordDiffs[3]);
-        auto factor2 = (w_vtx/radius)*(VtxCoeffs_new(vID,2, 0) + VtxCoeffs_new(vID,2, 1)*CoordDiffs[1] +
-                                                                 VtxCoeffs_new(vID,2, 2)*CoordDiffs[2] +
-                                                                 VtxCoeffs_new(vID,2, 3)*CoordDiffs[3]);
+        factor = factor * tanLatVertexRotatedOverRadius(vID, 0);
+      
+        auto factor1 = ramp * (w_vtx/radius) * (VtxCoeffs_new(vID, 1, 0) + VtxCoeffs_new(vID, 1, 1)*CoordDiffs[1]  +
+                                                                           VtxCoeffs_new(vID, 1, 2)*CoordDiffs[2]  +
+                                                                           VtxCoeffs_new(vID, 1, 3)*CoordDiffs[3]) -
+                                                                           (1.0 - ramp) * invM * weight_grads(mp, i*2+0);
+
+        auto factor2 = ramp * (w_vtx/radius) * (VtxCoeffs_new(vID, 2, 0) + VtxCoeffs_new(vID, 2, 1)*CoordDiffs[1]  +
+                                                                           VtxCoeffs_new(vID, 2, 2)*CoordDiffs[2]  +
+                                                                           VtxCoeffs_new(vID, 2, 3)*CoordDiffs[3]) -
+                                                                           (1.0 - ramp) * invM * weight_grads(mp, i*2+1);
 
         Kokkos::atomic_add(&stress_divUV(vID, 0), factor1 * MPsStress(mp, 0) + factor2 * MPsStress(mp, 2) -
-                                              2 * tanLatVertexRotatedOverRadius(vID, 0) * factor * MPsStress(mp, 2));
-        Kokkos::atomic_add(&stress_divUV(vID, 1), factor2 * MPsStress(mp, 1) + factor1*MPsStress(mp, 2) +
-                                              factor * tanLatVertexRotatedOverRadius(vID, 0) * (MPsStress(mp, 0)-MPsStress(mp, 1)));
+                                                  2 * factor * MPsStress(mp, 2));
 
-        Kokkos::atomic_add(&divUV_edge(vID, 0), - weight_grads(mp, i*2 + 0) *  MPsStress(mp, 0)  - weight_grads(mp, i*2 + 1) *  MPsStress(mp, 2) -
-                                              2 * tanLatVertexRotatedOverRadius(vID, 0) * w_vtx * MPsStress(mp, 2));
-        Kokkos::atomic_add(&divUV_edge(vID, 1), - weight_grads(mp, i*2 + 1)  * MPsStress(mp, 1)  - weight_grads(mp, i*2 + 0) *  MPsStress(mp, 2) +
-                                              w_vtx * tanLatVertexRotatedOverRadius(vID, 0) * (MPsStress(mp, 0)- MPsStress(mp, 1)));
+        Kokkos::atomic_add(&stress_divUV(vID, 1), factor2 * MPsStress(mp, 1) + factor1 * MPsStress(mp, 2) +
+                                                  factor * (MPsStress(mp, 0)-MPsStress(mp, 1)));
       }
     }
   };
   p_MPs->parallel_for(stress_div, " stress_div_assembly");
 
+  /*
   if(numProcsTot>1){ 
     //Takes contribution of halo vertices and adds it in owner procs
     communicate_and_take_halo_contributions(stress_divUV, numVertices, 2, 0, 0);
-    communicate_and_take_halo_contributions(divUV_edge, numVertices, 2, 0, 0);
     //Transfer the correct values at owned vertices to halo vertices
     communicate_and_take_halo_contributions(stress_divUV, numVertices, 2, 1, 1);
-    communicate_and_take_halo_contributions(divUV_edge, numVertices, 2, 1, 1);
   }
-
-  auto stressDivergence = p_mesh->getMeshField<MeshF_StressDivergence>();
-  Kokkos::parallel_for("calculate_divergence", numVtxOwned, KOKKOS_LAMBDA(const int vtx){
-    double ramp = nearAnEdge_l(vtx);
-    double invM = 1.0/vtxMatrixMass_l(vtx);
-    invM = vtxMatrixMass_l(vtx) >1e-4 ? invM : 0;
-
-    stressDivergence(vtx, 0) = ramp * stress_divUV(vtx, 0) + (1 - ramp) * divUV_edge(vtx, 0) * invM ;
-    stressDivergence(vtx, 1) = ramp * stress_divUV(vtx, 1) + (1 - ramp) * divUV_edge(vtx, 1) * invM ; 
-  });
-
+  */
   pumipic::RecordTime("Stress_Divergence_Reconstruction" + std::to_string(self), timer.seconds()); 
 }
 
@@ -281,7 +262,7 @@ void MPMesh::CVTTrackingElmCenterBased(const int printVTPIndex){
   auto elm2global = p_mesh->getElmGlobal();
 
   if(printVTPIndex>=0) {
-      printVTP_mesh(printVTPIndex);
+    printVTP_mesh(printVTPIndex);
   }
 
   Vec3dView history("positionHistory",numMPs);
@@ -383,11 +364,11 @@ bool getAnyIsMigrating(MaterialPoints* p_MPs, bool isMigrating) {
 
 void MPMesh::push_ahead(){
   Kokkos::Timer timer;
-  //Latitude Longitude increment at mesh vertices and interpolate to particle position
+  //Latitude Longitude increment at mesh vertices
   p_mesh->computeRotLatLonIncr();   
 
   //Interpolates latitude longitude, mesh velocity increments to MPs
-  calcBasis();
+  //calcBasis();
   sphericalInterpolation<MeshF_RotLatLonIncr>(*this);
   sphericalInterpolation<MeshF_OnSurfVeloIncr>(*this);
   sphericalInterpolation2Fields(*this);

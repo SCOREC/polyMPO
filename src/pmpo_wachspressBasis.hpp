@@ -6,6 +6,164 @@
 
 namespace polyMPO{
 
+// spherical interpolation of values from mesh vertices to MPs
+template <MeshFieldIndex meshFieldIndex>
+void sphericalInterpolation(MPMesh& mpMesh){
+  Kokkos::Timer timer;
+
+  auto p_mesh = mpMesh.p_mesh;
+  auto vtxCoords = p_mesh->getMeshField<polyMPO::MeshF_VtxCoords>();
+  int numVtxs = p_mesh->getNumVertices();
+  auto elm2VtxConn = p_mesh->getElm2VtxConn();
+
+  auto p_MPs = mpMesh.p_MPs;
+  auto MPsPosition = p_MPs->getPositions();
+  auto MPsBasis = p_MPs->getData<MPF_Basis_Vals>();
+
+  constexpr MaterialPointSlice mpfIndex = meshFieldIndexToMPSlice<meshFieldIndex>;
+  auto mpField = p_MPs->getData<mpfIndex>();
+
+  const int numEntries = mpSliceToNumEntries<mpfIndex>();
+  auto meshField = p_mesh->getMeshField<meshFieldIndex>(); 
+
+  auto interpolation = PS_LAMBDA(const int& elm, const int& mp, const int& mask) {
+    if(mask) { //if material point is 'active'/'enabled'
+      int numVtx = elm2VtxConn(elm,0);
+      for(int entry=0; entry<numEntries; entry++){
+        double mpValue = 0.0;
+        for(int i=1; i<= numVtx; i++)
+          mpValue += meshField(elm2VtxConn(elm,i)-1,entry)*MPsBasis(mp,i-1);
+        mpField(mp,entry) = mpValue;
+      }
+    }
+  };
+  p_MPs->parallel_for(interpolation, "interpolation");
+  pumipic::RecordTime("PolyMPO_sphericalInterpolation", timer.seconds());
+}
+
+inline void sphericalInterpolation2Fields(MPMesh& mpMesh){
+
+  Kokkos::Timer timer;
+
+  auto p_mesh = mpMesh.p_mesh;
+  auto vtxCoords = p_mesh->getMeshField<polyMPO::MeshF_VtxCoords>();
+  int numVtxs = p_mesh->getNumVertices();
+  auto elm2VtxConn = p_mesh->getElm2VtxConn();
+
+  //Material Points Data
+  auto p_MPs = mpMesh.p_MPs;
+  auto MPsPosition = p_MPs->getPositions();
+  auto MPsBasis = p_MPs->getData<MPF_Basis_Vals>();
+
+  constexpr MaterialPointSlice mpfIndex = MPF_Vel_IncrTimesTanLatVertexOverRadius;
+  auto mpField = p_MPs->getData<mpfIndex>();
+  const int numEntries = mpSliceToNumEntries<mpfIndex>();
+
+  constexpr MeshFieldIndex mfIndex1 = MeshF_OnSurfDispIncr; 
+  auto meshField1 = p_mesh->getMeshField<mfIndex1>();
+  constexpr MeshFieldIndex mfIndex2 = MeshF_TanLatVertexRotatedOverRadius;
+  auto meshField2 = p_mesh->getMeshField<mfIndex2>();
+
+  auto interpolation2 = PS_LAMBDA(const int& elm, const int& mp, const int& mask) {
+    if(mask) { //if material point is 'active'/'enabled'
+      int numVtx = elm2VtxConn(elm,0);
+      for(int entry=0; entry<numEntries; entry++){
+        double mpValue = 0.0;
+        for(int i=1; i<= numVtx; i++)
+          mpValue += meshField1(elm2VtxConn(elm,i)-1, entry) * meshField2(elm2VtxConn(elm,i)-1, 0) * MPsBasis(mp,i-1);
+        mpField(mp,entry) = mpValue;
+      }
+    }
+  };
+  p_MPs->parallel_for(interpolation2, "interpolation");
+
+  pumipic::RecordTime("PolyMPO_sphericalInterpolation2Fields", timer.seconds()); 
+}
+
+
+KOKKOS_INLINE_FUNCTION
+void wachpress_weights_grads_2D(int numVtx, const Kokkos::View<double[maxVtxsPerElm][2], 
+                                Kokkos::LayoutStride, Kokkos::MemoryTraits<Kokkos::Unmanaged>>& gnom_vtx_subview, 
+                                double mpProjX, double mpProjY, double radius, double* basis, double* grad_basis){
+
+  double vertCoords[2][maxVtxsPerElm + 1];
+  for (int i = 0; i < numVtx; ++i) {
+    vertCoords[0][i] = gnom_vtx_subview(i, 0);
+    vertCoords[1][i] = gnom_vtx_subview(i, 1);
+  }
+  vertCoords[0][numVtx] = vertCoords[0][0];
+  vertCoords[1][numVtx] = vertCoords[1][0];
+
+  //Compute areaV and areaXV
+  double areaV[maxVtxsPerElm];
+  double areaXV[maxVtxsPerElm];
+  double xy[2] = { mpProjX, mpProjY };
+
+  //Helper lambda for 2D triangle area
+  auto triArea = [&](const double p1[2], const double p2[2], const double p3[2]) -> double {
+    return 0.5 * (p1[0] * (p2[1] - p3[1]) - p2[0] * (p1[1] - p3[1]) + p3[0] * (p1[1] - p2[1]));
+  };
+
+  //Special case
+  double p1[2] = { vertCoords[0][numVtx - 1], vertCoords[1][numVtx - 1] };
+  double p2[2] = { vertCoords[0][0], vertCoords[1][0] };
+  double p3[2] = { vertCoords[0][1], vertCoords[1][1] };
+  areaV[0] = triArea(p1, p2, p3);
+  areaXV[0] = triArea(p2, xy, p3);
+
+  for (int i = 1; i < numVtx; ++i) {
+    double p1[2] = { vertCoords[0][i - 1], vertCoords[1][i - 1] };
+    double p2[2] = { vertCoords[0][i], vertCoords[1][i] };
+    double p3[2] = { vertCoords[0][i + 1], vertCoords[1][i + 1] };
+    areaV[i] = triArea(p1, p2, p3);
+    areaXV[i] = triArea(p2, xy, p3);
+  }
+
+  double denominator = 0.0;
+  double derivative_sum[2] = {0.0}; 
+  double derivative[2][maxVtxsPerElm];
+  double W[maxVtxsPerElm];
+
+  for (int i = 0; i < numVtx; ++i){
+    double product = areaV[i];
+    double product_sum[2] = {0.0};
+
+    for (int j = 0; j < numVtx - 2; ++j) {
+      int ind1 = (i + j + 1) % numVtx;
+      product *= areaXV[ind1];
+      double product_dx[2] = {areaV[i], areaV[i]};
+
+      for (int k = 0; k < numVtx - 2;  k++){
+        if (k == j) continue;
+        int ind2 = (i + k + 1) % numVtx;
+        product_dx[0] = product_dx[0] * areaXV[ind2];
+        product_dx[1] = product_dx[1] * areaXV[ind2];
+      }
+      product_dx[0] = product_dx[0] * 0.5 * (vertCoords[1][ind1+1]- vertCoords[1][ind1]);
+      product_dx[1] = -product_dx[1] * 0.5 * (vertCoords[0][ind1+1]- vertCoords[0][ind1]);
+
+      product_sum[0] += product_dx[0];
+      product_sum[1] += product_dx[1];
+    }
+    W[i] = product;
+    denominator += product;
+    
+    derivative[0][i] = product_sum[0];
+    derivative[1][i] = product_sum[1];
+
+    derivative_sum[0] += product_sum[0];
+    derivative_sum[1] += product_sum[1];
+  }
+
+  for (int i = 0; i < numVtx; ++i){
+    grad_basis[i*2 + 0] = derivative[0][i] / denominator - (W[i] / (denominator * denominator)) * derivative_sum[0];
+    grad_basis[i*2 + 0] = grad_basis[i*2 + 0] / radius;  
+    grad_basis[i*2 + 1] = derivative[1][i] / denominator - (W[i] / (denominator * denominator)) * derivative_sum[1];
+    grad_basis[i*2 + 1] = grad_basis[i*2 + 1] / radius; 
+    basis[i] = W[i] / denominator;
+  }
+}
+
 /** \brief calculate the basis and gradient of Basis for a give MP with its element Vtxs
  *
  *  \details based on the 4.1 section from:
@@ -272,7 +430,6 @@ void getBasisByAreaGblFormSpherical2(Vec3d MP, int numVtxs, Vec3d* v,
     calcBasis(numVtxs, a, c, basis);
 }
 
-
 /*
 KOKKOS_INLINE_FUNCTION
 void getBasisByAreaGblForm_1(Vec2d MP, int numVtxs, Vec2d* vtxCoords, double* basis) {
@@ -302,130 +459,6 @@ void getBasisByAreaGblForm_1(Vec2d MP, int numVtxs, Vec2d* vtxCoords, double* ba
     }
 } 
 */
-
-// spherical interpolation of values from mesh vertices to MPsi
-template <MeshFieldIndex meshFieldIndex>
-void sphericalInterpolation(MPMesh& mpMesh){
-    Kokkos::Timer timer;
-    auto p_mesh = mpMesh.p_mesh;
-    auto vtxCoords = p_mesh->getMeshField<polyMPO::MeshF_VtxCoords>();
-    int numVtxs = p_mesh->getNumVertices();
-    auto elm2VtxConn = p_mesh->getElm2VtxConn();
-   
-    auto p_MPs = mpMesh.p_MPs;
-    auto MPsPosition = p_MPs->getPositions();
-    double radius = p_mesh->getSphereRadius();
-    PMT_ALWAYS_ASSERT(radius >0);
-    constexpr MaterialPointSlice mpfIndex = meshFieldIndexToMPSlice<meshFieldIndex>;
-    auto mpField = p_MPs->getData<mpfIndex>();
-    
-    const int numEntries = mpSliceToNumEntries<mpfIndex>();
-    //check field correspondence
-    auto meshField = p_mesh->getMeshField<meshFieldIndex>(); 
-
-    auto interpolation = PS_LAMBDA(const int& elm, const int& mp, const int& mask) {
-        if(mask) { //if material point is 'active'/'enabled'
-            Vec3d position3d(MPsPosition(mp,0),MPsPosition(mp,1),MPsPosition(mp,2));
-            // formating 
-            Vec3d v3d[maxVtxsPerElm+1];
-            int numVtx = elm2VtxConn(elm,0);
-            for(int i = 1; i<=numVtx; i++){
-                v3d[i-1][0] = vtxCoords(elm2VtxConn(elm,i)-1,0);
-                v3d[i-1][1] = vtxCoords(elm2VtxConn(elm,i)-1,1);
-                v3d[i-1][2] = vtxCoords(elm2VtxConn(elm,i)-1,2);
-            }
-            v3d[numVtx][0] = vtxCoords(elm2VtxConn(elm,1)-1,0);
-            v3d[numVtx][1] = vtxCoords(elm2VtxConn(elm,1)-1,1);
-            v3d[numVtx][2] = vtxCoords(elm2VtxConn(elm,1)-1,2);
-            
-            double basisByArea3d[maxVtxsPerElm] = {0.0};
-            initArray(basisByArea3d,maxVtxsPerElm,0.0);
-
-            // calc basis
-            getBasisByAreaGblFormSpherical(position3d, numVtx, v3d, radius, basisByArea3d);
-            
-            // interpolation step
-            for(int entry=0; entry<numEntries; entry++){
-                double mpValue = 0.0;
-                for(int i=1; i<= numVtx; i++){
-                    mpValue += meshField(elm2VtxConn(elm,i)-1,entry)*basisByArea3d[i-1];
-                }
-                mpField(mp,entry) = mpValue;
-            }
-        }
-    };
-    p_MPs->parallel_for(interpolation, "interpolation");
-    pumipic::RecordTime("PolyMPO_sphericalInterpolation", timer.seconds());
-}
-
-
-inline void sphericalInterpolationDispVelIncr(MPMesh& mpMesh){
-    Kokkos::Timer timer;
-    auto p_mesh = mpMesh.p_mesh;
-    auto vtxCoords = p_mesh->getMeshField<polyMPO::MeshF_VtxCoords>();
-    int numVtxs = p_mesh->getNumVertices();
-    auto elm2VtxConn = p_mesh->getElm2VtxConn();
-    
-    auto p_MPs = mpMesh.p_MPs;
-    auto MPsPosition = p_MPs->getPositions();
-    double radius = p_mesh->getSphereRadius();
-    PMT_ALWAYS_ASSERT(radius > 0);
- 
-    constexpr MeshFieldIndex meshFieldIndex1 = polyMPO::MeshF_RotLatLonIncr;
-    constexpr MeshFieldIndex meshFieldIndex2 = polyMPO::MeshF_OnSurfVeloIncr;
-    
-    auto meshField1 = p_mesh->getMeshField<meshFieldIndex1>();
-    auto meshField2 = p_mesh->getMeshField<meshFieldIndex2>();
-    
-    constexpr MaterialPointSlice mpfIndex1 = meshFieldIndexToMPSlice<meshFieldIndex1>;
-    constexpr MaterialPointSlice mpfIndex2 = meshFieldIndexToMPSlice<meshFieldIndex2>;
-
-    const int numEntries1 = mpSliceToNumEntries<mpfIndex1>();
-    const int numEntries2 = mpSliceToNumEntries<mpfIndex2>();
-
-    auto mpField1 = p_MPs->getData<mpfIndex1>();
-    auto mpField2 = p_MPs->getData<mpfIndex2>();
-
-    auto interpolation = PS_LAMBDA(const int& elm, const int& mp, const int& mask) {
-      if(mask) {
-        Vec3d position3d(MPsPosition(mp, 0), MPsPosition(mp, 1), MPsPosition(mp, 2));
-        Vec3d v3d[maxVtxsPerElm + 1];
-        int numVtx = elm2VtxConn(elm, 0);
-        for (int i = 1; i <= numVtx; i++) {
-          v3d[i-1][0] = vtxCoords(elm2VtxConn(elm, i) - 1, 0);
-          v3d[i-1][1] = vtxCoords(elm2VtxConn(elm, i) - 1, 1);
-          v3d[i-1][2] = vtxCoords(elm2VtxConn(elm, i) - 1, 2);
-        }
-        v3d[numVtx][0] = vtxCoords(elm2VtxConn(elm,1)-1,0);
-        v3d[numVtx][1] = vtxCoords(elm2VtxConn(elm,1)-1,1);
-        v3d[numVtx][2] = vtxCoords(elm2VtxConn(elm,1)-1,2);        
-
-        double basisByArea3d[maxVtxsPerElm] = {0.0};
-        initArray(basisByArea3d, maxVtxsPerElm, 0.0);
-
-        getBasisByAreaGblFormSpherical(position3d, numVtx, v3d, radius, basisByArea3d);
-      
-        for(int entry=0; entry<numEntries1; entry++){
-          double mpValue = 0.0;
-          for(int i=1; i<= numVtx; i++){
-            mpValue += meshField1(elm2VtxConn(elm,i)-1,entry)*basisByArea3d[i-1];
-          }
-          mpField1(mp,entry) = mpValue;
-        }
-        
-        for(int entry=0; entry<numEntries2; entry++){
-          double mpValue = 0.0;
-          for(int i=1; i<= numVtx; i++){
-            mpValue += meshField2(elm2VtxConn(elm,i)-1,entry)*basisByArea3d[i-1];
-          }
-          mpField2(mp,entry) = mpValue;
-        }   
-      }
-    };
-    p_MPs->parallel_for(interpolation, "sphericalInterpolationMultiField");
-    pumipic::RecordTime("PolyMPO_sphericalInterpolationDispVelIncr", timer.seconds());
-  }
-
 
 } //namespace polyMPO end
 #endif

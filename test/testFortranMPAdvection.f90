@@ -14,9 +14,9 @@ module advectionTests
     integer, dimension(:,:), pointer :: verticesOnCell
     real(kind=MPAS_RKIND), dimension(:), pointer :: lonCell
     real(kind=MPAS_RKIND) :: normalizedLong, min, max
-    
+
     allocate(owningProc(nCells))
-    
+
     min = 1000
     max = -1000
     do i = 1, nCells
@@ -74,10 +74,8 @@ module advectionTests
 
     call calcSurfDispIncr(mpMesh, latVertex, lonVertex, nEdgesOnCell, verticesOnCell, nVertices, sphereRadius, -numPush)
     call polympo_push(mpMesh)
-   
+
   end subroutine
-
-
 
   subroutine runReconstructionTest(mpMesh, numMPs, numPush, nCells, nVertices, mp2Elm, &
                                   latVertex, lonVertex, nEdgesOnCell, verticesOnCell, sphereRadius)
@@ -108,14 +106,17 @@ module advectionTests
 
     call polympo_setMPMass(mpMesh,1,numMPs,c_loc(mpMass))
     call polympo_setMPVel(mpMesh,2,numMPs,c_loc(mpVel))
-    
-    ! Test push reconstruction
 
+    ! Although this test just does 0th order reconstruction testing, and just needs the BasisSlice,
+    ! calculating the coefficeints too as that will involve calculating the Basis Slice
+    call polympo_reconstruct_coeff_with_MPI(mpmesh)
+    ! Test push reconstruction
     do j = 1, numPush
       call calcSurfDispIncr(mpMesh, latVertex, lonVertex, nEdgesOnCell, verticesOnCell, nVertices, sphereRadius)
       call polympo_setReconstructionOfMass(mpMesh,0,polympo_getMeshFElmType())
       call polympo_setReconstructionOfMass(mpMesh,0,polympo_getMeshFVtxType())
       call polympo_setReconstructionOfVel(mpMesh,0,polympo_getMeshFVtxType())
+      call polympo_applyReconstruction(mpMesh)
       call polympo_push(mpMesh)
       call polympo_getMeshElmMass(mpMesh,nCells,c_loc(meshElmMass))
       call polympo_getMeshVtxMass(mpMesh,nVertices,c_loc(meshVtxMass))
@@ -163,7 +164,7 @@ module advectionTests
     meshVtxMass = TEST_VAL
     meshElmMass = TEST_VAL
     meshVtxVel = TEST_VAL
-    
+
     do j = 1, numPush
       call polympo_setMPPositions(mpMesh,3,numMPs,c_loc(mpPosition))
       call polympo_setMeshVtxOnSurfDispIncr(mpMesh,nCompsDisp,nVertices,c_loc(dispIncr))
@@ -257,6 +258,7 @@ program main
                         verticesOnCell, cellsOnCell)
   if (onSphere .ne. 'YES') then
     write (*,*) "The mesh is not spherical!"
+    write (*,*) "Gnomonic Projection is used currently for spehrical meshes, alternative for planar meshes not supported !"
     call exit(1)
   end if
 
@@ -270,6 +272,8 @@ program main
                         latVertex, &
                         xCell, yCell, zCell, &
                         verticesOnCell, cellsOnCell)
+
+  call polympo_setGnomonicProjection(mpMesh)
 
   call polympo_setMPICommunicator(mpMesh, mpi_comm_handle);
 
@@ -362,7 +366,7 @@ program main
   call polympo_createMPs(mpMesh,nCells,numMPs,c_loc(mpsPerElm),c_loc(mp2Elm),c_loc(isMPActive))
   call polympo_setMPRotLatLon(mpMesh,2,numMPs,c_loc(mpLatLon))
   call polympo_setMPPositions(mpMesh,3,numMPs,c_loc(mpPosition))
- 
+
   if (testType == "API") then
     call runApiTest(mpMesh, numMPs, nVertices, nCells, numPush, mpLatLon, mpPosition, xVertex, yVertex, zVertex, latVertex)
   else if (testType == "MIGRATION") then

@@ -166,14 +166,14 @@ void MPMesh::calculateStressDivergence(){
   };
   p_MPs->parallel_for(stress_div, " stress_div_assembly");
 
-  /*
+  
   if(numProcsTot>1){ 
     //Takes contribution of halo vertices and adds it in owner procs
     communicate_and_take_halo_contributions(stress_divUV, numVertices, 2, 0, 0);
     //Transfer the correct values at owned vertices to halo vertices
     communicate_and_take_halo_contributions(stress_divUV, numVertices, 2, 1, 1);
   }
-  */
+  
   pumipic::RecordTime("Stress_Divergence_Reconstruction" + std::to_string(self), timer.seconds()); 
 }
 

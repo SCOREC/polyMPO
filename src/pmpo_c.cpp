@@ -1667,6 +1667,12 @@ void polympo_reconstruct_velocity_with_MPI_f(MPMesh_ptr p_mpmesh){
   mpmesh->assemblyVtx1<polyMPO::MeshF_Vel>();
 }
 
+void polympo_aggregate_deluDyn_f(MPMesh_ptr p_mpmesh){
+  checkMPMeshValid(p_mpmesh);
+  auto p_mesh = ((polyMPO::MPMesh*)p_mpmesh)->p_mesh;
+  p_mesh->aggregateDeluDyn();
+}
+
 //Timing
 void polympo_enableTiming_f(){
   pumipic::EnableTiming();

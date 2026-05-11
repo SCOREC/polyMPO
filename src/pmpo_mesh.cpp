@@ -187,15 +187,25 @@ namespace polyMPO{
       
       velocity(vtx, 0) = (d*rhs_u-b*rhs_v)/denom;
       velocity(vtx, 1) = (a*rhs_v-c*rhs_u)/denom;
+    });
+  }
 
-      //Debug
-      if(vtx == 10 || vtx == 11){
-        /*
-        printf("Vtx %d F: %.15e %.15e %.15e %.15e %.15e %.15e %.15e %.15e %.15e \n", vtx, totalMassVtx(vtx,0), totalMassFVtx(vtx,0), 
-        airStress(vtx,0), airStress(vtx,1), surfaceTiltForce(vtx,0), surfaceTiltForce(vtx,1), oceanStress(vtx,0), oceanStress(vtx,1), 
-        oceanStressCoeff(vtx, 0));*/
-        //printf("Vtx %d V: %.15e %.15e \n", vtx, velocity(vtx,0), velocity(vtx,1));
-      }  
+  void Mesh::aggregateDeluDyn(){
+    std::cout<<__FUNCTION__<<std::endl;
+
+    int numVtx = getNumVertices();
+
+    constexpr MeshFieldIndex mfIndex1 = MeshF_OnSurfDispIncr; 
+    auto meshField1 = getMeshField<mfIndex1>();
+    
+    constexpr MeshFieldIndex mfIndex2 = MeshF_TanLatVertexRotatedOverRadius;
+    auto meshField2 = getMeshField<mfIndex2>();
+
+    constexpr MeshFieldIndex mfIndex3 = MeshF_Vel;
+    auto meshField3 = getMeshField<mfIndex3>();
+
+    Kokkos::parallel_for("calcVelIncr", numVtx, KOKKOS_LAMBDA(int i) {
+              
     });
   }
 

@@ -262,8 +262,8 @@ class Mesh {
     double getDynamicTimeStep(){
       return dynamicTimeStep_;
     }
-
     void gridSolveGPU();
+    void aggregateDeluDyn();
 };
 
 template<MeshFieldIndex index>

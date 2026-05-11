@@ -1194,6 +1194,12 @@ module polympo
     type(c_ptr), value :: mpMesh
   end subroutine
 
+  subroutine polympo_aggregate_deluDyn(mpMesh) &
+             bind(C, NAME='polympo_aggregate_deluDyn_f')
+    use :: iso_c_binding
+    type(c_ptr), value :: mpMesh
+  end subroutine
+
   !---------------------------------------------------------------------------
   !> @brief directly call the reconstruct of the MP fields to mesh fields
   !> @param mpmesh(in/out) MPMesh object

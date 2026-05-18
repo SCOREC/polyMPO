@@ -1667,6 +1667,13 @@ void polympo_reconstruct_velocity_with_MPI_f(MPMesh_ptr p_mpmesh){
   mpmesh->assemblyVtx1<polyMPO::MeshF_Vel>();
 }
 
+void polympo_init_deluDyn_f(MPMesh_ptr p_mpmesh){
+  checkMPMeshValid(p_mpmesh);
+  auto p_mesh = ((polyMPO::MPMesh*)p_mpmesh)->p_mesh;
+  auto vtxField = p_mesh->getMeshField<polyMPO::MeshF_OnSurfDispIncr>();
+  Kokkos::deep_copy(vtxField, 0.0);
+}
+
 void polympo_aggregate_deluDyn_f(MPMesh_ptr p_mpmesh){
   checkMPMeshValid(p_mpmesh);
   auto p_mesh = ((polyMPO::MPMesh*)p_mpmesh)->p_mesh;

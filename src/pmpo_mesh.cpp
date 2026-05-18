@@ -209,13 +209,12 @@ namespace polyMPO{
     Kokkos::parallel_for("update_velocity", numVtx, KOKKOS_LAMBDA(int vtx) {
       auto u =  meshFieldVel(vtx, 0);
       auto v =  meshFieldVel(vtx, 1);
-       
       auto Del = elasticTimeStep * u * meshField_metric(vtx, 0);
-      meshFieldVel(vtx, 0) =  cos(Del) * u + sin(Del) * v ;
-      meshFieldVel(vtx, 1) = -sin(Del) * u + cos(Del) * v ;    
+      meshFieldVel(vtx, 0) =  cos(Del) * u + sin(Del) * v;
+      meshFieldVel(vtx, 1) = -sin(Del) * u + cos(Del) * v;
     });
 
-    Kokkos::parallel_for("calcVelIncr", numVtx, KOKKOS_LAMBDA(int vtx) {
+    Kokkos::parallel_for("calcVelIncr", numVtx, KOKKOS_LAMBDA(int vtx){
       meshField_surfDispIncr(vtx, 0) = meshField_surfDispIncr(vtx, 0) + meshFieldVel(vtx, 0);
       meshField_surfDispIncr(vtx, 1) = meshField_surfDispIncr(vtx, 1) + meshFieldVel(vtx, 1);
     });

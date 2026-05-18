@@ -134,6 +134,7 @@ void polympo_reconstruct_coeff_with_MPI_f(MPMesh_ptr p_mpmesh);
 void polympo_reconstruct_iceArea_with_MPI_f(MPMesh_ptr p_mpmesh);
 void polympo_reconstruct_velocity_with_MPI_f(MPMesh_ptr p_mpmesh);
 
+void polympo_init_deluDyn_f(MPMesh_ptr p_mpmesh);
 void polympo_aggregate_deluDyn_f(MPMesh_ptr p_mpmesh);
 
 // Timing

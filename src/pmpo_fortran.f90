@@ -1194,14 +1194,20 @@ module polympo
     type(c_ptr), value :: mpMesh
   end subroutine
 
-  subroutine polympo_init_deluDyn(mpMesh) &
-             bind(C, NAME='polympo_init_deluDyn_f')
+  subroutine polympo_init_deludelvDyn(mpMesh) &
+             bind(C, NAME='polympo_init_deludelvDyn_f')
     use :: iso_c_binding
     type(c_ptr), value :: mpMesh
   end subroutine
 
   subroutine polympo_aggregate_deluDyn(mpMesh) &
              bind(C, NAME='polympo_aggregate_deluDyn_f')
+    use :: iso_c_binding
+    type(c_ptr), value :: mpMesh
+  end subroutine
+
+  subroutine polympo_finalize_deludelvDyn(mpMesh) &
+             bind(C, NAME='polympo_finalize_deludelvDyn_f')
     use :: iso_c_binding
     type(c_ptr), value :: mpMesh
   end subroutine

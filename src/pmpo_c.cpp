@@ -1667,17 +1667,47 @@ void polympo_reconstruct_velocity_with_MPI_f(MPMesh_ptr p_mpmesh){
   mpmesh->assemblyVtx1<polyMPO::MeshF_Vel>();
 }
 
-void polympo_init_deluDyn_f(MPMesh_ptr p_mpmesh){
+void polympo_init_deludelvDyn_f(MPMesh_ptr p_mpmesh){
   checkMPMeshValid(p_mpmesh);
   auto p_mesh = ((polyMPO::MPMesh*)p_mpmesh)->p_mesh;
   auto vtxField = p_mesh->getMeshField<polyMPO::MeshF_OnSurfDispIncr>();
   Kokkos::deep_copy(vtxField, 0.0);
+
+  auto vtxFieldVel      = p_mesh->getMeshField<polyMPO::MeshF_Vel>();
+  auto vtxFieldVel_incr = p_mesh->getMeshField<polyMPO::MeshF_OnSurfVeloIncr>();
+  auto nVertices = p_mesh->getNumVertices();
+
+  Kokkos::parallel_for("set_VelIncr", nVertices, KOKKOS_LAMBDA(const int vtx){
+    vtxFieldVel_incr(vtx, 0) = vtxFieldVel(vtx, 0);
+    vtxFieldVel_incr(vtx, 1) = vtxFieldVel(vtx, 1);
+  });
 }
 
 void polympo_aggregate_deluDyn_f(MPMesh_ptr p_mpmesh){
   checkMPMeshValid(p_mpmesh);
   auto p_mesh = ((polyMPO::MPMesh*)p_mpmesh)->p_mesh;
   p_mesh->aggregateDeluDyn();
+}
+
+void polympo_finalize_deludelvDyn_f(MPMesh_ptr p_mpmesh){
+  
+  checkMPMeshValid(p_mpmesh);
+  auto p_mesh = ((polyMPO::MPMesh*)p_mpmesh)->p_mesh;
+
+  auto nVertices = p_mesh->getNumVertices();
+  auto elasticTimeStep = p_mesh->getElasticTimeStep();
+  auto dynamicTimeStep = p_mesh->getDynamicTimeStep();
+
+  auto vtxField = p_mesh->getMeshField<polyMPO::MeshF_OnSurfDispIncr>();
+  auto vtxFieldVel      = p_mesh->getMeshField<polyMPO::MeshF_Vel>();
+  auto vtxFieldVel_incr = p_mesh->getMeshField<polyMPO::MeshF_OnSurfVeloIncr>();
+ 
+  Kokkos::parallel_for("Finalize_increments", nVertices, KOKKOS_LAMBDA(const int vtx){
+    vtxField(vtx, 0) = vtxField(vtx, 0) * elasticTimeStep;
+    vtxField(vtx, 1) = vtxField(vtx, 1) * elasticTimeStep;
+    vtxFieldVel_incr(vtx, 0) = vtxFieldVel(vtx, 0) - vtxFieldVel_incr(vtx, 0);
+    vtxFieldVel_incr(vtx, 1) = vtxFieldVel(vtx, 1) - vtxFieldVel_incr(vtx, 1);
+  });
 }
 
 //Timing

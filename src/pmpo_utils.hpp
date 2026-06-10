@@ -29,6 +29,8 @@ typedef double vec2d_t[vec2d_nEntries];
 typedef double vec3d_t[vec3d_nEntries];
 #define vec4d_nEntries 4
 typedef double vec4d_t[vec4d_nEntries];
+#define vec10d_nEntries 10
+typedef double vec10d_t[vec10d_nEntries];
 
 typedef double doubleSclr_t[1];
 

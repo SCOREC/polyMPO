@@ -381,7 +381,7 @@ void MPMesh::assemblyVtx1(){
   timer.reset();
   if(numProcsTot>1){ 
     communicate_and_take_halo_contributions(meshField, numVertices, numEntries, 0, 0);
-    communicate_and_take_halo_contributions(meshField, numVertices, numEntries, 1, 1);
+    //communicate_and_take_halo_contributions(meshField, numVertices, numEntries, 1, 1);
   }
   pumipic::RecordTime("Communicate Field Values" + std::to_string(self), timer.seconds());
 }

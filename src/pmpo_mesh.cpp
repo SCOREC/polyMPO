@@ -192,8 +192,6 @@ namespace polyMPO{
 
 
   void Mesh::aggregateDeluDyn(){
-    std::cout<<__FUNCTION__<<std::endl;
-
     int numVtx = getNumVertices();
     auto elasticTimeStep = getElasticTimeStep(); 
 

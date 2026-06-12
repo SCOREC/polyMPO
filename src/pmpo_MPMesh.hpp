@@ -52,19 +52,19 @@ class MPMesh{
       Kokkos::Timer timer;
       auto reconVals_host = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), meshField);
       Kokkos::fence();
-      pumipic::RecordTime("Communication-GPU to CPU-E-" + std::to_string(numEntries) + "-" + std::to_string(self), timer.seconds());
+      pumipic::RecordTime("SD: GPU-CPU copy-" + std::to_string(self), timer.seconds());
       
       timer.reset();
       std::vector<double> fieldData1(nEntities*numEntries);
+      pumipic::RecordTime("SD: STL alloc" + std::to_string(self), timer.seconds());
+      timer.reset();
       for (int i=0;i<nEntities;i++)
         for (int j=0;j<numEntries;j++)
           fieldData1[i*numEntries+j]=reconVals_host(i,j);
       //std::memcpy(fieldData1.data(), reconVals_host.data(), nEntities*numEntries*sizeof(double));
-      pumipic::RecordTime("New allocation + copy" + std::to_string(numEntries) + "-" + std::to_string(self), timer.seconds());
+      pumipic::RecordTime("SD: STL alloc_copy-" + std::to_string(self), timer.seconds());
 
-
-
-
+/*
 for (int i=0; i<nEntities; i++) {
   for (int j=0; j<numEntries; j++) {
     if (fieldData1[i*numEntries+j] != reconVals_host(i,j)) {
@@ -80,18 +80,19 @@ for (int i=0; i<nEntities; i++) {
     }
   }
 }
-
-
-
+*/
       timer.reset();
       std::vector<std::vector<int>>    recvIDVec;
       std::vector<std::vector<double>> recvDataVec;
+      pumipic::RecordTime("SD: Recv Vec Allocation-" + std::to_string(self), timer.seconds());
+      
+      timer.reset();
       communicateFields1(fieldData1, nEntities, numEntries, mode, recvIDVec, recvDataVec);
-      pumipic::RecordTime("Communication-InterProcess-E-" + std::to_string(numEntries) + "-" + std::to_string(self), timer.seconds());
+      pumipic::RecordTime("SD: IP Comm-" + std::to_string(self), timer.seconds());
 
       timer.reset();
-      int numProcsTot =  recvIDVec.size();
-      //Flatten IDs 
+      int numProcsTot = recvIDVec.size();
+      //Flatten IDs
       int totalSize = 0;
       std::vector<int> offsets(numProcsTot, 0); 
       for(int i=0; i<numProcsTot; i++) {
@@ -99,19 +100,24 @@ for (int i=0; i<nEntities; i++) {
         totalSize += recvIDVec[i].size();
       }
       std::vector<int> flatIDVec(totalSize, 0);
-      for(int i=0; i<numProcsTot; i++) {
+      for(int i=0; i<numProcsTot; i++){
         std::copy(recvIDVec[i].begin(), recvIDVec[i].end(), flatIDVec.begin() + offsets[i]);
       }
+      pumipic::RecordTime("SD: Flatten IDs-" + std::to_string(self), timer.seconds());
 
+      timer.reset();
       Kokkos::View<int*> recvIDGPU("recvIDGPU", totalSize);
       auto hostView = Kokkos::View<int*, Kokkos::HostSpace>("recvIDCPU", totalSize);
       std::copy(flatIDVec.begin(), flatIDVec.end(), hostView.data());
       Kokkos::deep_copy(recvIDGPU, hostView);
+      Kokkos::fence();
+      pumipic::RecordTime("SD: Copy CPU-GPU-" + std::to_string(self), timer.seconds());
 
       //Flatten Data
+      timer.reset();
       int totalSize_data=0;
       std::vector<int> offsets_data(numProcsTot, 0);
-      for(int i=0; i<numProcsTot; i++) {
+      for(int i=0; i<numProcsTot; i++){
         offsets_data[i] = totalSize_data;
         totalSize_data += recvDataVec[i].size();
       }
@@ -119,18 +125,20 @@ for (int i=0; i<nEntities; i++) {
       for(int i=0; i<numProcsTot; i++) {
         std::copy(recvDataVec[i].begin(), recvDataVec[i].end(), flatDataVec.begin() + offsets_data[i]);
       }
+      pumipic::RecordTime("SD: Flatten Data-" + std::to_string(self), timer.seconds());
+
+      timer.reset();
       Kokkos::View<double*> recvDataGPU("recvDataGPU", totalSize_data);
       auto hostView_data= Kokkos::View<double*, Kokkos::HostSpace>("recvDataCPU", totalSize_data);
       std::copy(flatDataVec.begin(), flatDataVec.end(), hostView_data.data()); 
       Kokkos::deep_copy(recvDataGPU, hostView_data);
       Kokkos::fence();
-      //Assertions
       assert(totalSize_data == totalSize*numEntries);
       for (int i=0; i<numProcsTot; i++){
         assert(recvDataVec[i].size() == recvIDVec[i].size() * numEntries);
       }
-      pumipic::RecordTime("Communication-CPU to GPU-E-" + std::to_string(numEntries) + "-" + std::to_string(self), timer.seconds());
-  
+      pumipic::RecordTime("SD: Copy CPU-GPU2-" + std::to_string(self), timer.seconds());
+ 
       //Take contributions from other procs
       timer.reset();
       Kokkos::parallel_for("halo contribution", recvIDGPU.size(), KOKKOS_LAMBDA(const int i){
@@ -141,7 +149,7 @@ for (int i=0; i<nEntities; i++) {
         }
       });
       Kokkos::fence();
-      pumipic::RecordTime("Communication-GPU reduction-E-" + std::to_string(numEntries) + "-" + std::to_string(self), timer.seconds());
+      pumipic::RecordTime("SD: Contribution" + std::to_string(self), timer.seconds());
     }
 
 

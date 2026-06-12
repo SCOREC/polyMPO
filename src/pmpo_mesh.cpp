@@ -54,7 +54,7 @@ namespace polyMPO{
 
     auto stressDivergenceEntry = meshFields2TypeAndString.at(MeshF_StressDivergence);
     PMT_ALWAYS_ASSERT(stressDivergenceEntry.first == MeshFType_VtxBased);
-    stressDivergence_ = MeshFView<MeshF_StressDivergence>(stressDivergenceEntry.second, numVtxs_);
+    stressDivergence_ = MeshFView<MeshF_StressDivergence>(stressDivergenceEntry.second, numVtxs_, 2);
 
     auto solveVelocityEntry = meshFields2TypeAndString.at(MeshF_SolveVelocity);
     PMT_ALWAYS_ASSERT(solveVelocityEntry.first == MeshFType_VtxBased);

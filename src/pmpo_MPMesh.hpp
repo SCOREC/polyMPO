@@ -56,12 +56,14 @@ class MPMesh{
       
       timer.reset();
       std::vector<double> fieldData1(nEntities*numEntries);
-      pumipic::RecordTime("SD: STL alloc" + std::to_string(self), timer.seconds());
+      pumipic::RecordTime("SD: STL alloc-" + std::to_string(self), timer.seconds());
       timer.reset();
+      /*
       for (int i=0;i<nEntities;i++)
         for (int j=0;j<numEntries;j++)
           fieldData1[i*numEntries+j]=reconVals_host(i,j);
-      //std::memcpy(fieldData1.data(), reconVals_host.data(), nEntities*numEntries*sizeof(double));
+      */
+      std::memcpy(fieldData1.data(), reconVals_host.data(), nEntities*numEntries*sizeof(double));
       pumipic::RecordTime("SD: STL alloc_copy-" + std::to_string(self), timer.seconds());
 
 /*

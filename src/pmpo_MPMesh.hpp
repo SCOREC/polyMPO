@@ -53,19 +53,20 @@ class MPMesh{
       auto reconVals_host = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), meshField);
       Kokkos::fence();
       pumipic::RecordTime("SD: GPU-CPU copy-" + std::to_string(self), timer.seconds());
-      
+    
+      /*  
       timer.reset();
       std::vector<double> fieldData1(nEntities*numEntries);
       pumipic::RecordTime("SD: STL alloc-" + std::to_string(self), timer.seconds());
       timer.reset();
-      /*
+      
       for (int i=0;i<nEntities;i++)
         for (int j=0;j<numEntries;j++)
           fieldData1[i*numEntries+j]=reconVals_host(i,j);
-      */
+      
       std::memcpy(fieldData1.data(), reconVals_host.data(), nEntities*numEntries*sizeof(double));
       pumipic::RecordTime("SD: STL alloc_copy-" + std::to_string(self), timer.seconds());
-
+      */
 /*
 for (int i=0; i<nEntities; i++) {
   for (int j=0; j<numEntries; j++) {
@@ -89,7 +90,8 @@ for (int i=0; i<nEntities; i++) {
       pumipic::RecordTime("SD: Recv Vec Allocation-" + std::to_string(self), timer.seconds());
       
       timer.reset();
-      communicateFields1(fieldData1, nEntities, numEntries, mode, recvIDVec, recvDataVec);
+      //communicateFields1(fieldData1, nEntities, numEntries, mode, recvIDVec, recvDataVec);
+      communicateFields1(reconVals_host, nEntities, numEntries, mode, recvIDVec, recvDataVec);
       pumipic::RecordTime("SD: IP Comm-" + std::to_string(self), timer.seconds());
 
       timer.reset();
@@ -157,9 +159,9 @@ for (int i=0; i<nEntities; i++) {
 
     void communicateFields(const std::vector<std::vector<double>>& fieldData, const int numEntities, const int numEntries, int mode,
                               std::vector<std::vector<int>>& recvIDVec,  std::vector<std::vector<double>>& recvDataVec);
-    //1D Kokkos view will be copied direcctly to 1D std::vector
+    
     void communicateFields1(
-        const std::vector<double>& fieldData, 
+        const Kokkos::View<double**, Kokkos::LayoutRight, Kokkos::HostSpace>& fieldData, 
         const int numEntities, const int numEntries, int mode,
         std::vector<std::vector<int>>& recvIDVec,
         std::vector<std::vector<double>>& recvDataVec){
@@ -205,7 +207,7 @@ for (int i=0; i<nEntities; i++) {
         for (int iEnt = 0; iEnt < numHalosTot; iEnt++){
           auto ownerProc = haloOwnerProcs[iEnt];
           for (int iDouble = 0; iDouble < numEntries; iDouble++)
-            sendDataVec[ownerProc].push_back(fieldData[(numOwnersTot+iEnt)*numEntries + iDouble]);
+            sendDataVec[ownerProc].push_back(fieldData(numOwnersTot+iEnt, iDouble));
         }
       }
       else if(mode == 1){
@@ -213,7 +215,7 @@ for (int i=0; i<nEntities; i++) {
         for (size_t iProc=0; iProc<ownerOwnerLocalIDs.size(); iProc++) {
           for (auto& ownerID : ownerOwnerLocalIDs[iProc]) {
             for (int iDouble = 0; iDouble < numEntries; iDouble++)
-              sendDataVec[iProc].push_back(fieldData[ownerID*numEntries + iDouble]);
+              sendDataVec[iProc].push_back(fieldData(ownerID, iDouble));
           }
         }
       }

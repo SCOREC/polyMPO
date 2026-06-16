@@ -66,7 +66,7 @@ template <> struct meshFieldToType < MeshF_TanLatVertexRotatedOverRadius > { usi
 template <> struct meshFieldToType < MeshF_SolveStress       > { using type = IntView; };
 template <> struct meshFieldToType < MeshF_SolveVelocity     > { using type = IntView; };
 template <> struct meshFieldToType < MeshF_InteriorVertex    > { using type = IntView; };
-template <> struct meshFieldToType < MeshF_StressDivergence  > { using type = Kokkos::View<double**, Kokkos::LayoutRight>; };
+template <> struct meshFieldToType < MeshF_StressDivergence  > { using type = Kokkos::View<double**>; };
 template <> struct meshFieldToType < MeshF_TotalMassVtx      > { using type = Kokkos::View<doubleSclr_t*>; };
 template <> struct meshFieldToType < MeshF_AirStress         > { using type = Kokkos::View<vec2d_t*>; };
 template <> struct meshFieldToType < MeshF_SurfaceTilt       > { using type = Kokkos::View<vec2d_t*>; };

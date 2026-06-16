@@ -19,10 +19,6 @@ template <> const MaterialPointSlice meshFieldIndexToMPSlice < MeshF_OnSurfVeloI
 
 class MPMesh{
 
-  private:
-    
-    Kokkos::View<double**, Kokkos::HostSpace>fieldHostBuffer;
-
   public:
 
     Mesh* p_mesh;
@@ -40,6 +36,7 @@ class MPMesh{
     void startCommunication();
     
     void communicate_and_take_halo_contributions(const Kokkos::View<double**>& meshField, int nEntities, int numEntries, int mode, int op);
+    
     //Now Kokkos views are made 1D
     template <typename ViewType>
     void communicate_and_take_halo_contributions1(
@@ -54,16 +51,7 @@ class MPMesh{
       MPI_Comm_rank(comm, &self);
 
       Kokkos::Timer timer;
-      //auto reconVals_host_old = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), meshField);
-      //Replace alocation + copy with just copy
-      if (fieldHostBuffer.extent(0) < nEntities || fieldHostBuffer.extent(1)< numEntries){
-        printf("Buffer extent before %d %d \n", fieldHostBuffer.extent(0), fieldHostBuffer.extent(1));
-        fieldHostBuffer= Kokkos::View<double**, Kokkos::HostSpace>("host buffer fields", nEntities, numEntries);
-        printf("Buffer extent after %d %d \n", fieldHostBuffer.extent(0), fieldHostBuffer.extent(1));
-      }
-      auto reconVals_host=Kokkos::subview(fieldHostBuffer, std::make_pair(0, nEntities), std::make_pair(0, numEntries));
-      Kokkos::deep_copy(reconVals_host, meshField);
-      Kokkos::fence();
+      auto reconVals_host = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), meshField);
       pumipic::RecordTime("SD: GPU-CPU copy-" + std::to_string(self), timer.seconds());
 
       timer.reset();
@@ -141,9 +129,11 @@ class MPMesh{
 
     void communicateFields(const std::vector<std::vector<double>>& fieldData, const int numEntities, const int numEntries, int mode,
                               std::vector<std::vector<int>>& recvIDVec,  std::vector<std::vector<double>>& recvDataVec);
-    
+   
+
+    template <class ViewType> 
     void communicateFields1(
-        const Kokkos::View<double**, Kokkos::LayoutRight, Kokkos::HostSpace>& fieldData, 
+        const ViewType& fieldData, 
         const int numEntities, const int numEntries, int mode,
         std::vector<std::vector<int>>& recvIDVec,
         std::vector<std::vector<double>>& recvDataVec){

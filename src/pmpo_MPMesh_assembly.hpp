@@ -161,10 +161,10 @@ void MPMesh::reconstruct_coeff_full(){
   int mode = 0;
   int op = 0;
   if (numProcsTot >1){
-    communicate_and_take_halo_contributions(vtxMatrices, numVertices, numEntriesMatrix, mode, op);
+    communicate_and_take_halo_contributions1(vtxMatrices, numVertices, numEntriesMatrix, mode, op);
     mode=1; 
     op=1;
-    communicate_and_take_halo_contributions(vtxMatrices, numVertices, numEntriesMatrix, mode, op);
+    communicate_and_take_halo_contributions1(vtxMatrices, numVertices, numEntriesMatrix, mode, op);
   }
   pumipic::RecordTime("Communicate Matrix Values" + std::to_string(self), timer.seconds());
  
@@ -380,7 +380,7 @@ void MPMesh::assemblyVtx1(){
 
   timer.reset();
   if(numProcsTot>1){ 
-    communicate_and_take_halo_contributions(meshField, numVertices, numEntries, 0, 0);
+    communicate_and_take_halo_contributions1(meshField, numVertices, numEntries, 0, 0);
     //communicate_and_take_halo_contributions(meshField, numVertices, numEntries, 1, 1);
   }
   pumipic::RecordTime("Communicate Field Values" + std::to_string(self), timer.seconds());

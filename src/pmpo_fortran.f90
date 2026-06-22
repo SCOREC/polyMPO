@@ -1074,12 +1074,24 @@ module polympo
   end subroutine
 
   subroutine  polympo_velocity_grid_solve(mpMesh) &
-             bind(C, NAME='polympo_velocity_grid_solve_f')
+              bind(C, NAME='polympo_velocity_grid_solve_f')
     use :: iso_c_binding
     type(c_ptr), value :: mpMesh
   end subroutine
 
+  subroutine  polympo_set_boundary_normal_vertex(mpMesh, nComps, nVertices, uArray, vArray) &
+              bind(C, NAME='polympo_set_boundary_normal_vertex_f')
+    use :: iso_c_binding
+    type(c_ptr), value :: mpMesh
+    integer(c_int), value :: nComps, nVertices
+    type(c_ptr), value :: uArray, vArray
+  end subroutine
 
+  subroutine polympo_set_free_slip_bc(mpMesh) &
+             bind(C, NAME='polympo_set_free_slip_bc_f')
+    use :: iso_c_binding
+    type(c_ptr), value :: mpMesh
+  end subroutine 
 
   !---------------------------------------------------------------------------
   !> @brief calculate the MPs from given mesh vertices rotational latitude

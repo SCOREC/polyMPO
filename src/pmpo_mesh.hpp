@@ -33,6 +33,8 @@ enum MeshFieldIndex{
     MeshF_SolveStress,
     MeshF_SolveVelocity,
     MeshF_InteriorVertex,
+    MeshF_uBdryVtxNormal,
+    MeshF_vBdryVtxNormal,
     MeshF_StressDivergence,
     MeshF_TotalMassVtx,
     MeshF_AirStress,
@@ -66,6 +68,8 @@ template <> struct meshFieldToType < MeshF_TanLatVertexRotatedOverRadius > { usi
 template <> struct meshFieldToType < MeshF_SolveStress       > { using type = IntView; };
 template <> struct meshFieldToType < MeshF_SolveVelocity     > { using type = IntView; };
 template <> struct meshFieldToType < MeshF_InteriorVertex    > { using type = IntView; };
+template <> struct meshFieldToType < MeshF_uBdryVtxNormal    > { using type = Kokkos::View<double**>; };
+template <> struct meshFieldToType < MeshF_vBdryVtxNormal    > { using type = Kokkos::View<double**>; };
 template <> struct meshFieldToType < MeshF_StressDivergence  > { using type = Kokkos::View<double**>; };
 template <> struct meshFieldToType < MeshF_TotalMassVtx      > { using type = Kokkos::View<doubleSclr_t*>; };
 template <> struct meshFieldToType < MeshF_AirStress         > { using type = Kokkos::View<vec2d_t*>; };
@@ -96,6 +100,8 @@ const std::map<MeshFieldIndex, std::pair<MeshFieldType, std::string>> meshFields
         {MeshF_SolveStress,      {MeshFType_ElmBased,"MeshField_SolveStress"}},
         {MeshF_SolveVelocity,    {MeshFType_VtxBased,"MeshField_SolveVelocity"}},
         {MeshF_InteriorVertex,   {MeshFType_VtxBased,"MeshField_InteriorVertex"}},
+        {MeshF_uBdryVtxNormal,   {MeshFType_VtxBased,"MeshF_uBdryVtxNormal"}},
+        {MeshF_vBdryVtxNormal,   {MeshFType_VtxBased,"MeshF_vBdryVtxNormal"}},
         {MeshF_StressDivergence, {MeshFType_VtxBased,"MeshField_StressDivergence"}},
         {MeshF_TotalMassVtx,     {MeshFType_VtxBased,"MeshField_TotalMassVtx"}},
         {MeshF_AirStress,        {MeshFType_VtxBased,"MeshField_AirStress"}},
@@ -137,6 +143,9 @@ class Mesh {
     MeshFView<MeshF_VtxRotLat> vtxRotLat_;
     MeshFView<MeshF_ElmCenterXYZ> elmCenterXYZ_;
     MeshFView<MeshF_DualTriangleArea> dualTriangleArea_;
+
+    MeshFView<MeshF_uBdryVtxNormal> uBdryVtxNormal_;
+    MeshFView<MeshF_vBdryVtxNormal> vBdryVtxNormal_;
     MeshFView<MeshF_StressDivergence> stressDivergence_;
     MeshFView<MeshF_Vel> vtxVel_;
     MeshFView<MeshF_VtxMass> vtxMass_;
@@ -264,6 +273,7 @@ class Mesh {
     }
     void gridSolveGPU();
     void aggregateDeluDyn();
+    void applyFreeSlipBC();
 };
 
 template<MeshFieldIndex index>
@@ -323,6 +333,12 @@ auto Mesh::getMeshField(){
     }
     else if constexpr (index==MeshF_InteriorVertex){
         return interiorVertex_;
+    }
+    else if constexpr (index==MeshF_uBdryVtxNormal){
+        return uBdryVtxNormal_;
+    }
+    else if constexpr (index==MeshF_vBdryVtxNormal){
+        return vBdryVtxNormal_;
     }
     else if constexpr (index==MeshF_StressDivergence){
         return stressDivergence_;

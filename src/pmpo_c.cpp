@@ -1576,6 +1576,34 @@ void polympo_velocity_grid_solve_f(MPMesh_ptr p_mpmesh){
   p_mesh->gridSolveGPU();
 }
 
+void polympo_set_boundary_normal_vertex_f(MPMesh_ptr p_mpmesh, const int nComps, const int nVertices, double* uArray, double* vArray){
+  auto p_mesh = ((polyMPO::MPMesh*)p_mpmesh)->p_mesh;
+
+  kkViewHostU<const double**> arrayHostU(uArray, nComps, nVertices);
+  kkViewHostU<const double**> arrayHostV(vArray, nComps, nVertices);
+
+  Kokkos::View<double**> uBdryVtxNormal_device("uBdryVtxNormal", nComps, nVertices);
+  Kokkos::View<double**> vBdryVtxNormal_device("vBdryVtxNormal", nComps, nVertices);
+
+  Kokkos::deep_copy(uBdryVtxNormal_device, arrayHostU);
+  Kokkos::deep_copy(vBdryVtxNormal_device, arrayHostV);
+
+  auto uBdryVtxNormal = p_mesh->getMeshField<polyMPO::MeshF_uBdryVtxNormal>();
+  auto vBdryVtxNormal = p_mesh->getMeshField<polyMPO::MeshF_vBdryVtxNormal>();
+
+  Kokkos::parallel_for("set elm2ElmConn", nVertices, KOKKOS_LAMBDA(const int vtx){
+    for(int i=0; i<nComps; i++){
+      uBdryVtxNormal(vtx,i) = uBdryVtxNormal_device(i,vtx);
+      vBdryVtxNormal(vtx,i) = vBdryVtxNormal_device(i,vtx);
+    }
+  });
+}
+
+void polympo_set_free_slip_bc_f(MPMesh_ptr p_mpmesh){
+  auto p_mesh = ((polyMPO::MPMesh*)p_mpmesh)->p_mesh;
+  p_mesh->applyFreeSlipBC();
+}
+
 //Advection Calcualtions
 void polympo_push_f(MPMesh_ptr p_mpmesh){
   checkMPMeshValid(p_mpmesh);

@@ -52,6 +52,10 @@ namespace polyMPO{
     PMT_ALWAYS_ASSERT(interiorVertexEntry.first == MeshFType_VtxBased);
     interiorVertex_ = MeshFView<MeshF_InteriorVertex>(interiorVertexEntry.second, numVtxs_);
 
+    uBdryVtxNormal_ = MeshFView<MeshF_uBdryVtxNormal>(meshFields2TypeAndString.at(MeshF_uBdryVtxNormal).second, numVtxs_, 2);
+
+    vBdryVtxNormal_ = MeshFView<MeshF_vBdryVtxNormal>(meshFields2TypeAndString.at(MeshF_vBdryVtxNormal).second, numVtxs_, 2);
+
     auto stressDivergenceEntry = meshFields2TypeAndString.at(MeshF_StressDivergence);
     PMT_ALWAYS_ASSERT(stressDivergenceEntry.first == MeshFType_VtxBased);
     stressDivergence_ = MeshFView<MeshF_StressDivergence>(stressDivergenceEntry.second, numVtxs_, 2);
@@ -63,7 +67,7 @@ namespace polyMPO{
     auto totalMassVtxEntry = meshFields2TypeAndString.at(MeshF_TotalMassVtx);
     PMT_ALWAYS_ASSERT(totalMassVtxEntry.first == MeshFType_VtxBased);
     totalMassVtx_ = MeshFView<MeshF_TotalMassVtx>(totalMassVtxEntry.second, numVtxs_);
-    
+
     //For grid solve, the source terms
     airStress_ = MeshFView<MeshF_AirStress>(meshFields2TypeAndString.at(MeshF_AirStress).second, numVtxs_);
 
@@ -153,6 +157,7 @@ namespace polyMPO{
     });
   }
 
+
   void Mesh::gridSolveGPU(){
     //Mesh Fields
     int numVerticesOwned = getNumVerticesOwned(); 
@@ -166,9 +171,9 @@ namespace polyMPO{
     auto stressDivergence = getMeshField<MeshF_StressDivergence>();
     auto velocity = getMeshField<MeshF_Vel>();
     auto elasticTimeStep = getElasticTimeStep(); 
-    
+
     double sinOceanTurningAngle=0.0;
-    double cosOceanTurningAngle=1.0;   
+    double cosOceanTurningAngle=1.0;
 
     Kokkos::parallel_for("SolveGridVelocity", numVerticesOwned, KOKKOS_LAMBDA(const int vtx){
       if(solve_velocity(vtx) == 0) return;
@@ -193,7 +198,7 @@ namespace polyMPO{
 
   void Mesh::aggregateDeluDyn(){
     int numVtx = getNumVertices();
-    auto elasticTimeStep = getElasticTimeStep(); 
+    auto elasticTimeStep = getElasticTimeStep();
 
     constexpr MeshFieldIndex mfIndex_surfDispIncr = MeshF_OnSurfDispIncr; 
     auto meshField_surfDispIncr = getMeshField<mfIndex_surfDispIncr>();
@@ -216,6 +221,54 @@ namespace polyMPO{
       meshField_surfDispIncr(vtx, 0) = meshField_surfDispIncr(vtx, 0) + meshFieldVel(vtx, 0);
       meshField_surfDispIncr(vtx, 1) = meshField_surfDispIncr(vtx, 1) + meshFieldVel(vtx, 1);
     });
+  }
+
+  void Mesh::applyFreeSlipBC(){
+    Kokkos::Timer timer;
+    auto nVerticesOwned= getNumVerticesOwned();
+    auto meshFieldVel = getMeshField<MeshF_Vel>();
+    auto uBdryVtxNormal = getMeshField<MeshF_uBdryVtxNormal>();
+    auto vBdryVtxNormal = getMeshField<MeshF_vBdryVtxNormal>();
+    auto interiorVertex = getMeshField<MeshF_InteriorVertex>();
+    Kokkos::parallel_for("set free slip BC", nVerticesOwned, KOKKOS_LAMBDA(const int iVtx){
+      if(interiorVertex(iVtx)) return;
+
+      // edge 1 outward normal velocity
+      auto normalVelocity1 = meshFieldVel(iVtx, 0) * uBdryVtxNormal(iVtx, 0) + meshFieldVel(iVtx, 1) * vBdryVtxNormal(iVtx, 0);
+
+      // edge 2 outward normal velocity
+      auto normalVelocity2 = meshFieldVel(iVtx, 0) * uBdryVtxNormal(iVtx, 1) + meshFieldVel(iVtx, 1) * vBdryVtxNormal(iVtx, 1);
+
+      // remove edge-1 normal component
+      auto uTry1 = meshFieldVel(iVtx, 0) - normalVelocity1 * uBdryVtxNormal(iVtx, 0);
+      auto vTry1 = meshFieldVel(iVtx, 1) - normalVelocity1 * vBdryVtxNormal(iVtx, 0);
+
+      // remove edge-2 normal component
+      auto uTry2 = meshFieldVel(iVtx, 0) - normalVelocity2 * uBdryVtxNormal(iVtx, 1);
+      auto vTry2 = meshFieldVel(iVtx, 1) - normalVelocity2 * vBdryVtxNormal(iVtx, 1);
+
+      auto normalVelocity2WithTry1 = uTry1 * uBdryVtxNormal(iVtx, 1) + vTry1 * vBdryVtxNormal(iVtx, 1);
+
+      auto normalVelocity1WithTry2 = uTry2 * uBdryVtxNormal(iVtx, 0) + vTry2 * vBdryVtxNormal(iVtx, 0);
+
+      // already satisfies free-slip constraint
+      if (normalVelocity1 <= 0.0 && normalVelocity2 <= 0.0){
+        return;
+      }
+      else if (normalVelocity1 > 0.0 && normalVelocity2WithTry1 <= 0.0){
+        meshFieldVel(iVtx,0) = uTry1;
+        meshFieldVel(iVtx,1) = vTry1;
+      }
+      else if (normalVelocity2 > 0.0 && normalVelocity1WithTry2 <= 0.0){
+        meshFieldVel(iVtx,0) = uTry2;
+        meshFieldVel(iVtx,1) = vTry2;
+      }
+      else{
+        meshFieldVel(iVtx,0) = 0.0;
+        meshFieldVel(iVtx,1) = 0.0;
+      }
+    });
+    pumipic::RecordTime("free slip BC", timer.seconds());
   }
 
 } // namespace polyMPO

@@ -434,6 +434,155 @@ void MPMesh::push(){
   pumipic::RecordTime("PolyMPO_push", timer.seconds());
 }
 
+//Start Communication routine
+void MPMesh::startCommunication(){
+  std::cout<<__FUNCTION__<<std::endl;
+  Kokkos::Timer timer;
+  int self, numProcsTot;
+  MPI_Comm comm = p_MPs->getMPIComm();
+  MPI_Comm_rank(comm, &self);
+  MPI_Comm_size(comm, &numProcsTot); 
+
+  //The routine should work for elements too, although currently the communication 
+  //is done for vertices. For elements, the follwoing three variables should correspond 
+  //to elements.
+  auto entOwners = p_mesh->getVtx2Process();
+  auto ent2global = p_mesh->getVtxGlobal();
+  int numEntities = p_mesh->getNumVertices();
+
+  //Loop over elements and find no of owners and halos
+  Kokkos::View<int> owner_count("owner_count");
+  Kokkos::View<int> halo_count("halo_count");
+  Kokkos::deep_copy(owner_count, 0);
+  Kokkos::deep_copy(halo_count, 0);
+  Kokkos::parallel_for("countOwnerHalo", numEntities, KOKKOS_LAMBDA(const int elm){
+    if (entOwners(elm)==self)
+      Kokkos::atomic_add(&owner_count(), 1);
+    else
+      Kokkos::atomic_add(&halo_count(), 1);
+  });
+
+  Kokkos::deep_copy(numOwnersTot, owner_count);
+  Kokkos::deep_copy(numHalosTot, halo_count);
+  assert(numHalosTot+numOwnersTot == numEntities);
+  int num_ints_per_copy = 2;
+
+  //#Halo Cells/proc which are owners on other process
+  numOwnersOnOtherProcs.resize(numProcsTot);
+
+  //#OwnerCells/proc which are halos on other proces
+  numHalosOnOtherProcs.resize(numProcsTot); 
+
+  //For every halo cell find the owning process and the local Id in that process
+  haloOwnerProcs.reserve(numHalosTot);
+  haloOwnerLocalIDs.resize(numProcsTot);
+
+  //Copy owning processes and globalIds to CPU
+  auto entOwners_host = Kokkos::create_mirror_view_and_copy(Kokkos::DefaultHostExecutionSpace::memory_space(),
+                        entOwners);
+  auto ent2global_host = Kokkos::create_mirror_view_and_copy(Kokkos::DefaultHostExecutionSpace::memory_space(),
+                         ent2global);
+
+  //Do Map of Global To Local ID
+  //Check unordered vs ordered map; which faster?
+  std::map<int, int> global2local;
+  //std::unordered_map<int, int> global2local;
+  for (int iEnt = 0; iEnt < numEntities; iEnt++) {
+    int globalID = ent2global_host(iEnt);
+    global2local[globalID] = iEnt;
+  }
+
+  //Loop over all halo Entities and find the owning process
+  for (auto iEnt=numOwnersTot; iEnt<numOwnersTot+numHalosTot; iEnt++){
+    auto ownerProc = entOwners_host[iEnt];
+    assert(entOwners_host(iEnt) != self);
+    numOwnersOnOtherProcs[ownerProc] = numOwnersOnOtherProcs[ownerProc]+1;
+    haloOwnerProcs.push_back(ownerProc);
+  }
+
+  MPI_Alltoall(numOwnersOnOtherProcs.data(), 1, MPI_INT, numHalosOnOtherProcs.data(), 1, MPI_INT, comm);
+
+  // Halo Entity's Global & Local Id To Owning Process
+  std::vector<std::vector<int>> sendBufs(numProcsTot);
+  for (int proc = 0; proc < numProcsTot; proc++)
+    sendBufs[proc].reserve(num_ints_per_copy*numOwnersOnOtherProcs[proc]);
+
+  for (int iEnt=numOwnersTot; iEnt<numOwnersTot+numHalosTot; iEnt++) {
+    auto ownerProc = entOwners_host(iEnt);
+    assert(ownerProc != self);
+    sendBufs[ownerProc].push_back(ent2global_host(iEnt));
+    sendBufs[ownerProc].push_back(iEnt);
+  }
+
+  //Requests  
+  std::vector<MPI_Request> requests;
+  requests.reserve(2*numProcsTot);
+
+  //Receive Calls
+  std::vector<std::vector<int>> recvBufs(numProcsTot);
+  for (int proc = 0; proc < numProcsTot; proc++) {
+    if (numHalosOnOtherProcs[proc] > 0) {
+      recvBufs[proc].resize(num_ints_per_copy*numHalosOnOtherProcs[proc]);
+      MPI_Request req;
+      MPI_Irecv(recvBufs[proc].data(), num_ints_per_copy*numHalosOnOtherProcs[proc], MPI_INT, proc, MPI_ANY_TAG, comm, &req);
+      requests.push_back(req);
+    }
+  }
+  //Send Calls
+  for (int proc=0; proc<numProcsTot; proc++) {
+    auto& buf=sendBufs[proc];
+    if(buf.empty()) continue;
+    MPI_Request req;
+    MPI_Isend(buf.data(), buf.size(), MPI_INT, proc, 0, comm, &req);
+    requests.push_back(req);
+  }
+  MPI_Waitall(requests.size(), requests.data(), MPI_STATUSES_IGNORE);
+  requests.clear();
+
+  //Now the owner process needs to look at these globalIDs convert them to localIds and send it back
+  //recvBufs[p] contains global IDs of elements that halo rank p needs
+  //numHalosOnOtherProcs[p] tells how many to expect from proc p
+  ownerOwnerLocalIDs.resize(numProcsTot);
+  ownerHaloLocalIDs.resize(numProcsTot);
+
+  for (int proc = 0; proc < numProcsTot; proc++) {
+    if (numHalosOnOtherProcs[proc] > 0) {
+      ownerOwnerLocalIDs[proc].resize(numHalosOnOtherProcs[proc]);
+      ownerHaloLocalIDs[proc].resize(numHalosOnOtherProcs[proc]);
+      for (int i = 0; i < numHalosOnOtherProcs[proc]; i++) {
+        int globalID = recvBufs[proc][i*num_ints_per_copy];
+        ownerOwnerLocalIDs[proc][i] = global2local[globalID];
+        ownerHaloLocalIDs[proc][i]  = recvBufs[proc][i*num_ints_per_copy+1];
+      }
+    }
+  }
+
+  // On the halo side, need to receive the localIds of owning Process
+  for (int proc = 0; proc < numProcsTot; proc++) {
+    if (numOwnersOnOtherProcs[proc] > 0) { // these are cells whose owners are in other processes
+      haloOwnerLocalIDs[proc].resize(numOwnersOnOtherProcs[proc]);
+      MPI_Request req;
+      MPI_Irecv(haloOwnerLocalIDs[proc].data(), haloOwnerLocalIDs[proc].size(), MPI_INT, proc, MPI_ANY_TAG, comm, &req);
+      requests.push_back(req);
+    }
+  }
+
+  //Sends back localID of the owned cells so that HaloToOwner can be done for halo processes
+  for (int proc = 0; proc < numProcsTot; proc++) {
+    if (numHalosOnOtherProcs[proc]>0) {
+      MPI_Request req;
+      MPI_Isend(ownerOwnerLocalIDs[proc].data(), ownerOwnerLocalIDs[proc].size(), MPI_INT, proc, 1, comm, &req);
+      requests.push_back(req);
+    }
+  }
+
+  MPI_Waitall(requests.size(), requests.data(), MPI_STATUSES_IGNORE);
+
+  pumipic::RecordTime("Start Communication" + std::to_string(self), timer.seconds());
+}
+
+
+
 //Writing vtp Mesh and MP history
 void MPMesh::printVTP_mesh(int printVTPIndex){
   auto vtxCoords = p_mesh->getMeshField<polyMPO::MeshF_VtxCoords>();

@@ -1093,6 +1093,12 @@ module polympo
     type(c_ptr), value :: mpMesh
   end subroutine 
 
+  subroutine polympo_set_halo_vel_from_owner(mpMesh) &
+             bind(C, NAME='polympo_set_halo_vel_from_owner_f')
+    use :: iso_c_binding
+    type(c_ptr), value :: mpMesh
+  end subroutine 
+
   !---------------------------------------------------------------------------
   !> @brief calculate the MPs from given mesh vertices rotational latitude
   !>        longitude, update the MP slices

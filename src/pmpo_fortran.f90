@@ -1011,6 +1011,14 @@ module polympo
     type(c_ptr), value :: array
   end subroutine
 
+ subroutine polympo_setIceAreaVertex(mpMesh, nVertices, array) &
+             bind(C, NAME='polympo_setIceAreaVertex_f')
+    use :: iso_c_binding
+    type(c_ptr), value :: mpMesh
+    integer(c_int), value :: nVertices
+    type(c_ptr), value :: array
+  end subroutine
+
   subroutine polympo_calculateStressDivergence(mpMesh) &
              bind(C, NAME='polympo_calculateStressDivergence_f')
     use :: iso_c_binding
@@ -1071,6 +1079,12 @@ module polympo
     type(c_ptr), value :: mpMesh
     integer(c_int), value :: nVertices
     type(c_ptr), value :: array
+  end subroutine
+
+  subroutine polympo_calculate_oceanStressCoefficient(mpMesh) &
+             bind(C, NAME='polympo_calculate_oceanStressCoefficient_f')
+    use :: iso_c_binding
+    type(c_ptr), value :: mpMesh
   end subroutine
 
   subroutine  polympo_velocity_grid_solve(mpMesh) &

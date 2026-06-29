@@ -157,6 +157,18 @@ namespace polyMPO{
     });
   }
 
+  void Mesh::calcOceanStressCoeff(){
+    int numVerticesOwned = getNumVerticesOwned();
+    auto iceAreaVtx = getMeshField<polyMPO::MeshF_VtxMass>();
+    auto oceanStressCoeff = getMeshField<MeshF_OceanStressCoeff>();
+    auto velocity = getMeshField<MeshF_Vel>();
+    auto solve_velocity = getMeshField<MeshF_SolveVelocity>();
+
+    Kokkos::parallel_for("calcOceanStressCoeff", numVerticesOwned, KOKKOS_LAMBDA(const int vtx){
+      if(solve_velocity(vtx) == 0) return;
+      oceanStressCoeff(vtx, 0) = 0.00536 * 1026.0 * iceAreaVtx(vtx, 0) * sqrt(velocity(vtx, 0)*velocity(vtx, 0) + velocity(vtx, 1)*velocity(vtx, 1));
+    });
+  }
 
   void Mesh::gridSolveGPU(){
     //Mesh Fields

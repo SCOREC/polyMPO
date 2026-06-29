@@ -106,6 +106,7 @@ void polympo_setElasticTimeStep_f(MPMesh_ptr p_mpmesh, const double elasticTimeS
 void polympo_setDynamicTimeStep_f(MPMesh_ptr p_mpmesh, const double dynamicTimeStep);
 void polympo_setSolveStressMesh_f(MPMesh_ptr p_mpmesh, const int nCells, int* array);
 void polympo_setSolveVelocityMesh_f(MPMesh_ptr p_mpmesh, const int nVertices, int* array);
+void polympo_setIceAreaVertex_f(MPMesh_ptr p_mpmesh, const int nVertices, double* array);
 void polympo_calculateStressDivergence_f(MPMesh_ptr p_mpmesh);
 void polympo_getStressDivergence_f(MPMesh_ptr p_mpmesh, const int nVertices, double* uArray, double* vArray);
 void polympo_setTotalMassVtx_f(MPMesh_ptr p_mpmesh, const int nVertices, double* array);
@@ -114,6 +115,7 @@ void polympo_set_surfaceTiltForce_f(MPMesh_ptr p_mpmesh, const int nVertices, do
 void polympo_set_totalMassVertexfVertex_f(MPMesh_ptr p_mpmesh, const int nVertices, double* array);
 void polympo_set_oceanStress_f(MPMesh_ptr p_mpmesh, const int nVertices, double* uArray, double* vArray);
 void polympo_set_oceanStressCoefficient_f(MPMesh_ptr p_mpmesh, const int nVertices, double* array);
+void polympo_calculate_oceanStressCoefficient_f(MPMesh_ptr p_mpmesh);
 void polympo_velocity_grid_solve_f(MPMesh_ptr p_mpmesh);
 void polympo_set_boundary_normal_vertex_f(MPMesh_ptr p_mpmesh, const int nComps, const int nVertices, double* uArray, double* vArray);
 void polympo_set_free_slip_bc_f(MPMesh_ptr p_mpmesh);

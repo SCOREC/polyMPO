@@ -271,6 +271,8 @@ class Mesh {
     double getDynamicTimeStep(){
       return dynamicTimeStep_;
     }
+
+    void calcOceanStressCoeff(); 
     void gridSolveGPU();
     void aggregateDeluDyn();
     void applyFreeSlipBC();

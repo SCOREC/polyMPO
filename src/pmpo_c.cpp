@@ -1744,8 +1744,8 @@ void polympo_set_halo_vel_from_owner_f(MPMesh_ptr p_mpmesh){
   auto p_mesh = ((polyMPO::MPMesh*)p_mpmesh)->p_mesh;
   int numVertices = p_mesh->getNumVertices();
   auto vtxFieldVel = p_mesh->getMeshField<polyMPO::MeshF_Vel>();
-  
-  mpMesh->communicate_and_take_halo_contributions1(vtxFieldVel, numVertices, 2, 1, 1); 
+
+  mpMesh->communicate_and_take_halo_contributions1_improved(vtxFieldVel, numVertices, 2, 1, 1); 
 }
 
 //Advection Calcualtions

@@ -1624,10 +1624,18 @@ void polympo_set_free_slip_bc_f(MPMesh_ptr p_mpmesh){
 }
 
 void polympo_set_halo_vel_from_owner_f(MPMesh_ptr p_mpmesh){
+  
+  int numProcsTot;
+  auto p_MPs = ((polyMPO::MPMesh*)p_mpmesh)->p_MPs;
+  MPI_Comm comm = p_MPs->getMPIComm();
+  MPI_Comm_size(comm, &numProcsTot);
+  if(numProcsTot == 1) return;
+
   auto mpMesh = ((polyMPO::MPMesh*)p_mpmesh);
   auto p_mesh = ((polyMPO::MPMesh*)p_mpmesh)->p_mesh;
   int numVertices = p_mesh->getNumVertices();
   auto vtxFieldVel = p_mesh->getMeshField<polyMPO::MeshF_Vel>();
+  
   mpMesh->communicate_and_take_halo_contributions1(vtxFieldVel, numVertices, 2, 1, 1); 
 }
 

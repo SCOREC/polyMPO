@@ -130,6 +130,7 @@ void MPMesh::reconstruct_coeff_full(){
     radius=p_mesh->getSphereRadius();
 
   //Assemble matrix for each vertex
+  timer.reset();
   auto assemble = PS_LAMBDA(const int& elm, const int& mp, const int& mask) {
     if(mask) { //if material point is 'active'/'enabled'
       int nVtxE = elm2VtxConn(elm,0); //number of vertices bounding the element
@@ -152,7 +153,7 @@ void MPMesh::reconstruct_coeff_full(){
   };
   p_MPs->parallel_for(assemble, "assembly");
   Kokkos::fence();
-  pumipic::RecordTime("Assemble Matrix Per Process" + std::to_string(self), timer.seconds());
+  pumipic::RecordTime("VR Assemble Matrix Per Process" + std::to_string(self), timer.seconds());
   //Mode 0 is Gather:  Halos Send to Owners
   //Mode 1 is Scatter: Owners Send to Halos
   //Op 0 is addition
@@ -162,20 +163,26 @@ void MPMesh::reconstruct_coeff_full(){
   int op = 0;
   if (numProcsTot >1){
     communicate_and_take_halo_contributions1_improved(vtxMatrices, numVertices, numEntriesMatrix, mode, op);
+    pumipic::RecordTime("VR Matrix Gather Halo/MPI " + std::to_string(self), timer.seconds());
+
+    timer.reset();
     mode=1; 
     op=1;
     communicate_and_take_halo_contributions1_improved(vtxMatrices, numVertices, numEntriesMatrix, mode, op);
+    pumipic::RecordTime("VR Matrix Scatter Halo/MPI " + std::to_string(self), timer.seconds());
   }
-  pumipic::RecordTime("Communicate Matrix Values" + std::to_string(self), timer.seconds());
- 
-  //Stroe the 1st matrix element
+  
+  //Store the 1st matrix element
   Kokkos::View<double*>vtxMatrixMass_l("vtxMass", numVertices);
   Kokkos::parallel_for("storeMatrixMass", numVertices, KOKKOS_LAMBDA(const int vtx){
     vtxMatrixMass_l(vtx) = vtxMatrices(vtx, 0);
   }); 
+  Kokkos::fence();
   this->vtxMatrixMass = vtxMatrixMass_l;
 
+  timer.reset();
   invertMatrix(vtxMatrices, radius);
+  pumipic::RecordTime("VR Invert Matrix " + std::to_string(self), timer.seconds());
 }
 
 void MPMesh::invertMatrix(const Kokkos::View<double**>& vtxMatrices, const double& radius){

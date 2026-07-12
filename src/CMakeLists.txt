@@ -21,6 +21,24 @@ set(SOURCES
 )
 
 add_library(polyMPO-core ${SOURCES})
+
+if(DEFINED ENV{PE_MPICH_GTL_DIR_nvidia80}
+   AND DEFINED ENV{PE_MPICH_GTL_LIBS_nvidia80})
+
+  target_link_options(polyMPO-core PUBLIC
+    "$ENV{PE_MPICH_GTL_DIR_nvidia80}"
+    "$ENV{PE_MPICH_GTL_LIBS_nvidia80}"
+  )
+
+  message(STATUS
+    "polyMPO: enabling Cray MPICH CUDA GTL linkage")
+else()
+  message(FATAL_ERROR
+    "Cray MPICH CUDA GTL environment variables are unavailable. "
+    "Load cudatoolkit and craype-accel-nvidia80, or set "
+    "CRAY_ACCEL_TARGET=nvidia80 before configuring.")
+endif()
+
 target_compile_definitions(polyMPO-core PUBLIC CUDA_AWARE_MPI)
 set_property(TARGET polyMPO-core PROPERTY CXX_STANDARD "17")
 set_property(TARGET polyMPO-core PROPERTY CXX_STANDARD_REQUIRED ON)

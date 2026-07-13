@@ -728,7 +728,6 @@ void polympo_getMPStress_f(MPMesh_ptr p_mpmesh, const int nComps, const int numM
 void polympo_setAreaMP_f(MPMesh_ptr p_mpmesh, const int nComps, const int numMPs, double* areaMPHost){
   Kokkos::Timer timer;
   checkMPMeshValid(p_mpmesh);
-  
   auto p_MPs = ((polyMPO::MPMesh*)p_mpmesh)->p_MPs;
   //Rank information
   int self;
@@ -754,10 +753,34 @@ void polympo_setAreaMP_f(MPMesh_ptr p_mpmesh, const int nComps, const int numMPs
   pumipic::RecordTime("PolyMPO_setMPArea" + std::to_string(self), timer.seconds());
 }
 
+void polympo_getAreaMP_f(MPMesh_ptr p_mpmesh, const int nComps, const int numMPs, double* areaMPHost) {
+  Kokkos::Timer timer;
+  checkMPMeshValid(p_mpmesh);
+  auto p_MPs = ((polyMPO::MPMesh*)p_mpmesh)->p_MPs;
+
+  PMT_ALWAYS_ASSERT(nComps == 1);
+  PMT_ALWAYS_ASSERT(numMPs >= p_MPs->getCount());
+
+  auto mpArea = p_MPs->getData<polyMPO::MPF_Area>();
+  auto mpAppID = p_MPs->getData<polyMPO::MPF_MP_APP_ID>();
+
+  Kokkos::View<double**> mpAreaCopy("mpAreaCopy", nComps, numMPs);
+  auto getMPArea = PS_LAMBDA(const int& elm, const int& mp, const int& mask){
+    if(mask){
+      mpAreaCopy(0,mpAppID(mp)) = mpArea(mp,0);
+    }
+  };
+  p_MPs->parallel_for(getMPArea, "getMPArea");
+  kkDbl2dViewHostU arrayHost(areaMPHost, nComps, numMPs);
+  Kokkos::deep_copy(arrayHost, mpAreaCopy);
+  pumipic::RecordTime("PolyMPO_getMPArea", timer.seconds());
+}
+
+
 void polympo_setIcePressureMP_f(MPMesh_ptr p_mpmesh, const int nComps, const int numMPs, double* icePressureMPHost){
   Kokkos::Timer timer;
   checkMPMeshValid(p_mpmesh);
-  
+
   auto p_MPs = ((polyMPO::MPMesh*)p_mpmesh)->p_MPs;
   //Rank information
   int self;
@@ -781,6 +804,73 @@ void polympo_setIcePressureMP_f(MPMesh_ptr p_mpmesh, const int nComps, const int
   };
   p_MPs->parallel_for(setMPIcePressure, "setIcePressure");
   pumipic::RecordTime("PolyMPO_setIcePressure" + std::to_string(self), timer.seconds());
+}
+
+void polympo_setOceanVelocity_f(MPMesh_ptr p_mpmesh, const int nComps, const int nVertices, const double* uArray, const double* vArray){
+  checkMPMeshValid(p_mpmesh);
+  auto p_mesh = ((polyMPO::MPMesh*)p_mpmesh)->p_mesh;
+
+  PMT_ALWAYS_ASSERT(nComps == vec2d_nEntries);
+  PMT_ALWAYS_ASSERT(p_mesh->getNumVertices() == nVertices);
+  //copy the host array to the device
+  auto oceanVelocity = p_mesh->getMeshField<polyMPO::MeshF_OceanVelocity>();
+  auto h_oceanVelocity = Kokkos::create_mirror_view(oceanVelocity);
+  for(int i=0; i<nVertices; i++){
+    h_oceanVelocity(i, 0) = uArray[i];
+    h_oceanVelocity(i, 1) = vArray[i];
+  }
+  Kokkos::deep_copy(oceanVelocity, h_oceanVelocity);
+}
+
+void polympo_subcycle_prep_arrays_f(MPMesh_ptr p_mpmesh){
+  checkMPMeshValid(p_mpmesh);
+  auto p_mesh = ((polyMPO::MPMesh*)p_mpmesh)->p_mesh;
+  int numVerticesOwned = p_mesh->getNumVerticesOwned();
+
+  auto solveVelocity = p_mesh->getMeshField<polyMPO::MeshF_SolveVelocity>();
+  auto velField = p_mesh->getMeshField<polyMPO::MeshF_Vel>();
+  auto stress_divUV = p_mesh->getMeshField<polyMPO::MeshF_StressDivergence>();
+  auto oceanStress = p_mesh->getMeshField<polyMPO::MeshF_OceanStress>();
+
+  Kokkos::parallel_for("prep_arrays", numVerticesOwned, KOKKOS_LAMBDA(const int vtx){
+    if(solveVelocity(vtx)==0){
+      for (int k=0; k<2; k ++){
+        velField(vtx, k) = 0.0;
+        stress_divUV(vtx, k) = 0.0;
+        oceanStress(vtx, k) = 0.0;
+      }
+    }
+  });
+}
+
+void polympo_setReplacementPressureMP_f(MPMesh_ptr p_mpmesh, const int nComps, const int numMPs, double* replacementPressureMPHost){
+  Kokkos::Timer timer;
+  checkMPMeshValid(p_mpmesh);
+
+  auto p_MPs = ((polyMPO::MPMesh*)p_mpmesh)->p_MPs;
+  //Rank information
+  int self;
+  MPI_Comm comm = p_MPs->getMPIComm();
+  MPI_Comm_rank(comm, &self);
+  //Asserts
+  PMT_ALWAYS_ASSERT(nComps == 1);
+  PMT_ALWAYS_ASSERT(numMPs >= p_MPs->getCount());
+  //MP Data
+  auto mpReplacementPressure = p_MPs->getData<polyMPO::MPF_ReplacementPressure>();
+  auto mpAppID = p_MPs->getData<polyMPO::MPF_MP_APP_ID>();
+
+  //Copy to device
+  kkViewHostU<const double**> mpRepPressure_h(replacementPressureMPHost, nComps, numMPs);
+  Kokkos::View<double**> mpRepPressure_d("mpRepPressureDevice", nComps, numMPs);
+  Kokkos::deep_copy(mpRepPressure_d, mpRepPressure_h);
+  //Set in PS
+  auto setMPRepPressure = PS_LAMBDA(const int& elm, const int& mp, const int& mask){
+    if(mask){
+      mpReplacementPressure(mp,0) = mpRepPressure_d(0, mpAppID(mp));
+    }
+  };
+  p_MPs->parallel_for(setMPRepPressure, "setMPRepPressure");
+  pumipic::RecordTime("PolyMPO_setReplacementPressure" + std::to_string(self), timer.seconds());
 }
 
 void polympo_getReplacementPressureMP_f(MPMesh_ptr p_mpmesh, const int nComps, const int numMPs, double* replacementPressureMPHost){

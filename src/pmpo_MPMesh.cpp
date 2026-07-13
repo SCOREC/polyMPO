@@ -14,11 +14,13 @@ void MPMesh::calculateStrain(){
   auto MPsBasisGrads = p_MPs->getData<MPF_Basis_Grad_Vals>();
   auto MPsAppID = p_MPs->getData<MPF_MP_APP_ID>();
   auto MPsStrainRate = p_MPs->getData<MPF_Strain_Rate>();
+  auto MPsArea       = p_MPs->getData<polyMPO::MPF_Area>();
   //Mesh Fields
   auto tanLatVertexRotatedOverRadius = p_mesh->getMeshField<MeshF_TanLatVertexRotatedOverRadius>();
   auto elm2VtxConn = p_mesh->getElm2VtxConn();
   auto velField = p_mesh->getMeshField<MeshF_Vel>();
   auto solveStress = p_mesh->getMeshField<polyMPO::MeshF_SolveStress>();
+  auto elasticTimeStep = p_mesh->getElasticTimeStep();
 
   auto setMPStrainRate = PS_LAMBDA(const int& elm, const int& mp, const int& mask){
     if(mask){
@@ -29,7 +31,7 @@ void MPMesh::calculateStrain(){
         MPsStrainRate(mp, 2) =  0.0;
         return;
       }
-
+     
       int numVtx = elm2VtxConn(elm,0);
 
       double v11 = 0.0;
@@ -52,6 +54,8 @@ void MPMesh::calculateStrain(){
       MPsStrainRate(mp, 0) =  v11 - vTanOverR;
       MPsStrainRate(mp, 1) =  v22;
       MPsStrainRate(mp, 2) =  0.5*(v12 + v21 + uTanOverR);
+
+      MPsArea(mp, 0) = MPsArea(mp, 0) * exp((v11+v22-vTanOverR)*elasticTimeStep);
     }
   };
   p_MPs->parallel_for(setMPStrainRate, "setMPStrainRate");
@@ -75,13 +79,16 @@ void MPMesh::calculateStress(const int constitutive_relation){
     if(mask){
       Vec3d strain_rate (MPsStrainRate(mp, 0), MPsStrainRate(mp, 1), MPsStrainRate(mp, 2));
       Vec3d stress(MPsStress(mp, 0), MPsStress(mp, 1), MPsStress(mp, 2));
+      double rep_pressure=MPsRepPressure(mp,0);
 
       if (constitutive_relation == 1)
-        constitutive_evp(strain_rate, stress, MPsIcePressure(mp,0), MPsRepPressure(mp,0), MPsArea(mp,0), elasticTimeStep, dampingTimescale);
+        constitutive_evp(strain_rate, stress, MPsIcePressure(mp,0), rep_pressure, MPsArea(mp,0), elasticTimeStep, dampingTimescale);
       else if(constitutive_relation == 3)
         constitutive_linear(strain_rate, stress);
+      
       for (int m=0 ; m<3; m++)
         MPsStress(mp, m) = stress[m]*solveStress(elm);
+      MPsRepPressure(mp,0)=rep_pressure;
     }
   };
   p_MPs->parallel_for(setMPStress, "setMPStress");

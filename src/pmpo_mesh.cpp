@@ -78,6 +78,9 @@ namespace polyMPO{
     oceanStress_ = MeshFView<MeshF_OceanStress>(meshFields2TypeAndString.at(MeshF_OceanStress).second, numVtxs_);
     
     oceanStressCoeff_ = MeshFView<MeshF_OceanStressCoeff>(meshFields2TypeAndString.at(MeshF_OceanStressCoeff).second, numVtxs_);
+
+    oceanVelocity_ = MeshFView<MeshF_OceanVelocity>(meshFields2TypeAndString.at(MeshF_OceanVelocity).second, numVtxs_);
+
   }
 
   void Mesh::setMeshElmBasedFieldSize(){
@@ -163,10 +166,12 @@ namespace polyMPO{
     auto oceanStressCoeff = getMeshField<MeshF_OceanStressCoeff>();
     auto velocity = getMeshField<MeshF_Vel>();
     auto solve_velocity = getMeshField<MeshF_SolveVelocity>();
+    auto oceanVelocity = getMeshField<MeshF_OceanVelocity>();
 
     Kokkos::parallel_for("calcOceanStressCoeff", numVerticesOwned, KOKKOS_LAMBDA(const int vtx){
       if(solve_velocity(vtx) == 0) return;
-      oceanStressCoeff(vtx, 0) = 0.00536 * 1026.0 * iceAreaVtx(vtx, 0) * sqrt(velocity(vtx, 0)*velocity(vtx, 0) + velocity(vtx, 1)*velocity(vtx, 1));
+      auto relVelSq = pow(oceanVelocity(vtx, 0) - velocity(vtx, 0), 2) +  pow(oceanVelocity(vtx, 1) - velocity(vtx, 1), 2);
+      oceanStressCoeff(vtx, 0) = 0.00536 * 1026.0 * iceAreaVtx(vtx, 0) * sqrt(relVelSq);
     });
   }
 

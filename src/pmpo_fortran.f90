@@ -419,6 +419,14 @@ module polympo
     type(c_ptr), value :: array
   end subroutine
 
+  subroutine polympo_getAreaMP(mpMesh, nComps, numMPs, array) &
+             bind(C, NAME='polympo_getAreaMP_f')
+    use :: iso_c_binding
+    type(c_ptr), value :: mpMesh
+    integer(c_int), value :: nComps, numMPs
+    type(c_ptr), value :: array
+  end subroutine
+
   subroutine polympo_setIcePressureMP(mpMesh, nComps, numMPs, array) &
              bind(C, NAME='polympo_setIcePressureMP_f')
     use :: iso_c_binding
@@ -426,7 +434,29 @@ module polympo
     integer(c_int), value :: nComps, numMPs
     type(c_ptr), value :: array
   end subroutine
-  
+
+  subroutine polympo_setOceanVelocity(mpMesh, nComps, nVertices, uArray, vArray) &
+             bind(C, NAME='polympo_setOceanVelocity_f')
+    use :: iso_c_binding
+    type(c_ptr), value :: mpMesh
+    integer(c_int), value :: nComps, nVertices
+    type(c_ptr), value :: uArray, vArray
+  end subroutine
+
+  subroutine polympo_subcycle_prep_arrays(mpMesh) &
+             bind(C, NAME='polympo_subcycle_prep_arrays_f')
+    use :: iso_c_binding
+    type(c_ptr), value :: mpMesh
+  end subroutine
+
+  subroutine polympo_setReplacementPressureMP(mpMesh, nComps, numMPs, array) &
+             bind(C, NAME='polympo_setReplacementPressureMP_f')
+    use :: iso_c_binding
+    type(c_ptr), value :: mpMesh
+    integer(c_int), value :: nComps, numMPs
+    type(c_ptr), value :: array
+  end subroutine
+
   subroutine polympo_getReplacementPressureMP(mpMesh, nComps, numMPs, array) &
              bind(C, NAME='polympo_getReplacementPressureMP_f')
     use :: iso_c_binding

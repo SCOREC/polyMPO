@@ -20,6 +20,10 @@ namespace polyMPO{
     PMT_ALWAYS_ASSERT(vtxRotLatMapEntry.first == MeshFType_VtxBased);
     vtxRotLat_ = MeshFView<MeshF_VtxRotLat>(vtxRotLatMapEntry.second,numVtxs_);
 
+    auto vtxRotLonMapEntry = meshFields2TypeAndString.at(MeshF_VtxRotLon);
+    PMT_ALWAYS_ASSERT(vtxRotLonMapEntry.first == MeshFType_VtxBased);
+    vtxRotLon_ = MeshFView<MeshF_VtxRotLon>(vtxRotLonMapEntry.second,numVtxs_);
+
     auto vtxVelMapEntry = meshFields2TypeAndString.at(MeshF_Vel);
     PMT_ALWAYS_ASSERT(vtxVelMapEntry.first == MeshFType_VtxBased);
     vtxVel_ = MeshFView<MeshF_Vel>(vtxVelMapEntry.second,numVtxs_);
@@ -160,18 +164,19 @@ namespace polyMPO{
     });
   }
 
-  void Mesh::calcOceanStressCoeff(){
+  void Mesh::calcOceanStressCoeff(const double configIceOceanDragCoeff){
     int numVerticesOwned = getNumVerticesOwned();
     auto iceAreaVtx = getMeshField<polyMPO::MeshF_VtxMass>();
     auto oceanStressCoeff = getMeshField<MeshF_OceanStressCoeff>();
     auto velocity = getMeshField<MeshF_Vel>();
     auto solve_velocity = getMeshField<MeshF_SolveVelocity>();
     auto oceanVelocity = getMeshField<MeshF_OceanVelocity>();
+    auto seaiceDensitySeaWater_ = polyMPO::seaiceDensitySeaWater;
 
     Kokkos::parallel_for("calcOceanStressCoeff", numVerticesOwned, KOKKOS_LAMBDA(const int vtx){
       if(solve_velocity(vtx) == 0) return;
       auto relVelSq = pow(oceanVelocity(vtx, 0) - velocity(vtx, 0), 2) +  pow(oceanVelocity(vtx, 1) - velocity(vtx, 1), 2);
-      oceanStressCoeff(vtx, 0) = 0.00536 * 1026.0 * iceAreaVtx(vtx, 0) * sqrt(relVelSq);
+      oceanStressCoeff(vtx, 0) = configIceOceanDragCoeff * seaiceDensitySeaWater_ * iceAreaVtx(vtx, 0) * sqrt(relVelSq);
     });
   }
 

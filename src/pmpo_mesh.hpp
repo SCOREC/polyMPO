@@ -19,6 +19,7 @@ enum MeshFieldIndex{
     MeshF_Unsupported,
     MeshF_VtxCoords,
     MeshF_VtxRotLat,
+    MeshF_VtxRotLon,
     MeshF_ElmCenterXYZ,
     MeshF_DualTriangleArea,
     MeshF_Vel,
@@ -55,6 +56,7 @@ enum MeshFieldType{
 template <MeshFieldIndex> struct meshFieldToType;
 template <> struct meshFieldToType < MeshF_VtxCoords         > { using type = Kokkos::View<vec3d_t*>; };
 template <> struct meshFieldToType < MeshF_VtxRotLat         > { using type = DoubleView; };
+template <> struct meshFieldToType < MeshF_VtxRotLon         > { using type = DoubleView; };
 template <> struct meshFieldToType < MeshF_ElmCenterXYZ      > { using type = Kokkos::View<vec3d_t*>; };
 template <> struct meshFieldToType < MeshF_DualTriangleArea  > { using type = Kokkos::View<doubleSclr_t*>; };
 template <> struct meshFieldToType < MeshF_Vel               > { using type = Kokkos::View<vec2d_t*>; };
@@ -88,6 +90,7 @@ const std::map<MeshFieldIndex, std::pair<MeshFieldType, std::string>> meshFields
         {MeshF_Unsupported,      {MeshFType_Unsupported,"MeshField_Unsupported"}},
         {MeshF_VtxCoords,        {MeshFType_VtxBased,"MeshField_VerticesCoords"}},
         {MeshF_VtxRotLat,        {MeshFType_VtxBased,"MeshField_VerticesLatitude"}},
+        {MeshF_VtxRotLon,        {MeshFType_VtxBased,"MeshField_VerticesLongitude"}},
         {MeshF_ElmCenterXYZ,     {MeshFType_ElmBased,"MeshField_ElementCenterXYZ"}},
         {MeshF_DualTriangleArea, {MeshFType_VtxBased,"MeshField_DualTriangleArea"}},
         {MeshF_Vel,              {MeshFType_VtxBased,"MeshField_Velocity"}},
@@ -144,6 +147,7 @@ class Mesh {
     //start of meshFields
     MeshFView<MeshF_VtxCoords> vtxCoords_;
     MeshFView<MeshF_VtxRotLat> vtxRotLat_;
+    MeshFView<MeshF_VtxRotLon> vtxRotLon_;
     MeshFView<MeshF_ElmCenterXYZ> elmCenterXYZ_;
     MeshFView<MeshF_DualTriangleArea> dualTriangleArea_;
 
@@ -159,7 +163,7 @@ class Mesh {
     //GnomonicProjection
     MeshFView<MeshF_VtxGnomProj> vtxGnomProj_;
     MeshFView<MeshF_ElmCenterGnomProj> elmCenterGnomProj_;
-    
+
     MeshFView<MeshF_TanLatVertexRotatedOverRadius> tanLatVertexRotatedOverRadius_;
     MeshFView<MeshF_SolveStress> solveStress_;
     MeshFView<MeshF_SolveVelocity> solveVelocity_;
@@ -276,7 +280,7 @@ class Mesh {
       return dynamicTimeStep_;
     }
 
-    void calcOceanStressCoeff(); 
+    void calcOceanStressCoeff(const double configIceOceanDragCoeff);
     void gridSolveGPU();
     void aggregateDeluDyn();
     void applyFreeSlipBC();
@@ -297,6 +301,9 @@ auto Mesh::getMeshField(){
     }
     else if constexpr (index==MeshF_VtxRotLat){
         return vtxRotLat_;
+    }
+    else if constexpr (index==MeshF_VtxRotLon){
+        return vtxRotLon_;
     }
     else if constexpr (index==MeshF_ElmCenterXYZ){
         return elmCenterXYZ_;

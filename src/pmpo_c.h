@@ -89,6 +89,7 @@ int polympo_getMeshFElmType_f();
 void polympo_setMeshVtxCoords_f(MPMesh_ptr p_mpmesh, const int nVertices, const double* xArray, const double* yArray, const double* zArray);
 void polympo_getMeshVtxCoords_f(MPMesh_ptr p_mpmesh, const int nVertices, double* xArray, double* yArray, double* zArray);
 void polympo_setMeshVtxRotLat_f(MPMesh_ptr p_mpmesh, const int nVertices, const double* latitude);
+void polympo_setMeshVtxRotLon_f(MPMesh_ptr p_mpmesh, const int nVertices, const double* longitude);
 void polympo_getMeshVtxRotLat_f(MPMesh_ptr p_mpmesh, const int nVertices, double* latitude);
 void polympo_setMeshVtxVel_f(MPMesh_ptr p_mpmesh, const int nVertices, const double* uVelocity, const double* vVelocity);
 void polympo_getMeshVtxVel_f(MPMesh_ptr p_mpmesh, const int nVertices, double* uVelocity, double* vVelocity);
@@ -119,7 +120,7 @@ void polympo_set_surfaceTiltForce_f(MPMesh_ptr p_mpmesh, const int nVertices, do
 void polympo_set_totalMassVertexfVertex_f(MPMesh_ptr p_mpmesh, const int nVertices, double* array);
 void polympo_set_oceanStress_f(MPMesh_ptr p_mpmesh, const int nVertices, double* uArray, double* vArray);
 void polympo_set_oceanStressCoefficient_f(MPMesh_ptr p_mpmesh, const int nVertices, double* array);
-void polympo_calculate_oceanStressCoefficient_f(MPMesh_ptr p_mpmesh);
+void polympo_calculate_oceanStressCoefficient_f(MPMesh_ptr p_mpmesh, const double configIceOceanDragCoeff);
 void polympo_velocity_grid_solve_f(MPMesh_ptr p_mpmesh);
 void polympo_set_boundary_normal_vertex_f(MPMesh_ptr p_mpmesh, const int nComps, const int nVertices, double* uArray, double* vArray);
 void polympo_set_free_slip_bc_f(MPMesh_ptr p_mpmesh);

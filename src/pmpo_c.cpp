@@ -1207,6 +1207,25 @@ void polympo_getMeshVtxRotLat_f(MPMesh_ptr p_mpmesh, const int nVertices, double
   }
 }
 
+void polympo_setMeshVtxRotLon_f(MPMesh_ptr p_mpmesh, const int nVertices, const double* longitude){
+  Kokkos::Timer timer;
+  //chech validity
+  checkMPMeshValid(p_mpmesh);
+  auto p_mesh = ((polyMPO::MPMesh*)p_mpmesh)->p_mesh;
+
+  //check the size
+  PMT_ALWAYS_ASSERT(p_mesh->getNumVertices()==nVertices);
+
+  //copy the host array to the device
+  auto coordsArray = p_mesh->getMeshField<polyMPO::MeshF_VtxRotLon>();
+  auto h_coordsArray = Kokkos::create_mirror_view(coordsArray);
+  for(int i=0; i<nVertices; i++){
+    h_coordsArray(i) = longitude[i];
+  }
+  Kokkos::deep_copy(coordsArray, h_coordsArray);
+  pumipic::RecordTime("PolyMPO_setMeshVtxRotLon", timer.seconds());
+}
+
 void polympo_setMeshVtxVel_f(MPMesh_ptr p_mpmesh, const int nVertices, const double* uVelIn, const double* vVelIn){
   //check mpMesh is valid
   checkMPMeshValid(p_mpmesh);
@@ -1674,9 +1693,9 @@ void polympo_set_oceanStressCoefficient_f(MPMesh_ptr p_mpmesh, const int nVertic
   Kokkos::deep_copy(oceanStressCoeff, h_oceanStressCoeff);
 }
 
-void polympo_calculate_oceanStressCoefficient_f(MPMesh_ptr p_mpmesh){
+void polympo_calculate_oceanStressCoefficient_f(MPMesh_ptr p_mpmesh, const double configIceOceanDragCoeff){
   auto p_mesh = ((polyMPO::MPMesh*)p_mpmesh)->p_mesh;
-  p_mesh->calcOceanStressCoeff();
+  p_mesh->calcOceanStressCoeff(configIceOceanDragCoeff);
 }
 
 void polympo_velocity_grid_solve_f(MPMesh_ptr p_mpmesh){

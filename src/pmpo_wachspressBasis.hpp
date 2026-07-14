@@ -15,10 +15,13 @@ void sphericalInterpolation(MPMesh& mpMesh){
   auto vtxCoords = p_mesh->getMeshField<polyMPO::MeshF_VtxCoords>();
   int numVtxs = p_mesh->getNumVertices();
   auto elm2VtxConn = p_mesh->getElm2VtxConn();
+  auto vtxRotLon = p_mesh->getMeshField<MeshF_VtxRotLon>();
 
   auto p_MPs = mpMesh.p_MPs;
   auto MPsPosition = p_MPs->getPositions();
   auto MPsBasis = p_MPs->getData<MPF_Basis_Vals>();
+  auto curPosRotLatLon = p_MPs->getData<MPF_Cur_Pos_Rot_Lat_Lon>();
+  auto MPsAppID = p_MPs->getData<MPF_MP_APP_ID>();
 
   constexpr MaterialPointSlice mpfIndex = meshFieldIndexToMPSlice<meshFieldIndex>;
   auto mpField = p_MPs->getData<mpfIndex>();
@@ -26,14 +29,34 @@ void sphericalInterpolation(MPMesh& mpMesh){
   const int numEntries = mpSliceToNumEntries<mpfIndex>();
   auto meshField = p_mesh->getMeshField<meshFieldIndex>(); 
 
+  bool use_correction_term = false;
+  if constexpr (meshFieldIndex == MeshF_OnSurfVeloIncr) {
+    use_correction_term = true;
+  }
+
   auto interpolation = PS_LAMBDA(const int& elm, const int& mp, const int& mask) {
     if(mask) { //if material point is 'active'/'enabled'
       int numVtx = elm2VtxConn(elm,0);
-      for(int entry=0; entry<numEntries; entry++){
-        double mpValue = 0.0;
-        for(int i=1; i<= numVtx; i++)
-          mpValue += meshField(elm2VtxConn(elm,i)-1,entry)*MPsBasis(mp,i-1);
-        mpField(mp,entry) = mpValue;
+
+      if(use_correction_term){
+        double transport[2] = {0.0};
+        double mpField_l[2] = {0.0};
+        for(int i=1; i<=numVtx; i++){
+          int vID = elm2VtxConn(elm,i)-1;
+          seaice_mpm_coord_parallel_transport(vtxRotLon(vID), curPosRotLatLon(mp, 1), curPosRotLatLon(mp, 0), transport);
+          mpField_l[0] += ( transport[0] * meshField(vID, 0) + transport[1] * meshField(vID, 1)) * MPsBasis(mp,i-1);
+          mpField_l[1] += (-transport[1] * meshField(vID, 0) + transport[0] * meshField(vID, 1)) * MPsBasis(mp,i-1);
+        }
+        mpField(mp, 0) = mpField_l[0];
+        mpField(mp, 1) = mpField_l[1];
+      }
+      else{
+        for(int entry=0; entry<numEntries; entry++){
+          double mpValue = 0.0;
+          for(int i=1; i<= numVtx; i++)
+            mpValue += meshField(elm2VtxConn(elm,i)-1,entry)*MPsBasis(mp,i-1);
+          mpField(mp,entry) = mpValue;
+        }
       }
     }
   };

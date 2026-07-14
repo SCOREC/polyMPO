@@ -786,6 +786,14 @@ module polympo
     type(c_ptr), value :: latitude
   end subroutine
 
+  subroutine polympo_setMeshVtxRotLon(mpMesh, nVertices, longitude) &
+             bind(C, NAME='polympo_setMeshVtxRotLon_f')
+    use :: iso_c_binding
+    type(c_ptr), value :: mpMesh
+    integer(c_int), value :: nVertices
+    type(c_ptr), intent(in), value :: longitude
+  end subroutine
+
   !---------------------------------------------------------------------------
   !> @brief set the vertices velocity from a host array
   !> @param mpmesh(in/out) MPMesh object
@@ -1111,10 +1119,11 @@ module polympo
     type(c_ptr), value :: array
   end subroutine
 
-  subroutine polympo_calculate_oceanStressCoefficient(mpMesh) &
+  subroutine polympo_calculate_oceanStressCoefficient(mpMesh, configIceOceanDragCoeff) &
              bind(C, NAME='polympo_calculate_oceanStressCoefficient_f')
     use :: iso_c_binding
     type(c_ptr), value :: mpMesh
+    real(c_double), value::configIceOceanDragCoeff
   end subroutine
 
   subroutine  polympo_velocity_grid_solve(mpMesh) &

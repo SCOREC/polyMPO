@@ -342,15 +342,23 @@ void MPMesh::assemblyVtx1(){
   p_mesh->fillMeshField<meshFieldIndex>(numVtx, numEntries, 0.0);
   auto meshField = p_mesh->getMeshField<meshFieldIndex>();
 
+  auto vtxRotLon = p_mesh->getMeshField<MeshF_VtxRotLon>();
+
   //Material Points
   auto mpData = p_MPs->getData<mpfIndex>();
   auto weight = p_MPs->getData<MPF_Basis_Vals>();
   auto mpPositions = p_MPs->getData<MPF_Cur_Pos_XYZ>();
-
+  auto curPosRotLatLon = p_MPs->getData<MPF_Cur_Pos_Rot_Lat_Lon>();
+  auto MPsAppID = p_MPs->getData<MPF_MP_APP_ID>();
   //Earth Radius
   double radius = 1.0;
   if(p_mesh->getGeomType() == geom_spherical_surf)
     radius=p_mesh->getSphereRadius();
+
+  bool use_correction_term = false;
+  if constexpr (meshFieldIndex == MeshF_Vel) {
+    use_correction_term = true;
+  }
 
   //Reconstruct
   auto reconstruct = PS_LAMBDA(const int& elm, const int& mp, const int& mask) {
@@ -367,9 +375,20 @@ void MPMesh::assemblyVtx1(){
                                                        VtxCoeffs_new(vID,0, 2)*CoordDiffs[2] +
                                                        VtxCoeffs_new(vID,0, 3)*CoordDiffs[3]);
 
-        for (int k=0; k<numEntries; k++){
-          auto val = factor*mpData(mp,k);
-          Kokkos::atomic_add(&meshField(vID,k), val);
+        if (use_correction_term){
+          double transport[2] = {0.0};
+          seaice_mpm_coord_parallel_transport(curPosRotLatLon(mp, 1), vtxRotLon(vID), curPosRotLatLon(mp, 0), transport);
+          const double u =  transport[0] * mpData(mp,0) + transport[1] * mpData(mp,1);
+          const double v = -transport[1] * mpData(mp,0) + transport[0] * mpData(mp,1);
+
+          Kokkos::atomic_add(&meshField(vID,0), factor * u);
+          Kokkos::atomic_add(&meshField(vID,1), factor * v);
+        }
+        else{
+          for (int k=0; k<numEntries; k++){
+            auto val = factor*mpData(mp,k);
+            Kokkos::atomic_add(&meshField(vID,k), val);
+          }
         }
       }
     }

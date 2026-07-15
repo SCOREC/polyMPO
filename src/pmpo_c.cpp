@@ -1862,7 +1862,7 @@ void polympo_aggregate_deluDyn_f(MPMesh_ptr p_mpmesh){
 }
 
 void polympo_finalize_deludelvDyn_f(MPMesh_ptr p_mpmesh){
-  
+
   checkMPMeshValid(p_mpmesh);
   auto p_mesh = ((polyMPO::MPMesh*)p_mpmesh)->p_mesh;
 
@@ -1873,7 +1873,7 @@ void polympo_finalize_deludelvDyn_f(MPMesh_ptr p_mpmesh){
   auto vtxField = p_mesh->getMeshField<polyMPO::MeshF_OnSurfDispIncr>();
   auto vtxFieldVel      = p_mesh->getMeshField<polyMPO::MeshF_Vel>();
   auto vtxFieldVel_incr = p_mesh->getMeshField<polyMPO::MeshF_OnSurfVeloIncr>();
- 
+
   Kokkos::parallel_for("Finalize_increments", nVertices, KOKKOS_LAMBDA(const int vtx){
     vtxField(vtx, 0) = vtxField(vtx, 0) * elasticTimeStep;
     vtxField(vtx, 1) = vtxField(vtx, 1) * elasticTimeStep;

@@ -148,7 +148,7 @@ class MaterialPoints {
     void rebuild(IntView addedMP2elm, IntView addedMPAppID);
     void startRebuild(IntView tgtElm, int addedNumMPs, IntView addedMP2elm, IntView addedMPAppID, Kokkos::View<const int*> addedMPMask);
     void startRebuild(IntView tgtElm, int addedNumMPs, IntView addedMP2elm, IntView addedMPAppID);
-    
+
     void finishRebuild();
     bool rebuildOngoing();
 

@@ -369,7 +369,7 @@ module polympo
     use :: iso_c_binding
     type(c_ptr), value :: mpMesh
   end subroutine
- 
+
   subroutine polympo_setMPStrainRate(mpMesh, nComps, numMPs, array) &
              bind(C, NAME='polympo_setMPStrainRate_f')
     use :: iso_c_binding
@@ -386,7 +386,7 @@ module polympo
     type(c_ptr), value :: array
   end subroutine
 
- 
+
   !MP Stress
   subroutine polympo_calculateMPStress(mpMesh, constitutive_model) &
              bind(C, NAME='polympo_calculateMPStress_f')
@@ -1032,7 +1032,7 @@ module polympo
     type(c_ptr), value :: mpMesh
     real(c_double), value :: dynamicTimeStep
   end subroutine
-  
+
   subroutine polympo_setSolveStressMesh(mpMesh, nCells, array) &
              bind(C, NAME='polympo_setSolveStressMesh_f')
     use :: iso_c_binding
@@ -1086,7 +1086,7 @@ module polympo
     integer(c_int), value :: nVertices
     type(c_ptr), value :: uArray, vArray
   end subroutine
-  
+
   subroutine polympo_set_surfaceTiltForce(mpMesh, nVertices, uArray, vArray) &
              bind(C, NAME='polympo_set_surfaceTiltForce_f')
     use :: iso_c_binding
@@ -1144,13 +1144,13 @@ module polympo
              bind(C, NAME='polympo_set_free_slip_bc_f')
     use :: iso_c_binding
     type(c_ptr), value :: mpMesh
-  end subroutine 
+  end subroutine
 
   subroutine polympo_set_halo_vel_from_owner(mpMesh) &
              bind(C, NAME='polympo_set_halo_vel_from_owner_f')
     use :: iso_c_binding
     type(c_ptr), value :: mpMesh
-  end subroutine 
+  end subroutine
 
   !---------------------------------------------------------------------------
   !> @brief calculate the MPs from given mesh vertices rotational latitude
@@ -1163,13 +1163,13 @@ module polympo
     use :: iso_c_binding
     type(c_ptr), value :: mpMesh
   end subroutine
- 
+
   subroutine polympo_push_ahead(mpMesh) &
              bind(C, NAME='polympo_push_ahead_f')
     use :: iso_c_binding
     type(c_ptr), value :: mpMesh
   end subroutine
- 
+
   !---------------------------------------------------------------------------
   !> @brief calculate the MPs from given mesh vertices rotational latitude
   !---------------------------------------------------------------------------

@@ -19,6 +19,7 @@ enum MeshFieldIndex{
     MeshF_Unsupported,
     MeshF_VtxCoords,
     MeshF_VtxRotLat,
+    MeshF_VtxRotLon,
     MeshF_ElmCenterXYZ,
     MeshF_DualTriangleArea,
     MeshF_Vel,
@@ -26,8 +27,25 @@ enum MeshFieldIndex{
     MeshF_ElmMass,
     MeshF_OnSurfVeloIncr,
     MeshF_OnSurfDispIncr,
-    MeshF_RotLatLonIncr
+    MeshF_RotLatLonIncr,
+    MeshF_VtxGnomProj,
+    MeshF_ElmCenterGnomProj,
+    MeshF_TanLatVertexRotatedOverRadius,
+    MeshF_SolveStress,
+    MeshF_SolveVelocity,
+    MeshF_InteriorVertex,
+    MeshF_uBdryVtxNormal,
+    MeshF_vBdryVtxNormal,
+    MeshF_StressDivergence,
+    MeshF_TotalMassVtx,
+    MeshF_AirStress,
+    MeshF_SurfaceTilt,
+    MeshF_TotalMassFVtx,
+    MeshF_OceanStress,
+    MeshF_OceanStressCoeff,
+    MeshF_OceanVelocity
 };
+
 enum MeshFieldType{
     MeshFType_Invalid = -2,
     MeshFType_Unsupported,
@@ -38,6 +56,7 @@ enum MeshFieldType{
 template <MeshFieldIndex> struct meshFieldToType;
 template <> struct meshFieldToType < MeshF_VtxCoords         > { using type = Kokkos::View<vec3d_t*>; };
 template <> struct meshFieldToType < MeshF_VtxRotLat         > { using type = DoubleView; };
+template <> struct meshFieldToType < MeshF_VtxRotLon         > { using type = DoubleView; };
 template <> struct meshFieldToType < MeshF_ElmCenterXYZ      > { using type = Kokkos::View<vec3d_t*>; };
 template <> struct meshFieldToType < MeshF_DualTriangleArea  > { using type = Kokkos::View<doubleSclr_t*>; };
 template <> struct meshFieldToType < MeshF_Vel               > { using type = Kokkos::View<vec2d_t*>; };
@@ -46,24 +65,57 @@ template <> struct meshFieldToType < MeshF_ElmMass           > { using type = Ko
 template <> struct meshFieldToType < MeshF_OnSurfVeloIncr    > { using type = Kokkos::View<vec2d_t*>; };
 template <> struct meshFieldToType < MeshF_OnSurfDispIncr    > { using type = Kokkos::View<vec2d_t*>; };
 template <> struct meshFieldToType < MeshF_RotLatLonIncr     > { using type = Kokkos::View<vec2d_t*>; };
+template <> struct meshFieldToType < MeshF_VtxGnomProj       > { using type = Kokkos::View<double*[maxVtxsPerElm][2]>; };
+template <> struct meshFieldToType < MeshF_ElmCenterGnomProj > { using type = Kokkos::View<double*[4]>; };
+template <> struct meshFieldToType < MeshF_TanLatVertexRotatedOverRadius > { using type = Kokkos::View<doubleSclr_t*>; };
+template <> struct meshFieldToType < MeshF_SolveStress       > { using type = IntView; };
+template <> struct meshFieldToType < MeshF_SolveVelocity     > { using type = IntView; };
+template <> struct meshFieldToType < MeshF_InteriorVertex    > { using type = IntView; };
+template <> struct meshFieldToType < MeshF_uBdryVtxNormal    > { using type = Kokkos::View<double**>; };
+template <> struct meshFieldToType < MeshF_vBdryVtxNormal    > { using type = Kokkos::View<double**>; };
+template <> struct meshFieldToType < MeshF_StressDivergence  > { using type = Kokkos::View<double**>; };
+template <> struct meshFieldToType < MeshF_TotalMassVtx      > { using type = Kokkos::View<doubleSclr_t*>; };
+template <> struct meshFieldToType < MeshF_AirStress         > { using type = Kokkos::View<vec2d_t*>; };
+template <> struct meshFieldToType < MeshF_SurfaceTilt       > { using type = Kokkos::View<vec2d_t*>; };
+template <> struct meshFieldToType < MeshF_TotalMassFVtx     > { using type = Kokkos::View<doubleSclr_t*>; };
+template <> struct meshFieldToType < MeshF_OceanStress       > { using type = Kokkos::View<vec2d_t*>; };
+template <> struct meshFieldToType < MeshF_OceanStressCoeff  > { using type = Kokkos::View<doubleSclr_t*>; };
+template <> struct meshFieldToType < MeshF_OceanVelocity     > { using type = Kokkos::View<vec2d_t*>; };
 
 template <MeshFieldIndex index>
 using MeshFView = typename meshFieldToType<index>::type;
 
-const std::map<MeshFieldIndex, std::pair<MeshFieldType,
-                                         std::string>> meshFields2TypeAndString = 
-              {{MeshF_Invalid,          {MeshFType_Invalid,"MeshField_InValid!"}},
-               {MeshF_Unsupported,      {MeshFType_Unsupported,"MeshField_Unsupported"}},
-               {MeshF_VtxCoords,        {MeshFType_VtxBased,"MeshField_VerticesCoords"}},
-               {MeshF_VtxRotLat,        {MeshFType_VtxBased,"MeshField_VerticesLatitude"}},
-               {MeshF_ElmCenterXYZ,     {MeshFType_ElmBased,"MeshField_ElementCenterXYZ"}},
-               {MeshF_DualTriangleArea, {MeshFType_VtxBased,"MeshField_DualTriangleArea"}},
-               {MeshF_Vel,              {MeshFType_VtxBased,"MeshField_Velocity"}},
-               {MeshF_VtxMass,          {MeshFType_VtxBased,"MeshField_VerticesMass"}},
-               {MeshF_ElmMass,          {MeshFType_ElmBased,"MeshField_ElementsMass"}},
-               {MeshF_OnSurfVeloIncr,   {MeshFType_VtxBased,"MeshField_OnSurfaceVelocityIncrement"}},
-               {MeshF_OnSurfDispIncr,   {MeshFType_VtxBased,"MeshField_OnSurfaceDisplacementIncrement"}},
-               {MeshF_RotLatLonIncr,    {MeshFType_VtxBased,"MeshField_RotationalLatitudeLongitudeIncreasement"}}};
+const std::map<MeshFieldIndex, std::pair<MeshFieldType, std::string>> meshFields2TypeAndString = {
+        {MeshF_Invalid,          {MeshFType_Invalid,"MeshField_InValid!"}},
+        {MeshF_Unsupported,      {MeshFType_Unsupported,"MeshField_Unsupported"}},
+        {MeshF_VtxCoords,        {MeshFType_VtxBased,"MeshField_VerticesCoords"}},
+        {MeshF_VtxRotLat,        {MeshFType_VtxBased,"MeshField_VerticesLatitude"}},
+        {MeshF_VtxRotLon,        {MeshFType_VtxBased,"MeshField_VerticesLongitude"}},
+        {MeshF_ElmCenterXYZ,     {MeshFType_ElmBased,"MeshField_ElementCenterXYZ"}},
+        {MeshF_DualTriangleArea, {MeshFType_VtxBased,"MeshField_DualTriangleArea"}},
+        {MeshF_Vel,              {MeshFType_VtxBased,"MeshField_Velocity"}},
+        {MeshF_VtxMass,          {MeshFType_VtxBased,"MeshField_VerticesMass"}},
+        {MeshF_ElmMass,          {MeshFType_ElmBased,"MeshField_ElementsMass"}},
+        {MeshF_OnSurfVeloIncr,   {MeshFType_VtxBased,"MeshField_OnSurfaceVelocityIncrement"}},
+        {MeshF_OnSurfDispIncr,   {MeshFType_VtxBased,"MeshField_OnSurfaceDisplacementIncrement"}},
+        {MeshF_RotLatLonIncr,    {MeshFType_VtxBased,"MeshField_RotationalLatitudeLongitudeIncreasement"}},
+        {MeshF_VtxGnomProj,      {MeshFType_ElmBased,"MeshField_VertexGnomonicProjection"}},
+        {MeshF_ElmCenterGnomProj,{MeshFType_ElmBased,"MeshField_ElementCenterGnomonicprojection"}},
+        {MeshF_TanLatVertexRotatedOverRadius, {MeshFType_VtxBased,"MeshField_TanLatVertexRotatedOverRadius"}},
+        {MeshF_SolveStress,      {MeshFType_ElmBased,"MeshField_SolveStress"}},
+        {MeshF_SolveVelocity,    {MeshFType_VtxBased,"MeshField_SolveVelocity"}},
+        {MeshF_InteriorVertex,   {MeshFType_VtxBased,"MeshField_InteriorVertex"}},
+        {MeshF_uBdryVtxNormal,   {MeshFType_VtxBased,"MeshF_uBdryVtxNormal"}},
+        {MeshF_vBdryVtxNormal,   {MeshFType_VtxBased,"MeshF_vBdryVtxNormal"}},
+        {MeshF_StressDivergence, {MeshFType_VtxBased,"MeshField_StressDivergence"}},
+        {MeshF_TotalMassVtx,     {MeshFType_VtxBased,"MeshField_TotalMassVtx"}},
+        {MeshF_AirStress,        {MeshFType_VtxBased,"MeshField_AirStress"}},
+        {MeshF_SurfaceTilt,      {MeshFType_VtxBased,"MeshField_SurfaceTilt"}},
+        {MeshF_TotalMassFVtx,    {MeshFType_VtxBased,"MeshField_TotalMassFVtx"}},
+        {MeshF_OceanStress,      {MeshFType_VtxBased,"MeshField_OceanStress"}},
+        {MeshF_OceanStressCoeff, {MeshFType_VtxBased,"MeshField_OceanStressCoeff"}},
+        {MeshF_OceanVelocity,    {MeshFType_VtxBased,"MeshField_OceanVelocity"}}
+};
 
 enum mesh_type {mesh_unrecognized_lower = -1,
                 mesh_general_polygonal, //other meshes
@@ -83,26 +135,50 @@ class Mesh {
 
     double sphereRadius_;
     int numVtxs_;
+    int numVtxsOwned_;
     int numElms_;
     //IntView nEdgesPerElm_;
     IntVtx2ElmView elm2VtxConn_;
     IntElm2ElmView elm2ElmConn_;
     IntView owningProc_;
+    IntView owningProcVertex_;
     IntView globalElm_;
     IntView globalVtx_;
     //start of meshFields
     MeshFView<MeshF_VtxCoords> vtxCoords_;
     MeshFView<MeshF_VtxRotLat> vtxRotLat_;
+    MeshFView<MeshF_VtxRotLon> vtxRotLon_;
     MeshFView<MeshF_ElmCenterXYZ> elmCenterXYZ_;
     MeshFView<MeshF_DualTriangleArea> dualTriangleArea_;
+
+    MeshFView<MeshF_uBdryVtxNormal> uBdryVtxNormal_;
+    MeshFView<MeshF_vBdryVtxNormal> vBdryVtxNormal_;
+    MeshFView<MeshF_StressDivergence> stressDivergence_;
     MeshFView<MeshF_Vel> vtxVel_;
     MeshFView<MeshF_VtxMass> vtxMass_;
     MeshFView<MeshF_ElmMass> elmMass_;
     MeshFView<MeshF_OnSurfVeloIncr> vtxOnSurfVeloIncr_;
     MeshFView<MeshF_OnSurfDispIncr> vtxOnSurfDispIncr_;
     MeshFView<MeshF_RotLatLonIncr> vtxRotLatLonIncr_;
-    //DoubleMat2DView vtxStress_;
+    //GnomonicProjection
+    MeshFView<MeshF_VtxGnomProj> vtxGnomProj_;
+    MeshFView<MeshF_ElmCenterGnomProj> elmCenterGnomProj_;
 
+    MeshFView<MeshF_TanLatVertexRotatedOverRadius> tanLatVertexRotatedOverRadius_;
+    MeshFView<MeshF_SolveStress> solveStress_;
+    MeshFView<MeshF_SolveVelocity> solveVelocity_;
+    MeshFView<MeshF_InteriorVertex> interiorVertex_;
+    MeshFView<MeshF_TotalMassVtx> totalMassVtx_;
+    MeshFView<MeshF_AirStress> airStress_;
+    MeshFView<MeshF_SurfaceTilt> surfaceTilt_;
+    MeshFView<MeshF_TotalMassFVtx> totalMassFVtx_;
+    MeshFView<MeshF_OceanStress> oceanStress_;
+    MeshFView<MeshF_OceanStressCoeff> oceanStressCoeff_;
+    MeshFView<MeshF_OceanVelocity> oceanVelocity_;
+
+    bool isRotatedFlag = false;
+    double elasticTimeStep_;
+    double dynamicTimeStep_;
   public:
     Mesh(){};
     Mesh( mesh_type meshType,
@@ -125,18 +201,27 @@ class Mesh {
             setMeshElmBasedFieldSize();
             meshEdit_ = false;
             vtxCoords_ = vtxCoords;
-        }
+          }
 
     bool meshEditable(){ return meshEdit_; }
     bool checkMeshType(int meshType);
     bool checkGeomType(int geomType);
 
-    IntView getElm2Process();
+    void setOwningProc(IntView owningProc){
+      PMT_ALWAYS_ASSERT(meshEdit_);
+      owningProc_ = owningProc;
+    }
+    void setOwningProcVertex(IntView owningProcVertex){
+      owningProcVertex_ = owningProcVertex; 
+    } 
+    IntView getElm2Process() {return owningProc_;}
+    IntView getVtx2Process() {return owningProcVertex_;}
 
     mesh_type getMeshType() { return meshType_; }
     geom_type getGeomType() { return geomType_; }
     double getSphereRadius() { return sphereRadius_; }
     int getNumVertices() { return numVtxs_; }
+    int getNumVerticesOwned() { return numVtxsOwned_; }
     int getNumElements() { return numElms_; }
     IntVtx2ElmView getElm2VtxConn() { return elm2VtxConn_; }
     IntElm2ElmView getElm2ElmConn() { return elm2ElmConn_; }
@@ -155,21 +240,50 @@ class Mesh {
                                                sphereRadius_ = sphereRadius;}
     void setNumVtxs(int numVtxs) {PMT_ALWAYS_ASSERT(meshEdit_);
                                   numVtxs_ = numVtxs;}
+    void setNumVtxsOwned(int numVtxsOwned) {PMT_ALWAYS_ASSERT(meshEdit_);
+                                  numVtxsOwned_ = numVtxsOwned;}
     void setNumElms(int numElms) {PMT_ALWAYS_ASSERT(meshEdit_);
                                   numElms_ = numElms;}
     void setElm2VtxConn(IntVtx2ElmView elm2VtxConn) {PMT_ALWAYS_ASSERT(meshEdit_);
                                                      elm2VtxConn_ = elm2VtxConn; }
     void setElm2ElmConn(IntElm2ElmView elm2ElmConn) {PMT_ALWAYS_ASSERT(meshEdit_);
                                                      elm2ElmConn_ = elm2ElmConn; }
-    void setOwningProc(IntView owningProc) {PMT_ALWAYS_ASSERT(meshEdit_);
-                                            owningProc_ = owningProc; }
-    
+
+
     void setElmGlobal(IntView globalElm) {globalElm_ = globalElm;}
-    IntView getElmGlobal();
     void setVtxGlobal(IntView globalVtx) {globalVtx_ = globalVtx;}
+    IntView getElmGlobal() {return globalElm_;}
     IntView getVtxGlobal() {return globalVtx_;}
 
+    void setGnomonicProjection(bool isRotated);
+
     void computeRotLatLonIncr();
+
+    bool getRotatedFlag() {
+      return isRotatedFlag;
+    }
+    void setRotatedFlag(bool flagSet) {
+      isRotatedFlag = flagSet;
+    }
+    
+    void setElasticTimeStep(double elasticTimeStep){
+      elasticTimeStep_ = elasticTimeStep;
+    }
+    double getElasticTimeStep(){
+      return elasticTimeStep_;
+    }
+   
+    void setDynamicTimeStep(double dynamicTimeStep){
+      dynamicTimeStep_ = dynamicTimeStep;
+    }
+    double getDynamicTimeStep(){
+      return dynamicTimeStep_;
+    }
+
+    void calcOceanStressCoeff(const double configIceOceanDragCoeff);
+    void gridSolveGPU();
+    void aggregateDeluDyn();
+    void applyFreeSlipBC();
 };
 
 template<MeshFieldIndex index>
@@ -187,6 +301,9 @@ auto Mesh::getMeshField(){
     }
     else if constexpr (index==MeshF_VtxRotLat){
         return vtxRotLat_;
+    }
+    else if constexpr (index==MeshF_VtxRotLon){
+        return vtxRotLon_;
     }
     else if constexpr (index==MeshF_ElmCenterXYZ){
         return elmCenterXYZ_;
@@ -212,6 +329,54 @@ auto Mesh::getMeshField(){
     else if constexpr (index==MeshF_RotLatLonIncr){
         return vtxRotLatLonIncr_;
     }
+    else if constexpr (index==MeshF_VtxGnomProj){
+        return vtxGnomProj_;
+    }
+    else if constexpr (index==MeshF_ElmCenterGnomProj){
+        return elmCenterGnomProj_;
+    }
+    else if constexpr (index==MeshF_TanLatVertexRotatedOverRadius){
+        return tanLatVertexRotatedOverRadius_;
+    }
+    else if constexpr (index==MeshF_SolveStress){
+        return solveStress_;
+    }
+    else if constexpr (index==MeshF_SolveVelocity){
+        return solveVelocity_;
+    }
+    else if constexpr (index==MeshF_InteriorVertex){
+        return interiorVertex_;
+    }
+    else if constexpr (index==MeshF_uBdryVtxNormal){
+        return uBdryVtxNormal_;
+    }
+    else if constexpr (index==MeshF_vBdryVtxNormal){
+        return vBdryVtxNormal_;
+    }
+    else if constexpr (index==MeshF_StressDivergence){
+        return stressDivergence_;
+    }
+    else if constexpr (index==MeshF_TotalMassVtx){
+        return totalMassVtx_;
+    }
+    else if constexpr (index==MeshF_AirStress){
+        return airStress_;
+    }
+    else if constexpr (index==MeshF_SurfaceTilt){
+        return surfaceTilt_;
+    }
+    else if constexpr (index==MeshF_TotalMassFVtx){
+        return totalMassFVtx_;
+    }
+    else if constexpr (index==MeshF_OceanStress){
+        return oceanStress_;
+    }
+    else if constexpr (index==MeshF_OceanStressCoeff){
+        return oceanStressCoeff_;
+    }
+    else if constexpr (index==MeshF_OceanVelocity){
+        return oceanVelocity_;
+    }
     fprintf(stderr,"Mesh Field Index error!\n");
     exit(1);
 }
@@ -225,6 +390,18 @@ void Mesh::fillMeshField(int size, int numEntries, double val){
     });
 }
 
+KOKKOS_INLINE_FUNCTION
+void computeGnomonicProjectionAtPoint(const Vec3d& Coord, 
+     const Kokkos::View<double[4], Kokkos::LayoutStride, Kokkos::MemoryTraits<Kokkos::Unmanaged>>& gnomProjElmCenter_sub, 
+     double& outX, double& outY){   
+  const double iDen = 1.0 / (gnomProjElmCenter_sub(1) * gnomProjElmCenter_sub(3) * Coord[0] +
+                             gnomProjElmCenter_sub(0) * gnomProjElmCenter_sub(3) * Coord[1] +
+                             gnomProjElmCenter_sub(2) * Coord[2]);
+  outX = iDen * (Coord[1] * gnomProjElmCenter_sub(1) -
+                 Coord[0] * gnomProjElmCenter_sub(0));
+  outY = iDen * (Coord[2] * gnomProjElmCenter_sub(3) - Coord[1] * gnomProjElmCenter_sub(2) * gnomProjElmCenter_sub(0) -
+                 Coord[0] * gnomProjElmCenter_sub(1) * gnomProjElmCenter_sub(2));
+}
 }
 
 #endif

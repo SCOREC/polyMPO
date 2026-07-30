@@ -667,7 +667,8 @@ class MPMesh{
         int nEntities,
         int numEntries,
         int mode,
-        int op){
+        int op,
+        const std::string& label){
 
       int self, numProcsTot;
 
@@ -675,6 +676,14 @@ class MPMesh{
 
       MPI_Comm_rank(comm, &self);
       MPI_Comm_size(comm, &numProcsTot);
+
+      const char* diagnosticsEnv =
+      
+      std::getenv("POLYMPO_MPI_DIAGNOSTICS");
+
+      const bool mpiDiagnostics =
+      diagnosticsEnv != nullptr &&
+      std::atoi(diagnosticsEnv) != 0;
 
       assert(mode == 0 || mode == 1);
       assert(op == 0 || op == 1);
@@ -856,10 +865,10 @@ class MPMesh{
 
         cudaAwareCache.valid = true;
 
-        pumipic::RecordTime(
-            "SD: CUDA-aware MPI Cache Build m" + std::to_string(mode) +
-                " e" + std::to_string(numEntries) + "-" + std::to_string(self),
-            timer.seconds());
+        if(mpiDiagnostics){
+            pumipic::RecordTime(label + "_MPI_Diagnostics_CacheBuild_m" + std::to_string(mode) + "_e" + std::to_string(numEntries) +
+            "_rank" + std::to_string(self), timer.seconds());
+      }
 
         timer.reset();
       }
@@ -884,20 +893,41 @@ class MPMesh{
 
       Kokkos::fence();
 
-      pumipic::RecordTime(
-          "SD: CUDA-aware MPI Pack m" + std::to_string(mode) +
-              " e" + std::to_string(numEntries) + "-" + std::to_string(self),
-          timer.seconds());
+      if(mpiDiagnostics){
+         pumipic::RecordTime(
+         label + "_MPI_Diagnostics_Pack_m" + std::to_string(mode) + "_e" + std::to_string(numEntries) + "_rank" + std::to_string(self), timer.seconds());
+    }
 
       timer.reset();
 
-      Kokkos::Timer mpiTotalTimer;
+      double postTime    = 0.0;
+      double waitallTime = 0.0;
+
       std::vector<MPI_Request> requests;
       requests.reserve(2 * numProcsTot);
       int mpiError = MPI_SUCCESS;
 
+      // Data volume exchanged by this rank in this call (recorded once per
+      // call, independent of the post/wait timing below), tagged by the
+      // caller (label) so SD, VR, and Reconstruction can be told apart.
+      const double bytesSent =
+          static_cast<double>(cudaAwareCache.totalSendCount) * numEntries * sizeof(double);
+      const double bytesRecv =
+          static_cast<double>(cudaAwareCache.totalRecvCount) * numEntries * sizeof(double);
+
+      pumipic::RecordTime(label + "_MPI_BytesSent_" + std::to_string(self), bytesSent);
+      pumipic::RecordTime(label + "_MPI_BytesRecv_" + std::to_string(self), bytesRecv);
+
+      //Post both the Irecv and the matching Isend for a proc together, in
+      //the same loop iteration and under their own counts (recvCounts for
+      //Irecv, sendCounts for Isend). This replaces the previous two-pass
+      //version (a first loop that posted Irecv only, plus a second loop
+      //that posted Isend only) which existed only because of a leftover,
+      //commented-out duplicate of this same block.
+      int numNeighbors = 0;
       for(int proc = 0; proc < numProcsTot; proc++){
         if(proc == self) continue;
+        bool hasComm = false;
 
         if(cudaAwareCache.recvCounts[proc] > 0){
           MPI_Request reqData;
@@ -917,6 +947,7 @@ class MPMesh{
               &reqData);
           if(mpiError != MPI_SUCCESS) break;
           requests.push_back(reqData);
+          hasComm = true; 
         }
 
         if(cudaAwareCache.sendCounts[proc] > 0){
@@ -937,13 +968,28 @@ class MPMesh{
               &reqData);
           if(mpiError != MPI_SUCCESS) break;
           requests.push_back(reqData);
+          hasComm = true;
         }
+         if(hasComm) numNeighbors++;
       }
+      pumipic::RecordTime(label + "_MPI_NumNeighbors_" + std::to_string(self), static_cast<double>(numNeighbors));
 
-      pumipic::RecordTime(
-          "SD: CUDA-aware MPI Post m" + std::to_string(mode) +
-              " e" + std::to_string(numEntries) + "-" + std::to_string(self),
-          timer.seconds());
+      postTime = timer.seconds();
+
+      pumipic::RecordTime(label + "_MPI_Post_" + std::to_string(self), postTime);
+
+      //Barrier here, not before posting: Isend/Irecv are non-blocking and
+      //their cost is local (looping + building MPI_Request objects), so a
+      //barrier before posting would only be measuring how skewed ranks
+      //were on entry to this function, which the calling function's own
+      //barriers already capture. Placed here, right before Waitall, it
+      //makes every rank enter Waitall at the same instant, so the
+      //waitallTime below reflects real message-arrival/network imbalance
+      //instead of being contaminated by skew left over from posting.
+      Kokkos::Timer barrierTimer;
+      MPI_Barrier(comm);
+      const double barrierWaitTime = barrierTimer.seconds();
+      pumipic::RecordTime(label + "_MPI_BarrierWait_" + std::to_string(self), barrierWaitTime);
 
       timer.reset();
 
@@ -954,10 +1000,9 @@ class MPMesh{
             MPI_STATUSES_IGNORE);
       }
 
-      pumipic::RecordTime(
-          "SD: CUDA-aware MPI Wait m" + std::to_string(mode) +
-              " e" + std::to_string(numEntries) + "-" + std::to_string(self),
-          timer.seconds());
+      waitallTime = timer.seconds();
+
+      pumipic::RecordTime(label + "_MPI_Waitall_" + std::to_string(self), waitallTime);
 
       if(mpiError != MPI_SUCCESS){
         cudaAwareMPIDisabled = true;
@@ -984,8 +1029,6 @@ class MPMesh{
           return;
         }
 
-        timer.reset();
-
         if(self == 0){
           std::cout
               << "[CUDA_AWARE_MPI] Failure happened after MPI requests were posted. "
@@ -996,11 +1039,6 @@ class MPMesh{
         MPI_Abort(comm, mpiError);
         return;
       }
-
-      pumipic::RecordTime(
-          "SD: CUDA-aware MPI Comm m" + std::to_string(mode) +
-              " e" + std::to_string(numEntries) + "-" + std::to_string(self),
-          mpiTotalTimer.seconds());
 
       timer.reset();
 
@@ -1045,10 +1083,12 @@ class MPMesh{
 
       Kokkos::fence();
 
-      pumipic::RecordTime(
-          "SD: CUDA-aware MPI Contribution m" + std::to_string(mode) +
-              " e" + std::to_string(numEntries) + "-" + std::to_string(self),
-          timer.seconds());
+      if(mpiDiagnostics){
+          pumipic::RecordTime(label + "_MPI_Diagnostics_Contribution_m" + std::to_string(mode) + "_e" +
+          std::to_string(numEntries) + "_rank" + std::to_string(self), timer.seconds());
+    }
+  
+
     }
 
 #else
@@ -1061,7 +1101,9 @@ class MPMesh{
         int nEntities,
         int numEntries,
         int mode,
-        int op){
+        int op,
+        const std::string& label){
+      (void)label; // no per-call diagnostics on the CPU-staged fallback path
 
       communicate_and_take_halo_contributions1(
           meshField,

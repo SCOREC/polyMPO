@@ -96,12 +96,27 @@ void MPMesh::assemblyElm0() {
 }
 
 void MPMesh::reconstruct_coeff_full(){
-  Kokkos::Timer timer;
+
   int self, numProcsTot;
   MPI_Comm comm = p_MPs->getMPIComm();
   MPI_Comm_rank(comm, &self);
   MPI_Comm_size(comm, &numProcsTot);
-  
+
+  Kokkos::fence();      //B0: drain any device work left from the previous phase
+  MPI_Barrier(comm);    //B0: align all ranks so this timed region starts at the same instant
+
+  Kokkos::Timer totalTimer;
+  Kokkos::Timer phaseTimer;
+
+  double preCommunicationComputeTime       = 0.0;
+  double preCommunicationComputeImbalance  = 0.0;
+  double gatherCommunicationTime           = 0.0;
+  double gatherCommunicationImbalance      = 0.0;
+  double scatterCommunicationTime          = 0.0;
+  double scatterCommunicationImbalance     = 0.0;
+  double postCommunicationComputeTime      = 0.0;
+  double postCommunicationComputeImbalance = 0.0;
+
   static int coeff_count=0;
   if(!self) std::cout<<"===="<<__FUNCTION__<<" "<<coeff_count<<"===="<<std::endl;
   coeff_count++;
@@ -114,6 +129,8 @@ void MPMesh::reconstruct_coeff_full(){
   auto dual_triangle_area=p_mesh->getMeshField<MeshF_DualTriangleArea>();
 
   //Material Points
+  phaseTimer.reset();
+
   calcBasis();
 
   auto weight = p_MPs->getData<MPF_Basis_Vals>();
@@ -130,7 +147,6 @@ void MPMesh::reconstruct_coeff_full(){
     radius=p_mesh->getSphereRadius();
 
   //Assemble matrix for each vertex
-  timer.reset();
   auto assemble = PS_LAMBDA(const int& elm, const int& mp, const int& mask) {
     if(mask) { //if material point is 'active'/'enabled'
       int nVtxE = elm2VtxConn(elm,0); //number of vertices bounding the element
@@ -153,25 +169,40 @@ void MPMesh::reconstruct_coeff_full(){
   };
   p_MPs->parallel_for(assemble, "assembly");
   Kokkos::fence();
-  pumipic::RecordTime("VR Assemble Matrix Per Process" + std::to_string(self), timer.seconds());
+
+  preCommunicationComputeTime = phaseTimer.seconds();          //T_before: pure local compute time, no waiting
+  MPI_Barrier(comm);                                            //B1: fast ranks wait here for the slowest rank
+  preCommunicationComputeImbalance = phaseTimer.seconds() - preCommunicationComputeTime;
+
   //Mode 0 is Gather:  Halos Send to Owners
   //Mode 1 is Scatter: Owners Send to Halos
   //Op 0 is addition
   //Op 1 is replacement
-  timer.reset();
+
   int mode = 0;
   int op = 0;
   if (numProcsTot >1){
-    communicate_and_take_halo_contributions1_improved(vtxMatrices, numVertices, numEntriesMatrix, mode, op);
-    pumipic::RecordTime("VR Matrix Gather Halo/MPI " + std::to_string(self), timer.seconds());
 
-    timer.reset();
+    phaseTimer.reset();
+    communicate_and_take_halo_contributions1_improved(vtxMatrices, numVertices, numEntriesMatrix, mode, op, "Reconstruction_Gather");
+    
+    Kokkos::fence();
+    gatherCommunicationTime = phaseTimer.seconds();             //T_before
+    MPI_Barrier(comm);                                            //B2: fast ranks wait here for the slowest rank
+    gatherCommunicationImbalance = phaseTimer.seconds() - gatherCommunicationTime;
+
     mode=1; 
     op=1;
-    communicate_and_take_halo_contributions1_improved(vtxMatrices, numVertices, numEntriesMatrix, mode, op);
-    pumipic::RecordTime("VR Matrix Scatter Halo/MPI " + std::to_string(self), timer.seconds());
+    
+    phaseTimer.reset();
+    communicate_and_take_halo_contributions1_improved(vtxMatrices, numVertices, numEntriesMatrix, mode, op, "Reconstruction_Scatter");
+    Kokkos::fence();
+    scatterCommunicationTime = phaseTimer.seconds();            //T_before
+    MPI_Barrier(comm);                                            //B3: fast ranks wait here for the slowest rank
+    scatterCommunicationImbalance = phaseTimer.seconds() - scatterCommunicationTime;
   }
   
+  phaseTimer.reset();
   //Store the 1st matrix element
   Kokkos::View<double*>vtxMatrixMass_l("vtxMass", numVertices);
   Kokkos::parallel_for("storeMatrixMass", numVertices, KOKKOS_LAMBDA(const int vtx){
@@ -180,9 +211,27 @@ void MPMesh::reconstruct_coeff_full(){
   Kokkos::fence();
   this->vtxMatrixMass = vtxMatrixMass_l;
 
-  timer.reset();
   invertMatrix(vtxMatrices, radius);
-  pumipic::RecordTime("VR Invert Matrix " + std::to_string(self), timer.seconds());
+  Kokkos::fence();
+  postCommunicationComputeTime = phaseTimer.seconds();          //T_before
+  MPI_Barrier(comm);                                              //B4: fast ranks wait here for the slowest rank
+  postCommunicationComputeImbalance = phaseTimer.seconds() - postCommunicationComputeTime;
+
+  const double computeTime = preCommunicationComputeTime + postCommunicationComputeTime;
+  const double communicationTime = gatherCommunicationTime + scatterCommunicationTime;
+  const double totalTime = totalTimer.seconds();
+
+  pumipic::RecordTime("Reconstruction_PreComm_Compute_" + std::to_string(self), preCommunicationComputeTime);
+  pumipic::RecordTime("Reconstruction_PreComm_Compute_Imbalance_" + std::to_string(self), preCommunicationComputeImbalance);
+  pumipic::RecordTime("Reconstruction_Gather_Communication_" + std::to_string(self),gatherCommunicationTime);
+  pumipic::RecordTime("Reconstruction_Gather_Communication_Imbalance_" + std::to_string(self),gatherCommunicationImbalance);
+  pumipic::RecordTime("Reconstruction_Scatter_Communication_" + std::to_string(self), scatterCommunicationTime);
+  pumipic::RecordTime("Reconstruction_Scatter_Communication_Imbalance_" + std::to_string(self), scatterCommunicationImbalance);
+  pumipic::RecordTime("Reconstruction_PostComm_Compute_" + std::to_string(self), postCommunicationComputeTime);
+  pumipic::RecordTime("Reconstruction_PostComm_Compute_Imbalance_" + std::to_string(self), postCommunicationComputeImbalance);
+  pumipic::RecordTime("Reconstruction_Compute_Total_" + std::to_string(self), computeTime);
+  pumipic::RecordTime("Reconstruction_Communication_Total_" + std::to_string(self), communicationTime);
+  pumipic::RecordTime("Reconstruction_Total_" + std::to_string(self), totalTime);
 }
 
 void MPMesh::invertMatrix(const Kokkos::View<double**>& vtxMatrices, const double& radius){
@@ -328,12 +377,16 @@ void MPMesh::invertMatrix(const Kokkos::View<double**>& vtxMatrices, const doubl
 
 template <MeshFieldIndex meshFieldIndex>
 void MPMesh::assemblyVtx1(){
-  Kokkos::Timer timer;
-
   int self, numProcsTot;
   MPI_Comm comm = p_MPs->getMPIComm();
   MPI_Comm_rank(comm, &self);
   MPI_Comm_size(comm, &numProcsTot);
+
+  Kokkos::fence();      //B0: drain any device work left from the previous phase
+  MPI_Barrier(comm);    //B0: align all ranks so this timed region starts at the same instant
+
+  Kokkos::Timer totalTimer;
+  Kokkos::Timer computeTimer;
 
   auto VtxCoeffs_new=this->precomputedVtxCoeffs_new;
 
@@ -402,13 +455,48 @@ void MPMesh::assemblyVtx1(){
   };
   p_MPs->parallel_for(reconstruct, "reconstruct");
   Kokkos::fence();
-  pumipic::RecordTime("Assemble Field per process" + std::to_string(self), timer.seconds());
+  const double computeTime = computeTimer.seconds();          //T_before: pure local compute time, no waiting
 
-  timer.reset();
+  MPI_Barrier(comm);                                            //B1: fast ranks wait here for the slowest rank
+  const double computeTimeSync = computeTimer.seconds();
+  const double computeImbalance = computeTimeSync - computeTime;
+
+  Kokkos::Timer communicationTimer;
+
   if(numProcsTot>1){ 
-    communicate_and_take_halo_contributions1_improved(meshField, numVertices, numEntries, 0, 0);
+    communicate_and_take_halo_contributions1_improved(meshField, numVertices, numEntries, 0, 0, "Velocity_Reconstruction");
   }
-  pumipic::RecordTime("Communicate Field Values" + std::to_string(self), timer.seconds());
+  Kokkos::fence();
+
+  const double communicationTime = communicationTimer.seconds();  //T_before
+
+  MPI_Barrier(comm);                                            //B2: fast ranks wait here for the slowest rank
+  const double communicationTimeSync = communicationTimer.seconds();
+  const double communicationImbalance = communicationTimeSync - communicationTime;
+
+  const double totalTime = totalTimer.seconds();
+  
+  if constexpr (meshFieldIndex == MeshF_Vel) {
+    pumipic::RecordTime(
+        "Velocity_Reconstruction_Compute_" + std::to_string(self),
+        computeTime);
+    pumipic::RecordTime(
+        "Velocity_Reconstruction_Compute_Imbalance_" + std::to_string(self),
+        computeImbalance);
+
+    pumipic::RecordTime(
+        "Velocity_Reconstruction_Communication_" + std::to_string(self),
+        communicationTime);
+    pumipic::RecordTime(
+        "Velocity_Reconstruction_Communication_Imbalance_" + std::to_string(self),
+        communicationImbalance);
+
+    pumipic::RecordTime(
+        "Velocity_Reconstruction_Total_" + std::to_string(self),
+        totalTime);
+
+}
+
 }
 
 template <MeshFieldIndex meshFieldIndex>

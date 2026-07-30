@@ -571,6 +571,9 @@ void polympo_setMPVel_f(MPMesh_ptr p_mpmesh, const int nComps, const int numMPs,
   Kokkos::Timer timer;
   checkMPMeshValid(p_mpmesh);
   auto p_MPs = ((polyMPO::MPMesh*)p_mpmesh)->p_MPs;
+  int self;
+  MPI_Comm comm = p_MPs->getMPIComm();
+  MPI_Comm_rank(comm, &self);
   PMT_ALWAYS_ASSERT(nComps == vec2d_nEntries);
   PMT_ALWAYS_ASSERT(numMPs >= p_MPs->getCount());
   //PMT_ALWAYS_ASSERT(numMPs >= p_MPs->getMaxAppID());
@@ -587,7 +590,7 @@ void polympo_setMPVel_f(MPMesh_ptr p_mpmesh, const int nComps, const int numMPs,
     }
   };
   p_MPs->parallel_for(setMPVel, "setMPVel");
-  pumipic::RecordTime("PolyMPO_setMPVel", timer.seconds());
+  pumipic::RecordTime("PolyMPO_setMPVel" + std::to_string(self),timer.seconds());
 }
 
 void polympo_getMPVel_f(MPMesh_ptr p_mpmesh, const int nComps, const int numMPs, double* mpVelHost) {
@@ -1249,6 +1252,10 @@ void polympo_getMeshVtxVel_f(MPMesh_ptr p_mpmesh, const int nVertices, double* u
   //check mpMesh is valid
   checkMPMeshValid(p_mpmesh);
   auto p_mesh = ((polyMPO::MPMesh*)p_mpmesh)->p_mesh;
+  auto p_MPs = ((polyMPO::MPMesh*)p_mpmesh)->p_MPs;
+  int self;
+  MPI_Comm comm = p_MPs->getMPIComm();
+  MPI_Comm_rank(comm, &self);
 
   //check the size
   PMT_ALWAYS_ASSERT(p_mesh->getNumVertices() == nVertices); 
@@ -1260,7 +1267,7 @@ void polympo_getMeshVtxVel_f(MPMesh_ptr p_mpmesh, const int nVertices, double* u
     uVelOut[i] = h_coordsArray(i,0);
     vVelOut[i] = h_coordsArray(i,1);
   }
-  pumipic::RecordTime("PolyMPO_getMeshVtxVel", timer.seconds());
+  pumipic::RecordTime("PolyMPO_getMeshVtxVel" + std::to_string(self), timer.seconds());
 }
 
 void polympo_setMeshVtxMass_f(MPMesh_ptr p_mpmesh, const int nVertices, const double* vtxMass){
@@ -1574,7 +1581,15 @@ void polympo_setIceAreaVertex_f(MPMesh_ptr p_mpmesh, const int nVertices, double
 void polympo_calculateStressDivergence_f(MPMesh_ptr p_mpmesh){
   //chech validity
   checkMPMeshValid(p_mpmesh);
+  Kokkos::Timer wrapperTimer;
+  auto p_MPs = ((polyMPO::MPMesh*)p_mpmesh)->p_MPs;
+  int self;
+  MPI_Comm comm = p_MPs->getMPIComm();
+  MPI_Comm_rank(comm, &self);
+
   ((polyMPO::MPMesh*)p_mpmesh) -> calculateStressDivergence();
+
+  pumipic::RecordTime("Wrapper_StressDivergence_Total_" + std::to_string(self), wrapperTimer.seconds());
 
  }
 
@@ -1745,7 +1760,7 @@ void polympo_set_halo_vel_from_owner_f(MPMesh_ptr p_mpmesh){
   int numVertices = p_mesh->getNumVertices();
   auto vtxFieldVel = p_mesh->getMeshField<polyMPO::MeshF_Vel>();
 
-  mpMesh->communicate_and_take_halo_contributions1_improved(vtxFieldVel, numVertices, 2, 1, 1); 
+  mpMesh->communicate_and_take_halo_contributions1_improved(vtxFieldVel, numVertices, 2, 1, 1, "halo_vel_from_owner"); 
 }
 
 //Advection Calcualtions
@@ -1824,7 +1839,14 @@ void polympo_applyReconstruction_f(MPMesh_ptr p_mpmesh){
 void polympo_reconstruct_coeff_with_MPI_f(MPMesh_ptr p_mpmesh){
   checkMPMeshValid(p_mpmesh);
   auto mpmesh = ((polyMPO::MPMesh*)p_mpmesh);
+  Kokkos::Timer wrapperTimer;
+  int self;
+  MPI_Comm comm = mpmesh->p_MPs->getMPIComm();
+  MPI_Comm_rank(comm, &self);
+
   mpmesh->reconstruct_coeff_full();
+
+  pumipic::RecordTime("Wrapper_ReconstructCoeff_Total_" + std::to_string(self), wrapperTimer.seconds());
 }
 
 void polympo_reconstruct_iceArea_with_MPI_f(MPMesh_ptr p_mpmesh){
@@ -1836,7 +1858,14 @@ void polympo_reconstruct_iceArea_with_MPI_f(MPMesh_ptr p_mpmesh){
 void polympo_reconstruct_velocity_with_MPI_f(MPMesh_ptr p_mpmesh){
   checkMPMeshValid(p_mpmesh);
   auto mpmesh = ((polyMPO::MPMesh*)p_mpmesh);
+  Kokkos::Timer wrapperTimer;
+  int self;
+  MPI_Comm comm = mpmesh->p_MPs->getMPIComm();
+  MPI_Comm_rank(comm, &self);
+
   mpmesh->assemblyVtx1<polyMPO::MeshF_Vel>();
+
+ pumipic::RecordTime("Wrapper_ReconstructVelocity_Total_" + std::to_string(self), wrapperTimer.seconds());
 }
 
 void polympo_init_deludelvDyn_f(MPMesh_ptr p_mpmesh){

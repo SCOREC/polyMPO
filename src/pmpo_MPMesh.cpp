@@ -96,11 +96,16 @@ void MPMesh::calculateStress(const int constitutive_relation){
 
 void MPMesh::calculateStressDivergence(){
 
-  Kokkos::Timer timer;
   int self, numProcsTot;
   MPI_Comm comm = p_MPs->getMPIComm();
   MPI_Comm_rank(comm, &self);
   MPI_Comm_size(comm, &numProcsTot);
+
+  Kokkos::fence();      //B0: drain any device work left from the previous phase
+  MPI_Barrier(comm);    //B0: align all ranks so this timed region starts at the same instant
+
+  Kokkos::Timer totalTimer;
+  Kokkos::Timer computeTimer;
 
   //Mesh Information
   auto elm2VtxConn = p_mesh->getElm2VtxConn();
@@ -172,18 +177,41 @@ void MPMesh::calculateStressDivergence(){
     }
   };
   p_MPs->parallel_for(stress_div, " stress_div_assembly");
-  Kokkos::fence();
-  pumipic::RecordTime("Stress_Divergence_Reconstruction" + std::to_string(self), timer.seconds()); 
+  Kokkos::fence();                                       //drain device work -> compute really is done on this rank
 
-  timer.reset();
+  const double computeTime = computeTimer.seconds();     //T_before: pure local compute time, no waiting
+
+  MPI_Barrier(comm);                                      //B1: fast ranks wait here for the slowest rank
+
+  const double computeTimeSync = computeTimer.seconds();  //time until every rank reached the barrier
+  const double computeImbalance = computeTimeSync - computeTime; //this rank's wait time = compute load imbalance
+
+  Kokkos::Timer communicationTimer;
+
   if(numProcsTot>1){ 
     //Takes contribution of halo vertices and adds it in owner procs
-    communicate_and_take_halo_contributions1_improved(stress_divUV, numVertices, 2, 0, 0);
+    communicate_and_take_halo_contributions1_improved(stress_divUV, numVertices, 2, 0, 0, "Stress_Divergence");
     //Transfer the correct values at owned vertices to halo vertices
     //communicate_and_take_halo_contributions(stress_divUV, numVertices, 2, 1, 1);
   }
-  Kokkos::fence();
-  pumipic::RecordTime("Stress_Divergence Communication" + std::to_string(self), timer.seconds());  
+  Kokkos::fence();                                        //drain device work from the communication step
+
+  const double communicationTime = communicationTimer.seconds(); //pure local communication time, no waiting
+
+  MPI_Barrier(comm);                                       //B2: fast ranks wait here for the slowest rank
+
+  const double communicationTimeSync = communicationTimer.seconds();
+  const double communicationImbalance = communicationTimeSync - communicationTime; //communication load imbalance
+
+  const double totalTime = totalTimer.seconds();
+
+  pumipic::RecordTime("Stress_Divergence_Compute_" + std::to_string(self),computeTime);
+  pumipic::RecordTime("Stress_Divergence_Compute_Imbalance_" + std::to_string(self),computeImbalance);
+
+  pumipic::RecordTime("Stress_Divergence_Communication_" + std::to_string(self),communicationTime);
+  pumipic::RecordTime("Stress_Divergence_Communication_Imbalance_" + std::to_string(self),communicationImbalance);
+
+  pumipic::RecordTime("Stress_Divergence_Total_" + std::to_string(self),totalTime);
 }
 
 void MPMesh::calcBasis() {

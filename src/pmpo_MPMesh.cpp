@@ -100,9 +100,14 @@ void MPMesh::calculateStressDivergence(){
   MPI_Comm comm = p_MPs->getMPIComm();
   MPI_Comm_rank(comm, &self);
   MPI_Comm_size(comm, &numProcsTot);
+  
+  //Kokkos::Timer b0Timer;
+  //Kokkos::fence();
 
-  Kokkos::fence();      //B0: drain any device work left from the previous phase
-  MPI_Barrier(comm);    //B0: align all ranks so this timed region starts at the same instant
+  //const double b0DrainTime = b0Timer.seconds();                        //B0: drain any device work left from the previous phase
+  //MPI_Barrier(comm);
+  //const double b0Sync = b0Timer.seconds();                             //B0: align all ranks so this timed region starts at the same instant
+  //const double b0BarrierWait = b0Sync - b0DrainTime; 
 
   Kokkos::Timer totalTimer;
   Kokkos::Timer computeTimer;
@@ -181,10 +186,10 @@ void MPMesh::calculateStressDivergence(){
 
   const double computeTime = computeTimer.seconds();     //T_before: pure local compute time, no waiting
 
-  MPI_Barrier(comm);                                      //B1: fast ranks wait here for the slowest rank
+  //MPI_Barrier(comm);                                      //B1: fast ranks wait here for the slowest rank
 
-  const double computeTimeSync = computeTimer.seconds();  //time until every rank reached the barrier
-  const double computeImbalance = computeTimeSync - computeTime; //this rank's wait time = compute load imbalance
+  //const double computeTimeSync = computeTimer.seconds();  //time until every rank reached the barrier
+  //const double b1BarrierWait   = computeTimeSync - computeTime; //this rank's wait time = compute load imbalance
 
   Kokkos::Timer communicationTimer;
 
@@ -198,18 +203,21 @@ void MPMesh::calculateStressDivergence(){
 
   const double communicationTime = communicationTimer.seconds(); //pure local communication time, no waiting
 
-  MPI_Barrier(comm);                                       //B2: fast ranks wait here for the slowest rank
+  //MPI_Barrier(comm);                                       //B2: fast ranks wait here for the slowest rank
 
-  const double communicationTimeSync = communicationTimer.seconds();
-  const double communicationImbalance = communicationTimeSync - communicationTime; //communication load imbalance
+  //const double communicationTimeSync = communicationTimer.seconds();
+  //const double b2BarrierWait         = communicationTimeSync - communicationTime; //communication load imbalance
 
   const double totalTime = totalTimer.seconds();
 
+  //pumipic::RecordTime("Stress_Divergence_B0_Drain_" + std::to_string(self), b0DrainTime);
+  //pumipic::RecordTime("Stress_Divergence_B0_BarrierWait_" + std::to_string(self), b0BarrierWait);
+
   pumipic::RecordTime("Stress_Divergence_Compute_" + std::to_string(self),computeTime);
-  pumipic::RecordTime("Stress_Divergence_Compute_Imbalance_" + std::to_string(self),computeImbalance);
+  //pumipic::RecordTime("Stress_Divergence_Compute_B1_Barrier_Wait_Time_" + std::to_string(self),b1BarrierWait);
 
   pumipic::RecordTime("Stress_Divergence_Communication_" + std::to_string(self),communicationTime);
-  pumipic::RecordTime("Stress_Divergence_Communication_Imbalance_" + std::to_string(self),communicationImbalance);
+  //pumipic::RecordTime("Stress_Divergence_Communication_B2_Wait_Time_" + std::to_string(self), b2BarrierWait);
 
   pumipic::RecordTime("Stress_Divergence_Total_" + std::to_string(self),totalTime);
 }

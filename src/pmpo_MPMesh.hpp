@@ -13,6 +13,54 @@
 #include <cuda_runtime.h>
 #endif
 
+// ----------------------------------------------------------------------
+// Halo-exchange optimization: pure derived-datatype send (pack path fully
+// removed) + MPI_Waitany incremental unpack.
+//
+// communicate_and_take_halo_contributions1_improved() (CUDA_AWARE_MPI path
+// only - the CPU-staged fallback below is untouched):
+//
+//   1. Eliminate the pack step / sendDataGPU buffer, unconditionally. Each
+//      neighbor proc gets its own committed MPI derived datatype
+//      (MPI_Type_create_hindexed_block over a "rowType" built from
+//      meshField's own strides) that gathers that proc's rows directly out
+//      of meshField's GPU memory. MPI_Isend reads straight from the field -
+//      no pack kernel, no extra buffer, no fallback to a pack path.
+//
+//   2. Hide the unpack step behind MPI_Waitall latency instead of paying
+//      for it serially afterward. Recv requests are drained with
+//      MPI_Waitany instead of MPI_Waitall, and each neighbor's contribution
+//      is unpacked (async kernel launch, no intermediate fence) the instant
+//      that neighbor's message lands, so unpacking early arrivals overlaps
+//      with waiting on stragglers. A single Kokkos::fence() at the end
+//      guarantees every launched unpack kernel has completed before
+//      meshField is used downstream.
+//
+// The receive side still uses a batched contiguous GPU buffer + a real
+// unpack kernel (not a derived receive-datatype): for op==0 the unpack is a
+// scatter-ADD (Kokkos::atomic_add), because a single owned vertex can
+// receive contributions from multiple different remote ranks across
+// separate messages, and a derived datatype can only place bytes at an
+// offset, not reduce concurrently-arriving values. Only the gather (send)
+// side is a pure "pick these rows" operation, which is what derived
+// datatypes are actually good for here.
+//
+// Known risk, confirmed relevant on this codebase's field layout
+// (LayoutLeft): sending directly from meshField's memory means MPI's
+// datatype engine has to gather scattered elements (MPI_Type_vector nested
+// in MPI_Type_create_hindexed_block) instead of a few large contiguous
+// blocks, which is expensive for many MPI implementations' datatype
+// engines to execute well relative to a hand-written parallel GPU pack
+// kernel. It also means MPI is handed a pointer straight into meshField's
+// own (Kokkos-managed, possibly CudaMallocAsync pool-allocated) memory,
+// rather than a dedicated raw-cudaMalloc'd staging buffer - see
+// RawCudaMPIBuffer's comment below for why that distinction matters on
+// Cray MPICH/GTL. A pre-change, fully protected copy of this file's
+// send-side logic is preserved in pmpo_MPMesh_backup.hpp and in git history
+// (the "Add CUDA-aware MPI halo exchange" / "Add CUDA-aware communication
+// path to MPMesh" commits) for comparison/revert.
+// ----------------------------------------------------------------------
+
 namespace polyMPO{
 
 template <MeshFieldIndex>
@@ -42,14 +90,14 @@ class MPMesh{
     std::vector<std::vector<int>> ownerHaloLocalIDs;
 
     void startCommunication();
-    
+
     void communicate_and_take_halo_contributions(
         const Kokkos::View<double**>& meshField,
         int nEntities,
         int numEntries,
         int mode,
         int op);
-    
+
     // Original CPU-staging function
     template <typename ViewType>
     void communicate_and_take_halo_contributions1(
@@ -74,7 +122,7 @@ class MPMesh{
       std::vector<std::vector<double>> recvDataVec;
 
       pumipic::RecordTime("SD: Recv Vec Allocation-" + std::to_string(self), timer.seconds());
-      
+
       timer.reset();
 
       communicateFields1(
@@ -154,7 +202,7 @@ class MPMesh{
       }
 
       pumipic::RecordTime("SD: Copy CPU-GPU2-" + std::to_string(self), timer.seconds());
- 
+
       timer.reset();
 
       if(op == 0){
@@ -198,9 +246,9 @@ class MPMesh{
         int mode,
         std::vector<std::vector<int>>& recvIDVec,
         std::vector<std::vector<double>>& recvDataVec);
-   
 
-    template <class ViewType> 
+
+    template <class ViewType>
     void communicateFields1(
         const ViewType& fieldData,
         const int numEntities,
@@ -208,7 +256,7 @@ class MPMesh{
         int mode,
         std::vector<std::vector<int>>& recvIDVec,
         std::vector<std::vector<double>>& recvDataVec){
-    
+
       int self, numProcsTot;
 
       MPI_Comm comm = p_MPs->getMPIComm();
@@ -394,7 +442,7 @@ class MPMesh{
 
       MPI_Waitall(requests.size(), requests.data(), MPI_STATUSES_IGNORE);
     }
-    
+
 
     MPMesh(Mesh* inMesh, MaterialPoints* inMPs):
       p_mesh(inMesh),
@@ -494,18 +542,20 @@ class MPMesh{
     // and gives Cray MPICH/GTL plain CUDA allocations to register/export.
 #ifdef KOKKOS_ENABLE_CUDA
     // Plain cudaMalloc'd device buffer, exposed as an unmanaged Kokkos::View
-    // via .view(). Used only for the 4 buffers below that get handed
-    // directly to MPI_Isend/Irecv under CUDA-aware MPI.
+    // via .view(). Used only for the recv-side buffers below (recvIDGPU /
+    // recvDataGPU) that get handed directly to MPI_Irecv under CUDA-aware
+    // MPI. The send side no longer needs a plain buffer here - it sends
+    // directly out of meshField via a derived datatype.
     //
     // Why not just a Kokkos::View<T*, Kokkos::CudaSpace>: when Kokkos is
     // built with Kokkos_ENABLE_IMPL_CUDA_MALLOC_ASYNC=ON (the default since
     // Kokkos 4.2), View allocations use cudaMallocAsync/memory pools.
     // cuIpcGetMemHandle (which Cray MPICH/GTL uses for intra-node GPU-to-GPU
     // sends) rejects pool allocations with CUDA_ERROR_INVALID_VALUE. Since
-    // polyMPO isn't allowed to touch the Kokkos build config, these 4
-    // buffers bypass Kokkos's allocator entirely via a direct cudaMalloc,
-    // which cuIpcGetMemHandle always accepts, regardless of how the rest of
-    // Kokkos (or the rest of the app's Views) is configured.
+    // polyMPO isn't allowed to touch the Kokkos build config, these buffers
+    // bypass Kokkos's allocator entirely via a direct cudaMalloc, which
+    // cuIpcGetMemHandle always accepts, regardless of how the rest of Kokkos
+    // (or the rest of the app's Views) is configured.
     template <typename T>
     struct RawCudaMPIBuffer{
       T* ptr = nullptr;
@@ -583,12 +633,6 @@ class MPMesh{
 #endif
 
     // Cached CUDA-aware MPI communication metadata and batched GPU buffers.
-    // Every neighbor's data lives in one shared allocation (see
-    // CudaAwareMPIFieldCache below) and MPI is given "base pointer + byte
-    // offset" per neighbor rather than a separate allocation per neighbor.
-    // If you ever need to fall back to one allocation per neighbor (e.g. an
-    // MPI/GPU stack that mishandles offset device pointers for CUDA IPC),
-    // restore the per-proc-buffer version from version control.
     bool cudaAwareMPICacheValid = true;
     bool cudaAwareMPIDisabled = false;
     bool cudaAwareMPIEnvChecked = false;
@@ -607,17 +651,51 @@ class MPMesh{
       int totalSendCount = 0;
       int totalRecvCount = 0;
 
-      // Single batched GPU buffers (one allocation each, instead of one
-      // Kokkos::View per neighbor proc). Per-proc slices are
-      // [offset, offset + count) for the ID buffers, and
-      // [offset * numEntries, (offset + count) * numEntries) for the data
-      // buffers. MPI is given "buffer base pointer + offset", not a
-      // separate allocation per proc.
-      CudaAwareMPIIntBuffer sendEntityGPU;
+      // Receive side keeps a single batched GPU buffer (one allocation each,
+      // instead of one Kokkos::View per neighbor proc). Per-proc slices are
+      // [offset, offset + count) for recvIDGPU, and
+      // [offset * numEntries, (offset + count) * numEntries) for
+      // recvDataGPU. Still needed because op==0 unpacking is a scatter-ADD
+      // (Kokkos::atomic_add, since a single owned vertex can receive
+      // contributions from several different remote ranks across separate
+      // messages), which a derived receive-datatype can't do on its own.
       CudaAwareMPIIntBuffer recvIDGPU;
-
-      CudaAwareMPIDoubleBuffer sendDataGPU;
       CudaAwareMPIDoubleBuffer recvDataGPU;
+
+      // ---- Send side ----
+      // No pack buffer/kernel anymore, unconditionally. rowType describes
+      // one entity's numEntries doubles exactly as they sit in meshField's
+      // own memory (built from meshField's actual strides, so it's correct
+      // whether the view is LayoutRight, LayoutLeft, or padded).
+      // sendProcTypes[proc] wraps rowType with that proc's list of entity
+      // byte-displacements via MPI_Type_create_hindexed_block, so MPI_Isend
+      // can gather directly out of meshField's GPU memory with no separate
+      // pack kernel/buffer, always.
+      MPI_Datatype rowType = MPI_DATATYPE_NULL;
+      std::vector<MPI_Datatype> sendProcTypes; // size numProcsTot; MPI_DATATYPE_NULL where unused
+
+      void freeTypes(){
+        if(rowType != MPI_DATATYPE_NULL){
+          MPI_Type_free(&rowType);
+          rowType = MPI_DATATYPE_NULL;
+        }
+
+        for(auto& t : sendProcTypes){
+          if(t != MPI_DATATYPE_NULL){
+            MPI_Type_free(&t);
+            t = MPI_DATATYPE_NULL;
+          }
+        }
+
+        sendProcTypes.clear();
+      }
+
+      // Assumes this cache (and therefore the MPMesh that owns it) is torn
+      // down before MPI_Finalize - same assumption the rest of this class
+      // already makes about the MPI resources it holds.
+      ~CudaAwareMPIFieldCache(){
+        freeTypes();
+      }
     };
 
     std::map<std::pair<int, int>, CudaAwareMPIFieldCache> cudaAwareMPICaches;
@@ -633,18 +711,22 @@ class MPMesh{
       return cudaAwareMPIForceCPU;
     }
 
-    // Fully CUDA-aware MPI version, batched buffer variant:
-    // Field data is sent/received using GPU pointers. Receive IDs are cached
-    // once from the fixed halo/owner mapping and are not sent every call.
+    // Fully CUDA-aware MPI version, batched buffer + derived-datatype send
+    // variant:
     //
-    // Every neighbor's send/recv entity-ID list and data live in ONE big
-    // GPU buffer each (laid out back-to-back in proc order), instead of one
-    // Kokkos::View allocation per neighbor. Packing/unpacking is a single
-    // kernel launch over all neighbors' entities at once instead of one
-    // launch per neighbor, and MPI_Isend/Irecv use "buffer base pointer +
-    // offset" into that single buffer per proc. This is what actually
-    // shrinks MPI_Wait time: fewer, larger, more uniform in-flight
-    // transfers instead of many small independent ones.
+    // Field data is sent using GPU pointers gathered directly by a per-
+    // neighbor MPI derived datatype (no pack kernel/buffer, unconditionally),
+    // and received into a single batched GPU buffer per cache entry, same
+    // as before. Receive IDs are cached once from the fixed halo/owner
+    // mapping and are not sent every call.
+    //
+    // Receive completion is drained with MPI_Waitany instead of
+    // MPI_Waitall: each neighbor's contribution is unpacked (async kernel
+    // launch) the moment that neighbor's message arrives, so unpacking
+    // already-arrived neighbors overlaps with waiting on the remaining
+    // (slower) ones, instead of the previous "wait for everyone, then
+    // unpack everyone" ordering. A single Kokkos::fence() at the end
+    // guarantees all launched unpack kernels have completed.
     //
     // Note: an earlier version of this cache used one Kokkos::View
     // allocation per neighbor specifically to avoid handing MPI a
@@ -653,14 +735,16 @@ class MPMesh{
     // Kokkos allocating device Views via cudaMallocAsync (invalid for
     // cuIpcGetMemHandle), not to offset pointers themselves, and is fixed
     // by building Kokkos with -DKokkos_ENABLE_IMPL_CUDA_MALLOC_ASYNC=OFF.
-    // If you ever do hit IPC trouble that tracks back to offset pointers
-    // specifically, the per-proc-buffer version can be restored from
-    // version control.
+    // The same offset-pointer reasoning applies to the derived-datatype
+    // send below (MPI is given meshField's base pointer plus per-entity
+    // byte displacements); if you hit IPC trouble that tracks back to that,
+    // the previous pack-buffer send path can be restored from
+    // pmpo_MPMesh_backup.hpp / version control.
     //
     // Important:
-    // This function caches communication metadata and GPU buffers per
-    // (mode, numEntries). If the communication pattern changes, clear
-    // cudaAwareMPICaches before the next call.
+    // This function caches communication metadata, GPU buffers, and MPI
+    // derived datatypes per (mode, numEntries). If the communication
+    // pattern changes, clear cudaAwareMPICaches before the next call.
     template <typename ViewType>
     void communicate_and_take_halo_contributions1_improved(
         const ViewType& meshField,
@@ -678,7 +762,7 @@ class MPMesh{
       MPI_Comm_size(comm, &numProcsTot);
 
       const char* diagnosticsEnv =
-      
+
       std::getenv("POLYMPO_MPI_DIAGNOSTICS");
 
       const bool mpiDiagnostics =
@@ -702,7 +786,7 @@ class MPMesh{
 #ifdef POLYMPO_VERBOSE_MPI
       if(self == 0 && !cudaAwareMPILogged){
         std::cout
-            << "[CUDA_AWARE_MPI] Using batched single-buffer GPU-aware MPI path in communicate_and_take_halo_contributions1_improved()"
+            << "[CUDA_AWARE_MPI] Using batched single-buffer GPU-aware MPI path (derived-datatype send + MPI_Waitany incremental unpack) in communicate_and_take_halo_contributions1_improved()"
             << "\n";
         cudaAwareMPILogged = true;
       }
@@ -723,6 +807,11 @@ class MPMesh{
           (cudaAwareCache.cachedNumProcs != numProcsTot);
 
       if(needRebuild){
+
+        // Drop any datatypes committed for a previous topology before
+        // rebuilding (no-op the first time, when nothing has been built
+        // yet).
+        cudaAwareCache.freeTypes();
 
         cudaAwareCache.cachedNumProcs = numProcsTot;
 
@@ -758,63 +847,89 @@ class MPMesh{
         cudaAwareCache.totalSendCount = totalSend;
         cudaAwareCache.totalRecvCount = totalRecv;
 
-        cudaAwareCache.sendEntityGPU.allocate(totalSend);
-        cudaAwareCache.sendDataGPU.allocate(totalSend * numEntries);
         cudaAwareCache.recvIDGPU.allocate(totalRecv);
         cudaAwareCache.recvDataGPU.allocate(totalRecv * numEntries);
 
-        // ---- Build the flattened send-entity list (host, then one deep_copy) ----
+        // ---- Build the send-side derived datatypes, unconditionally ----
+        // Instead of a flattened host entity list + GPU pack buffer, build
+        // one MPI_Datatype per neighbor proc that gathers that proc's rows
+        // directly out of meshField's own memory.
         if(totalSend > 0){
-          auto sendEntityCPU =
-              Kokkos::View<int*, Kokkos::HostSpace>(
-                  "sendEntityCPU_batched", totalSend);
+
+          // rowType: one entity's numEntries doubles, as they actually sit
+          // in meshField's memory. Query the real strides rather than
+          // assuming a layout, so this is correct for LayoutRight (entries
+          // within an entity contiguous - typical host default) and
+          // LayoutLeft (entries within an entity strided by the entity
+          // count - typical Kokkos CUDA default) alike. Note: for
+          // LayoutLeft this produces an MPI_Type_vector describing
+          // widely-scattered elements, which is the expensive case flagged
+          // in the file-level comment above.
+          const size_t strideEntity = meshField.stride_0();
+          const size_t strideEntry  = meshField.stride_1();
+
+          if(strideEntry == 1){
+            MPI_Type_contiguous(numEntries, MPI_DOUBLE, &cudaAwareCache.rowType);
+          }
+          else{
+            MPI_Type_vector(
+                numEntries,
+                1,
+                static_cast<int>(strideEntry),
+                MPI_DOUBLE,
+                &cudaAwareCache.rowType);
+          }
+          MPI_Type_commit(&cudaAwareCache.rowType);
+
+          std::vector<std::vector<int>> sendEntityIDsByProc(numProcsTot);
 
           if(mode == 0){
-            for(int proc = 0; proc < numProcsTot; proc++){
-              if(proc == self) continue;
-              if(cudaAwareCache.sendCounts[proc] <= 0) continue;
-
-              assert(haloOwnerLocalIDs[proc].size() ==
-                     static_cast<size_t>(cudaAwareCache.sendCounts[proc]));
-            }
-
-            std::vector<int> cursor(cudaAwareCache.sendOffsets);
-
             for(int iEnt = 0; iEnt < numHalosTot; iEnt++){
               int ownerProc = haloOwnerProcs[iEnt];
               if(ownerProc == self) continue;
 
-              sendEntityCPU(cursor[ownerProc]) = numOwnersTot + iEnt;
-              cursor[ownerProc]++;
-            }
-
-            for(int proc = 0; proc < numProcsTot; proc++){
-              if(proc == self) continue;
-
-              assert(cursor[proc] ==
-                     cudaAwareCache.sendOffsets[proc] +
-                         cudaAwareCache.sendCounts[proc]);
+              sendEntityIDsByProc[ownerProc].push_back(numOwnersTot + iEnt);
             }
           }
           else{
             for(int proc = 0; proc < numProcsTot; proc++){
               if(proc == self) continue;
 
-              int sendCount = cudaAwareCache.sendCounts[proc];
-              if(sendCount <= 0) continue;
-
-              assert(ownerOwnerLocalIDs[proc].size() ==
-                     static_cast<size_t>(sendCount));
-
-              int base = cudaAwareCache.sendOffsets[proc];
-
-              for(int i = 0; i < sendCount; i++){
-                sendEntityCPU(base + i) = ownerOwnerLocalIDs[proc][i];
+              for(auto& ownerID : ownerOwnerLocalIDs[proc]){
+                sendEntityIDsByProc[proc].push_back(ownerID);
               }
             }
           }
 
-          Kokkos::deep_copy(cudaAwareCache.sendEntityGPU.view(), sendEntityCPU);
+          cudaAwareCache.sendProcTypes.assign(numProcsTot, MPI_DATATYPE_NULL);
+
+          for(int proc = 0; proc < numProcsTot; proc++){
+            if(proc == self) continue;
+
+            const int sendCount = cudaAwareCache.sendCounts[proc];
+            if(sendCount <= 0) continue;
+
+            assert(sendEntityIDsByProc[proc].size() ==
+                   static_cast<size_t>(sendCount));
+
+            std::vector<MPI_Aint> displacements(sendCount);
+
+            for(int i = 0; i < sendCount; i++){
+              displacements[i] =
+                  static_cast<MPI_Aint>(sendEntityIDsByProc[proc][i]) *
+                  static_cast<MPI_Aint>(strideEntity) *
+                  static_cast<MPI_Aint>(sizeof(double));
+            }
+
+            MPI_Type_create_hindexed_block(
+                sendCount,
+                1,
+                displacements.data(),
+                cudaAwareCache.rowType,
+                &cudaAwareCache.sendProcTypes[proc]);
+
+            MPI_Type_commit(&cudaAwareCache.sendProcTypes[proc]);
+          }
         }
 
         // ---- Build the flattened recv-ID list (host, then one deep_copy) ----
@@ -873,38 +988,34 @@ class MPMesh{
         timer.reset();
       }
 
-      // ---- Pack: ONE kernel over all neighbors' send entities at once ----
-      if(cudaAwareCache.totalSendCount > 0){
-        auto sendEntityGPU = cudaAwareCache.sendEntityGPU.view();
-        auto sendDataGPU = cudaAwareCache.sendDataGPU.view();
-
-        Kokkos::parallel_for(
-            "pack cached cuda-aware mpi send buffer batched",
-            cudaAwareCache.totalSendCount,
-            KOKKOS_LAMBDA(const int i){
-              int entity = sendEntityGPU(i);
-
-              for(int k = 0; k < numEntries; k++){
-                sendDataGPU(i * numEntries + k) =
-                    meshField(entity, k);
-              }
-            });
-      }
-
+      // ---- No explicit pack step, unconditionally ----
+      // MPI_Isend below reads meshField directly through the derived
+      // datatypes built above, so there is no separate pack kernel or
+      // sendDataGPU buffer to launch/fence on here. We still fence once so
+      // that any of the caller's kernels which wrote meshField complete
+      // before MPI starts reading it directly (mirrors the fence the old
+      // pack step used to provide, just guarding meshField itself now
+      // instead of a pack buffer).
       Kokkos::fence();
 
       if(mpiDiagnostics){
          pumipic::RecordTime(
-         label + "_MPI_Diagnostics_Pack_m" + std::to_string(mode) + "_e" + std::to_string(numEntries) + "_rank" + std::to_string(self), timer.seconds());
+         label + "_MPI_Diagnostics_Pack_m" + std::to_string(mode) + "_e" + std::to_string(numEntries) + "_rank" + std::to_string(self), 0.0);
     }
 
       timer.reset();
 
-      double postTime    = 0.0;
-      double waitallTime = 0.0;
+      double postTime = 0.0;
+      double waitTime = 0.0;
 
-      std::vector<MPI_Request> requests;
-      requests.reserve(2 * numProcsTot);
+      std::vector<MPI_Request> recvRequests;
+      std::vector<int> recvReqProc;
+      std::vector<MPI_Request> sendRequests;
+
+      recvRequests.reserve(numProcsTot);
+      recvReqProc.reserve(numProcsTot);
+      sendRequests.reserve(numProcsTot);
+
       int mpiError = MPI_SUCCESS;
 
       // Data volume exchanged by this rank in this call (recorded once per
@@ -918,12 +1029,16 @@ class MPMesh{
       pumipic::RecordTime(label + "_MPI_BytesSent_" + std::to_string(self), bytesSent);
       pumipic::RecordTime(label + "_MPI_BytesRecv_" + std::to_string(self), bytesRecv);
 
-      //Post both the Irecv and the matching Isend for a proc together, in
-      //the same loop iteration and under their own counts (recvCounts for
-      //Irecv, sendCounts for Isend). This replaces the previous two-pass
-      //version (a first loop that posted Irecv only, plus a second loop
-      //that posted Isend only) which existed only because of a leftover,
-      //commented-out duplicate of this same block.
+      // Post both the Irecv and the matching Isend for a proc together, in
+      // the same loop iteration and under their own counts (recvCounts for
+      // Irecv, sendCounts for Isend).
+      //
+      // The send is posted directly against meshField using that proc's
+      // derived datatype (no sendDataGPU pointer/offset), unconditionally,
+      // and recv requests are tracked separately from send requests (with a
+      // parallel recvReqProc[] telling us which proc each recv request
+      // belongs to) so the recvs can be drained incrementally with
+      // MPI_Waitany below instead of all being blocked on together.
       int numNeighbors = 0;
       for(int proc = 0; proc < numProcsTot; proc++){
         if(proc == self) continue;
@@ -946,28 +1061,24 @@ class MPMesh{
               comm,
               &reqData);
           if(mpiError != MPI_SUCCESS) break;
-          requests.push_back(reqData);
-          hasComm = true; 
+          recvRequests.push_back(reqData);
+          recvReqProc.push_back(proc);
+          hasComm = true;
         }
 
         if(cudaAwareCache.sendCounts[proc] > 0){
           MPI_Request reqData;
 
-          double* sendPtr =
-              cudaAwareCache.sendDataGPU.data() +
-              static_cast<size_t>(cudaAwareCache.sendOffsets[proc]) *
-                  numEntries;
-
           mpiError = MPI_Isend(
-              sendPtr,
-              cudaAwareCache.sendCounts[proc] * numEntries,
-              MPI_DOUBLE,
+              meshField.data(),
+              1,
+              cudaAwareCache.sendProcTypes[proc],
               proc,
               2,
               comm,
               &reqData);
           if(mpiError != MPI_SUCCESS) break;
-          requests.push_back(reqData);
+          sendRequests.push_back(reqData);
           hasComm = true;
         }
          if(hasComm) numNeighbors++;
@@ -978,31 +1089,84 @@ class MPMesh{
 
       pumipic::RecordTime(label + "_MPI_Post_" + std::to_string(self), postTime);
 
-      //Barrier here, not before posting: Isend/Irecv are non-blocking and
-      //their cost is local (looping + building MPI_Request objects), so a
-      //barrier before posting would only be measuring how skewed ranks
-      //were on entry to this function, which the calling function's own
-      //barriers already capture. Placed here, right before Waitall, it
-      //makes every rank enter Waitall at the same instant, so the
-      //waitallTime below reflects real message-arrival/network imbalance
-      //instead of being contaminated by skew left over from posting.
-      Kokkos::Timer barrierTimer;
-      MPI_Barrier(comm);
-      const double barrierWaitTime = barrierTimer.seconds();
-      pumipic::RecordTime(label + "_MPI_BarrierWait_" + std::to_string(self), barrierWaitTime);
-
       timer.reset();
 
-      if(mpiError == MPI_SUCCESS && !requests.empty()){
+      // ---- Drain recvs with MPI_Waitany, unpacking each neighbor's
+      // contribution the moment it lands instead of waiting for every
+      // neighbor before unpacking any of them. Each unpack kernel launch is
+      // asynchronous (no fence in the loop), so while neighbor i's data is
+      // being scattered on the GPU, the CPU is already back inside
+      // MPI_Waitany waiting on the rest - hiding unpack behind the wait for
+      // stragglers rather than paying for it serially afterward. ----
+      if(mpiError == MPI_SUCCESS && !recvRequests.empty()){
+        auto recvIDGPUView = cudaAwareCache.recvIDGPU.view();
+        auto recvDataGPUView = cudaAwareCache.recvDataGPU.view();
+
+        for(size_t reqIdx = 0; reqIdx < recvRequests.size(); reqIdx++){
+          int idx = MPI_UNDEFINED;
+
+          mpiError = MPI_Waitany(
+              static_cast<int>(recvRequests.size()),
+              recvRequests.data(),
+              &idx,
+              MPI_STATUS_IGNORE);
+
+          if(mpiError != MPI_SUCCESS || idx == MPI_UNDEFINED) break;
+
+          const int proc = recvReqProc[idx];
+          const int base = cudaAwareCache.recvOffsets[proc];
+          const int count = cudaAwareCache.recvCounts[proc];
+
+          if(op == 0){
+            Kokkos::parallel_for(
+                "halo add cached cuda-aware mpi incremental",
+                Kokkos::RangePolicy<>(base, base + count),
+                KOKKOS_LAMBDA(const int i){
+                  const int vertex = recvIDGPUView(i);
+
+                  for(int k = 0; k < numEntries; k++){
+#ifdef POLYMPO_ASSUME_UNIQUE_HALO_CONTRIBS
+                    meshField(vertex, k) +=
+                        recvDataGPUView(i * numEntries + k);
+#else
+                    Kokkos::atomic_add(
+                        &meshField(vertex, k),
+                        recvDataGPUView(i * numEntries + k));
+#endif
+                  }
+                });
+          }
+          else{
+            Kokkos::parallel_for(
+                "halo assign cached cuda-aware mpi incremental",
+                Kokkos::RangePolicy<>(base, base + count),
+                KOKKOS_LAMBDA(const int i){
+                  const int vertex = recvIDGPUView(i);
+
+                  for(int k = 0; k < numEntries; k++){
+                    meshField(vertex, k) =
+                        recvDataGPUView(i * numEntries + k);
+                  }
+                });
+          }
+          // Deliberately no fence here - see comment above the loop.
+        }
+      }
+
+      // Sends don't feed any unpack step, but we still need to know they
+      // completed before treating this call as done, so wait on them once,
+      // after the recv/unpack loop rather than before it (so posting the
+      // sends can't itself delay draining the recvs).
+      if(mpiError == MPI_SUCCESS && !sendRequests.empty()){
         mpiError = MPI_Waitall(
-            static_cast<int>(requests.size()),
-            requests.data(),
+            static_cast<int>(sendRequests.size()),
+            sendRequests.data(),
             MPI_STATUSES_IGNORE);
       }
 
-      waitallTime = timer.seconds();
+      waitTime = timer.seconds();
 
-      pumipic::RecordTime(label + "_MPI_Waitall_" + std::to_string(self), waitallTime);
+      pumipic::RecordTime(label + "_MPI_Waitall_" + std::to_string(self), waitTime);
 
       if(mpiError != MPI_SUCCESS){
         cudaAwareMPIDisabled = true;
@@ -1013,7 +1177,7 @@ class MPMesh{
               << std::endl;
         }
 
-        if(requests.empty()){
+        if(recvRequests.empty() && sendRequests.empty()){
           if(self == 0){
             std::cout
                 << "[CUDA_AWARE_MPI] Falling back to CPU-staged communication."
@@ -1042,52 +1206,21 @@ class MPMesh{
 
       timer.reset();
 
-      // ---- Unpack: ONE kernel over all neighbors' recv entities at once ----
-      if(cudaAwareCache.totalRecvCount > 0){
-        auto recvIDGPU = cudaAwareCache.recvIDGPU.view();
-        auto recvDataGPU = cudaAwareCache.recvDataGPU.view();
-
-        if(op == 0){
-          Kokkos::parallel_for(
-              "halo add cached cuda-aware mpi batched",
-              cudaAwareCache.totalRecvCount,
-              KOKKOS_LAMBDA(const int i){
-                const int vertex = recvIDGPU(i);
-
-                for(int k = 0; k < numEntries; k++){
-#ifdef POLYMPO_ASSUME_UNIQUE_HALO_CONTRIBS
-                  meshField(vertex, k) +=
-                      recvDataGPU(i * numEntries + k);
-#else
-                  Kokkos::atomic_add(
-                      &meshField(vertex, k),
-                      recvDataGPU(i * numEntries + k));
-#endif
-                }
-              });
-        }
-        else{
-          Kokkos::parallel_for(
-              "halo assign cached cuda-aware mpi batched",
-              cudaAwareCache.totalRecvCount,
-              KOKKOS_LAMBDA(const int i){
-                const int vertex = recvIDGPU(i);
-
-                for(int k = 0; k < numEntries; k++){
-                  meshField(vertex, k) =
-                      recvDataGPU(i * numEntries + k);
-                }
-              });
-        }
-      }
-
+      // Final fence: guarantees every unpack kernel launched inside the
+      // MPI_Waitany loop above has actually finished before meshField is
+      // used downstream. When neighbor arrivals are staggered, most of that
+      // unpack work already finished while we were still waiting on
+      // stragglers, so in that case this fence's cost is close to just the
+      // last-arriving neighbor's unpack kernel rather than the sum of all
+      // of them. If arrivals are tightly bunched instead, expect this to
+      // look a lot like the old post-Waitall unpack cost.
       Kokkos::fence();
 
       if(mpiDiagnostics){
           pumipic::RecordTime(label + "_MPI_Diagnostics_Contribution_m" + std::to_string(mode) + "_e" +
           std::to_string(numEntries) + "_rank" + std::to_string(self), timer.seconds());
     }
-  
+
 
     }
 

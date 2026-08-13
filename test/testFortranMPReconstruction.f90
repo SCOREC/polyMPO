@@ -120,7 +120,7 @@ program main
   call polympo_setMPPositions(mpMesh,3,numMPs,c_loc(mpPosition))
 
   call polympo_setMPMass(mpMesh,1,numMPs,c_loc(mpMass))
-  call polympo_setMPVel(mpMesh,2,numMPs,c_loc(mpVel))
+  call polympo_setMPVel(mpMesh,2,numMPs,c_loc(mpVel), 6)
 
   !First Order reconstruction done before 0th order reconstruction as calculation of coefficients will
   !fill the MpBasis slice
@@ -130,7 +130,7 @@ program main
   !call polympo_setReconstructionOfVel(mpMesh, 1, polympo_getMeshFVtxType())
   call polympo_applyReconstruction(mpMesh)
   call polympo_getMeshVtxMass(mpMesh,nVertices,c_loc(meshVtxMass1))
-  call polympo_getMeshVtxVel(mpMesh, nVertices, c_loc(meshVtxVelu), c_loc(meshVtxVelv))
+  call polympo_getMeshVtxVel(mpMesh, nVertices, c_loc(meshVtxVelu), c_loc(meshVtxVelv), 5)
   do i = 1, nVertices
     call assert(meshVtxMass1(i) < TEST_VAL+TOLERANCE1 .and. meshVtxMass1(i) > TEST_VAL-TOLERANCE1, "Error: wrong vtx mass order 1")
     !call assert(meshVtxVelu(i)  < TEST_VAL+TOLERANCE1 .and. meshVtxVelu(i)  > TEST_VAL-TOLERANCE1, "Error: wrong vtx velU order 1")

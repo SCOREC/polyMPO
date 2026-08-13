@@ -103,19 +103,19 @@ void MPMesh::reconstruct_coeff_full(){
   MPI_Comm_size(comm, &numProcsTot);
 
   Kokkos::fence();      //B0: drain any device work left from the previous phase
-  MPI_Barrier(comm);    //B0: align all ranks so this timed region starts at the same instant
+  //MPI_Barrier(comm);    //B0: align all ranks so this timed region starts at the same instant
 
   Kokkos::Timer totalTimer;
   Kokkos::Timer phaseTimer;
 
   double preCommunicationComputeTime       = 0.0;
-  double preCommunicationComputeImbalance  = 0.0;
+  //double preCommunicationComputeImbalance  = 0.0;
   double gatherCommunicationTime           = 0.0;
-  double gatherCommunicationImbalance      = 0.0;
+  //double gatherCommunicationImbalance      = 0.0;
   double scatterCommunicationTime          = 0.0;
-  double scatterCommunicationImbalance     = 0.0;
+  //double scatterCommunicationImbalance     = 0.0;
   double postCommunicationComputeTime      = 0.0;
-  double postCommunicationComputeImbalance = 0.0;
+  //double postCommunicationComputeImbalance = 0.0;
 
   static int coeff_count=0;
   if(!self) std::cout<<"===="<<__FUNCTION__<<" "<<coeff_count<<"===="<<std::endl;
@@ -171,8 +171,8 @@ void MPMesh::reconstruct_coeff_full(){
   Kokkos::fence();
 
   preCommunicationComputeTime = phaseTimer.seconds();          //T_before: pure local compute time, no waiting
-  MPI_Barrier(comm);                                            //B1: fast ranks wait here for the slowest rank
-  preCommunicationComputeImbalance = phaseTimer.seconds() - preCommunicationComputeTime;
+  //MPI_Barrier(comm);                                            //B1: fast ranks wait here for the slowest rank
+  //preCommunicationComputeImbalance = phaseTimer.seconds() - preCommunicationComputeTime;
 
   //Mode 0 is Gather:  Halos Send to Owners
   //Mode 1 is Scatter: Owners Send to Halos
@@ -188,8 +188,8 @@ void MPMesh::reconstruct_coeff_full(){
     
     Kokkos::fence();
     gatherCommunicationTime = phaseTimer.seconds();             //T_before
-    MPI_Barrier(comm);                                            //B2: fast ranks wait here for the slowest rank
-    gatherCommunicationImbalance = phaseTimer.seconds() - gatherCommunicationTime;
+    //MPI_Barrier(comm);                                            //B2: fast ranks wait here for the slowest rank
+    //gatherCommunicationImbalance = phaseTimer.seconds() - gatherCommunicationTime;
 
     mode=1; 
     op=1;
@@ -198,8 +198,8 @@ void MPMesh::reconstruct_coeff_full(){
     communicate_and_take_halo_contributions1_improved(vtxMatrices, numVertices, numEntriesMatrix, mode, op, "Reconstruction_Scatter");
     Kokkos::fence();
     scatterCommunicationTime = phaseTimer.seconds();            //T_before
-    MPI_Barrier(comm);                                            //B3: fast ranks wait here for the slowest rank
-    scatterCommunicationImbalance = phaseTimer.seconds() - scatterCommunicationTime;
+    //MPI_Barrier(comm);                                            //B3: fast ranks wait here for the slowest rank
+    //scatterCommunicationImbalance = phaseTimer.seconds() - scatterCommunicationTime;
   }
   
   phaseTimer.reset();
@@ -214,21 +214,21 @@ void MPMesh::reconstruct_coeff_full(){
   invertMatrix(vtxMatrices, radius);
   Kokkos::fence();
   postCommunicationComputeTime = phaseTimer.seconds();          //T_before
-  MPI_Barrier(comm);                                              //B4: fast ranks wait here for the slowest rank
-  postCommunicationComputeImbalance = phaseTimer.seconds() - postCommunicationComputeTime;
+  //MPI_Barrier(comm);                                              //B4: fast ranks wait here for the slowest rank
+  //postCommunicationComputeImbalance = phaseTimer.seconds() - postCommunicationComputeTime;
 
   const double computeTime = preCommunicationComputeTime + postCommunicationComputeTime;
   const double communicationTime = gatherCommunicationTime + scatterCommunicationTime;
   const double totalTime = totalTimer.seconds();
 
   pumipic::RecordTime("Reconstruction_PreComm_Compute_" + std::to_string(self), preCommunicationComputeTime);
-  pumipic::RecordTime("Reconstruction_PreComm_Compute_Imbalance_" + std::to_string(self), preCommunicationComputeImbalance);
+  //pumipic::RecordTime("Reconstruction_PreComm_Compute_Imbalance_" + std::to_string(self), preCommunicationComputeImbalance);
   pumipic::RecordTime("Reconstruction_Gather_Communication_" + std::to_string(self),gatherCommunicationTime);
-  pumipic::RecordTime("Reconstruction_Gather_Communication_Imbalance_" + std::to_string(self),gatherCommunicationImbalance);
+  //pumipic::RecordTime("Reconstruction_Gather_Communication_Imbalance_" + std::to_string(self),gatherCommunicationImbalance);
   pumipic::RecordTime("Reconstruction_Scatter_Communication_" + std::to_string(self), scatterCommunicationTime);
-  pumipic::RecordTime("Reconstruction_Scatter_Communication_Imbalance_" + std::to_string(self), scatterCommunicationImbalance);
+  //pumipic::RecordTime("Reconstruction_Scatter_Communication_Imbalance_" + std::to_string(self), scatterCommunicationImbalance);
   pumipic::RecordTime("Reconstruction_PostComm_Compute_" + std::to_string(self), postCommunicationComputeTime);
-  pumipic::RecordTime("Reconstruction_PostComm_Compute_Imbalance_" + std::to_string(self), postCommunicationComputeImbalance);
+  //pumipic::RecordTime("Reconstruction_PostComm_Compute_Imbalance_" + std::to_string(self), postCommunicationComputeImbalance);
   pumipic::RecordTime("Reconstruction_Compute_Total_" + std::to_string(self), computeTime);
   pumipic::RecordTime("Reconstruction_Communication_Total_" + std::to_string(self), communicationTime);
   pumipic::RecordTime("Reconstruction_Total_" + std::to_string(self), totalTime);
@@ -383,7 +383,7 @@ void MPMesh::assemblyVtx1(){
   MPI_Comm_size(comm, &numProcsTot);
 
   Kokkos::fence();      //B0: drain any device work left from the previous phase
-  MPI_Barrier(comm);    //B0: align all ranks so this timed region starts at the same instant
+  //MPI_Barrier(comm);    //B0: align all ranks so this timed region starts at the same instant
 
   Kokkos::Timer totalTimer;
   Kokkos::Timer computeTimer;
@@ -457,9 +457,9 @@ void MPMesh::assemblyVtx1(){
   Kokkos::fence();
   const double computeTime = computeTimer.seconds();          //T_before: pure local compute time, no waiting
 
-  MPI_Barrier(comm);                                            //B1: fast ranks wait here for the slowest rank
-  const double computeTimeSync = computeTimer.seconds();
-  const double computeImbalance = computeTimeSync - computeTime;
+  //MPI_Barrier(comm);                                            //B1: fast ranks wait here for the slowest rank
+  //const double computeTimeSync = computeTimer.seconds();
+  //const double computeImbalance = computeTimeSync - computeTime;
 
   Kokkos::Timer communicationTimer;
 
@@ -470,30 +470,20 @@ void MPMesh::assemblyVtx1(){
 
   const double communicationTime = communicationTimer.seconds();  //T_before
 
-  MPI_Barrier(comm);                                            //B2: fast ranks wait here for the slowest rank
-  const double communicationTimeSync = communicationTimer.seconds();
-  const double communicationImbalance = communicationTimeSync - communicationTime;
+  //MPI_Barrier(comm);                                            //B2: fast ranks wait here for the slowest rank
+  //const double communicationTimeSync = communicationTimer.seconds();
+  //const double communicationImbalance = communicationTimeSync - communicationTime;
 
   const double totalTime = totalTimer.seconds();
   
   if constexpr (meshFieldIndex == MeshF_Vel) {
-    pumipic::RecordTime(
-        "Velocity_Reconstruction_Compute_" + std::to_string(self),
-        computeTime);
-    pumipic::RecordTime(
-        "Velocity_Reconstruction_Compute_Imbalance_" + std::to_string(self),
-        computeImbalance);
+    pumipic::RecordTime("Velocity_Reconstruction_Compute_" + std::to_string(self), computeTime);
+    //pumipic::RecordTime("Velocity_Reconstruction_Compute_Imbalance_" + std::to_string(self),computeImbalance);
 
-    pumipic::RecordTime(
-        "Velocity_Reconstruction_Communication_" + std::to_string(self),
-        communicationTime);
-    pumipic::RecordTime(
-        "Velocity_Reconstruction_Communication_Imbalance_" + std::to_string(self),
-        communicationImbalance);
+    pumipic::RecordTime("Velocity_Reconstruction_Communication_" + std::to_string(self),communicationTime);
+    //pumipic::RecordTime("Velocity_Reconstruction_Communication_Imbalance_" + std::to_string(self),communicationImbalance);
 
-    pumipic::RecordTime(
-        "Velocity_Reconstruction_Total_" + std::to_string(self),
-        totalTime);
+    pumipic::RecordTime("Velocity_Reconstruction_Total_" + std::to_string(self),totalTime);
 
 }
 

@@ -340,12 +340,13 @@ module polympo
   !> @param numMPs(in) number of the MPs
   !> @param array(in) input MP velocity 1D array (numMPs*2)
   !---------------------------------------------------------------------------
-  subroutine polympo_setMPVel(mpMesh, nComps, numMPs, array) &
+  subroutine polympo_setMPVel(mpMesh, nComps, numMPs, array, callSiteId) &
              bind(C, NAME='polympo_setMPVel_f')
     use :: iso_c_binding
     type(c_ptr), value :: mpMesh
     integer(c_int), value :: nComps, numMPs
     type(c_ptr), intent(in), value :: array
+    integer(c_int), value :: callSiteId
   end subroutine
 
   !---------------------------------------------------------------------------
@@ -818,12 +819,13 @@ module polympo
   !> @param vVel(in/out) output vertices v-component velocity
   !>        1D array (numVtx), allocated by user
   !---------------------------------------------------------------------------
-  subroutine polympo_getMeshVtxVel(mpMesh, nVertices, uVel, vVel) &
+  subroutine polympo_getMeshVtxVel(mpMesh, nVertices, uVel, vVel, callSiteId) &
              bind(C, NAME='polympo_getMeshVtxVel_f')
     use :: iso_c_binding
     type(c_ptr), value :: mpMesh
     integer(c_int), value :: nVertices
     type(c_ptr), value :: uVel, vVel
+    integer(c_int), value :: callSiteId
   end subroutine
 
   !---------------------------------------------------------------------------

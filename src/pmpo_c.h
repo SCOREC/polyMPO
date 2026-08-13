@@ -44,7 +44,7 @@ void polympo_getMPTgtRotLatLon_f(MPMesh_ptr p_mpmesh, const int nComps, const in
 //MP fields
 void polympo_setMPMass_f(MPMesh_ptr p_mpmesh, const int nComps, const int numMPs, const double* mpMassIn);
 void polympo_getMPMass_f(MPMesh_ptr p_mpmesh, const int nComps, const int numMPs, double* mpMassHost);
-void polympo_setMPVel_f(MPMesh_ptr p_mpmesh, const int nComps, const int numMPs, const double* mpVelIn);
+void polympo_setMPVel_f(MPMesh_ptr p_mpmesh, const int nComps, const int numMPs, const double* mpVelIn, const int callSiteId);
 void polympo_getMPVel_f(MPMesh_ptr p_mpmesh, const int nComps, const int numMPs, double* mpVelHost);
 void polympo_calculateMPStrainRate_f(MPMesh_ptr p_mpmesh);
 void polympo_setMPStrainRate_f(MPMesh_ptr p_mpmesh, const int nComps, const int numMPs, const double* mpStrainRateIn);
@@ -92,7 +92,7 @@ void polympo_setMeshVtxRotLat_f(MPMesh_ptr p_mpmesh, const int nVertices, const 
 void polympo_setMeshVtxRotLon_f(MPMesh_ptr p_mpmesh, const int nVertices, const double* longitude);
 void polympo_getMeshVtxRotLat_f(MPMesh_ptr p_mpmesh, const int nVertices, double* latitude);
 void polympo_setMeshVtxVel_f(MPMesh_ptr p_mpmesh, const int nVertices, const double* uVelocity, const double* vVelocity);
-void polympo_getMeshVtxVel_f(MPMesh_ptr p_mpmesh, const int nVertices, double* uVelocity, double* vVelocity);
+void polympo_getMeshVtxVel_f(MPMesh_ptr p_mpmesh, const int nVertices, double* uVelocity, double* vVelocity, const int callSiteId);
 void polympo_setMeshVtxMass_f(MPMesh_ptr p_mpmesh, const int nVertices, const double* vtxMass);
 void polympo_getMeshVtxMass_f(MPMesh_ptr p_mpmesh, const int nVertices, double* vtxMass);
 void polympo_setMeshElmMass_f(MPMesh_ptr p_mpmesh, const int nCells, const double* elmMass);

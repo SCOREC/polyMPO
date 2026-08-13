@@ -138,7 +138,13 @@ void polympo_createMPs_f(MPMesh_ptr p_mpmesh,
      new polyMPO::MaterialPoints(numElms, numActiveMPs, mpsPerElm_d, active_mp2Elm_d, active_mpIDs_d, elm2global);
 
   auto p_MPs = ((polyMPO::MPMesh*)p_mpmesh)->p_MPs;
-  p_MPs->setElmIDoffset(offset);  
+  p_MPs->setElmIDoffset(offset);
+
+  int self;
+  MPI_Comm_rank(p_MPs->getMPIComm(), &self);
+  std::cout << "[RankSummary] Rank=" << self
+            << " MaterialPoints=" << p_MPs->getCount()
+            << std::endl;  
 }
 
 void polympo_startRebuildMPs_f(MPMesh_ptr p_mpmesh,
@@ -567,7 +573,7 @@ void polympo_getMPMass_f(MPMesh_ptr p_mpmesh, const int nComps, const int numMPs
   pumipic::RecordTime("PolyMPO_getMPMass", timer.seconds());
 }
 
-void polympo_setMPVel_f(MPMesh_ptr p_mpmesh, const int nComps, const int numMPs, const double* mpVelIn) {
+void polympo_setMPVel_f(MPMesh_ptr p_mpmesh, const int nComps, const int numMPs, const double* mpVelIn, const int callSiteId) {
   Kokkos::Timer timer;
   checkMPMeshValid(p_mpmesh);
   auto p_MPs = ((polyMPO::MPMesh*)p_mpmesh)->p_MPs;
@@ -590,7 +596,7 @@ void polympo_setMPVel_f(MPMesh_ptr p_mpmesh, const int nComps, const int numMPs,
     }
   };
   p_MPs->parallel_for(setMPVel, "setMPVel");
-  pumipic::RecordTime("PolyMPO_setMPVel" + std::to_string(self),timer.seconds());
+  pumipic::RecordTime("PolyMPO_setMPVel_site" + std::to_string(callSiteId) + "_" + std::to_string(self), timer.seconds());
 }
 
 void polympo_getMPVel_f(MPMesh_ptr p_mpmesh, const int nComps, const int numMPs, double* mpVelHost) {
@@ -1247,7 +1253,7 @@ void polympo_setMeshVtxVel_f(MPMesh_ptr p_mpmesh, const int nVertices, const dou
   Kokkos::deep_copy(coordsArray, h_coordsArray);
 }
 
-void polympo_getMeshVtxVel_f(MPMesh_ptr p_mpmesh, const int nVertices, double* uVelOut, double* vVelOut){
+void polympo_getMeshVtxVel_f(MPMesh_ptr p_mpmesh, const int nVertices, double* uVelOut, double* vVelOut, const int callSiteId){
   Kokkos::Timer timer;
   //check mpMesh is valid
   checkMPMeshValid(p_mpmesh);
@@ -1267,7 +1273,7 @@ void polympo_getMeshVtxVel_f(MPMesh_ptr p_mpmesh, const int nVertices, double* u
     uVelOut[i] = h_coordsArray(i,0);
     vVelOut[i] = h_coordsArray(i,1);
   }
-  pumipic::RecordTime("PolyMPO_getMeshVtxVel" + std::to_string(self), timer.seconds());
+  pumipic::RecordTime("PolyMPO_getMeshVtxVel_site" + std::to_string(callSiteId) + "_" + std::to_string(self), timer.seconds());
 }
 
 void polympo_setMeshVtxMass_f(MPMesh_ptr p_mpmesh, const int nVertices, const double* vtxMass){

@@ -105,7 +105,7 @@ module advectionTests
     mpVel = TEST_VAL
 
     call polympo_setMPMass(mpMesh,1,numMPs,c_loc(mpMass))
-    call polympo_setMPVel(mpMesh,2,numMPs,c_loc(mpVel))
+    call polympo_setMPVel(mpMesh,2,numMPs,c_loc(mpVel), 7)
 
     ! Although this test just does 0th order reconstruction testing, and just needs the BasisSlice,
     ! calculating the coefficeints too as that will involve calculating the Basis Slice
@@ -169,7 +169,7 @@ module advectionTests
       call polympo_setMPPositions(mpMesh,3,numMPs,c_loc(mpPosition))
       call polympo_setMeshVtxOnSurfDispIncr(mpMesh,nCompsDisp,nVertices,c_loc(dispIncr))
       call polympo_setMPMass(mpMesh,1,numMPs,c_loc(mpMass))
-      call polympo_setMPVel(mpMesh,2,numMPs,c_loc(mpVel))
+      call polympo_setMPVel(mpMesh,2,numMPs,c_loc(mpVel), 8)
       call polympo_setMeshVtxCoords(mpMesh, nVertices, c_loc(xVertex), c_loc(yVertex), c_loc(zVertex))
       call polympo_setMeshVtxRotLat(mpMesh,nVertices,c_loc(latVertex))
 
@@ -177,7 +177,7 @@ module advectionTests
       call polympo_getMPVel(mpMesh, 2, numMPs, c_loc(mpVel))
       call polympo_getMeshElmMass(mpMesh,nCells,c_loc(meshElmMass))
       call polympo_getMeshVtxMass(mpMesh,nVertices,c_loc(meshVtxMass))
-      call polympo_getMeshVtxVel(mpMesh,nVertices, c_loc(xVertex),c_loc(yVertex))
+      call polympo_getMeshVtxVel(mpMesh,nVertices, c_loc(xVertex),c_loc(yVertex), 6)
     end do
 
     deallocate(dispIncr)

@@ -138,7 +138,13 @@ void polympo_createMPs_f(MPMesh_ptr p_mpmesh,
      new polyMPO::MaterialPoints(numElms, numActiveMPs, mpsPerElm_d, active_mp2Elm_d, active_mpIDs_d, elm2global);
 
   auto p_MPs = ((polyMPO::MPMesh*)p_mpmesh)->p_MPs;
-  p_MPs->setElmIDoffset(offset);  
+  p_MPs->setElmIDoffset(offset);
+
+  int self;
+  MPI_Comm_rank(p_MPs->getMPIComm(), &self);
+  std::cout << "[RankSummary] Rank=" << self
+            << " MaterialPoints=" << p_MPs->getCount()
+            << std::endl;  
 }
 
 void polympo_startRebuildMPs_f(MPMesh_ptr p_mpmesh,
@@ -567,10 +573,13 @@ void polympo_getMPMass_f(MPMesh_ptr p_mpmesh, const int nComps, const int numMPs
   pumipic::RecordTime("PolyMPO_getMPMass", timer.seconds());
 }
 
-void polympo_setMPVel_f(MPMesh_ptr p_mpmesh, const int nComps, const int numMPs, const double* mpVelIn) {
+void polympo_setMPVel_f(MPMesh_ptr p_mpmesh, const int nComps, const int numMPs, const double* mpVelIn, const int callSiteId) {
   Kokkos::Timer timer;
   checkMPMeshValid(p_mpmesh);
   auto p_MPs = ((polyMPO::MPMesh*)p_mpmesh)->p_MPs;
+  int self;
+  MPI_Comm comm = p_MPs->getMPIComm();
+  MPI_Comm_rank(comm, &self);
   PMT_ALWAYS_ASSERT(nComps == vec2d_nEntries);
   PMT_ALWAYS_ASSERT(numMPs >= p_MPs->getCount());
   //PMT_ALWAYS_ASSERT(numMPs >= p_MPs->getMaxAppID());
@@ -587,7 +596,7 @@ void polympo_setMPVel_f(MPMesh_ptr p_mpmesh, const int nComps, const int numMPs,
     }
   };
   p_MPs->parallel_for(setMPVel, "setMPVel");
-  pumipic::RecordTime("PolyMPO_setMPVel", timer.seconds());
+  pumipic::RecordTime("PolyMPO_setMPVel_site" + std::to_string(callSiteId) + "_" + std::to_string(self), timer.seconds());
 }
 
 void polympo_getMPVel_f(MPMesh_ptr p_mpmesh, const int nComps, const int numMPs, double* mpVelHost) {
@@ -728,7 +737,6 @@ void polympo_getMPStress_f(MPMesh_ptr p_mpmesh, const int nComps, const int numM
 void polympo_setAreaMP_f(MPMesh_ptr p_mpmesh, const int nComps, const int numMPs, double* areaMPHost){
   Kokkos::Timer timer;
   checkMPMeshValid(p_mpmesh);
-  
   auto p_MPs = ((polyMPO::MPMesh*)p_mpmesh)->p_MPs;
   //Rank information
   int self;
@@ -754,10 +762,34 @@ void polympo_setAreaMP_f(MPMesh_ptr p_mpmesh, const int nComps, const int numMPs
   pumipic::RecordTime("PolyMPO_setMPArea" + std::to_string(self), timer.seconds());
 }
 
+void polympo_getAreaMP_f(MPMesh_ptr p_mpmesh, const int nComps, const int numMPs, double* areaMPHost) {
+  Kokkos::Timer timer;
+  checkMPMeshValid(p_mpmesh);
+  auto p_MPs = ((polyMPO::MPMesh*)p_mpmesh)->p_MPs;
+
+  PMT_ALWAYS_ASSERT(nComps == 1);
+  PMT_ALWAYS_ASSERT(numMPs >= p_MPs->getCount());
+
+  auto mpArea = p_MPs->getData<polyMPO::MPF_Area>();
+  auto mpAppID = p_MPs->getData<polyMPO::MPF_MP_APP_ID>();
+
+  Kokkos::View<double**> mpAreaCopy("mpAreaCopy", nComps, numMPs);
+  auto getMPArea = PS_LAMBDA(const int& elm, const int& mp, const int& mask){
+    if(mask){
+      mpAreaCopy(0,mpAppID(mp)) = mpArea(mp,0);
+    }
+  };
+  p_MPs->parallel_for(getMPArea, "getMPArea");
+  kkDbl2dViewHostU arrayHost(areaMPHost, nComps, numMPs);
+  Kokkos::deep_copy(arrayHost, mpAreaCopy);
+  pumipic::RecordTime("PolyMPO_getMPArea", timer.seconds());
+}
+
+
 void polympo_setIcePressureMP_f(MPMesh_ptr p_mpmesh, const int nComps, const int numMPs, double* icePressureMPHost){
   Kokkos::Timer timer;
   checkMPMeshValid(p_mpmesh);
-  
+
   auto p_MPs = ((polyMPO::MPMesh*)p_mpmesh)->p_MPs;
   //Rank information
   int self;
@@ -781,6 +813,73 @@ void polympo_setIcePressureMP_f(MPMesh_ptr p_mpmesh, const int nComps, const int
   };
   p_MPs->parallel_for(setMPIcePressure, "setIcePressure");
   pumipic::RecordTime("PolyMPO_setIcePressure" + std::to_string(self), timer.seconds());
+}
+
+void polympo_setOceanVelocity_f(MPMesh_ptr p_mpmesh, const int nComps, const int nVertices, const double* uArray, const double* vArray){
+  checkMPMeshValid(p_mpmesh);
+  auto p_mesh = ((polyMPO::MPMesh*)p_mpmesh)->p_mesh;
+
+  PMT_ALWAYS_ASSERT(nComps == vec2d_nEntries);
+  PMT_ALWAYS_ASSERT(p_mesh->getNumVertices() == nVertices);
+  //copy the host array to the device
+  auto oceanVelocity = p_mesh->getMeshField<polyMPO::MeshF_OceanVelocity>();
+  auto h_oceanVelocity = Kokkos::create_mirror_view(oceanVelocity);
+  for(int i=0; i<nVertices; i++){
+    h_oceanVelocity(i, 0) = uArray[i];
+    h_oceanVelocity(i, 1) = vArray[i];
+  }
+  Kokkos::deep_copy(oceanVelocity, h_oceanVelocity);
+}
+
+void polympo_subcycle_prep_arrays_f(MPMesh_ptr p_mpmesh){
+  checkMPMeshValid(p_mpmesh);
+  auto p_mesh = ((polyMPO::MPMesh*)p_mpmesh)->p_mesh;
+  int numVerticesOwned = p_mesh->getNumVerticesOwned();
+
+  auto solveVelocity = p_mesh->getMeshField<polyMPO::MeshF_SolveVelocity>();
+  auto velField = p_mesh->getMeshField<polyMPO::MeshF_Vel>();
+  auto stress_divUV = p_mesh->getMeshField<polyMPO::MeshF_StressDivergence>();
+  auto oceanStress = p_mesh->getMeshField<polyMPO::MeshF_OceanStress>();
+
+  Kokkos::parallel_for("prep_arrays", numVerticesOwned, KOKKOS_LAMBDA(const int vtx){
+    if(solveVelocity(vtx)==0){
+      for (int k=0; k<2; k ++){
+        velField(vtx, k) = 0.0;
+        stress_divUV(vtx, k) = 0.0;
+        oceanStress(vtx, k) = 0.0;
+      }
+    }
+  });
+}
+
+void polympo_setReplacementPressureMP_f(MPMesh_ptr p_mpmesh, const int nComps, const int numMPs, double* replacementPressureMPHost){
+  Kokkos::Timer timer;
+  checkMPMeshValid(p_mpmesh);
+
+  auto p_MPs = ((polyMPO::MPMesh*)p_mpmesh)->p_MPs;
+  //Rank information
+  int self;
+  MPI_Comm comm = p_MPs->getMPIComm();
+  MPI_Comm_rank(comm, &self);
+  //Asserts
+  PMT_ALWAYS_ASSERT(nComps == 1);
+  PMT_ALWAYS_ASSERT(numMPs >= p_MPs->getCount());
+  //MP Data
+  auto mpReplacementPressure = p_MPs->getData<polyMPO::MPF_ReplacementPressure>();
+  auto mpAppID = p_MPs->getData<polyMPO::MPF_MP_APP_ID>();
+
+  //Copy to device
+  kkViewHostU<const double**> mpRepPressure_h(replacementPressureMPHost, nComps, numMPs);
+  Kokkos::View<double**> mpRepPressure_d("mpRepPressureDevice", nComps, numMPs);
+  Kokkos::deep_copy(mpRepPressure_d, mpRepPressure_h);
+  //Set in PS
+  auto setMPRepPressure = PS_LAMBDA(const int& elm, const int& mp, const int& mask){
+    if(mask){
+      mpReplacementPressure(mp,0) = mpRepPressure_d(0, mpAppID(mp));
+    }
+  };
+  p_MPs->parallel_for(setMPRepPressure, "setMPRepPressure");
+  pumipic::RecordTime("PolyMPO_setReplacementPressure" + std::to_string(self), timer.seconds());
 }
 
 void polympo_getReplacementPressureMP_f(MPMesh_ptr p_mpmesh, const int nComps, const int numMPs, double* replacementPressureMPHost){
@@ -1117,6 +1216,25 @@ void polympo_getMeshVtxRotLat_f(MPMesh_ptr p_mpmesh, const int nVertices, double
   }
 }
 
+void polympo_setMeshVtxRotLon_f(MPMesh_ptr p_mpmesh, const int nVertices, const double* longitude){
+  Kokkos::Timer timer;
+  //chech validity
+  checkMPMeshValid(p_mpmesh);
+  auto p_mesh = ((polyMPO::MPMesh*)p_mpmesh)->p_mesh;
+
+  //check the size
+  PMT_ALWAYS_ASSERT(p_mesh->getNumVertices()==nVertices);
+
+  //copy the host array to the device
+  auto coordsArray = p_mesh->getMeshField<polyMPO::MeshF_VtxRotLon>();
+  auto h_coordsArray = Kokkos::create_mirror_view(coordsArray);
+  for(int i=0; i<nVertices; i++){
+    h_coordsArray(i) = longitude[i];
+  }
+  Kokkos::deep_copy(coordsArray, h_coordsArray);
+  pumipic::RecordTime("PolyMPO_setMeshVtxRotLon", timer.seconds());
+}
+
 void polympo_setMeshVtxVel_f(MPMesh_ptr p_mpmesh, const int nVertices, const double* uVelIn, const double* vVelIn){
   //check mpMesh is valid
   checkMPMeshValid(p_mpmesh);
@@ -1135,11 +1253,15 @@ void polympo_setMeshVtxVel_f(MPMesh_ptr p_mpmesh, const int nVertices, const dou
   Kokkos::deep_copy(coordsArray, h_coordsArray);
 }
 
-void polympo_getMeshVtxVel_f(MPMesh_ptr p_mpmesh, const int nVertices, double* uVelOut, double* vVelOut){
+void polympo_getMeshVtxVel_f(MPMesh_ptr p_mpmesh, const int nVertices, double* uVelOut, double* vVelOut, const int callSiteId){
   Kokkos::Timer timer;
   //check mpMesh is valid
   checkMPMeshValid(p_mpmesh);
   auto p_mesh = ((polyMPO::MPMesh*)p_mpmesh)->p_mesh;
+  auto p_MPs = ((polyMPO::MPMesh*)p_mpmesh)->p_MPs;
+  int self;
+  MPI_Comm comm = p_MPs->getMPIComm();
+  MPI_Comm_rank(comm, &self);
 
   //check the size
   PMT_ALWAYS_ASSERT(p_mesh->getNumVertices() == nVertices); 
@@ -1151,7 +1273,7 @@ void polympo_getMeshVtxVel_f(MPMesh_ptr p_mpmesh, const int nVertices, double* u
     uVelOut[i] = h_coordsArray(i,0);
     vVelOut[i] = h_coordsArray(i,1);
   }
-  pumipic::RecordTime("PolyMPO_getMeshVtxVel", timer.seconds());
+  pumipic::RecordTime("PolyMPO_getMeshVtxVel_site" + std::to_string(callSiteId) + "_" + std::to_string(self), timer.seconds());
 }
 
 void polympo_setMeshVtxMass_f(MPMesh_ptr p_mpmesh, const int nVertices, const double* vtxMass){
@@ -1448,10 +1570,32 @@ void polympo_setSolveVelocityMesh_f(MPMesh_ptr p_mpmesh, const int nVertices, in
   Kokkos::deep_copy(solveVelocity, h_solveVelocity);
 }
 
+void polympo_setIceAreaVertex_f(MPMesh_ptr p_mpmesh, const int nVertices, double* array){
+  //chech validity
+  checkMPMeshValid(p_mpmesh);
+  auto p_mesh = ((polyMPO::MPMesh*)p_mpmesh)->p_mesh;
+
+  PMT_ALWAYS_ASSERT(p_mesh->getNumVertices()==nVertices);
+  //copy the host array to the device
+  auto iceArea = p_mesh->getMeshField<polyMPO::MeshF_VtxMass>();
+  auto h_iceArea = Kokkos::create_mirror_view(iceArea);
+  for(int i=0; i<nVertices; i++)
+    h_iceArea(i, 0) = array[i];
+  Kokkos::deep_copy(iceArea, h_iceArea);
+}
+
 void polympo_calculateStressDivergence_f(MPMesh_ptr p_mpmesh){
   //chech validity
   checkMPMeshValid(p_mpmesh);
+  Kokkos::Timer wrapperTimer;
+  auto p_MPs = ((polyMPO::MPMesh*)p_mpmesh)->p_MPs;
+  int self;
+  MPI_Comm comm = p_MPs->getMPIComm();
+  MPI_Comm_rank(comm, &self);
+
   ((polyMPO::MPMesh*)p_mpmesh) -> calculateStressDivergence();
+
+  pumipic::RecordTime("Wrapper_StressDivergence_Total_" + std::to_string(self), wrapperTimer.seconds());
 
  }
 
@@ -1570,6 +1714,11 @@ void polympo_set_oceanStressCoefficient_f(MPMesh_ptr p_mpmesh, const int nVertic
   Kokkos::deep_copy(oceanStressCoeff, h_oceanStressCoeff);
 }
 
+void polympo_calculate_oceanStressCoefficient_f(MPMesh_ptr p_mpmesh, const double configIceOceanDragCoeff){
+  auto p_mesh = ((polyMPO::MPMesh*)p_mpmesh)->p_mesh;
+  p_mesh->calcOceanStressCoeff(configIceOceanDragCoeff);
+}
+
 void polympo_velocity_grid_solve_f(MPMesh_ptr p_mpmesh){
   //Temporary grid Solve after calculateDivergence
   auto p_mesh = ((polyMPO::MPMesh*)p_mpmesh)->p_mesh;
@@ -1605,11 +1754,19 @@ void polympo_set_free_slip_bc_f(MPMesh_ptr p_mpmesh){
 }
 
 void polympo_set_halo_vel_from_owner_f(MPMesh_ptr p_mpmesh){
+  
+  int numProcsTot;
+  auto p_MPs = ((polyMPO::MPMesh*)p_mpmesh)->p_MPs;
+  MPI_Comm comm = p_MPs->getMPIComm();
+  MPI_Comm_size(comm, &numProcsTot);
+  if(numProcsTot == 1) return;
+
   auto mpMesh = ((polyMPO::MPMesh*)p_mpmesh);
   auto p_mesh = ((polyMPO::MPMesh*)p_mpmesh)->p_mesh;
   int numVertices = p_mesh->getNumVertices();
   auto vtxFieldVel = p_mesh->getMeshField<polyMPO::MeshF_Vel>();
-  mpMesh->communicate_and_take_halo_contributions1(vtxFieldVel, numVertices, 2, 1, 1); 
+
+  mpMesh->communicate_and_take_halo_contributions1_improved(vtxFieldVel, numVertices, 2, 1, 1, "halo_vel_from_owner"); 
 }
 
 //Advection Calcualtions
@@ -1688,7 +1845,14 @@ void polympo_applyReconstruction_f(MPMesh_ptr p_mpmesh){
 void polympo_reconstruct_coeff_with_MPI_f(MPMesh_ptr p_mpmesh){
   checkMPMeshValid(p_mpmesh);
   auto mpmesh = ((polyMPO::MPMesh*)p_mpmesh);
+  Kokkos::Timer wrapperTimer;
+  int self;
+  MPI_Comm comm = mpmesh->p_MPs->getMPIComm();
+  MPI_Comm_rank(comm, &self);
+
   mpmesh->reconstruct_coeff_full();
+
+  pumipic::RecordTime("Wrapper_ReconstructCoeff_Total_" + std::to_string(self), wrapperTimer.seconds());
 }
 
 void polympo_reconstruct_iceArea_with_MPI_f(MPMesh_ptr p_mpmesh){
@@ -1700,7 +1864,14 @@ void polympo_reconstruct_iceArea_with_MPI_f(MPMesh_ptr p_mpmesh){
 void polympo_reconstruct_velocity_with_MPI_f(MPMesh_ptr p_mpmesh){
   checkMPMeshValid(p_mpmesh);
   auto mpmesh = ((polyMPO::MPMesh*)p_mpmesh);
+  Kokkos::Timer wrapperTimer;
+  int self;
+  MPI_Comm comm = mpmesh->p_MPs->getMPIComm();
+  MPI_Comm_rank(comm, &self);
+
   mpmesh->assemblyVtx1<polyMPO::MeshF_Vel>();
+
+ pumipic::RecordTime("Wrapper_ReconstructVelocity_Total_" + std::to_string(self), wrapperTimer.seconds());
 }
 
 void polympo_init_deludelvDyn_f(MPMesh_ptr p_mpmesh){
@@ -1726,7 +1897,7 @@ void polympo_aggregate_deluDyn_f(MPMesh_ptr p_mpmesh){
 }
 
 void polympo_finalize_deludelvDyn_f(MPMesh_ptr p_mpmesh){
-  
+
   checkMPMeshValid(p_mpmesh);
   auto p_mesh = ((polyMPO::MPMesh*)p_mpmesh)->p_mesh;
 
@@ -1737,7 +1908,7 @@ void polympo_finalize_deludelvDyn_f(MPMesh_ptr p_mpmesh){
   auto vtxField = p_mesh->getMeshField<polyMPO::MeshF_OnSurfDispIncr>();
   auto vtxFieldVel      = p_mesh->getMeshField<polyMPO::MeshF_Vel>();
   auto vtxFieldVel_incr = p_mesh->getMeshField<polyMPO::MeshF_OnSurfVeloIncr>();
- 
+
   Kokkos::parallel_for("Finalize_increments", nVertices, KOKKOS_LAMBDA(const int vtx){
     vtxField(vtx, 0) = vtxField(vtx, 0) * elasticTimeStep;
     vtxField(vtx, 1) = vtxField(vtx, 1) * elasticTimeStep;

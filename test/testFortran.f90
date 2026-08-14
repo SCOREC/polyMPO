@@ -76,7 +76,7 @@ program main
         MParray(i,j) = (i-1)*numMPs + j
     end do
   end do
-  call polympo_setMPVel(mpMesh, numCompsVel, numMPs, c_loc(MParray))
+  call polympo_setMPVel(mpMesh, numCompsVel, numMPs, c_loc(MParray), 5)
   
   ! check MP Fields
   MParray = -1
@@ -134,7 +134,7 @@ program main
   call polympo_setMeshVtxVel(mpMesh, nverts, c_loc(xArray),c_loc(yArray))
   xArray = -1
   yArray = -1
-  call polympo_getMeshVtxVel(mpMesh, nverts, c_loc(xArray),c_loc(yArray))
+  call polympo_getMeshVtxVel(mpMesh, nverts, c_loc(xArray),c_loc(yArray), 4)
   do i = 1, nverts
     call assert((xArray(i) .eq. i+value1), "Assert MeshVel u-component Velocity Fail")
     call assert((yArray(i) .eq. value2-i), "Assert MeshVel v-component Velocity Fail")

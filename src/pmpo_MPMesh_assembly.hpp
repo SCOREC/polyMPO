@@ -175,25 +175,33 @@ void MPMesh::reconstruct_coeff_full(){
   }); 
   this->vtxMatrixMass = vtxMatrixMass_l;
 
-  invertMatrix(vtxMatrices, radius);
+  invertMatrix(vtxMatrices, radius, true);
 }
 
-void MPMesh::invertMatrix(const Kokkos::View<double**>& vtxMatrices, const double& radius){
+void MPMesh::invertMatrix(const Kokkos::View<double**>& vtxMatrices, const double& radius, bool vtxCoeffCalc){
   
   int nVertices = p_mesh->getNumVertices();
+  int nEntities = vtxMatrices.extent(0);
+
   auto vtxCoords = p_mesh->getMeshField<polyMPO::MeshF_VtxCoords>();
   auto dual_triangle_area = p_mesh->getMeshField<MeshF_DualTriangleArea>();
+
+  if(!vtxCoeffCalc){
+    vtxCoords = p_mesh->getMeshField<polyMPO::MeshF_ElmCenterXYZ>();
+    dual_triangle_area = p_mesh->getMeshField<polyMPO::MeshF_CellArea>();
+  }
+
   auto interiorVertex = p_mesh->getMeshField<MeshF_InteriorVertex>();
   bool isRotated = p_mesh->getRotatedFlag();
 
   double eps = 1e-7;
   double truncateFactor = 0.05;
 
-  Kokkos::View<double*[3][vec4d_nEntries]> VtxCoeffs("VtxCoeffs", nVertices);
+  Kokkos::View<double*[3][vec4d_nEntries]> VtxCoeffs("VtxCoeffs", nEntities);
   Kokkos::deep_copy(VtxCoeffs, 0.0);
   Kokkos::View<double*> nearAnEdge_l("nearAnEdge_l", nVertices);
   
-  Kokkos::parallel_for("invertMatrix", nVertices, KOKKOS_LAMBDA(const int vtx){
+  Kokkos::parallel_for("invertMatrix", nEntities, KOKKOS_LAMBDA(const int vtx){
     if(vtxMatrices(vtx, 0) < eps)
       return;
 
@@ -299,24 +307,33 @@ void MPMesh::invertMatrix(const Kokkos::View<double**>& vtxMatrices, const doubl
     VtxCoeffs(vtx, 2, 2) = invM2D[1] * rotateScaleM(1, 0) + invM2D[3] * rotateScaleM(1, 1) + invM2D[4] * rotateScaleM(1, 2);
     VtxCoeffs(vtx, 2, 3) = invM2D[1] * rotateScaleM(2, 0) + invM2D[3] * rotateScaleM(2, 1) + invM2D[4] * rotateScaleM(2, 2);
 
-    //Calculate a smmooth flag for if we are near a material edge (from MPAS)
-    double pMassGradNorm = vtxMatrices(vtx, 1) * vtxMatrices(vtx, 1) +  vtxMatrices(vtx, 2) * vtxMatrices(vtx, 2) +
+    double pMassGradNorm, ramp, massRamp;
+    if (vtxCoeffCalc){
+      //Calculate a smmooth flag for if we are near a material edge (from MPAS)
+      pMassGradNorm = vtxMatrices(vtx, 1) * vtxMatrices(vtx, 1) +  vtxMatrices(vtx, 2) * vtxMatrices(vtx, 2) +
                            vtxMatrices(vtx, 3) * vtxMatrices(vtx, 3);
-    pMassGradNorm = (sqrt(pMassGradNorm) / vtx_area_sqrt) / Kokkos::max(vtxMatrices(vtx, 0), 1e-4);
+      pMassGradNorm = (sqrt(pMassGradNorm) / vtx_area_sqrt) / Kokkos::max(vtxMatrices(vtx, 0), 1e-4);
 
-    double ramp = 2.2 - 10.0 * pMassGradNorm;
-    ramp = ramp < 0.0 ? 0.0 : ramp;
-    ramp = ramp > 1.0 ? 1.0 : ramp;
+      ramp = 2.2 - 10.0 * pMassGradNorm;
+      ramp = ramp < 0.0 ? 0.0 : ramp;
+      ramp = ramp > 1.0 ? 1.0 : ramp;
 
-    double massRamp = 4.0 * (vtxMatrices(vtx, 0) - 1.0);
-    massRamp = massRamp < 0.0 ? 0.0 : massRamp;
-    massRamp = massRamp > 1.0 ? 1.0 : massRamp;
+      massRamp = 4.0 * (vtxMatrices(vtx, 0) - 1.0);
+      massRamp = massRamp < 0.0 ? 0.0 : massRamp;
+      massRamp = massRamp > 1.0 ? 1.0 : massRamp;
 
-    ramp *= massRamp;
-    nearAnEdge_l(vtx) = (interiorVertex(vtx) == 1) ? ramp : 0;
+      ramp *= massRamp;
+      nearAnEdge_l(vtx) = (interiorVertex(vtx) == 1) ? ramp : 0;
+    }
   });
-  this->precomputedVtxCoeffs_new = VtxCoeffs;
-  this->nearAnEdge = nearAnEdge_l;
+
+  if(vtxCoeffCalc){
+    this->precomputedVtxCoeffs_new = VtxCoeffs;
+    this->nearAnEdge = nearAnEdge_l;
+  }
+  else{
+    this->precomputedElmCoeffs_new = VtxCoeffs; 
+  }
 }
 
 template <MeshFieldIndex meshFieldIndex>

@@ -22,6 +22,7 @@ enum MeshFieldIndex{
     MeshF_VtxRotLon,
     MeshF_ElmCenterXYZ,
     MeshF_DualTriangleArea,
+    MeshF_CellArea,
     MeshF_Vel,
     MeshF_VtxMass,
     MeshF_ElmMass,
@@ -43,7 +44,8 @@ enum MeshFieldIndex{
     MeshF_TotalMassFVtx,
     MeshF_OceanStress,
     MeshF_OceanStressCoeff,
-    MeshF_OceanVelocity
+    MeshF_OceanVelocity,
+    MeshF_OpenWaterArea
 };
 
 enum MeshFieldType{
@@ -59,6 +61,7 @@ template <> struct meshFieldToType < MeshF_VtxRotLat         > { using type = Do
 template <> struct meshFieldToType < MeshF_VtxRotLon         > { using type = DoubleView; };
 template <> struct meshFieldToType < MeshF_ElmCenterXYZ      > { using type = Kokkos::View<vec3d_t*>; };
 template <> struct meshFieldToType < MeshF_DualTriangleArea  > { using type = Kokkos::View<doubleSclr_t*>; };
+template <> struct meshFieldToType < MeshF_CellArea          > { using type = Kokkos::View<doubleSclr_t*>; };
 template <> struct meshFieldToType < MeshF_Vel               > { using type = Kokkos::View<vec2d_t*>; };
 template <> struct meshFieldToType < MeshF_VtxMass           > { using type = Kokkos::View<doubleSclr_t*>; };
 template <> struct meshFieldToType < MeshF_ElmMass           > { using type = Kokkos::View<doubleSclr_t*>; };
@@ -81,6 +84,7 @@ template <> struct meshFieldToType < MeshF_TotalMassFVtx     > { using type = Ko
 template <> struct meshFieldToType < MeshF_OceanStress       > { using type = Kokkos::View<vec2d_t*>; };
 template <> struct meshFieldToType < MeshF_OceanStressCoeff  > { using type = Kokkos::View<doubleSclr_t*>; };
 template <> struct meshFieldToType < MeshF_OceanVelocity     > { using type = Kokkos::View<vec2d_t*>; };
+template <> struct meshFieldToType < MeshF_OpenWaterArea     > { using type = Kokkos::View<doubleSclr_t*>; };
 
 template <MeshFieldIndex index>
 using MeshFView = typename meshFieldToType<index>::type;
@@ -93,6 +97,7 @@ const std::map<MeshFieldIndex, std::pair<MeshFieldType, std::string>> meshFields
         {MeshF_VtxRotLon,        {MeshFType_VtxBased,"MeshField_VerticesLongitude"}},
         {MeshF_ElmCenterXYZ,     {MeshFType_ElmBased,"MeshField_ElementCenterXYZ"}},
         {MeshF_DualTriangleArea, {MeshFType_VtxBased,"MeshField_DualTriangleArea"}},
+        {MeshF_CellArea,         {MeshFType_ElmBased,"MeshField_CellArea"}},
         {MeshF_Vel,              {MeshFType_VtxBased,"MeshField_Velocity"}},
         {MeshF_VtxMass,          {MeshFType_VtxBased,"MeshField_VerticesMass"}},
         {MeshF_ElmMass,          {MeshFType_ElmBased,"MeshField_ElementsMass"}},
@@ -114,7 +119,8 @@ const std::map<MeshFieldIndex, std::pair<MeshFieldType, std::string>> meshFields
         {MeshF_TotalMassFVtx,    {MeshFType_VtxBased,"MeshField_TotalMassFVtx"}},
         {MeshF_OceanStress,      {MeshFType_VtxBased,"MeshField_OceanStress"}},
         {MeshF_OceanStressCoeff, {MeshFType_VtxBased,"MeshField_OceanStressCoeff"}},
-        {MeshF_OceanVelocity,    {MeshFType_VtxBased,"MeshField_OceanVelocity"}}
+        {MeshF_OceanVelocity,    {MeshFType_VtxBased,"MeshField_OceanVelocity"}},
+        {MeshF_OpenWaterArea,    {MeshFType_ElmBased,"MeshField_OpenWaterArea"}}
 };
 
 enum mesh_type {mesh_unrecognized_lower = -1,
@@ -150,6 +156,7 @@ class Mesh {
     MeshFView<MeshF_VtxRotLon> vtxRotLon_;
     MeshFView<MeshF_ElmCenterXYZ> elmCenterXYZ_;
     MeshFView<MeshF_DualTriangleArea> dualTriangleArea_;
+    MeshFView<MeshF_CellArea> cellArea_;
 
     MeshFView<MeshF_uBdryVtxNormal> uBdryVtxNormal_;
     MeshFView<MeshF_vBdryVtxNormal> vBdryVtxNormal_;
@@ -175,6 +182,7 @@ class Mesh {
     MeshFView<MeshF_OceanStress> oceanStress_;
     MeshFView<MeshF_OceanStressCoeff> oceanStressCoeff_;
     MeshFView<MeshF_OceanVelocity> oceanVelocity_;
+    MeshFView<MeshF_OpenWaterArea> openWaterArea_;
 
     bool isRotatedFlag = false;
     double elasticTimeStep_;
@@ -311,6 +319,9 @@ auto Mesh::getMeshField(){
     else if constexpr (index==MeshF_DualTriangleArea){
         return dualTriangleArea_;
     }
+    else if constexpr (index==MeshF_CellArea){
+        return cellArea_;
+    }
     else if constexpr (index==MeshF_Vel){
         return vtxVel_;
     }
@@ -376,6 +387,9 @@ auto Mesh::getMeshField(){
     }
     else if constexpr (index==MeshF_OceanVelocity){
         return oceanVelocity_;
+    }
+    else if constexpr (index==MeshF_OpenWaterArea){
+        return openWaterArea_;
     }
     fprintf(stderr,"Mesh Field Index error!\n");
     exit(1);

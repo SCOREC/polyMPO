@@ -96,11 +96,16 @@ namespace polyMPO{
 
     elmCenterXYZ_ = MeshFView<MeshF_ElmCenterXYZ>(meshFields2TypeAndString.at(MeshF_ElmCenterXYZ).second, numElms_);
 
+    cellArea_ = MeshFView<MeshF_CellArea>(meshFields2TypeAndString.at(MeshF_CellArea).second, numElms_);
+
     elmCenterGnomProj_= MeshFView<MeshF_ElmCenterGnomProj>(meshFields2TypeAndString.at(MeshF_ElmCenterGnomProj).second, numElms_);
 
     vtxGnomProj_ = MeshFView<MeshF_VtxGnomProj>(meshFields2TypeAndString.at(MeshF_VtxGnomProj).second, numElms_);
 
     solveStress_ = MeshFView<MeshF_SolveStress>(meshFields2TypeAndString.at(MeshF_SolveStress).second, numElms_);
+
+    openWaterArea_ = MeshFView<MeshF_OpenWaterArea>(meshFields2TypeAndString.at(MeshF_OpenWaterArea).second, numElms_);
+
   }
 
   void Mesh::computeRotLatLonIncr(){

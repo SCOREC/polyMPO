@@ -1494,6 +1494,20 @@ void polympo_getMeshDualTriangleArea_f(MPMesh_ptr p_mpmesh, const int nVertices,
     areaTriangle[i] = h_dualArea(i,0);
 }
 
+void polympo_setMeshCellArea_f(MPMesh_ptr p_mpmesh, const int nCells, const double* areaCell){
+  //chech validity
+  checkMPMeshValid(p_mpmesh);
+  auto p_mesh = ((polyMPO::MPMesh*)p_mpmesh)->p_mesh;
+
+  PMT_ALWAYS_ASSERT(p_mesh->getNumElements()==nCells);
+  //copy the host array to the device
+  auto cellArea = p_mesh->getMeshField<polyMPO::MeshF_CellArea>();
+  auto h_cellArea = Kokkos::create_mirror_view(cellArea);
+  for(int i=0; i<nCells; i++)
+    h_cellArea(i,0) = areaCell[i];
+  Kokkos::deep_copy(cellArea, h_cellArea);
+}
+
 void polympo_setGnomonicProjection_f(MPMesh_ptr p_mpmesh){
   checkMPMeshValid(p_mpmesh);
   auto p_mesh = ((polyMPO::MPMesh*)p_mpmesh)->p_mesh;
@@ -1880,6 +1894,42 @@ void polympo_finalize_deludelvDyn_f(MPMesh_ptr p_mpmesh){
     vtxFieldVel_incr(vtx, 0) = vtxFieldVel(vtx, 0) - vtxFieldVel_incr(vtx, 0);
     vtxFieldVel_incr(vtx, 1) = vtxFieldVel(vtx, 1) - vtxFieldVel_incr(vtx, 1);
   });
+}
+
+void polympo_setOpenWaterAreaMP_f(MPMesh_ptr p_mpmesh, const int nComps, const int numMPs, double* array){
+  Kokkos::Timer timer;
+  checkMPMeshValid(p_mpmesh);
+
+  auto p_MPs = ((polyMPO::MPMesh*)p_mpmesh)->p_MPs;
+  //Rank information
+  int self;
+  MPI_Comm comm = p_MPs->getMPIComm();
+  MPI_Comm_rank(comm, &self);
+  //Asserts
+  PMT_ALWAYS_ASSERT(nComps == 1);
+  PMT_ALWAYS_ASSERT(numMPs >= p_MPs->getCount());
+  //MP Data
+  auto openWaterAreaMP = p_MPs->getData<polyMPO::MPF_OpenWaterArea>();
+  auto mpAppID         = p_MPs->getData<polyMPO::MPF_MP_APP_ID>();
+
+  //Copy to device
+  kkViewHostU<const double**> openWaterAreaMP_h(array, nComps, numMPs);
+  Kokkos::View<double**> openWaterAreaMP_d("mpOpenWaterArea", nComps, numMPs);
+  Kokkos::deep_copy(openWaterAreaMP_d, openWaterAreaMP_h);
+
+  //Set in PS
+  auto setOpenWaterArea = PS_LAMBDA(const int& elm, const int& mp, const int& mask){
+    if(mask){
+      openWaterAreaMP(mp,0) = openWaterAreaMP_d(0, mpAppID(mp));
+    }
+  };
+  p_MPs->parallel_for(setOpenWaterArea, "setMPOpenWaterArea");
+  
+  pumipic::RecordTime("PolyMPO_setOpenWaterArea" + std::to_string(self), timer.seconds());
+
+  //Temporarily call the MPs to Cell API from here
+  auto mpmesh = ((polyMPO::MPMesh*)p_mpmesh);
+  mpmesh->mapMPsToCells<polyMPO::MPF_OpenWaterArea>(); 
 }
 
 //Timing

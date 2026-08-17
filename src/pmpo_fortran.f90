@@ -1004,6 +1004,13 @@ module polympo
     type(c_ptr), value :: areaTriangle
   end subroutine
 
+  subroutine polympo_setMeshCellArea(mpMesh, nCells, areaCell) &
+             bind(C, NAME='polympo_setMeshCellArea_f')
+    use :: iso_c_binding
+    type(c_ptr), value :: mpMesh
+    integer(c_int), value :: nCells
+    type(c_ptr), intent(in), value :: areaCell
+  end subroutine
 
   subroutine polympo_setGnomonicProjection(mpMesh) &
              bind(C, NAME='polympo_setGnomonicProjection_f')
@@ -1281,6 +1288,14 @@ module polympo
              bind(C, NAME='polympo_finalize_deludelvDyn_f')
     use :: iso_c_binding
     type(c_ptr), value :: mpMesh
+  end subroutine
+
+  subroutine polympo_setOpenWaterAreaMP(mpMesh, nComps, numMPs, array) &
+             bind(C, NAME='polympo_setOpenWaterAreaMP_f')
+    use :: iso_c_binding
+    type(c_ptr), value :: mpMesh
+    integer(c_int), value :: nComps, numMPs
+    type(c_ptr), intent(in), value :: array
   end subroutine
 
   !---------------------------------------------------------------------------

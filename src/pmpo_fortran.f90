@@ -1118,6 +1118,14 @@ module polympo
     type(c_ptr), value :: uArray, vArray
   end subroutine
 
+  subroutine polympo_set_oceanStressCell(mpMesh, nCells, uArray, vArray) &
+             bind(C, NAME='polympo_set_oceanStressCell_f')
+    use :: iso_c_binding
+    type(c_ptr), value :: mpMesh
+    integer(c_int), value :: nCells
+    type(c_ptr), value :: uArray, vArray
+  end subroutine
+
   subroutine polympo_set_oceanStressCoefficient(mpMesh, nVertices, array) &
              bind(C, NAME='polympo_set_oceanStressCoefficient_f')
     use :: iso_c_binding

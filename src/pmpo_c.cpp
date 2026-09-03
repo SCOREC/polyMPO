@@ -1691,6 +1691,28 @@ void polympo_set_oceanStress_f(MPMesh_ptr p_mpmesh, const int nVertices, double*
   Kokkos::deep_copy(oceanStress, h_oceanStress);
 }
 
+void polympo_set_oceanStressCell_f(MPMesh_ptr p_mpmesh, const int nCells, double* uArray, double* vArray){
+  //check mpMesh is valid
+  checkMPMeshValid(p_mpmesh);
+  auto p_mesh = ((polyMPO::MPMesh*)p_mpmesh)->p_mesh;
+  //check the size
+  PMT_ALWAYS_ASSERT(p_mesh->getNumElements()==nCells);
+
+  //copy the host array to the device
+  auto oceanStressCell = p_mesh->getMeshField<polyMPO::MeshF_OceanStressCell>();
+  auto h_oceanStressCell = Kokkos::create_mirror_view(oceanStressCell);
+  for(int i=0; i<nCells; i++){
+    h_oceanStressCell(i,0) = uArray[i];
+    h_oceanStressCell(i,1) = vArray[i];
+  }
+  Kokkos::deep_copy(oceanStressCell, h_oceanStressCell);
+  
+  //Temporarily call the Cell 2 MPs API from here
+  auto mpmesh = ((polyMPO::MPMesh*)p_mpmesh);
+  mpmesh->mapCellsToMPs<polyMPO::MeshF_OceanStressCell>();
+}
+
+
 void polympo_set_oceanStressCoefficient_f(MPMesh_ptr p_mpmesh, const int nVertices, double* array){
   //check mpMesh is valid
   checkMPMeshValid(p_mpmesh);

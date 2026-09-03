@@ -102,9 +102,15 @@ namespace polyMPO{
 
     vtxGnomProj_ = MeshFView<MeshF_VtxGnomProj>(meshFields2TypeAndString.at(MeshF_VtxGnomProj).second, numElms_);
 
+    cellGnomProj_ = MeshFView<MeshF_CellGnomProj>(meshFields2TypeAndString.at(MeshF_CellGnomProj).second, numElms_);
+
+    cellOnCellGnomProj_ = MeshFView<MeshF_CellOnCellGnomProj>(meshFields2TypeAndString.at(MeshF_CellOnCellGnomProj).second, numElms_);
+
     solveStress_ = MeshFView<MeshF_SolveStress>(meshFields2TypeAndString.at(MeshF_SolveStress).second, numElms_);
 
     openWaterArea_ = MeshFView<MeshF_OpenWaterArea>(meshFields2TypeAndString.at(MeshF_OpenWaterArea).second, numElms_);
+
+    oceanStressCell_ = MeshFView<MeshF_OceanStressCell>(meshFields2TypeAndString.at(MeshF_OceanStressCell).second, numElms_);
 
   }
 
@@ -128,14 +134,20 @@ namespace polyMPO{
 
   void Mesh::setGnomonicProjection(bool isRotated){
     std::cout<<__FUNCTION__<<std::endl;
-    auto gnomProjVtx = getMeshField<MeshF_VtxGnomProj>();
+    
+    auto gnomProjVtx  = getMeshField<MeshF_VtxGnomProj>();
+    auto gnomProjCell = getMeshField<MeshF_CellGnomProj>();
+    auto gnomProjCellOnCell = getMeshField<MeshF_CellOnCellGnomProj>();
     auto gnomProjElmCenter = getMeshField<MeshF_ElmCenterGnomProj>();
 
     auto vtxCoords  = getMeshField<MeshF_VtxCoords>();
     auto elmCenters = getMeshField<MeshF_ElmCenterXYZ>();
     auto elm2VtxConn = getElm2VtxConn();  
+    auto elm2ElmConn = getElm2ElmConn();
+    int numElms = getNumElements();
 
     Kokkos::parallel_for("setGnomprojCenter", numElms_, KOKKOS_LAMBDA(const int iElm){
+      // This is the center
       Vec3d elmCenter(elmCenters(iElm, 0), elmCenters(iElm, 1), elmCenters(iElm, 2));
       if(isRotated){
         elmCenter[0] = - elmCenters(iElm, 2);
@@ -150,6 +162,7 @@ namespace polyMPO{
       gnomProjElmCenter(iElm, 2) = invR*elmCenter[2];
       gnomProjElmCenter(iElm, 3) = invR*cosLatR;
 
+      //Gnomonic projection of the vertices
       int nVtxE = elm2VtxConn(iElm,0);
       for(int i=0; i<nVtxE; i++){
         int vID = elm2VtxConn(iElm, i+1) - 1;
@@ -158,14 +171,40 @@ namespace polyMPO{
           vtxCord[0] = - vtxCoords(vID, 2);
           vtxCord[2] = vtxCoords(vID, 0);
         }
-
         double outX, outY;
         auto gnomProjElmCenter_sub = Kokkos::subview(gnomProjElmCenter, iElm, Kokkos::ALL);
         computeGnomonicProjectionAtPoint(vtxCord, gnomProjElmCenter_sub, outX, outY);
-
         gnomProjVtx(iElm, i, 0) = outX;
         gnomProjVtx(iElm, i, 1) = outY;
       }
+            
+      //Gnomonic Projection of the center
+      double outX, outY;
+      auto gnomProjElmCenter_sub = Kokkos::subview(gnomProjElmCenter, iElm, Kokkos::ALL);
+      computeGnomonicProjectionAtPoint(elmCenter, gnomProjElmCenter_sub, outX, outY);
+      gnomProjCell(iElm, 0) = outX;
+      gnomProjCell(iElm, 1) = outY;
+      if(iElm == 38) printf("Center outs X and Y: %.15e %.15e \n", gnomProjCell(iElm, 0), gnomProjCell(iElm, 1)) ; 
+      
+      //Gnomomic projection of the centres of adjacent elements 
+      int numConnElms = elm2ElmConn(iElm,0);
+      for(int i=1; i<=numConnElms; i++){
+        int elmID = elm2ElmConn(iElm,i)-1;
+        if(elmID >= numElms)
+          continue;
+        Vec3d adjElmCenter(elmCenters(elmID, 0), elmCenters(elmID, 1), elmCenters(elmID, 2));
+        if(isRotated){
+          adjElmCenter[0] = - elmCenters(elmID, 2);
+          adjElmCenter[2] = elmCenters(elmID, 0);
+        } 
+        double outX, outY;
+        auto gnomProjElmCenter_sub = Kokkos::subview(gnomProjElmCenter, iElm, Kokkos::ALL);
+        computeGnomonicProjectionAtPoint(adjElmCenter, gnomProjElmCenter_sub, outX, outY);
+        gnomProjCellOnCell(iElm, i-1, 0) = outX;
+        gnomProjCellOnCell(iElm, i-1, 1) = outY;
+        if(iElm == 38) printf("Outs X and Y: %.15e %.15e \n", gnomProjCellOnCell(iElm, i-1, 0), gnomProjCellOnCell(iElm, i-1, 1)) ;
+      }
+      
     });
   }
 

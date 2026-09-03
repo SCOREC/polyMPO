@@ -30,6 +30,8 @@ enum MeshFieldIndex{
     MeshF_OnSurfDispIncr,
     MeshF_RotLatLonIncr,
     MeshF_VtxGnomProj,
+    MeshF_CellGnomProj,
+    MeshF_CellOnCellGnomProj,
     MeshF_ElmCenterGnomProj,
     MeshF_TanLatVertexRotatedOverRadius,
     MeshF_SolveStress,
@@ -43,6 +45,7 @@ enum MeshFieldIndex{
     MeshF_SurfaceTilt,
     MeshF_TotalMassFVtx,
     MeshF_OceanStress,
+    MeshF_OceanStressCell,
     MeshF_OceanStressCoeff,
     MeshF_OceanVelocity,
     MeshF_OpenWaterArea
@@ -69,6 +72,8 @@ template <> struct meshFieldToType < MeshF_OnSurfVeloIncr    > { using type = Ko
 template <> struct meshFieldToType < MeshF_OnSurfDispIncr    > { using type = Kokkos::View<vec2d_t*>; };
 template <> struct meshFieldToType < MeshF_RotLatLonIncr     > { using type = Kokkos::View<vec2d_t*>; };
 template <> struct meshFieldToType < MeshF_VtxGnomProj       > { using type = Kokkos::View<double*[maxVtxsPerElm][2]>; };
+template <> struct meshFieldToType < MeshF_CellGnomProj      > { using type = Kokkos::View<double*[2]>; };
+template <> struct meshFieldToType < MeshF_CellOnCellGnomProj> { using type = Kokkos::View<double*[maxVtxsPerElm][2]>; };
 template <> struct meshFieldToType < MeshF_ElmCenterGnomProj > { using type = Kokkos::View<double*[4]>; };
 template <> struct meshFieldToType < MeshF_TanLatVertexRotatedOverRadius > { using type = Kokkos::View<doubleSclr_t*>; };
 template <> struct meshFieldToType < MeshF_SolveStress       > { using type = IntView; };
@@ -82,6 +87,7 @@ template <> struct meshFieldToType < MeshF_AirStress         > { using type = Ko
 template <> struct meshFieldToType < MeshF_SurfaceTilt       > { using type = Kokkos::View<vec2d_t*>; };
 template <> struct meshFieldToType < MeshF_TotalMassFVtx     > { using type = Kokkos::View<doubleSclr_t*>; };
 template <> struct meshFieldToType < MeshF_OceanStress       > { using type = Kokkos::View<vec2d_t*>; };
+template <> struct meshFieldToType < MeshF_OceanStressCell   > { using type = Kokkos::View<vec2d_t*>; };
 template <> struct meshFieldToType < MeshF_OceanStressCoeff  > { using type = Kokkos::View<doubleSclr_t*>; };
 template <> struct meshFieldToType < MeshF_OceanVelocity     > { using type = Kokkos::View<vec2d_t*>; };
 template <> struct meshFieldToType < MeshF_OpenWaterArea     > { using type = Kokkos::View<doubleSclr_t*>; };
@@ -105,6 +111,8 @@ const std::map<MeshFieldIndex, std::pair<MeshFieldType, std::string>> meshFields
         {MeshF_OnSurfDispIncr,   {MeshFType_VtxBased,"MeshField_OnSurfaceDisplacementIncrement"}},
         {MeshF_RotLatLonIncr,    {MeshFType_VtxBased,"MeshField_RotationalLatitudeLongitudeIncreasement"}},
         {MeshF_VtxGnomProj,      {MeshFType_ElmBased,"MeshField_VertexGnomonicProjection"}},
+        {MeshF_CellGnomProj,     {MeshFType_ElmBased,"MeshField_CellGnomonicProjection"}},
+        {MeshF_CellOnCellGnomProj,{MeshFType_ElmBased,"MeshField_CellOnCellGnomonicProjection"}},
         {MeshF_ElmCenterGnomProj,{MeshFType_ElmBased,"MeshField_ElementCenterGnomonicprojection"}},
         {MeshF_TanLatVertexRotatedOverRadius, {MeshFType_VtxBased,"MeshField_TanLatVertexRotatedOverRadius"}},
         {MeshF_SolveStress,      {MeshFType_ElmBased,"MeshField_SolveStress"}},
@@ -118,6 +126,7 @@ const std::map<MeshFieldIndex, std::pair<MeshFieldType, std::string>> meshFields
         {MeshF_SurfaceTilt,      {MeshFType_VtxBased,"MeshField_SurfaceTilt"}},
         {MeshF_TotalMassFVtx,    {MeshFType_VtxBased,"MeshField_TotalMassFVtx"}},
         {MeshF_OceanStress,      {MeshFType_VtxBased,"MeshField_OceanStress"}},
+        {MeshF_OceanStressCell,  {MeshFType_ElmBased,"MeshField_OceanStressCell"}},
         {MeshF_OceanStressCoeff, {MeshFType_VtxBased,"MeshField_OceanStressCoeff"}},
         {MeshF_OceanVelocity,    {MeshFType_VtxBased,"MeshField_OceanVelocity"}},
         {MeshF_OpenWaterArea,    {MeshFType_ElmBased,"MeshField_OpenWaterArea"}}
@@ -169,6 +178,8 @@ class Mesh {
     MeshFView<MeshF_RotLatLonIncr> vtxRotLatLonIncr_;
     //GnomonicProjection
     MeshFView<MeshF_VtxGnomProj> vtxGnomProj_;
+    MeshFView<MeshF_CellGnomProj> cellGnomProj_;
+    MeshFView<MeshF_CellOnCellGnomProj> cellOnCellGnomProj_;
     MeshFView<MeshF_ElmCenterGnomProj> elmCenterGnomProj_;
 
     MeshFView<MeshF_TanLatVertexRotatedOverRadius> tanLatVertexRotatedOverRadius_;
@@ -180,6 +191,7 @@ class Mesh {
     MeshFView<MeshF_SurfaceTilt> surfaceTilt_;
     MeshFView<MeshF_TotalMassFVtx> totalMassFVtx_;
     MeshFView<MeshF_OceanStress> oceanStress_;
+    MeshFView<MeshF_OceanStressCell> oceanStressCell_;
     MeshFView<MeshF_OceanStressCoeff> oceanStressCoeff_;
     MeshFView<MeshF_OceanVelocity> oceanVelocity_;
     MeshFView<MeshF_OpenWaterArea> openWaterArea_;
@@ -343,6 +355,12 @@ auto Mesh::getMeshField(){
     else if constexpr (index==MeshF_VtxGnomProj){
         return vtxGnomProj_;
     }
+    else if constexpr (index==MeshF_CellGnomProj){
+        return cellGnomProj_;
+    }
+    else if constexpr (index==MeshF_CellOnCellGnomProj){
+        return cellOnCellGnomProj_;
+    }
     else if constexpr (index==MeshF_ElmCenterGnomProj){
         return elmCenterGnomProj_;
     }
@@ -381,6 +399,9 @@ auto Mesh::getMeshField(){
     }
     else if constexpr (index==MeshF_OceanStress){
         return oceanStress_;
+    }
+    else if constexpr (index==MeshF_OceanStressCell){
+        return oceanStressCell_;
     }
     else if constexpr (index==MeshF_OceanStressCoeff){
         return oceanStressCoeff_;

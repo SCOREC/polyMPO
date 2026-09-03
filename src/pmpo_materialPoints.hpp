@@ -45,7 +45,8 @@ enum MaterialPointSlice {
   MPF_IcePressure,
   MPF_ReplacementPressure,
   MPF_Vel_IncrTimesTanLatVertexOverRadius,
-  MPF_OpenWaterArea
+  MPF_OpenWaterArea,
+  MPF_OceanStress
 };
 
 enum Operating_Mode{
@@ -78,7 +79,8 @@ template <> struct mpSliceToMeshField < MPF_Area                > { using type =
 template <> struct mpSliceToMeshField < MPF_IcePressure         > { using type = doubleSclr_t; };
 template <> struct mpSliceToMeshField < MPF_ReplacementPressure > { using type = doubleSclr_t; };
 template <> struct mpSliceToMeshField < MPF_Vel_IncrTimesTanLatVertexOverRadius> { using type = vec2d_t; };
-template <> struct mpSliceToMeshField < MPF_OpenWaterArea> { using type = doubleSclr_t; };
+template <> struct mpSliceToMeshField < MPF_OpenWaterArea       > { using type = doubleSclr_t; };
+template <> struct mpSliceToMeshField < MPF_OceanStress         > { using type = vec2d_t; };
 
 template <MaterialPointSlice slice> 
 static constexpr int mpSliceToNumEntries() {
@@ -119,7 +121,8 @@ typedef MemberTypes<mpSliceToMeshField < MPF_Status              >::type,
                     mpSliceToMeshField < MPF_IcePressure         >::type,
                     mpSliceToMeshField < MPF_ReplacementPressure >::type,
                     mpSliceToMeshField < MPF_Vel_IncrTimesTanLatVertexOverRadius >::type,
-                    mpSliceToMeshField < MPF_OpenWaterArea>::type
+                    mpSliceToMeshField < MPF_OpenWaterArea       >::type,
+                    mpSliceToMeshField < MPF_OceanStress         >::type
                     >MaterialPointTypes;
 typedef ps::ParticleStructure<MaterialPointTypes> PS;
 

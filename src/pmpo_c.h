@@ -120,6 +120,7 @@ void polympo_set_airStress_f(MPMesh_ptr mpmesh, const int nVertices, double* uAr
 void polympo_set_surfaceTiltForce_f(MPMesh_ptr p_mpmesh, const int nVertices, double* uArray, double* vArray);
 void polympo_set_totalMassVertexfVertex_f(MPMesh_ptr p_mpmesh, const int nVertices, double* array);
 void polympo_set_oceanStress_f(MPMesh_ptr p_mpmesh, const int nVertices, double* uArray, double* vArray);
+void polympo_set_oceanStressCell_f(MPMesh_ptr p_mpmesh, const int nCells, double* uArray, double* vArray);
 void polympo_set_oceanStressCoefficient_f(MPMesh_ptr p_mpmesh, const int nVertices, double* array);
 void polympo_calculate_oceanStressCoefficient_f(MPMesh_ptr p_mpmesh, const double configIceOceanDragCoeff);
 void polympo_velocity_grid_solve_f(MPMesh_ptr p_mpmesh);

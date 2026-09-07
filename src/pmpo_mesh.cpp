@@ -184,7 +184,6 @@ namespace polyMPO{
       computeGnomonicProjectionAtPoint(elmCenter, gnomProjElmCenter_sub, outX, outY);
       gnomProjCell(iElm, 0) = outX;
       gnomProjCell(iElm, 1) = outY;
-      if(iElm == 38) printf("Center outs X and Y: %.15e %.15e \n", gnomProjCell(iElm, 0), gnomProjCell(iElm, 1)) ; 
       
       //Gnomomic projection of the centres of adjacent elements 
       int numConnElms = elm2ElmConn(iElm,0);
@@ -202,9 +201,7 @@ namespace polyMPO{
         computeGnomonicProjectionAtPoint(adjElmCenter, gnomProjElmCenter_sub, outX, outY);
         gnomProjCellOnCell(iElm, i-1, 0) = outX;
         gnomProjCellOnCell(iElm, i-1, 1) = outY;
-        if(iElm == 38) printf("Outs X and Y: %.15e %.15e \n", gnomProjCellOnCell(iElm, i-1, 0), gnomProjCellOnCell(iElm, i-1, 1)) ;
       }
-      
     });
   }
 

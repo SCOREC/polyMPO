@@ -291,13 +291,12 @@ class MPMesh{
 
     template<MaterialPointSlice MPSlice>
     void mapMPsToCells(){
-      std::cout<<__FUNCTION__<<std::endl;
-
       //MP field mesh field mapping
       constexpr MeshFieldIndex meshFieldIndex = MPSliceToMeshFieldIndex<MPSlice>;
       auto mpField   = p_MPs->getData<MPSlice>();
       auto meshField = p_mesh->getMeshField<meshFieldIndex>();
       Kokkos::deep_copy(meshField, 0.0); 
+
       //MP fields
       auto mpArea = p_MPs->getData<MPF_Area>();
       auto mpPos = p_MPs->getData<MPF_Cur_Pos_XYZ>();
@@ -319,7 +318,7 @@ class MPMesh{
         }
       };
       p_MPs->parallel_for(calcMPsCell, "calcN_MPsCell");
-    
+
       //TODO put them as inputs
       bool higherOrderRemap = true;
 
@@ -327,7 +326,7 @@ class MPMesh{
       constexpr int numEntriesMatrix=10;
       Kokkos::View<double*[numEntriesMatrix]> lsMatrices("VtxMatrices", p_mesh->getNumElements());
       Kokkos::deep_copy(lsMatrices, 0);
-     
+
       auto assemble = PS_LAMBDA(const int& elm, const int& mp, const int& mask) {
         if(mask) { //if material point is 'active'/'enabled'
           if(nMPsPerCell(elm) <= 0) return;
@@ -351,10 +350,10 @@ class MPMesh{
         }
       };
       p_MPs->parallel_for(assemble, "assembly");
-      
+
       invertMatrix(lsMatrices, radius, false);
       auto precomputedElmCoeffs_l = this->precomputedElmCoeffs_new;
-      
+
       auto calcCellField= PS_LAMBDA(const int& elm, const int& mp, const int& mask) {
         if(mask) { //if material point is 'active'/'enabled
           if(nMPsPerCell(elm) <= 0) return;
@@ -367,38 +366,14 @@ class MPMesh{
         }
       };
       p_MPs->parallel_for(calcCellField, "calcCellField");
-
-      /*
-      //Debugging
-      auto debug = PS_LAMBDA(const int& elm, const int& mp, const int& mask){
-        if(mask){
-          if(elm == 38) printf("AreaMP %.15e SumAreaMP %.15e \n", mpArea(mp, 0), sumAreaMP(elm));
-          if(elm == 38) printf("Matrices %.15e %.15e %.15e %.15e %.15e %.15e %.15e %.15e %.15e %.15e \n",
-                                                               lsMatrices(elm,0), lsMatrices(elm,1), lsMatrices(elm,2),
-                                                               lsMatrices(elm,3), lsMatrices(elm,4), lsMatrices(elm,5),
-                                                               lsMatrices(elm,6), lsMatrices(elm,7), lsMatrices(elm,8),
-                                                               lsMatrices(elm,9));
-          if(elm == 38) printf("Coeffs: %.15e %.15e %.15e %.15e \n", precomputedElmCoeffs_l(elm, 0, 0), 
-                                                                    precomputedElmCoeffs_l(elm, 0, 1),
-                                                                    precomputedElmCoeffs_l(elm, 0, 2), 
-                                                                    precomputedElmCoeffs_l(elm, 0, 3));
-
-          if(elm == 38) printf("Reconstructed field %.15e\n", meshField(elm,0));
-        }
-      };
-      p_MPs->parallel_for(debug, "Debugging");
-      */
     }
 
     template<MeshFieldIndex mfIndex>
     void mapCellsToMPs(){
-      std::cout<<__FUNCTION__<<std::endl;
-      //Mesh 2 MP field field mapping
       constexpr MaterialPointSlice mpSlice = meshFieldIndexToMPSlice<mfIndex>;
       auto mpField   = p_MPs->getData<mpSlice>();
       auto meshField = p_mesh->getMeshField<mfIndex>();
-      //Kokkos::deep_copy(mpField, 0.0);
-     
+
       auto nElms = p_mesh->getNumElements();
       Kokkos::View<int*> nMPsPerCell("nMPsPerCell", nElms);
       Kokkos::deep_copy(nMPsPerCell, 0);
@@ -408,17 +383,17 @@ class MPMesh{
         }
       };
       p_MPs->parallel_for(calcMPsCell, "calcN_MPsCell");
-   
+
       auto elm2ElmConn = p_mesh->getElm2ElmConn();
       auto gnomProjVtx  = p_mesh->getMeshField<MeshF_VtxGnomProj>();
       auto gnomProjCell = p_mesh->getMeshField<MeshF_CellGnomProj>();
       auto gnomProjCellOnCell = p_mesh->getMeshField<MeshF_CellOnCellGnomProj>();
       auto gnomProjElmCenter = p_mesh->getMeshField<MeshF_ElmCenterGnomProj>();
       auto nCells = p_mesh->getNumElements();     
-     
+
       Kokkos::View<double*> centerValues("centerValues", nElms);
       Kokkos::View<double*> grads("grads", 2*nElms);
-      
+
       Kokkos::parallel_for("calcMatrix", nCells, KOKKOS_LAMBDA(const int elm){   
         double lsMatrix[3]={0.0};
         double rsMatrix[2]={0.0};
@@ -433,8 +408,6 @@ class MPMesh{
           lsMatrix[2] += (gnomProjCellOnCell(elm, i-1, 1) - gnomProjCell(elm, 1)) * (gnomProjCellOnCell(elm, i-1, 1) - gnomProjCell(elm, 1));
           rsMatrix[0] += (meshField(elmID, 0)- meshField(elm, 0)) * (gnomProjCellOnCell(elm, i-1, 0) - gnomProjCell(elm, 0));
           rsMatrix[1] += (meshField(elmID, 0)- meshField(elm, 0)) * (gnomProjCellOnCell(elm, i-1, 1) - gnomProjCell(elm, 1));
-          if(elm == 38) printf("LHS %.15e %.15e %.15e \n", lsMatrix[0], lsMatrix[1], lsMatrix[2]);
-          if(elm == 38) printf("RHS %.15e %.15e \n", rsMatrix[0], rsMatrix[1]);
         }
         double det = lsMatrix[0] * lsMatrix[2] - lsMatrix[1] * lsMatrix[1];
         double grad[2] = {0.0, 0.0};
@@ -447,14 +420,8 @@ class MPMesh{
         grads(2*elm + 0) = grad[0];
         grads(2*elm + 1) = grad[1];
         centerValues(elm) = centerVal;
-
-        if (elm == 38){
-          printf("det %.15e\n", det);
-          printf("grad %.15e %.15e\n", grad[0], grad[1]);
-          printf("centerVal %.15e\n", centerVal);
-        }
       });
-     
+
       auto mpPos = p_MPs->getData<MPF_Cur_Pos_XYZ>();
       bool isRotated = p_mesh->getRotatedFlag();
 
@@ -470,19 +437,9 @@ class MPMesh{
           computeGnomonicProjectionAtPoint(position3d, gnomProjElmCenter_sub, mpProjX, mpProjY);
 
           mpField(mp, 0) = centerValues(elm) + grads(2*elm + 0) * mpProjX + grads(2*elm + 1) * mpProjY;
- 
-          if(elm == 38){
-            printf("Gnom MP %.15e %.15e\n", mpProjX, mpProjY);
-            printf("Field %.15e\n", mpField(mp, 0));
-          } 
         }
       };
       p_MPs->parallel_for(calcMPValue, "calcMPValue");
-   
-      //Debugging
-      Kokkos::parallel_for("debug", nElms, KOKKOS_LAMBDA(const int elm){
-        if(elm < 10) printf("Element %d Mesh Field %.15e %.15e \n", elm, meshField(elm, 0), meshField(elm, 1));
-      });
     }
 
 };

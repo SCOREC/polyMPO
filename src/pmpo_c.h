@@ -150,6 +150,8 @@ void polympo_init_deludelvDyn_f(MPMesh_ptr p_mpmesh);
 void polympo_aggregate_deluDyn_f(MPMesh_ptr p_mpmesh);
 void polympo_finalize_deludelvDyn_f(MPMesh_ptr p_mpmesh);
 void polympo_setOpenWaterAreaMP_f(MPMesh_ptr p_mpmesh, const int nComps, const int numMPs, double* array);
+void polympo_getOpenWaterAreaCell_f(MPMesh_ptr p_mpmesh, const int nCells, double* array);
+void polympo_get_oceanStressCellMP_f(MPMesh_ptr p_mpmesh, const int nParticles, double* uArray, double* vArray);
 
 // Timing
 void polympo_enableTiming_f();

@@ -1951,8 +1951,51 @@ void polympo_setOpenWaterAreaMP_f(MPMesh_ptr p_mpmesh, const int nComps, const i
 
   //Temporarily call the MPs to Cell API from here
   auto mpmesh = ((polyMPO::MPMesh*)p_mpmesh);
-  mpmesh->mapMPsToCells<polyMPO::MPF_OpenWaterArea>(); 
+  mpmesh->mapMPsToCells<polyMPO::MPF_OpenWaterArea>();  
 }
+
+void polympo_getOpenWaterAreaCell_f(MPMesh_ptr p_mpmesh, const int nCells, double* array){
+
+  checkMPMeshValid(p_mpmesh);
+  auto p_mesh = ((polyMPO::MPMesh*)p_mpmesh)->p_mesh;
+
+  //check the size
+  PMT_ALWAYS_ASSERT(p_mesh->getNumElements()==nCells);
+ 
+  //copy the device to host 
+  auto field = p_mesh->getMeshField<polyMPO::MeshF_OpenWaterArea>();
+  auto h_field = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), field);
+  for(int i=0; i<nCells; i++){
+    array[i] = h_field(i,0);
+  }
+}
+
+void polympo_get_oceanStressCellMP_f(MPMesh_ptr p_mpmesh, const int nParticles, double* uArray, double* vArray){
+  checkMPMeshValid(p_mpmesh);
+  auto p_MPs = ((polyMPO::MPMesh*)p_mpmesh)->p_MPs;
+  PMT_ALWAYS_ASSERT(nParticles >= p_MPs->getCount());
+ 
+  auto mpField = p_MPs->getData<polyMPO::MPF_OceanStress>();
+  auto mpAppID = p_MPs->getData<polyMPO::MPF_MP_APP_ID>();
+
+  Kokkos::View<double**> mpFieldCopy("mpFieldCopy",vec2d_nEntries, nParticles);
+
+  auto getField = PS_LAMBDA(const int&, const int& mp, const int& mask){
+    if(mask){
+      mpFieldCopy(0,mpAppID(mp)) = mpField(mp,0);
+      mpFieldCopy(1,mpAppID(mp)) = mpField(mp,1);
+    }
+  };
+  p_MPs->parallel_for(getField, "getFields");
+
+ // Copy the device view to host.
+  auto mpFieldHost = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), mpFieldCopy);
+  for(int mp = 0; mp < nParticles; ++mp) {
+    uArray[mp] = mpFieldHost(0, mp);
+    vArray[mp] = mpFieldHost(1, mp);
+  }
+}
+
 
 //Timing
 void polympo_enableTiming_f(){

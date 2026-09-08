@@ -1311,7 +1311,7 @@ module polympo
     use :: iso_c_binding
     type(c_ptr), value :: mpMesh
     integer(c_int), value :: nCells
-    type(c_ptr), intent(in), value :: array
+    type(c_ptr), value :: array
   end subroutine
 
   subroutine polympo_get_oceanStressCellMP(mpMesh, nParticles, uarray, varray) &
@@ -1319,7 +1319,7 @@ module polympo
     use :: iso_c_binding
     type(c_ptr), value :: mpMesh
     integer(c_int), value :: nParticles
-    type(c_ptr), intent(in), value :: uarray, varray
+    type(c_ptr), value :: uarray, varray
   end subroutine
 
   !---------------------------------------------------------------------------

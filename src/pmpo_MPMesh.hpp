@@ -42,8 +42,10 @@ class MPMesh{
     std::vector<std::vector<int>> ownerHaloLocalIDs;
 
     void startCommunication();
-    void communicate_and_take_halo_contributions(const Kokkos::View<double**>& meshField, int nEntities, int numEntries, int mode, int op);
 
+    void communicate_and_take_halo_contributions(const Kokkos::View<double**>& meshField, int nEntities, int numEntries, int mode, int op);
+    
+    //Now Kokkos views are made 1D
     template <typename ViewType>
     void communicate_and_take_halo_contributions_staged(
         const ViewType& meshField,
@@ -131,15 +133,15 @@ class MPMesh{
     }
 
     void communicateFields(const std::vector<std::vector<double>>& fieldData, const int numEntities, const int numEntries, int mode,
-                              std::vector<std::vector<int>>& recvIDVec, std::vector<std::vector<double>>& recvDataVec);
+                           std::vector<std::vector<int>>& recvIDVec, std::vector<std::vector<double>>& recvDataVec);
 
-    template <class ViewType>
+    template <class ViewType> 
     void communicateFieldsFromHostView(
-        const ViewType& fieldData,
+        const ViewType& fieldData, 
         const int numEntities, const int numEntries, int mode,
         std::vector<std::vector<int>>& recvIDVec,
         std::vector<std::vector<double>>& recvDataVec){
-   
+    
       int self, numProcsTot;
       MPI_Comm comm = p_MPs->getMPIComm();
       MPI_Comm_rank(comm, &self);
@@ -197,7 +199,7 @@ class MPMesh{
       std::vector<MPI_Request> requests;
       requests.reserve(4*numProcsTot);
       for(int proc = 0; proc < numProcsTot; proc++){
-        if(proc == self) continue; 
+        if(proc == self) continue;  
         if(mode == 0 && numHalosOnOtherProcs[proc]){
           assert(recvIDVec[proc].size() == (size_t)numHalosOnOtherProcs[proc]);
           assert(recvDataVec[proc].size() == recvIDVec[proc].size() * (size_t)numEntries);
@@ -234,7 +236,7 @@ class MPMesh{
       }
       MPI_Waitall(requests.size(), requests.data(), MPI_STATUSES_IGNORE);
     }
-   
+    
     MPMesh(Mesh* inMesh, MaterialPoints* inMPs):
       p_mesh(inMesh), p_MPs(inMPs) {
     };
@@ -269,7 +271,7 @@ class MPMesh{
     void reconstruct_coeff_full();
     void invertMatrix(const Kokkos::View<double**>& vtxMatrices, const double& radius);
     Kokkos::View<double*[vec3d_nEntries][vec4d_nEntries]> precomputedVtxCoeffs_new;
-    Kokkos::View<double*> nearAnEdge;  
+    Kokkos::View<double*> nearAnEdge;   
     Kokkos::View<double*> vtxMatrixMass;
 
     //Not used currently
@@ -287,6 +289,8 @@ class MPMesh{
     void printVTP_mesh(int printVTPIndex);
     void writeMPTrackingVTP(int printVTPIndex, int numMPs, const Vec3dView& history, const Vec3dView& resultLeft,
                             const Vec3dView& resultRight, const Vec3dView& mpTgtPosArray);
+
+
     void calculateStrain();
     void calculateStress(const int constitutive_relation);
     void calculateStressDivergence();

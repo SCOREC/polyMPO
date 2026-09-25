@@ -6,7 +6,7 @@
 
 namespace{
   std::vector<MPMesh_ptr> p_mpmeshes;////store the p_mpmeshes that is legal
-   
+    
   void checkMPMeshValid(MPMesh_ptr p_mpmesh){
     auto p_mpmeshIter = std::find(p_mpmeshes.begin(),p_mpmeshes.end(),p_mpmesh);
     PMT_ALWAYS_ASSERT(p_mpmeshIter != p_mpmeshes.end());
@@ -922,8 +922,8 @@ void polympo_setMeshNumEdgesPerElm_f(MPMesh_ptr p_mpmesh, const int nCells, cons
 void polympo_setMeshElm2VtxConn_f(MPMesh_ptr p_mpmesh, const int maxEdges, const int nCells, const int* array){
   //chech vailidity
   checkMPMeshValid(p_mpmesh);
-  kkViewHostU<const int**> arrayHost(array,maxEdges,nCells);
-  auto p_mesh = ((polyMPO::MPMesh*)p_mpmesh)->p_mesh;
+  kkViewHostU<const int**> arrayHost(array,maxEdges,nCells); 
+  auto p_mesh = ((polyMPO::MPMesh*)p_mpmesh)->p_mesh; 
   PMT_ALWAYS_ASSERT(p_mesh->meshEditable());
 
   //check the size
@@ -944,7 +944,7 @@ void polympo_setMeshElm2ElmConn_f(MPMesh_ptr p_mpmesh, const int maxEdges, const
   //chech vailidity
   checkMPMeshValid(p_mpmesh);
   kkViewHostU<const int**> arrayHost(array,maxEdges,nCells); //Fortran is column-major
-  auto p_mesh = ((polyMPO::MPMesh*)p_mpmesh)->p_mesh;
+  auto p_mesh = ((polyMPO::MPMesh*)p_mpmesh)->p_mesh; 
   PMT_ALWAYS_ASSERT(p_mesh->meshEditable());
 
   //check the size
@@ -1068,7 +1068,7 @@ void polympo_getMeshVtxCoords_f(MPMesh_ptr p_mpmesh, const int nVertices, double
   auto p_mesh = ((polyMPO::MPMesh*)p_mpmesh)->p_mesh;
 
   //check the size
-  PMT_ALWAYS_ASSERT(p_mesh->getNumVertices()==nVertices);
+  PMT_ALWAYS_ASSERT(p_mesh->getNumVertices()==nVertices); 
   
   //copy the device to host 
   auto coordsArray = p_mesh->getMeshField<polyMPO::MeshF_VtxCoords>();
@@ -1142,7 +1142,7 @@ void polympo_getMeshVtxVel_f(MPMesh_ptr p_mpmesh, const int nVertices, double* u
   auto p_mesh = ((polyMPO::MPMesh*)p_mpmesh)->p_mesh;
 
   //check the size
-  PMT_ALWAYS_ASSERT(p_mesh->getNumVertices() == nVertices);
+  PMT_ALWAYS_ASSERT(p_mesh->getNumVertices() == nVertices); 
 
   //copy the device array to the host
   auto coordsArray = p_mesh->getMeshField<polyMPO::MeshF_Vel>();

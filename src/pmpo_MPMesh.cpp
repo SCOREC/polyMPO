@@ -166,7 +166,7 @@ void MPMesh::calculateStressDivergence(){
   };
   p_MPs->parallel_for(stress_div, " stress_div_assembly");
   Kokkos::fence();
-  pumipic::RecordTime("Stress_Divergence_Reconstruction" + std::to_string(self), timer.seconds()); 
+  pumipic::RecordTime("Stress_Divergence_Reconstruction" + std::to_string(self), timer.seconds());
 
   timer.reset();
   if(numProcsTot>1){ 

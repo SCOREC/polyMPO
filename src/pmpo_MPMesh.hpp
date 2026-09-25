@@ -42,8 +42,7 @@ class MPMesh{
     std::vector<std::vector<int>> ownerHaloLocalIDs;
 
     void startCommunication();
-    void communicate_and_take_halo_contributions(const Kokkos::View<double**>& meshField, int nEntities,
-                                                 int numEntries, int mode, int op);
+    void communicate_and_take_halo_contributions(const Kokkos::View<double**>& meshField, int nEntities, int numEntries, int mode, int op);
 
     template <typename ViewType>
     void communicate_and_take_halo_contributions_staged(
@@ -65,7 +64,6 @@ class MPMesh{
       std::vector<std::vector<int>>    recvIDVec;
       std::vector<std::vector<double>> recvDataVec;
       pumipic::RecordTime("SD: Recv Vec Allocation-" + std::to_string(self), timer.seconds());
-
       timer.reset();
       //communicateFieldsFromHostView(fieldData1, nEntities, numEntries, mode, recvIDVec, recvDataVec);
       communicateFieldsFromHostView(reconVals_host, nEntities, numEntries, mode, recvIDVec, recvDataVec);
@@ -75,7 +73,7 @@ class MPMesh{
       int numProcsTot = recvIDVec.size();
       //Flatten IDs
       int totalSize = 0;
-      std::vector<int> offsets(numProcsTot, 0);
+      std::vector<int> offsets(numProcsTot, 0); 
       for(int i=0; i<numProcsTot; i++) {
         offsets[i] = totalSize;
         totalSize += recvIDVec[i].size();
@@ -111,7 +109,7 @@ class MPMesh{
       timer.reset();
       Kokkos::View<double*> recvDataGPU("recvDataGPU", totalSize_data);
       auto hostView_data= Kokkos::View<double*, Kokkos::HostSpace>("recvDataCPU", totalSize_data);
-      std::copy(flatDataVec.begin(), flatDataVec.end(), hostView_data.data());
+      std::copy(flatDataVec.begin(), flatDataVec.end(), hostView_data.data()); 
       Kokkos::deep_copy(recvDataGPU, hostView_data);
       Kokkos::fence();
       assert(totalSize_data == totalSize*numEntries);
@@ -119,7 +117,6 @@ class MPMesh{
         assert(recvDataVec[i].size() == recvIDVec[i].size() * numEntries);
       }
       pumipic::RecordTime("SD: Copy CPU-GPU2-" + std::to_string(self), timer.seconds());
-
       //Take contributions from other procs
       timer.reset();
       Kokkos::parallel_for("halo contribution", recvIDGPU.size(), KOKKOS_LAMBDA(const int i){
@@ -133,9 +130,8 @@ class MPMesh{
       pumipic::RecordTime("SD: Contribution" + std::to_string(self), timer.seconds());
     }
 
-    void communicateFields(const std::vector<std::vector<double>>& fieldData, const int numEntities,
-                           const int numEntries, int mode, std::vector<std::vector<int>>& recvIDVec,
-                           std::vector<std::vector<double>>& recvDataVec);
+    void communicateFields(const std::vector<std::vector<double>>& fieldData, const int numEntities, const int numEntries, int mode,
+                              std::vector<std::vector<int>>& recvIDVec, std::vector<std::vector<double>>& recvDataVec);
 
     template <class ViewType>
     void communicateFieldsFromHostView(
@@ -143,7 +139,7 @@ class MPMesh{
         const int numEntities, const int numEntries, int mode,
         std::vector<std::vector<int>>& recvIDVec,
         std::vector<std::vector<double>>& recvDataVec){
-
+   
       int self, numProcsTot;
       MPI_Comm comm = p_MPs->getMPIComm();
       MPI_Comm_rank(comm, &self);
@@ -159,13 +155,13 @@ class MPMesh{
       for(int i = 0; i < numProcsTot; i++){
         if(i==self) continue;
 
-        int numToSend = 0, numToRecv = 0;
+        int numToSend = 0, numToRecv = 0; 
         if(mode == 0) {
           //gather (halos send to owners)
           numToSend = numOwnersOnOtherProcs[i];
           numToRecv = numHalosOnOtherProcs[i];
         }
-        else{
+        else{ 
           //scatter (owners send to halos)
           numToSend = numHalosOnOtherProcs[i];
           numToRecv = numOwnersOnOtherProcs[i];
@@ -201,7 +197,7 @@ class MPMesh{
       std::vector<MPI_Request> requests;
       requests.reserve(4*numProcsTot);
       for(int proc = 0; proc < numProcsTot; proc++){
-        if(proc == self) continue;
+        if(proc == self) continue; 
         if(mode == 0 && numHalosOnOtherProcs[proc]){
           assert(recvIDVec[proc].size() == (size_t)numHalosOnOtherProcs[proc]);
           assert(recvDataVec[proc].size() == recvIDVec[proc].size() * (size_t)numEntries);
@@ -238,7 +234,7 @@ class MPMesh{
       }
       MPI_Waitall(requests.size(), requests.data(), MPI_STATUSES_IGNORE);
     }
-
+   
     MPMesh(Mesh* inMesh, MaterialPoints* inMPs):
       p_mesh(inMesh), p_MPs(inMPs) {
     };
@@ -273,7 +269,7 @@ class MPMesh{
     void reconstruct_coeff_full();
     void invertMatrix(const Kokkos::View<double**>& vtxMatrices, const double& radius);
     Kokkos::View<double*[vec3d_nEntries][vec4d_nEntries]> precomputedVtxCoeffs_new;
-    Kokkos::View<double*> nearAnEdge;
+    Kokkos::View<double*> nearAnEdge;  
     Kokkos::View<double*> vtxMatrixMass;
 
     //Not used currently
@@ -291,7 +287,6 @@ class MPMesh{
     void printVTP_mesh(int printVTPIndex);
     void writeMPTrackingVTP(int printVTPIndex, int numMPs, const Vec3dView& history, const Vec3dView& resultLeft,
                             const Vec3dView& resultRight, const Vec3dView& mpTgtPosArray);
-
     void calculateStrain();
     void calculateStress(const int constitutive_relation);
     void calculateStressDivergence();

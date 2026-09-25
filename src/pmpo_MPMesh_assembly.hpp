@@ -85,7 +85,7 @@ void MPMesh::assemblyElm0() {
     }
   };
   p_MPs->parallel_for(assemble, "assembly");
-
+  
   Kokkos::MDRangePolicy<Kokkos::Rank<2>> policy({0,0},{numElms, numEntries});
   Kokkos::parallel_for("assembly average", policy, KOKKOS_LAMBDA(const int elm, const int entry){
     if (mpsPerElm(elm) > 0){
@@ -96,11 +96,12 @@ void MPMesh::assemblyElm0() {
 }
 
 void MPMesh::reconstruct_coeff_full(){
+  Kokkos::Timer timer;
   int self, numProcsTot;
   MPI_Comm comm = p_MPs->getMPIComm();
   MPI_Comm_rank(comm, &self);
   MPI_Comm_size(comm, &numProcsTot);
-
+  
   static int coeff_count=0;
   if(!self) std::cout<<"===="<<__FUNCTION__<<" "<<coeff_count<<"===="<<std::endl;
   coeff_count++;
@@ -151,30 +152,34 @@ void MPMesh::reconstruct_coeff_full(){
   };
   p_MPs->parallel_for(assemble, "assembly");
   Kokkos::fence();
+  pumipic::RecordTime("Assemble Matrix Per Process" + std::to_string(self), timer.seconds());
   //Mode 0 is Gather:  Halos Send to Owners
   //Mode 1 is Scatter: Owners Send to Halos
   //Op 0 is addition
   //Op 1 is replacement
+  timer.reset();
   int mode = 0;
   int op = 0;
-  if (numProcsTot>1){
+  if (numProcsTot >1){
     communicate_and_take_halo_contributions_gpu_aware(vtxMatrices, numVertices, numEntriesMatrix, mode, op);
-    mode=1;
+    mode=1; 
     op=1;
     communicate_and_take_halo_contributions_gpu_aware(vtxMatrices, numVertices, numEntriesMatrix, mode, op);
   }
+  pumipic::RecordTime("Communicate Matrix Values" + std::to_string(self), timer.seconds());
+
   //Store the 1st matrix element
   Kokkos::View<double*>vtxMatrixMass_l("vtxMass", numVertices);
   Kokkos::parallel_for("storeMatrixMass", numVertices, KOKKOS_LAMBDA(const int vtx){
     vtxMatrixMass_l(vtx) = vtxMatrices(vtx, 0);
   });
-  Kokkos::fence();
   this->vtxMatrixMass = vtxMatrixMass_l;
 
   invertMatrix(vtxMatrices, radius);
 }
 
 void MPMesh::invertMatrix(const Kokkos::View<double**>& vtxMatrices, const double& radius){
+
   int nVertices = p_mesh->getNumVertices();
   auto vtxCoords = p_mesh->getMeshField<polyMPO::MeshF_VtxCoords>();
   auto dual_triangle_area = p_mesh->getMeshField<MeshF_DualTriangleArea>();
@@ -187,7 +192,7 @@ void MPMesh::invertMatrix(const Kokkos::View<double**>& vtxMatrices, const doubl
   Kokkos::View<double*[3][vec4d_nEntries]> VtxCoeffs("VtxCoeffs", nVertices);
   Kokkos::deep_copy(VtxCoeffs, 0.0);
   Kokkos::View<double*> nearAnEdge_l("nearAnEdge_l", nVertices);
-
+  
   Kokkos::parallel_for("invertMatrix", nVertices, KOKKOS_LAMBDA(const int vtx){
     if(vtxMatrices(vtx, 0) < eps)
       return;
@@ -204,7 +209,7 @@ void MPMesh::invertMatrix(const Kokkos::View<double**>& vtxMatrices, const doubl
     }
 
     auto cosLat = sqrt(pow(X, 2) +  pow(Y, 2));
-    auto invCosLat = 1.0/cosLat;
+    auto invCosLat = 1.0/cosLat;    
     auto vtx_area_sqrt = sqrt(dual_triangle_area(vtx,0)/(radius*radius));
 
     Vec3d v0 = { -Y * invCosLat,  -Z * X * invCosLat,  X / vtx_area_sqrt };
@@ -276,7 +281,7 @@ void MPMesh::invertMatrix(const Kokkos::View<double**>& vtxMatrices, const doubl
     iBlockC[0] = blockC[0] * invM2D[0] +  blockC[1] * invM2D[1] +  blockC[2] * invM2D[2];
     iBlockC[1] = blockC[0] * invM2D[1] +  blockC[1] * invM2D[3] +  blockC[2] * invM2D[4];
     iBlockC[2] = blockC[0] * invM2D[2] +  blockC[1] * invM2D[4] +  blockC[2] * invM2D[5];
-    iBlockC = iBlockC*invM11;
+    iBlockC = iBlockC*invM11; 
 
     VtxCoeffs(vtx, 0, 0) = invM11 + invM11*iBlockC.dot(blockC);
     auto temp = -rotateScaleM.rightMultiply(iBlockC);
@@ -288,7 +293,7 @@ void MPMesh::invertMatrix(const Kokkos::View<double**>& vtxMatrices, const doubl
     VtxCoeffs(vtx, 1, 1) = invM2D[0] * rotateScaleM(0, 0) + invM2D[1] * rotateScaleM(0, 1) + invM2D[2] * rotateScaleM(0, 2);
     VtxCoeffs(vtx, 1, 2) = invM2D[0] * rotateScaleM(1, 0) + invM2D[1] * rotateScaleM(1, 1) + invM2D[2] * rotateScaleM(1, 2);
     VtxCoeffs(vtx, 1, 3) = invM2D[0] * rotateScaleM(2, 0) + invM2D[1] * rotateScaleM(2, 1) + invM2D[2] * rotateScaleM(2, 2);
-
+   
     VtxCoeffs(vtx, 2, 0) = -iBlockC[1];
     VtxCoeffs(vtx, 2, 1) = invM2D[1] * rotateScaleM(0, 0) + invM2D[3] * rotateScaleM(0, 1) + invM2D[4] * rotateScaleM(0, 2);
     VtxCoeffs(vtx, 2, 2) = invM2D[1] * rotateScaleM(1, 0) + invM2D[3] * rotateScaleM(1, 1) + invM2D[4] * rotateScaleM(1, 2);
@@ -316,6 +321,7 @@ void MPMesh::invertMatrix(const Kokkos::View<double**>& vtxMatrices, const doubl
 
 template <MeshFieldIndex meshFieldIndex>
 void MPMesh::assemblyVtx1(){
+  Kokkos::Timer timer;
 
   int self, numProcsTot;
   MPI_Comm comm = p_MPs->getMPIComm();
@@ -352,7 +358,7 @@ void MPMesh::assemblyVtx1(){
       int nVtxE = elm2VtxConn(elm,0); //number of vertices bounding the element
       for(int i=0; i<nVtxE; i++){
         int vID = elm2VtxConn(elm,i+1)-1;
-        double w_vtx=weight(mp,i);
+        double w_vtx=weight(mp,i); 
         double CoordDiffs[vec4d_nEntries] = {1, (-vtxCoords(vID,0) + mpPositions(mp,0))/radius,
                                                 (-vtxCoords(vID,1) + mpPositions(mp,1))/radius,
                                                 (-vtxCoords(vID,2) + mpPositions(mp,2))/radius};
@@ -370,9 +376,13 @@ void MPMesh::assemblyVtx1(){
   };
   p_MPs->parallel_for(reconstruct, "reconstruct");
   Kokkos::fence();
+  pumipic::RecordTime("Assemble Field per process" + std::to_string(self), timer.seconds());
+
+  timer.reset();
   if(numProcsTot>1){
     communicate_and_take_halo_contributions_gpu_aware(meshField, numVertices, numEntries, 0, 0);
   }
+  pumipic::RecordTime("Communicate Field Values" + std::to_string(self), timer.seconds());
 }
 
 template <MeshFieldIndex meshFieldIndex>
@@ -418,7 +428,7 @@ DoubleView MPMesh::wtScaAssembly(){
       // last component of eVtxCoords stores the firs vertex (to avoid if-condition in the Wachspress computation)
       eVtxCoords[nElmVtxs][0] = vtxCoords(elm2VtxConn(elm,1)-1,0);
       eVtxCoords[nElmVtxs][1] = vtxCoords(elm2VtxConn(elm,1)-1,1);
-
+     
       /* compute the values of basis functions at mp position */
       double basisByArea[maxElmsPerVtx];
       Vec2d mpCoord(mpPositions(mp,0), mpPositions(mp,1));
@@ -457,7 +467,7 @@ Vec2dView MPMesh::wtVec2Assembly(){
       Vec2d eVtxCoords[maxVtxsPerElm + 1];
       for (int i = 1; i <= nElmVtxs; i++) {
         // elm2VtxConn(elm,i) is the vertex ID (1-based index) of vertex #i of elm
-        eVtxCoords[i-1][0] = vtxCoords(elm2VtxConn(elm,i)-1,0);
+        eVtxCoords[i-1][0] = vtxCoords(elm2VtxConn(elm,i)-1,0);   
         eVtxCoords[i-1][1] = vtxCoords(elm2VtxConn(elm,i)-1,1);
       }
       // last component of eVtxCoords stores the firs vertex (to avoid if-condition in the Wachspress computation)

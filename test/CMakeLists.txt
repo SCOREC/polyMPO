@@ -93,6 +93,7 @@ pmpo_add_test(testFortran 1 ./testFortran)
 pmpo_add_test(testFortranMPMeshModule 1 ./testFortranMPMeshModule)
 pmpo_add_test(testFortranMPAppIDs 1 ./testFortranMPAppIDs)
 pmpo_add_test(test_gpu_aware_halo_exchange 4 ./testGPUAwareHaloExchange)
+set_tests_properties(test_gpu_aware_halo_exchange PROPERTIES SKIP_RETURN_CODE 77)
 
 #set NC file for test
 set(TEST_NC_FILE_PLANAR "${CMAKE_SOURCE_DIR}/test/sample_mpas_meshes/planar_nonuniform_cvt_for_square_673elms.nc")

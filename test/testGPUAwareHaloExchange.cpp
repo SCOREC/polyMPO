@@ -45,11 +45,13 @@ int main(int argc, char** argv)
         if (size != 4) {
             if (rank == 0) {
                 std::cerr
-                    << "This test requires exactly 4 MPI ranks."
+                    << "This test requires exactly 4 MPI ranks (got "
+                    << size << "); skipping."
                     << std::endl;
             }
-
-            MPI_Abort(MPI_COMM_WORLD, 1);
+            Kokkos::finalize();
+            MPI_Finalize();
+            return 77;
         }
 
         // Create the existing polyMPO test mesh and MPMesh.

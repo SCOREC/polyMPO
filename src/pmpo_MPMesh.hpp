@@ -42,7 +42,7 @@ class MPMesh{
     std::vector<std::vector<int>> ownerHaloLocalIDs;
 
     void startCommunication();
-
+    
     void communicate_and_take_halo_contributions(const Kokkos::View<double**>& meshField, int nEntities, int numEntries, int mode, int op);
     
     //Now Kokkos views are made 1D
@@ -66,6 +66,7 @@ class MPMesh{
       std::vector<std::vector<int>>    recvIDVec;
       std::vector<std::vector<double>> recvDataVec;
       pumipic::RecordTime("SD: Recv Vec Allocation-" + std::to_string(self), timer.seconds());
+
       timer.reset();
       //communicateFieldsFromHostView(fieldData1, nEntities, numEntries, mode, recvIDVec, recvDataVec);
       communicateFieldsFromHostView(reconVals_host, nEntities, numEntries, mode, recvIDVec, recvDataVec);
@@ -119,6 +120,7 @@ class MPMesh{
         assert(recvDataVec[i].size() == recvIDVec[i].size() * numEntries);
       }
       pumipic::RecordTime("SD: Copy CPU-GPU2-" + std::to_string(self), timer.seconds());
+
       //Take contributions from other procs
       timer.reset();
       Kokkos::parallel_for("halo contribution", recvIDGPU.size(), KOKKOS_LAMBDA(const int i){
@@ -132,8 +134,9 @@ class MPMesh{
       pumipic::RecordTime("SD: Contribution" + std::to_string(self), timer.seconds());
     }
 
+
     void communicateFields(const std::vector<std::vector<double>>& fieldData, const int numEntities, const int numEntries, int mode,
-                           std::vector<std::vector<int>>& recvIDVec, std::vector<std::vector<double>>& recvDataVec);
+                             std::vector<std::vector<int>>& recvIDVec, std::vector<std::vector<double>>& recvDataVec);
 
     template <class ViewType> 
     void communicateFieldsFromHostView(

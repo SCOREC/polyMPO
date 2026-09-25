@@ -249,6 +249,8 @@ jobs:
       run: cmake --build ${{ runner.temp }}/build-polyMPO -j8 --target install
 
     - name: PolyMPO Test
+      env:
+        UCX_TLS: self,sm,tcp
       run: ctest --test-dir ${{ runner.temp }}/build-polyMPO
 
     - name: PolyMPO Print

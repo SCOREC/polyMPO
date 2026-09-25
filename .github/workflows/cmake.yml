@@ -26,6 +26,11 @@ jobs:
     - name: Install mpi
       run: sudo apt-get install -yq mpich libmpich-dev
 
+    - name: Show MPI launchers
+      run: |
+        ls -l /usr/bin/mpirun /usr/bin/mpiexec* /etc/alternatives/mpirun || true
+        mpiexec.mpich --version || true
+
     - name: Install Valgrind
       run: sudo apt-get install -yq valgrind
 
@@ -238,6 +243,7 @@ jobs:
         -DIS_TESTING=on
         -DCMAKE_CXX_COMPILER=mpicxx
         -DCMAKE_INSTALL_PREFIX=${{ runner.temp }}/build-polyMPO/install
+        -DMPIRUN=/usr/bin/mpiexec.mpich
     
     - name: PolyMPO Build
       run: cmake --build ${{ runner.temp }}/build-polyMPO -j8 --target install

@@ -21,6 +21,7 @@ set(SOURCES
 )
 
 add_library(polyMPO-core ${SOURCES})
+target_compile_definitions(polyMPO-core PUBLIC CUDA_AWARE_MPI)
 set_property(TARGET polyMPO-core PROPERTY CXX_STANDARD "17")
 set_property(TARGET polyMPO-core PROPERTY CXX_STANDARD_REQUIRED ON)
 set_property(TARGET polyMPO-core PROPERTY CXX_EXTENSIONS OFF)

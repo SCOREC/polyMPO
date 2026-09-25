@@ -171,7 +171,7 @@ void MPMesh::calculateStressDivergence(){
   timer.reset();
   if(numProcsTot>1){ 
     //Takes contribution of halo vertices and adds it in owner procs
-    communicate_and_take_halo_contributions1(stress_divUV, numVertices, 2, 0, 0);
+    communicate_and_take_halo_contributions1_improved(stress_divUV, numVertices, 2, 0, 0);
     //Transfer the correct values at owned vertices to halo vertices
     //communicate_and_take_halo_contributions(stress_divUV, numVertices, 2, 1, 1);
   }

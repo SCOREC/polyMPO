@@ -151,6 +151,19 @@ void polympo_aggregate_deluDyn_f(MPMesh_ptr p_mpmesh);
 void polympo_finalize_deludelvDyn_f(MPMesh_ptr p_mpmesh);
 void polympo_setOpenWaterAreaMP_f(MPMesh_ptr p_mpmesh, const int nComps, const int numMPs, double* array);
 void polympo_getOpenWaterAreaCell_f(MPMesh_ptr p_mpmesh, const int nCells, double* array);
+void polympo_setIceAreaCategoryMP_f(MPMesh_ptr p_mpmesh, const int nComps, const int numMPs, double* array);
+void polympo_getIceAreaCategoryCell_f(MPMesh_ptr p_mpmesh, const int nComps, const int nCells, double* array);
+
+void polympo_setIceVolumeCategoryMP_f(MPMesh_ptr p_mpmesh, const int nComps, const int numMPs, double* array);
+void polympo_getIceVolumeCategoryCell_f(MPMesh_ptr p_mpmesh, const int nComps, const int nCells, double* array);
+
+void polympo_setSnowVolumeCategoryMP_f(MPMesh_ptr p_mpmesh, const int nComps, const int numMPs, double* array);
+void polympo_getSnowVolumeCategoryCell_f(MPMesh_ptr p_mpmesh, const int nComps, const int nCells, double* array);
+
+void polympo_setIceAreaCategoryCellAndMapToMP_f(MPMesh_ptr p_mpmesh, const int nComps, const int nCells, double* array);
+void polympo_setIceVolumeCategoryCellAndMapToMP_f(MPMesh_ptr p_mpmesh, const int nComps, const int nCells, double* array);
+void polympo_setSnowVolumeCategoryCellAndMapToMP_f(MPMesh_ptr p_mpmesh, const int nComps, const int nCells, double* array);
+
 void polympo_get_oceanStressCellMP_f(MPMesh_ptr p_mpmesh, const int nParticles, double* uArray, double* vArray);
 
 // Timing

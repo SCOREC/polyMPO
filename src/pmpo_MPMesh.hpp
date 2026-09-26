@@ -24,9 +24,17 @@ template <> const MaterialPointSlice meshFieldIndexToMPSlice < MeshF_RotLatLonIn
 template <> const MaterialPointSlice meshFieldIndexToMPSlice < MeshF_OnSurfVeloIncr > = MPF_Vel_Incr;
 template <> const MaterialPointSlice meshFieldIndexToMPSlice < MeshF_OceanStressCell> = MPF_OceanStress;
 
+template <> const MaterialPointSlice meshFieldIndexToMPSlice < MeshF_IceAreaCategory    > = MPF_IceAreaCategory;
+template <> const MaterialPointSlice meshFieldIndexToMPSlice < MeshF_IceVolumeCategory  > = MPF_IceVolumeCategory;
+template <> const MaterialPointSlice meshFieldIndexToMPSlice < MeshF_SnowVolumeCategory > = MPF_SnowVolumeCategory;
+
 template <MaterialPointSlice>
 const MeshFieldIndex MPSliceToMeshFieldIndex;
 template <> const MeshFieldIndex MPSliceToMeshFieldIndex < MPF_OpenWaterArea  > = MeshF_OpenWaterArea;
+
+template <> const MeshFieldIndex MPSliceToMeshFieldIndex < MPF_IceAreaCategory    > = MeshF_IceAreaCategory;
+template <> const MeshFieldIndex MPSliceToMeshFieldIndex < MPF_IceVolumeCategory  > = MeshF_IceVolumeCategory;
+template <> const MeshFieldIndex MPSliceToMeshFieldIndex < MPF_SnowVolumeCategory > = MeshF_SnowVolumeCategory;
 
 #define maxMPsPerElm 8
 
@@ -692,6 +700,7 @@ class MPMesh{
     void mapMPsToCells(){
       //MP field mesh field mapping
       constexpr MeshFieldIndex meshFieldIndex = MPSliceToMeshFieldIndex<MPSlice>;
+      const int numEntries = mpSliceToNumEntries<MPSlice>();
       auto mpField   = p_MPs->getData<MPSlice>();
       auto meshField = p_mesh->getMeshField<meshFieldIndex>();
       Kokkos::deep_copy(meshField, 0.0); 
@@ -710,6 +719,7 @@ class MPMesh{
       Kokkos::View<int*> nMPsPerCell("nMPsPerCell", nElms);
       Kokkos::View<double*> sumAreaMP("sumAreaMP", nElms);
       Kokkos::deep_copy(nMPsPerCell, 0);
+      Kokkos::deep_copy(sumAreaMP, 0.0);
       auto calcMPsCell = PS_LAMBDA(const int& elm, const int& mp, const int& mask){
         if(mask){
           Kokkos::atomic_increment(&nMPsPerCell(elm));
@@ -753,6 +763,11 @@ class MPMesh{
       invertMatrix(lsMatrices, radius, false);
       auto precomputedElmCoeffs_l = this->precomputedElmCoeffs_new;
 
+      Kokkos::View<double**> minVals("minVals", nElms, numEntries);
+      Kokkos::View<double**> maxVals("maxVals", nElms, numEntries);
+      Kokkos::deep_copy(minVals, std::numeric_limits<double>::max());
+      Kokkos::deep_copy(maxVals, std::numeric_limits<double>::lowest());
+
       auto calcCellField= PS_LAMBDA(const int& elm, const int& mp, const int& mask) {
         if(mask) { //if material point is 'active'/'enabled
           if(nMPsPerCell(elm) <= 0) return;
@@ -761,10 +776,29 @@ class MPMesh{
           double psi = wp * (precomputedElmCoeffs_l(elm, 0, 0) + (precomputedElmCoeffs_l(elm, 0, 1) * pXYZ[0] + 
                                                                   precomputedElmCoeffs_l(elm, 0, 2) * pXYZ[1] +
                                                                   precomputedElmCoeffs_l(elm, 0, 3) * pXYZ[2])/radius);
-          Kokkos::atomic_add(&meshField(elm, 0), mpField(mp,0)*psi);
+
+                
+         for (int comp=0; comp<numEntries; comp++)
+         {
+          Kokkos::atomic_add(&meshField(elm, comp), mpField(mp,comp)*psi);
+          Kokkos::atomic_fetch_min(&minVals(elm,comp), mpField(mp,comp));
+          Kokkos::atomic_fetch_max(&maxVals(elm,comp), mpField(mp,comp));
+         }
         }
       };
       p_MPs->parallel_for(calcCellField, "calcCellField");
+
+      Kokkos::fence();
+
+      Kokkos::parallel_for("clampCellField", nElms, KOKKOS_LAMBDA(const int elm){
+        if(nMPsPerCell(elm) <= 0) return;
+        for (int comp=0; comp<numEntries; comp++) {
+          double v = meshField(elm, comp);
+          if (v < minVals(elm,comp)) v = minVals(elm,comp);
+          if (v > maxVals(elm,comp)) v = maxVals(elm,comp);
+          meshField(elm, comp) = v;
+      }
+     });
     }
 
     template<MeshFieldIndex mfIndex>
@@ -801,22 +835,28 @@ class MPMesh{
         //Calculate mapped Value
         Kokkos::View<double*> centerValues("centerValues", nElms);
         Kokkos::View<double*> grads("grads", 2*nElms);
+        Kokkos::View<double*> cellMinValues("cellMinValues", nElms);
+        Kokkos::View<double*> cellMaxValues("cellMaxValues", nElms);
 
         Kokkos::parallel_for("calcMatrix", nElms, KOKKOS_LAMBDA(const int elm){   
           if(nMPsPerCell(elm) <= 0) return;
           double lsMatrix[3]={0.0};
           double rsMatrix[2]={0.0};
+          double cellMin = meshField(elm, comp);
+          double cellMax = meshField(elm, comp);
 
           int numConnElms = elm2ElmConn(elm, 0);
           for(int i=1; i<=numConnElms; i++){
             int elmID = elm2ElmConn(elm,i)-1;
-            if(elmID >= nElms)
+            if(elmID < 0 || elmID >= nElms)
               continue;
             lsMatrix[0] += (gnomProjCellOnCell(elm, i-1, 0) - gnomProjCell(elm, 0)) * (gnomProjCellOnCell(elm, i-1, 0) - gnomProjCell(elm, 0)); 
             lsMatrix[1] += (gnomProjCellOnCell(elm, i-1, 0) - gnomProjCell(elm, 0)) * (gnomProjCellOnCell(elm, i-1, 1) - gnomProjCell(elm, 1));
             lsMatrix[2] += (gnomProjCellOnCell(elm, i-1, 1) - gnomProjCell(elm, 1)) * (gnomProjCellOnCell(elm, i-1, 1) - gnomProjCell(elm, 1));
             rsMatrix[0] += (meshField(elmID, comp)- meshField(elm, comp)) * (gnomProjCellOnCell(elm, i-1, 0) - gnomProjCell(elm, 0));
             rsMatrix[1] += (meshField(elmID, comp)- meshField(elm, comp)) * (gnomProjCellOnCell(elm, i-1, 1) - gnomProjCell(elm, 1));
+            if (meshField(elmID, comp) < cellMin) cellMin = meshField(elmID, comp);
+            if (meshField(elmID, comp) > cellMax) cellMax = meshField(elmID, comp);
           }
           double det = lsMatrix[0] * lsMatrix[2] - lsMatrix[1] * lsMatrix[1];
           double grad[2] = {0.0, 0.0};
@@ -829,7 +869,11 @@ class MPMesh{
           grads(2*elm + 0) = grad[0];
           grads(2*elm + 1) = grad[1];
           centerValues(elm) = centerVal;
+          cellMinValues(elm) = cellMin;
+          cellMaxValues(elm) = cellMax;
         });
+        
+        Kokkos::fence();
 
         auto calcMPValue = PS_LAMBDA(const int& elm, const int& mp, const int& mask){
           if(mask){
@@ -843,7 +887,10 @@ class MPMesh{
             auto gnomProjElmCenter_sub = Kokkos::subview(gnomProjElmCenter, elm, Kokkos::ALL);
             computeGnomonicProjectionAtPoint(position3d, gnomProjElmCenter_sub, mpProjX, mpProjY);
 
-            mpField(mp, comp) = centerValues(elm) + grads(2*elm + 0) * mpProjX + grads(2*elm + 1) * mpProjY;
+            double mpVal = centerValues(elm) + grads(2*elm + 0) * mpProjX + grads(2*elm + 1) * mpProjY;
+            if (mpVal < cellMinValues(elm)) mpVal = cellMinValues(elm);
+            if (mpVal > cellMaxValues(elm)) mpVal = cellMaxValues(elm);
+            mpField(mp, comp) = mpVal;
           }
         };
         p_MPs->parallel_for(calcMPValue, "calcMPValue");

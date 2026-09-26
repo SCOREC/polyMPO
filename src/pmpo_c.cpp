@@ -1971,6 +1971,184 @@ void polympo_getOpenWaterAreaCell_f(MPMesh_ptr p_mpmesh, const int nCells, doubl
   }
 }
 
+
+void polympo_setIceAreaCategoryMP_f(MPMesh_ptr p_mpmesh, const int nComps, const int numMPs, double* array){
+  Kokkos::Timer timer;
+  checkMPMeshValid(p_mpmesh);
+  auto p_MPs = ((polyMPO::MPMesh*)p_mpmesh)->p_MPs;
+  int self;
+  MPI_Comm comm = p_MPs->getMPIComm();
+  MPI_Comm_rank(comm, &self);
+  PMT_ALWAYS_ASSERT(nComps == nIceCategories);
+  PMT_ALWAYS_ASSERT(numMPs >= p_MPs->getCount());
+  auto iceAreaCategoryMP = p_MPs->getData<polyMPO::MPF_IceAreaCategory>();
+  auto mpAppID           = p_MPs->getData<polyMPO::MPF_MP_APP_ID>();
+  //Fortran layout is particle-major (each particle's nComps values contiguous)
+  kkViewHostU<const double**> iceAreaCategoryMP_h(array, nComps, numMPs);
+  Kokkos::View<double**> iceAreaCategoryMP_d("mpIceAreaCategory", nComps, numMPs);
+  Kokkos::deep_copy(iceAreaCategoryMP_d, iceAreaCategoryMP_h);
+  auto setIceAreaCategory = PS_LAMBDA(const int& elm, const int& mp, const int& mask){
+  if(mask){
+    for(int comp=0; comp<nComps; comp++){
+      iceAreaCategoryMP(mp,comp) = iceAreaCategoryMP_d(comp, mpAppID(mp));
+    }
+  }
+};  
+
+  p_MPs->parallel_for(setIceAreaCategory, "setMPIceAreaCategory");
+  pumipic::RecordTime("PolyMPO_setIceAreaCategory" + std::to_string(self), timer.seconds());
+  auto mpmesh = ((polyMPO::MPMesh*)p_mpmesh);
+  mpmesh->mapMPsToCells<polyMPO::MPF_IceAreaCategory>();
+}
+
+void polympo_getIceAreaCategoryCell_f(MPMesh_ptr p_mpmesh, const int nComps, const int nCells, double* array){
+  checkMPMeshValid(p_mpmesh);
+  auto p_mesh = ((polyMPO::MPMesh*)p_mpmesh)->p_mesh;
+  PMT_ALWAYS_ASSERT(p_mesh->getNumElements()==nCells);
+  PMT_ALWAYS_ASSERT(nComps == nIceCategories);
+  auto field = p_mesh->getMeshField<polyMPO::MeshF_IceAreaCategory>();
+  auto h_field = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), field);
+  for(int i=0; i<nCells; i++){
+    for(int comp=0; comp<nComps; comp++){
+      array[i*nComps + comp] = h_field(i,comp);
+    }
+  }
+}
+
+void polympo_setIceVolumeCategoryMP_f(MPMesh_ptr p_mpmesh, const int nComps, const int numMPs, double* array){
+  Kokkos::Timer timer;
+  checkMPMeshValid(p_mpmesh);
+  auto p_MPs = ((polyMPO::MPMesh*)p_mpmesh)->p_MPs;
+  int self;
+  MPI_Comm comm = p_MPs->getMPIComm();
+  MPI_Comm_rank(comm, &self);
+  PMT_ALWAYS_ASSERT(nComps == nIceCategories);
+  PMT_ALWAYS_ASSERT(numMPs >= p_MPs->getCount());
+  auto iceVolumeCategoryMP = p_MPs->getData<polyMPO::MPF_IceVolumeCategory>();
+  auto mpAppID             = p_MPs->getData<polyMPO::MPF_MP_APP_ID>();
+  kkViewHostU<const double**> iceVolumeCategoryMP_h(array, nComps, numMPs);
+  Kokkos::View<double**> iceVolumeCategoryMP_d("mpIceVolumeCategory", nComps, numMPs);
+  Kokkos::deep_copy(iceVolumeCategoryMP_d, iceVolumeCategoryMP_h);
+  auto setIceVolumeCategory = PS_LAMBDA(const int& elm, const int& mp, const int& mask){
+  if(mask){
+    for(int comp=0; comp<nComps; comp++){
+      iceVolumeCategoryMP(mp,comp) = iceVolumeCategoryMP_d(comp, mpAppID(mp));
+    }
+  }
+};
+  p_MPs->parallel_for(setIceVolumeCategory, "setMPIceVolumeCategory");
+  pumipic::RecordTime("PolyMPO_setIceVolumeCategory" + std::to_string(self), timer.seconds());
+  auto mpmesh = ((polyMPO::MPMesh*)p_mpmesh);
+  mpmesh->mapMPsToCells<polyMPO::MPF_IceVolumeCategory>();
+}
+
+void polympo_getIceVolumeCategoryCell_f(MPMesh_ptr p_mpmesh, const int nComps, const int nCells, double* array){
+  checkMPMeshValid(p_mpmesh);
+  auto p_mesh = ((polyMPO::MPMesh*)p_mpmesh)->p_mesh;
+  PMT_ALWAYS_ASSERT(p_mesh->getNumElements()==nCells);
+  PMT_ALWAYS_ASSERT(nComps == nIceCategories);
+  auto field = p_mesh->getMeshField<polyMPO::MeshF_IceVolumeCategory>();
+  auto h_field = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), field);
+  for(int i=0; i<nCells; i++){
+    for(int comp=0; comp<nComps; comp++){
+      array[i*nComps + comp] = h_field(i,comp);
+    }
+  }
+}
+
+void polympo_setSnowVolumeCategoryMP_f(MPMesh_ptr p_mpmesh, const int nComps, const int numMPs, double* array){
+  Kokkos::Timer timer;
+  checkMPMeshValid(p_mpmesh);
+  auto p_MPs = ((polyMPO::MPMesh*)p_mpmesh)->p_MPs;
+  int self;
+  MPI_Comm comm = p_MPs->getMPIComm();
+  MPI_Comm_rank(comm, &self);
+  PMT_ALWAYS_ASSERT(nComps == nIceCategories);
+  PMT_ALWAYS_ASSERT(numMPs >= p_MPs->getCount());
+  auto snowVolumeCategoryMP = p_MPs->getData<polyMPO::MPF_SnowVolumeCategory>();
+  auto mpAppID              = p_MPs->getData<polyMPO::MPF_MP_APP_ID>();
+  kkViewHostU<const double**> snowVolumeCategoryMP_h(array, nComps, numMPs);
+  Kokkos::View<double**> snowVolumeCategoryMP_d("mpSnowVolumeCategory", nComps, numMPs);
+  Kokkos::deep_copy(snowVolumeCategoryMP_d, snowVolumeCategoryMP_h);
+  auto setSnowVolumeCategory = PS_LAMBDA(const int& elm, const int& mp, const int& mask){
+  if(mask){
+    for(int comp=0; comp<nComps; comp++){
+      snowVolumeCategoryMP(mp,comp) = snowVolumeCategoryMP_d(comp, mpAppID(mp));
+    }
+  }
+};
+  p_MPs->parallel_for(setSnowVolumeCategory, "setMPSnowVolumeCategory");
+  pumipic::RecordTime("PolyMPO_setSnowVolumeCategory" + std::to_string(self), timer.seconds());
+  auto mpmesh = ((polyMPO::MPMesh*)p_mpmesh);
+  mpmesh->mapMPsToCells<polyMPO::MPF_SnowVolumeCategory>();
+}
+
+void polympo_getSnowVolumeCategoryCell_f(MPMesh_ptr p_mpmesh, const int nComps, const int nCells, double* array){
+  checkMPMeshValid(p_mpmesh);
+  auto p_mesh = ((polyMPO::MPMesh*)p_mpmesh)->p_mesh;
+  PMT_ALWAYS_ASSERT(p_mesh->getNumElements()==nCells);
+  PMT_ALWAYS_ASSERT(nComps == nIceCategories);
+  auto field = p_mesh->getMeshField<polyMPO::MeshF_SnowVolumeCategory>();
+  auto h_field = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), field);
+  for(int i=0; i<nCells; i++){
+    for(int comp=0; comp<nComps; comp++){
+      array[i*nComps + comp] = h_field(i,comp);
+    }
+  }
+}
+
+
+void polympo_setIceAreaCategoryCellAndMapToMP_f(MPMesh_ptr p_mpmesh, const int nComps, const int nCells, double* array){
+  checkMPMeshValid(p_mpmesh);
+  auto mpMesh = (polyMPO::MPMesh*)p_mpmesh;
+  auto p_mesh = mpMesh->p_mesh;
+  PMT_ALWAYS_ASSERT(p_mesh->getNumElements()==nCells);
+  PMT_ALWAYS_ASSERT(nComps == nIceCategories);
+  auto field = p_mesh->getMeshField<polyMPO::MeshF_IceAreaCategory>();
+  auto h_field = Kokkos::create_mirror_view(field);
+  for(int i=0; i<nCells; i++){
+    for(int comp=0; comp<nComps; comp++){
+      h_field(i,comp) = array[i*nComps + comp];
+    }
+  }
+  Kokkos::deep_copy(field, h_field);
+  mpMesh->mapCellsToMPs<polyMPO::MeshF_IceAreaCategory>();
+}
+
+void polympo_setIceVolumeCategoryCellAndMapToMP_f(MPMesh_ptr p_mpmesh, const int nComps, const int nCells, double* array){
+  checkMPMeshValid(p_mpmesh);
+  auto mpMesh = (polyMPO::MPMesh*)p_mpmesh;
+  auto p_mesh = mpMesh->p_mesh;
+  PMT_ALWAYS_ASSERT(p_mesh->getNumElements()==nCells);
+  PMT_ALWAYS_ASSERT(nComps == nIceCategories);
+  auto field = p_mesh->getMeshField<polyMPO::MeshF_IceVolumeCategory>();
+  auto h_field = Kokkos::create_mirror_view(field);
+  for(int i=0; i<nCells; i++){
+    for(int comp=0; comp<nComps; comp++){
+      h_field(i,comp) = array[i*nComps + comp];
+    }
+  }
+  Kokkos::deep_copy(field, h_field);
+  mpMesh->mapCellsToMPs<polyMPO::MeshF_IceVolumeCategory>();
+}
+
+void polympo_setSnowVolumeCategoryCellAndMapToMP_f(MPMesh_ptr p_mpmesh, const int nComps, const int nCells, double* array){
+  checkMPMeshValid(p_mpmesh);
+  auto mpMesh = (polyMPO::MPMesh*)p_mpmesh;
+  auto p_mesh = mpMesh->p_mesh;
+  PMT_ALWAYS_ASSERT(p_mesh->getNumElements()==nCells);
+  PMT_ALWAYS_ASSERT(nComps == nIceCategories);
+  auto field = p_mesh->getMeshField<polyMPO::MeshF_SnowVolumeCategory>();
+  auto h_field = Kokkos::create_mirror_view(field);
+  for(int i=0; i<nCells; i++){
+    for(int comp=0; comp<nComps; comp++){
+      h_field(i,comp) = array[i*nComps + comp];
+    }
+  }
+  Kokkos::deep_copy(field, h_field);
+  mpMesh->mapCellsToMPs<polyMPO::MeshF_SnowVolumeCategory>();
+}
+
 void polympo_get_oceanStressCellMP_f(MPMesh_ptr p_mpmesh, const int nParticles, double* uArray, double* vArray){
   checkMPMeshValid(p_mpmesh);
   auto p_MPs = ((polyMPO::MPMesh*)p_mpmesh)->p_MPs;

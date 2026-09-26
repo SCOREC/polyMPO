@@ -112,6 +112,10 @@ namespace polyMPO{
 
     oceanStressCell_ = MeshFView<MeshF_OceanStressCell>(meshFields2TypeAndString.at(MeshF_OceanStressCell).second, numElms_);
 
+    iceAreaCategory_    = MeshFView<MeshF_IceAreaCategory>(meshFields2TypeAndString.at(MeshF_IceAreaCategory).second, numElms_, nIceCategories);
+    iceVolumeCategory_  = MeshFView<MeshF_IceVolumeCategory>(meshFields2TypeAndString.at(MeshF_IceVolumeCategory).second, numElms_, nIceCategories);
+    snowVolumeCategory_ = MeshFView<MeshF_SnowVolumeCategory>(meshFields2TypeAndString.at(MeshF_SnowVolumeCategory).second, numElms_, nIceCategories);
+
   }
 
   void Mesh::computeRotLatLonIncr(){

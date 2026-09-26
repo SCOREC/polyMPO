@@ -8,6 +8,7 @@
 namespace polyMPO{
 
 #define maxVtxsPerElm 8
+#define nIceCategories 5
 #define maxElmsPerVtx 5
 
 using IntVtx2ElmView = Kokkos::View<int*[maxVtxsPerElm+1]>;
@@ -48,7 +49,10 @@ enum MeshFieldIndex{
     MeshF_OceanStressCell,
     MeshF_OceanStressCoeff,
     MeshF_OceanVelocity,
-    MeshF_OpenWaterArea
+    MeshF_OpenWaterArea,
+    MeshF_IceAreaCategory,
+    MeshF_IceVolumeCategory,
+    MeshF_SnowVolumeCategory
 };
 
 enum MeshFieldType{
@@ -91,6 +95,9 @@ template <> struct meshFieldToType < MeshF_OceanStressCell   > { using type = Ko
 template <> struct meshFieldToType < MeshF_OceanStressCoeff  > { using type = Kokkos::View<doubleSclr_t*>; };
 template <> struct meshFieldToType < MeshF_OceanVelocity     > { using type = Kokkos::View<vec2d_t*>; };
 template <> struct meshFieldToType < MeshF_OpenWaterArea     > { using type = Kokkos::View<doubleSclr_t*>; };
+template <> struct meshFieldToType < MeshF_IceAreaCategory   > { using type = Kokkos::View<double**>; };
+template <> struct meshFieldToType < MeshF_IceVolumeCategory > { using type = Kokkos::View<double**>; };
+template <> struct meshFieldToType < MeshF_SnowVolumeCategory> { using type = Kokkos::View<double**>; };
 
 template <MeshFieldIndex index>
 using MeshFView = typename meshFieldToType<index>::type;
@@ -129,7 +136,10 @@ const std::map<MeshFieldIndex, std::pair<MeshFieldType, std::string>> meshFields
         {MeshF_OceanStressCell,  {MeshFType_ElmBased,"MeshField_OceanStressCell"}},
         {MeshF_OceanStressCoeff, {MeshFType_VtxBased,"MeshField_OceanStressCoeff"}},
         {MeshF_OceanVelocity,    {MeshFType_VtxBased,"MeshField_OceanVelocity"}},
-        {MeshF_OpenWaterArea,    {MeshFType_ElmBased,"MeshField_OpenWaterArea"}}
+        {MeshF_OpenWaterArea,    {MeshFType_ElmBased,"MeshField_OpenWaterArea"}},
+        {MeshF_IceAreaCategory,  {MeshFType_ElmBased,"MeshField_IceAreaCategory"}},
+        {MeshF_IceVolumeCategory,{MeshFType_ElmBased,"MeshField_IceVolumeCategory"}},
+        {MeshF_SnowVolumeCategory,{MeshFType_ElmBased,"MeshField_SnowVolumeCategory"}}
 };
 
 enum mesh_type {mesh_unrecognized_lower = -1,
@@ -195,6 +205,9 @@ class Mesh {
     MeshFView<MeshF_OceanStressCoeff> oceanStressCoeff_;
     MeshFView<MeshF_OceanVelocity> oceanVelocity_;
     MeshFView<MeshF_OpenWaterArea> openWaterArea_;
+    MeshFView<MeshF_IceAreaCategory> iceAreaCategory_;
+    MeshFView<MeshF_IceVolumeCategory> iceVolumeCategory_;
+    MeshFView<MeshF_SnowVolumeCategory> snowVolumeCategory_;
 
     bool isRotatedFlag = false;
     double elasticTimeStep_;
@@ -411,6 +424,15 @@ auto Mesh::getMeshField(){
     }
     else if constexpr (index==MeshF_OpenWaterArea){
         return openWaterArea_;
+    }
+    else if constexpr (index==MeshF_IceAreaCategory){
+        return iceAreaCategory_;
+    }
+    else if constexpr (index==MeshF_IceVolumeCategory){
+        return iceVolumeCategory_;
+    }
+    else if constexpr (index==MeshF_SnowVolumeCategory){
+        return snowVolumeCategory_;
     }
     fprintf(stderr,"Mesh Field Index error!\n");
     exit(1);

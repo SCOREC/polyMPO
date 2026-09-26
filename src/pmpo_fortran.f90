@@ -1314,6 +1314,78 @@ module polympo
     type(c_ptr), value :: array
   end subroutine
 
+subroutine polympo_setIceAreaCategoryMP(mpMesh, nComps, numMPs, array) &
+           bind(C, NAME='polympo_setIceAreaCategoryMP_f')
+   use :: iso_c_binding
+   type(c_ptr), value :: mpMesh
+   integer(c_int), value :: nComps, numMPs
+   type(c_ptr), intent(in), value :: array
+end subroutine
+
+subroutine polympo_getIceAreaCategoryCell(mpMesh, nComps, nCells, array) &
+           bind(C, NAME='polympo_getIceAreaCategoryCell_f')
+   use :: iso_c_binding
+   type(c_ptr), value :: mpMesh
+   integer(c_int), value :: nComps, nCells
+   type(c_ptr), value :: array
+end subroutine
+
+subroutine polympo_setIceVolumeCategoryMP(mpMesh, nComps, numMPs, array) &
+           bind(C, NAME='polympo_setIceVolumeCategoryMP_f')
+   use :: iso_c_binding
+   type(c_ptr), value :: mpMesh
+   integer(c_int), value :: nComps, numMPs
+   type(c_ptr), intent(in), value :: array
+end subroutine
+
+subroutine polympo_getIceVolumeCategoryCell(mpMesh, nComps, nCells, array) &
+           bind(C, NAME='polympo_getIceVolumeCategoryCell_f')
+   use :: iso_c_binding
+   type(c_ptr), value :: mpMesh
+   integer(c_int), value :: nComps, nCells
+   type(c_ptr), value :: array
+end subroutine
+
+subroutine polympo_setSnowVolumeCategoryMP(mpMesh, nComps, numMPs, array) &
+           bind(C, NAME='polympo_setSnowVolumeCategoryMP_f')
+   use :: iso_c_binding
+   type(c_ptr), value :: mpMesh
+   integer(c_int), value :: nComps, numMPs
+   type(c_ptr), intent(in), value :: array
+end subroutine
+
+subroutine polympo_getSnowVolumeCategoryCell(mpMesh, nComps, nCells, array) &
+           bind(C, NAME='polympo_getSnowVolumeCategoryCell_f')
+   use :: iso_c_binding
+   type(c_ptr), value :: mpMesh
+   integer(c_int), value :: nComps, nCells
+   type(c_ptr), value :: array
+end subroutine
+
+  subroutine polympo_setIceAreaCategoryCellAndMapToMP(mpMesh, nComps, nCells, array) &
+             bind(C, NAME='polympo_setIceAreaCategoryCellAndMapToMP_f')
+    use :: iso_c_binding
+    type(c_ptr), value :: mpMesh
+    integer(c_int), value :: nComps, nCells
+    type(c_ptr), value :: array
+  end subroutine
+
+  subroutine polympo_setIceVolumeCategoryCellAndMapToMP(mpMesh, nComps, nCells, array) &
+             bind(C, NAME='polympo_setIceVolumeCategoryCellAndMapToMP_f')
+    use :: iso_c_binding
+    type(c_ptr), value :: mpMesh
+    integer(c_int), value :: nComps, nCells
+    type(c_ptr), value :: array
+  end subroutine
+
+  subroutine polympo_setSnowVolumeCategoryCellAndMapToMP(mpMesh, nComps, nCells, array) &
+             bind(C, NAME='polympo_setSnowVolumeCategoryCellAndMapToMP_f')
+    use :: iso_c_binding
+    type(c_ptr), value :: mpMesh
+    integer(c_int), value :: nComps, nCells
+    type(c_ptr), value :: array
+  end subroutine
+
   subroutine polympo_get_oceanStressCellMP(mpMesh, nParticles, uarray, varray) &
              bind(C, NAME='polympo_get_oceanStressCellMP_f')
     use :: iso_c_binding

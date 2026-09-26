@@ -369,7 +369,7 @@ module polympo
     use :: iso_c_binding
     type(c_ptr), value :: mpMesh
   end subroutine
- 
+
   subroutine polympo_setMPStrainRate(mpMesh, nComps, numMPs, array) &
              bind(C, NAME='polympo_setMPStrainRate_f')
     use :: iso_c_binding
@@ -386,7 +386,7 @@ module polympo
     type(c_ptr), value :: array
   end subroutine
 
- 
+
   !MP Stress
   subroutine polympo_calculateMPStress(mpMesh, constitutive_model) &
              bind(C, NAME='polympo_calculateMPStress_f')
@@ -419,6 +419,14 @@ module polympo
     type(c_ptr), value :: array
   end subroutine
 
+  subroutine polympo_getAreaMP(mpMesh, nComps, numMPs, array) &
+             bind(C, NAME='polympo_getAreaMP_f')
+    use :: iso_c_binding
+    type(c_ptr), value :: mpMesh
+    integer(c_int), value :: nComps, numMPs
+    type(c_ptr), value :: array
+  end subroutine
+
   subroutine polympo_setIcePressureMP(mpMesh, nComps, numMPs, array) &
              bind(C, NAME='polympo_setIcePressureMP_f')
     use :: iso_c_binding
@@ -426,7 +434,29 @@ module polympo
     integer(c_int), value :: nComps, numMPs
     type(c_ptr), value :: array
   end subroutine
-  
+
+  subroutine polympo_setOceanVelocity(mpMesh, nComps, nVertices, uArray, vArray) &
+             bind(C, NAME='polympo_setOceanVelocity_f')
+    use :: iso_c_binding
+    type(c_ptr), value :: mpMesh
+    integer(c_int), value :: nComps, nVertices
+    type(c_ptr), value :: uArray, vArray
+  end subroutine
+
+  subroutine polympo_subcycle_prep_arrays(mpMesh) &
+             bind(C, NAME='polympo_subcycle_prep_arrays_f')
+    use :: iso_c_binding
+    type(c_ptr), value :: mpMesh
+  end subroutine
+
+  subroutine polympo_setReplacementPressureMP(mpMesh, nComps, numMPs, array) &
+             bind(C, NAME='polympo_setReplacementPressureMP_f')
+    use :: iso_c_binding
+    type(c_ptr), value :: mpMesh
+    integer(c_int), value :: nComps, numMPs
+    type(c_ptr), value :: array
+  end subroutine
+
   subroutine polympo_getReplacementPressureMP(mpMesh, nComps, numMPs, array) &
              bind(C, NAME='polympo_getReplacementPressureMP_f')
     use :: iso_c_binding
@@ -756,6 +786,14 @@ module polympo
     type(c_ptr), value :: latitude
   end subroutine
 
+  subroutine polympo_setMeshVtxRotLon(mpMesh, nVertices, longitude) &
+             bind(C, NAME='polympo_setMeshVtxRotLon_f')
+    use :: iso_c_binding
+    type(c_ptr), value :: mpMesh
+    integer(c_int), value :: nVertices
+    type(c_ptr), intent(in), value :: longitude
+  end subroutine
+
   !---------------------------------------------------------------------------
   !> @brief set the vertices velocity from a host array
   !> @param mpmesh(in/out) MPMesh object
@@ -966,6 +1004,13 @@ module polympo
     type(c_ptr), value :: areaTriangle
   end subroutine
 
+  subroutine polympo_setMeshCellArea(mpMesh, nCells, areaCell) &
+             bind(C, NAME='polympo_setMeshCellArea_f')
+    use :: iso_c_binding
+    type(c_ptr), value :: mpMesh
+    integer(c_int), value :: nCells
+    type(c_ptr), intent(in), value :: areaCell
+  end subroutine
 
   subroutine polympo_setGnomonicProjection(mpMesh) &
              bind(C, NAME='polympo_setGnomonicProjection_f')
@@ -994,7 +1039,7 @@ module polympo
     type(c_ptr), value :: mpMesh
     real(c_double), value :: dynamicTimeStep
   end subroutine
-  
+
   subroutine polympo_setSolveStressMesh(mpMesh, nCells, array) &
              bind(C, NAME='polympo_setSolveStressMesh_f')
     use :: iso_c_binding
@@ -1005,6 +1050,14 @@ module polympo
 
   subroutine polympo_setSolveVelocityMesh(mpMesh, nVertices, array) &
              bind(C, NAME='polympo_setSolveVelocityMesh_f')
+    use :: iso_c_binding
+    type(c_ptr), value :: mpMesh
+    integer(c_int), value :: nVertices
+    type(c_ptr), value :: array
+  end subroutine
+
+ subroutine polympo_setIceAreaVertex(mpMesh, nVertices, array) &
+             bind(C, NAME='polympo_setIceAreaVertex_f')
     use :: iso_c_binding
     type(c_ptr), value :: mpMesh
     integer(c_int), value :: nVertices
@@ -1040,7 +1093,7 @@ module polympo
     integer(c_int), value :: nVertices
     type(c_ptr), value :: uArray, vArray
   end subroutine
-  
+
   subroutine polympo_set_surfaceTiltForce(mpMesh, nVertices, uArray, vArray) &
              bind(C, NAME='polympo_set_surfaceTiltForce_f')
     use :: iso_c_binding
@@ -1065,12 +1118,27 @@ module polympo
     type(c_ptr), value :: uArray, vArray
   end subroutine
 
+  subroutine polympo_set_oceanStressCell(mpMesh, nCells, uArray, vArray) &
+             bind(C, NAME='polympo_set_oceanStressCell_f')
+    use :: iso_c_binding
+    type(c_ptr), value :: mpMesh
+    integer(c_int), value :: nCells
+    type(c_ptr), value :: uArray, vArray
+  end subroutine
+
   subroutine polympo_set_oceanStressCoefficient(mpMesh, nVertices, array) &
              bind(C, NAME='polympo_set_oceanStressCoefficient_f')
     use :: iso_c_binding
     type(c_ptr), value :: mpMesh
     integer(c_int), value :: nVertices
     type(c_ptr), value :: array
+  end subroutine
+
+  subroutine polympo_calculate_oceanStressCoefficient(mpMesh, configIceOceanDragCoeff) &
+             bind(C, NAME='polympo_calculate_oceanStressCoefficient_f')
+    use :: iso_c_binding
+    type(c_ptr), value :: mpMesh
+    real(c_double), value::configIceOceanDragCoeff
   end subroutine
 
   subroutine  polympo_velocity_grid_solve(mpMesh) &
@@ -1091,13 +1159,13 @@ module polympo
              bind(C, NAME='polympo_set_free_slip_bc_f')
     use :: iso_c_binding
     type(c_ptr), value :: mpMesh
-  end subroutine 
+  end subroutine
 
   subroutine polympo_set_halo_vel_from_owner(mpMesh) &
              bind(C, NAME='polympo_set_halo_vel_from_owner_f')
     use :: iso_c_binding
     type(c_ptr), value :: mpMesh
-  end subroutine 
+  end subroutine
 
   !---------------------------------------------------------------------------
   !> @brief calculate the MPs from given mesh vertices rotational latitude
@@ -1110,13 +1178,13 @@ module polympo
     use :: iso_c_binding
     type(c_ptr), value :: mpMesh
   end subroutine
- 
+
   subroutine polympo_push_ahead(mpMesh) &
              bind(C, NAME='polympo_push_ahead_f')
     use :: iso_c_binding
     type(c_ptr), value :: mpMesh
   end subroutine
- 
+
   !---------------------------------------------------------------------------
   !> @brief calculate the MPs from given mesh vertices rotational latitude
   !---------------------------------------------------------------------------
@@ -1228,6 +1296,30 @@ module polympo
              bind(C, NAME='polympo_finalize_deludelvDyn_f')
     use :: iso_c_binding
     type(c_ptr), value :: mpMesh
+  end subroutine
+
+  subroutine polympo_setOpenWaterAreaMP(mpMesh, nComps, numMPs, array) &
+             bind(C, NAME='polympo_setOpenWaterAreaMP_f')
+    use :: iso_c_binding
+    type(c_ptr), value :: mpMesh
+    integer(c_int), value :: nComps, numMPs
+    type(c_ptr), intent(in), value :: array
+  end subroutine
+
+  subroutine polympo_getOpenWaterAreaCell(mpMesh, nCells, array) &
+             bind(C, NAME='polympo_getOpenWaterAreaCell_f')
+    use :: iso_c_binding
+    type(c_ptr), value :: mpMesh
+    integer(c_int), value :: nCells
+    type(c_ptr), value :: array
+  end subroutine
+
+  subroutine polympo_get_oceanStressCellMP(mpMesh, nParticles, uarray, varray) &
+             bind(C, NAME='polympo_get_oceanStressCellMP_f')
+    use :: iso_c_binding
+    type(c_ptr), value :: mpMesh
+    integer(c_int), value :: nParticles
+    type(c_ptr), value :: uarray, varray
   end subroutine
 
   !---------------------------------------------------------------------------

@@ -14,11 +14,13 @@ void MPMesh::calculateStrain(){
   auto MPsBasisGrads = p_MPs->getData<MPF_Basis_Grad_Vals>();
   auto MPsAppID = p_MPs->getData<MPF_MP_APP_ID>();
   auto MPsStrainRate = p_MPs->getData<MPF_Strain_Rate>();
+  auto MPsArea       = p_MPs->getData<polyMPO::MPF_Area>();
   //Mesh Fields
   auto tanLatVertexRotatedOverRadius = p_mesh->getMeshField<MeshF_TanLatVertexRotatedOverRadius>();
   auto elm2VtxConn = p_mesh->getElm2VtxConn();
   auto velField = p_mesh->getMeshField<MeshF_Vel>();
   auto solveStress = p_mesh->getMeshField<polyMPO::MeshF_SolveStress>();
+  auto elasticTimeStep = p_mesh->getElasticTimeStep();
 
   auto setMPStrainRate = PS_LAMBDA(const int& elm, const int& mp, const int& mask){
     if(mask){
@@ -38,7 +40,7 @@ void MPMesh::calculateStrain(){
       double v22 = 0.0;
       double uTanOverR = 0.0;
       double vTanOverR = 0.0;
- 
+
       for (int i = 0; i < numVtx; i++){
         int iVertex = elm2VtxConn(elm, i+1)-1;
         v11 = v11 + MPsBasisGrads(mp, i*2 + 0) * velField(iVertex, 0);
@@ -52,6 +54,8 @@ void MPMesh::calculateStrain(){
       MPsStrainRate(mp, 0) =  v11 - vTanOverR;
       MPsStrainRate(mp, 1) =  v22;
       MPsStrainRate(mp, 2) =  0.5*(v12 + v21 + uTanOverR);
+
+      MPsArea(mp, 0) = MPsArea(mp, 0) * exp((v11+v22-vTanOverR)*elasticTimeStep);
     }
   };
   p_MPs->parallel_for(setMPStrainRate, "setMPStrainRate");
@@ -75,13 +79,16 @@ void MPMesh::calculateStress(const int constitutive_relation){
     if(mask){
       Vec3d strain_rate (MPsStrainRate(mp, 0), MPsStrainRate(mp, 1), MPsStrainRate(mp, 2));
       Vec3d stress(MPsStress(mp, 0), MPsStress(mp, 1), MPsStress(mp, 2));
+      double rep_pressure=MPsRepPressure(mp,0);
 
       if (constitutive_relation == 1)
-        constitutive_evp(strain_rate, stress, MPsIcePressure(mp,0), MPsRepPressure(mp,0), MPsArea(mp,0), elasticTimeStep, dampingTimescale);
+        constitutive_evp(strain_rate, stress, MPsIcePressure(mp,0), rep_pressure, MPsArea(mp,0), elasticTimeStep, dampingTimescale);
       else if(constitutive_relation == 3)
         constitutive_linear(strain_rate, stress);
+
       for (int m=0 ; m<3; m++)
         MPsStress(mp, m) = stress[m]*solveStress(elm);
+      MPsRepPressure(mp,0)=rep_pressure;
     }
   };
   p_MPs->parallel_for(setMPStress, "setMPStress");
@@ -145,7 +152,7 @@ void MPMesh::calculateStressDivergence(){
                                                                 (1.0 - ramp) * invM * w_vtx;
 
         factor = factor * tanLatVertexRotatedOverRadius(vID, 0);
-      
+
         auto factor1 = ramp * (w_vtx/radius) * (VtxCoeffs_new(vID, 1, 0) + VtxCoeffs_new(vID, 1, 1)*CoordDiffs[1]  +
                                                                            VtxCoeffs_new(vID, 1, 2)*CoordDiffs[2]  +
                                                                            VtxCoeffs_new(vID, 1, 3)*CoordDiffs[3]) -
@@ -280,7 +287,7 @@ void MPMesh::CVTTrackingElmCenterBased(const int printVTPIndex){
       Vec3d dx = MPnew-MP;
       while(true){
         int numConnElms = elm2ElmConn(iElm,0);
-                
+
         Vec3d center(elmCenter(iElm, 0), elmCenter(iElm, 1), elmCenter(iElm, 2));
         Vec3d delta = MPnew - center;
 
@@ -742,8 +749,8 @@ void MPMesh::T2LTracking(Vec2dView dx){
         Vec2d MP(mpPositions(mp,0),mpPositions(mp,1));//XXX:the input is XYZ, but we only support 2d vector
         if(mask){
             int iElm = elm;
-            Vec2d MPnew = MP + dx(mp);    
-            
+            Vec2d MPnew = MP + dx(mp);
+
             while(true){
                 int numVtx = elm2VtxConn(iElm,0);
                 bool goToNeighbour = false;
@@ -753,7 +760,7 @@ void MPMesh::T2LTracking(Vec2dView dx){
                     v[i] = elm2VtxConn(iElm,i+1)-1;
                 //get edges and perpendiculardx
                 Vec2d e[maxVtxsPerElm];
-                double pdx[maxVtxsPerElm];                    
+                double pdx[maxVtxsPerElm];
                 for(int i=0; i< numVtx; i++){
                     int idx_ip1 = (i+1)%numVtx;
                     Vec2d v_i(vtxCoords(v[i],0),vtxCoords(v[i],1));
@@ -761,17 +768,17 @@ void MPMesh::T2LTracking(Vec2dView dx){
                     e[i] = v_ip1 - v_i;
                     pdx[i] = (v_i - MP).cross(dx(mp));
                 }
-                
+
                 for(int i=0; i<numVtx; i++){
                     int ip1 = (i+1)%numVtx;
-                    //pdx*pdx<0 and edge is acrossed 
+                    //pdx*pdx<0 and edge is acrossed
                     if(pdx[i]*pdx[ip1] <0 && e[i].cross(Vec2d(MPnew[0]-vtxCoords(v[i],0),
                                                               MPnew[1]-vtxCoords(v[i],1)))<0){
                         //go to the next elm
                         iElm = elm2ElmConn(iElm,i+1);
                         goToNeighbour = true;
                         if(iElm <0){
-                            mpStatus(mp) = 0;                  
+                            mpStatus(mp) = 0;
                             MPs2Elm(mp) = -1;
                             goToNeighbour = false;
                         }

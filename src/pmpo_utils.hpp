@@ -45,6 +45,9 @@ using DoubleView = Kokkos::View<double*>;
 using IntView = Kokkos::View<int*>;
 using BoolView = Kokkos::View<bool*>;
 
+//CONSTANTS
+inline constexpr double seaiceDensitySeaWater = 1026.0;
+
 class Vec2d {
   private:
     vec2d_t coords_;
@@ -552,6 +555,24 @@ KOKKOS_INLINE_FUNCTION
 void lat_lon_from_xyz(double& lat, double& lon, Vec3d& xyz, double r){
   lon = Kokkos::atan2(xyz[1], xyz[0]);
   lat = Kokkos::asin(xyz[2]/r);
+}
+
+KOKKOS_INLINE_FUNCTION
+double seaice_mpm_wrap_longitude(const double longitude){
+  const auto PI = 3.141592653589;
+  const auto TAU = 2*PI;
+  const double wrapped = longitude - Kokkos::floor((longitude + PI) / TAU) * TAU;
+  return wrapped;
+}
+
+KOKKOS_INLINE_FUNCTION
+void seaice_mpm_coord_parallel_transport(const double long_start, const double long_end,
+                                         const double latitude, double transport[2]){
+  double dLon = long_end - long_start;
+  dLon = seaice_mpm_wrap_longitude(dLon);
+  const double psi = dLon * Kokkos::sin(latitude);
+  transport[0] = Kokkos::cos(psi);
+  transport[1] = Kokkos::sin(psi);
 }
 
 }//namespace polyMPO end

@@ -22,6 +22,11 @@ template <> const MaterialPointSlice meshFieldIndexToMPSlice < MeshF_VtxMass    
 template <> const MaterialPointSlice meshFieldIndexToMPSlice < MeshF_ElmMass        > = MPF_Mass;
 template <> const MaterialPointSlice meshFieldIndexToMPSlice < MeshF_RotLatLonIncr  > = MPF_Rot_Lat_Lon_Incr;
 template <> const MaterialPointSlice meshFieldIndexToMPSlice < MeshF_OnSurfVeloIncr > = MPF_Vel_Incr;
+template <> const MaterialPointSlice meshFieldIndexToMPSlice < MeshF_OceanStressCell> = MPF_OceanStress;
+
+template <MaterialPointSlice>
+const MeshFieldIndex MPSliceToMeshFieldIndex;
+template <> const MeshFieldIndex MPSliceToMeshFieldIndex < MPF_OpenWaterArea  > = MeshF_OpenWaterArea;
 
 #define maxMPsPerElm 8
 
@@ -43,9 +48,6 @@ class MPMesh{
 
     void startCommunication();
     
-    void communicate_and_take_halo_contributions(const Kokkos::View<double**>& meshField, int nEntities, int numEntries, int mode, int op);
-    
-    //Now Kokkos views are made 1D
     template <typename ViewType>
     void communicate_and_take_halo_contributions_staged(
         const ViewType& meshField,
@@ -133,10 +135,6 @@ class MPMesh{
       Kokkos::fence();
       pumipic::RecordTime("SD: Contribution" + std::to_string(self), timer.seconds());
     }
-
-
-    void communicateFields(const std::vector<std::vector<double>>& fieldData, const int numEntities, const int numEntries, int mode,
-                             std::vector<std::vector<int>>& recvIDVec, std::vector<std::vector<double>>& recvDataVec);
 
     template <class ViewType> 
     void communicateFieldsFromHostView(
@@ -272,8 +270,9 @@ class MPMesh{
     template <MeshFieldIndex meshFieldIndex>
     void assemblyVtx1();
     void reconstruct_coeff_full();
-    void invertMatrix(const Kokkos::View<double**>& vtxMatrices, const double& radius);
+    void invertMatrix(const Kokkos::View<double**>& vtxMatrices, const double& radius, bool vtxCoeffCalc);
     Kokkos::View<double*[vec3d_nEntries][vec4d_nEntries]> precomputedVtxCoeffs_new;
+    Kokkos::View<double*[vec3d_nEntries][vec4d_nEntries]> precomputedElmCoeffs_new;
     Kokkos::View<double*> nearAnEdge;   
     Kokkos::View<double*> vtxMatrixMass;
 
@@ -688,6 +687,168 @@ class MPMesh{
     }
 
 #endif
+
+    template<MaterialPointSlice MPSlice>
+    void mapMPsToCells(){
+      //MP field mesh field mapping
+      constexpr MeshFieldIndex meshFieldIndex = MPSliceToMeshFieldIndex<MPSlice>;
+      auto mpField   = p_MPs->getData<MPSlice>();
+      auto meshField = p_mesh->getMeshField<meshFieldIndex>();
+      Kokkos::deep_copy(meshField, 0.0); 
+
+      //MP fields
+      auto mpArea = p_MPs->getData<MPF_Area>();
+      auto mpPos = p_MPs->getData<MPF_Cur_Pos_XYZ>();
+
+      //Mesh fields and finding number of MPs per cell and areaMP per Cell
+      auto nElms = p_mesh->getNumElements();
+      const auto elmCenter = p_mesh->getMeshField<polyMPO::MeshF_ElmCenterXYZ>();
+      double radius = 1.0;
+      if(p_mesh->getGeomType() == geom_spherical_surf)
+        radius=p_mesh->getSphereRadius();
+
+      Kokkos::View<int*> nMPsPerCell("nMPsPerCell", nElms);
+      Kokkos::View<double*> sumAreaMP("sumAreaMP", nElms);
+      Kokkos::deep_copy(nMPsPerCell, 0);
+      auto calcMPsCell = PS_LAMBDA(const int& elm, const int& mp, const int& mask){
+        if(mask){
+          Kokkos::atomic_increment(&nMPsPerCell(elm));
+          Kokkos::atomic_add(&sumAreaMP(elm), mpArea(mp, 0));
+        }
+      };
+      p_MPs->parallel_for(calcMPsCell, "calcN_MPsCell");
+
+      //TODO put them as inputs
+      bool higherOrderRemap = true;
+
+      //Calculate the matrix
+      constexpr int numEntriesMatrix=10;
+      Kokkos::View<double*[numEntriesMatrix]> lsMatrices("VtxMatrices", p_mesh->getNumElements());
+      Kokkos::deep_copy(lsMatrices, 0);
+
+      auto assemble = PS_LAMBDA(const int& elm, const int& mp, const int& mask) {
+        if(mask) { //if material point is 'active'/'enabled'
+          if(nMPsPerCell(elm) <= 0) return;
+          double wp = mpArea(mp,0)/sumAreaMP(elm);
+          Kokkos::atomic_add(&lsMatrices(elm,0), wp);
+          Kokkos::atomic_add(&lsMatrices(elm,1), wp*(-elmCenter(elm,0)+mpPos(mp,0))/radius);
+          Kokkos::atomic_add(&lsMatrices(elm,2), wp*(-elmCenter(elm,1)+mpPos(mp,1))/radius);
+          Kokkos::atomic_add(&lsMatrices(elm,3), wp*(-elmCenter(elm,2)+mpPos(mp,2))/radius);
+          Kokkos::atomic_add(&lsMatrices(elm,4), wp*(-elmCenter(elm,0)+mpPos(mp,0)) * 
+                                                    (-elmCenter(elm,0)+mpPos(mp,0))/(radius*radius));
+          Kokkos::atomic_add(&lsMatrices(elm,5), wp*(-elmCenter(elm,0)+mpPos(mp,0)) * (
+                                                     -elmCenter(elm,1)+mpPos(mp,1))/(radius*radius));
+          Kokkos::atomic_add(&lsMatrices(elm,6), wp*(-elmCenter(elm,0)+mpPos(mp,0)) * 
+                                                    (-elmCenter(elm,2)+mpPos(mp,2))/(radius*radius));
+          Kokkos::atomic_add(&lsMatrices(elm,7), wp*(-elmCenter(elm,1)+mpPos(mp,1)) * 
+                                                    (-elmCenter(elm,1)+mpPos(mp,1))/(radius*radius));
+          Kokkos::atomic_add(&lsMatrices(elm,8), wp*(-elmCenter(elm,1)+mpPos(mp,1)) * 
+                                                    (-elmCenter(elm,2)+mpPos(mp,2))/(radius*radius));
+          Kokkos::atomic_add(&lsMatrices(elm,9), wp*(-elmCenter(elm,2)+mpPos(mp,2)) * 
+                                                    (-elmCenter(elm,2)+mpPos(mp,2))/(radius*radius));
+        }
+      };
+      p_MPs->parallel_for(assemble, "assembly");
+
+      invertMatrix(lsMatrices, radius, false);
+      auto precomputedElmCoeffs_l = this->precomputedElmCoeffs_new;
+
+      auto calcCellField= PS_LAMBDA(const int& elm, const int& mp, const int& mask) {
+        if(mask) { //if material point is 'active'/'enabled
+          if(nMPsPerCell(elm) <= 0) return;
+          double wp = mpArea(mp,0)/sumAreaMP(elm);
+          Vec3d pXYZ = {mpPos(mp,0) - elmCenter(elm,0), mpPos(mp,1) - elmCenter(elm,1), mpPos(mp,2) - elmCenter(elm,2)};
+          double psi = wp * (precomputedElmCoeffs_l(elm, 0, 0) + (precomputedElmCoeffs_l(elm, 0, 1) * pXYZ[0] + 
+                                                                  precomputedElmCoeffs_l(elm, 0, 2) * pXYZ[1] +
+                                                                  precomputedElmCoeffs_l(elm, 0, 3) * pXYZ[2])/radius);
+          Kokkos::atomic_add(&meshField(elm, 0), mpField(mp,0)*psi);
+        }
+      };
+      p_MPs->parallel_for(calcCellField, "calcCellField");
+    }
+
+    template<MeshFieldIndex mfIndex>
+    void mapCellsToMPs(){
+
+      //MP Field
+      constexpr MaterialPointSlice mpSlice = meshFieldIndexToMPSlice<mfIndex>;
+      auto mpField   = p_MPs->getData<mpSlice>();
+      auto mpPos = p_MPs->getData<MPF_Cur_Pos_XYZ>();
+
+      //Mesh Fields
+      auto nElms = p_mesh->getNumElements();
+      auto meshField = p_mesh->getMeshField<mfIndex>();
+      auto elm2ElmConn = p_mesh->getElm2ElmConn();
+      auto gnomProjVtx  = p_mesh->getMeshField<MeshF_VtxGnomProj>();
+      auto gnomProjCell = p_mesh->getMeshField<MeshF_CellGnomProj>();
+      auto gnomProjCellOnCell = p_mesh->getMeshField<MeshF_CellOnCellGnomProj>();
+      auto gnomProjElmCenter = p_mesh->getMeshField<MeshF_ElmCenterGnomProj>();
+      bool isRotated = p_mesh->getRotatedFlag();
+
+      //Mps Per Cell
+      Kokkos::View<int*> nMPsPerCell("nMPsPerCell", nElms);
+      Kokkos::deep_copy(nMPsPerCell, 0);
+      auto calcMPsCell = PS_LAMBDA(const int& elm, const int& mp, const int& mask){
+        if(mask){
+          Kokkos::atomic_increment(&nMPsPerCell(elm));
+        }
+      };
+      p_MPs->parallel_for(calcMPsCell, "calcN_MPsCell");
+
+      const int numEntries = mpSliceToNumEntries<mpSlice>();
+      for (int comp=0; comp<numEntries; comp++){
+
+        //Calculate mapped Value
+        Kokkos::View<double*> centerValues("centerValues", nElms);
+        Kokkos::View<double*> grads("grads", 2*nElms);
+
+        Kokkos::parallel_for("calcMatrix", nElms, KOKKOS_LAMBDA(const int elm){   
+          if(nMPsPerCell(elm) <= 0) return;
+          double lsMatrix[3]={0.0};
+          double rsMatrix[2]={0.0};
+
+          int numConnElms = elm2ElmConn(elm, 0);
+          for(int i=1; i<=numConnElms; i++){
+            int elmID = elm2ElmConn(elm,i)-1;
+            if(elmID >= nElms)
+              continue;
+            lsMatrix[0] += (gnomProjCellOnCell(elm, i-1, 0) - gnomProjCell(elm, 0)) * (gnomProjCellOnCell(elm, i-1, 0) - gnomProjCell(elm, 0)); 
+            lsMatrix[1] += (gnomProjCellOnCell(elm, i-1, 0) - gnomProjCell(elm, 0)) * (gnomProjCellOnCell(elm, i-1, 1) - gnomProjCell(elm, 1));
+            lsMatrix[2] += (gnomProjCellOnCell(elm, i-1, 1) - gnomProjCell(elm, 1)) * (gnomProjCellOnCell(elm, i-1, 1) - gnomProjCell(elm, 1));
+            rsMatrix[0] += (meshField(elmID, comp)- meshField(elm, comp)) * (gnomProjCellOnCell(elm, i-1, 0) - gnomProjCell(elm, 0));
+            rsMatrix[1] += (meshField(elmID, comp)- meshField(elm, comp)) * (gnomProjCellOnCell(elm, i-1, 1) - gnomProjCell(elm, 1));
+          }
+          double det = lsMatrix[0] * lsMatrix[2] - lsMatrix[1] * lsMatrix[1];
+          double grad[2] = {0.0, 0.0};
+          if (std::abs(det) > 1.0e-12) {
+            grad[0] = (1.0 / det) * ( lsMatrix[2] * rsMatrix[0] - lsMatrix[1] * rsMatrix[1]);
+            grad[1] = (1.0 / det) * (-lsMatrix[1] * rsMatrix[0] + lsMatrix[0] * rsMatrix[1]);
+          }
+          double centerVal = meshField(elm, comp) - grad[0] * gnomProjCell(elm, 0) - grad[1] * gnomProjCell(elm, 1);
+
+          grads(2*elm + 0) = grad[0];
+          grads(2*elm + 1) = grad[1];
+          centerValues(elm) = centerVal;
+        });
+
+        auto calcMPValue = PS_LAMBDA(const int& elm, const int& mp, const int& mask){
+          if(mask){
+            if(nMPsPerCell(elm) <= 0) return;
+            Vec3d position3d(mpPos(mp, 0), mpPos(mp, 1), mpPos(mp, 2));
+            if(isRotated){
+              position3d[0] = -mpPos(mp, 2);
+              position3d[2] = mpPos(mp, 0);
+            }
+            double mpProjX, mpProjY;
+            auto gnomProjElmCenter_sub = Kokkos::subview(gnomProjElmCenter, elm, Kokkos::ALL);
+            computeGnomonicProjectionAtPoint(position3d, gnomProjElmCenter_sub, mpProjX, mpProjY);
+
+            mpField(mp, comp) = centerValues(elm) + grads(2*elm + 0) * mpProjX + grads(2*elm + 1) * mpProjY;
+          }
+        };
+        p_MPs->parallel_for(calcMPValue, "calcMPValue");
+      }
+    }
 
 };
 

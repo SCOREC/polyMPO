@@ -20,6 +20,10 @@ namespace polyMPO{
     PMT_ALWAYS_ASSERT(vtxRotLatMapEntry.first == MeshFType_VtxBased);
     vtxRotLat_ = MeshFView<MeshF_VtxRotLat>(vtxRotLatMapEntry.second,numVtxs_);
 
+    auto vtxRotLonMapEntry = meshFields2TypeAndString.at(MeshF_VtxRotLon);
+    PMT_ALWAYS_ASSERT(vtxRotLonMapEntry.first == MeshFType_VtxBased);
+    vtxRotLon_ = MeshFView<MeshF_VtxRotLon>(vtxRotLonMapEntry.second,numVtxs_);
+
     auto vtxVelMapEntry = meshFields2TypeAndString.at(MeshF_Vel);
     PMT_ALWAYS_ASSERT(vtxVelMapEntry.first == MeshFType_VtxBased);
     vtxVel_ = MeshFView<MeshF_Vel>(vtxVelMapEntry.second,numVtxs_);
@@ -78,6 +82,9 @@ namespace polyMPO{
     oceanStress_ = MeshFView<MeshF_OceanStress>(meshFields2TypeAndString.at(MeshF_OceanStress).second, numVtxs_);
     
     oceanStressCoeff_ = MeshFView<MeshF_OceanStressCoeff>(meshFields2TypeAndString.at(MeshF_OceanStressCoeff).second, numVtxs_);
+
+    oceanVelocity_ = MeshFView<MeshF_OceanVelocity>(meshFields2TypeAndString.at(MeshF_OceanVelocity).second, numVtxs_);
+
   }
 
   void Mesh::setMeshElmBasedFieldSize(){
@@ -89,11 +96,22 @@ namespace polyMPO{
 
     elmCenterXYZ_ = MeshFView<MeshF_ElmCenterXYZ>(meshFields2TypeAndString.at(MeshF_ElmCenterXYZ).second, numElms_);
 
+    cellArea_ = MeshFView<MeshF_CellArea>(meshFields2TypeAndString.at(MeshF_CellArea).second, numElms_);
+
     elmCenterGnomProj_= MeshFView<MeshF_ElmCenterGnomProj>(meshFields2TypeAndString.at(MeshF_ElmCenterGnomProj).second, numElms_);
 
     vtxGnomProj_ = MeshFView<MeshF_VtxGnomProj>(meshFields2TypeAndString.at(MeshF_VtxGnomProj).second, numElms_);
 
+    cellGnomProj_ = MeshFView<MeshF_CellGnomProj>(meshFields2TypeAndString.at(MeshF_CellGnomProj).second, numElms_);
+
+    cellOnCellGnomProj_ = MeshFView<MeshF_CellOnCellGnomProj>(meshFields2TypeAndString.at(MeshF_CellOnCellGnomProj).second, numElms_);
+
     solveStress_ = MeshFView<MeshF_SolveStress>(meshFields2TypeAndString.at(MeshF_SolveStress).second, numElms_);
+
+    openWaterArea_ = MeshFView<MeshF_OpenWaterArea>(meshFields2TypeAndString.at(MeshF_OpenWaterArea).second, numElms_);
+
+    oceanStressCell_ = MeshFView<MeshF_OceanStressCell>(meshFields2TypeAndString.at(MeshF_OceanStressCell).second, numElms_);
+
   }
 
   void Mesh::computeRotLatLonIncr(){
@@ -116,14 +134,20 @@ namespace polyMPO{
 
   void Mesh::setGnomonicProjection(bool isRotated){
     std::cout<<__FUNCTION__<<std::endl;
-    auto gnomProjVtx = getMeshField<MeshF_VtxGnomProj>();
+    
+    auto gnomProjVtx  = getMeshField<MeshF_VtxGnomProj>();
+    auto gnomProjCell = getMeshField<MeshF_CellGnomProj>();
+    auto gnomProjCellOnCell = getMeshField<MeshF_CellOnCellGnomProj>();
     auto gnomProjElmCenter = getMeshField<MeshF_ElmCenterGnomProj>();
 
     auto vtxCoords  = getMeshField<MeshF_VtxCoords>();
     auto elmCenters = getMeshField<MeshF_ElmCenterXYZ>();
     auto elm2VtxConn = getElm2VtxConn();  
+    auto elm2ElmConn = getElm2ElmConn();
+    int numElms = getNumElements();
 
     Kokkos::parallel_for("setGnomprojCenter", numElms_, KOKKOS_LAMBDA(const int iElm){
+      // This is the center
       Vec3d elmCenter(elmCenters(iElm, 0), elmCenters(iElm, 1), elmCenters(iElm, 2));
       if(isRotated){
         elmCenter[0] = - elmCenters(iElm, 2);
@@ -138,6 +162,7 @@ namespace polyMPO{
       gnomProjElmCenter(iElm, 2) = invR*elmCenter[2];
       gnomProjElmCenter(iElm, 3) = invR*cosLatR;
 
+      //Gnomonic projection of the vertices
       int nVtxE = elm2VtxConn(iElm,0);
       for(int i=0; i<nVtxE; i++){
         int vID = elm2VtxConn(iElm, i+1) - 1;
@@ -146,17 +171,55 @@ namespace polyMPO{
           vtxCord[0] = - vtxCoords(vID, 2);
           vtxCord[2] = vtxCoords(vID, 0);
         }
-
         double outX, outY;
         auto gnomProjElmCenter_sub = Kokkos::subview(gnomProjElmCenter, iElm, Kokkos::ALL);
         computeGnomonicProjectionAtPoint(vtxCord, gnomProjElmCenter_sub, outX, outY);
-
         gnomProjVtx(iElm, i, 0) = outX;
         gnomProjVtx(iElm, i, 1) = outY;
+      }
+            
+      //Gnomonic Projection of the center
+      double outX, outY;
+      auto gnomProjElmCenter_sub = Kokkos::subview(gnomProjElmCenter, iElm, Kokkos::ALL);
+      computeGnomonicProjectionAtPoint(elmCenter, gnomProjElmCenter_sub, outX, outY);
+      gnomProjCell(iElm, 0) = outX;
+      gnomProjCell(iElm, 1) = outY;
+      
+      //Gnomomic projection of the centres of adjacent elements 
+      int numConnElms = elm2ElmConn(iElm,0);
+      for(int i=1; i<=numConnElms; i++){
+        int elmID = elm2ElmConn(iElm,i)-1;
+        if(elmID >= numElms)
+          continue;
+        Vec3d adjElmCenter(elmCenters(elmID, 0), elmCenters(elmID, 1), elmCenters(elmID, 2));
+        if(isRotated){
+          adjElmCenter[0] = - elmCenters(elmID, 2);
+          adjElmCenter[2] = elmCenters(elmID, 0);
+        } 
+        double outX, outY;
+        auto gnomProjElmCenter_sub = Kokkos::subview(gnomProjElmCenter, iElm, Kokkos::ALL);
+        computeGnomonicProjectionAtPoint(adjElmCenter, gnomProjElmCenter_sub, outX, outY);
+        gnomProjCellOnCell(iElm, i-1, 0) = outX;
+        gnomProjCellOnCell(iElm, i-1, 1) = outY;
       }
     });
   }
 
+  void Mesh::calcOceanStressCoeff(const double configIceOceanDragCoeff){
+    int numVerticesOwned = getNumVerticesOwned();
+    auto iceAreaVtx = getMeshField<polyMPO::MeshF_VtxMass>();
+    auto oceanStressCoeff = getMeshField<MeshF_OceanStressCoeff>();
+    auto velocity = getMeshField<MeshF_Vel>();
+    auto solve_velocity = getMeshField<MeshF_SolveVelocity>();
+    auto oceanVelocity = getMeshField<MeshF_OceanVelocity>();
+    auto seaiceDensitySeaWater_ = polyMPO::seaiceDensitySeaWater;
+
+    Kokkos::parallel_for("calcOceanStressCoeff", numVerticesOwned, KOKKOS_LAMBDA(const int vtx){
+      if(solve_velocity(vtx) == 0) return;
+      auto relVelSq = pow(oceanVelocity(vtx, 0) - velocity(vtx, 0), 2) +  pow(oceanVelocity(vtx, 1) - velocity(vtx, 1), 2);
+      oceanStressCoeff(vtx, 0) = configIceOceanDragCoeff * seaiceDensitySeaWater_ * iceAreaVtx(vtx, 0) * sqrt(relVelSq);
+    });
+  }
 
   void Mesh::gridSolveGPU(){
     //Mesh Fields

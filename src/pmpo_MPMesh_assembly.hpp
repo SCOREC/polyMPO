@@ -161,14 +161,14 @@ void MPMesh::reconstruct_coeff_full(){
   int mode = 0;
   int op = 0;
   if (numProcsTot >1){
-    communicate_and_take_halo_contributions1(vtxMatrices, numVertices, numEntriesMatrix, mode, op);
+    communicate_and_take_halo_contributions_gpu_aware(vtxMatrices, numVertices, numEntriesMatrix, mode, op);
     mode=1; 
     op=1;
-    communicate_and_take_halo_contributions1(vtxMatrices, numVertices, numEntriesMatrix, mode, op);
+    communicate_and_take_halo_contributions_gpu_aware(vtxMatrices, numVertices, numEntriesMatrix, mode, op);
   }
   pumipic::RecordTime("Communicate Matrix Values" + std::to_string(self), timer.seconds());
  
-  //Stroe the 1st matrix element
+  //Store the 1st matrix element
   Kokkos::View<double*>vtxMatrixMass_l("vtxMass", numVertices);
   Kokkos::parallel_for("storeMatrixMass", numVertices, KOKKOS_LAMBDA(const int vtx){
     vtxMatrixMass_l(vtx) = vtxMatrices(vtx, 0);
@@ -380,7 +380,7 @@ void MPMesh::assemblyVtx1(){
 
   timer.reset();
   if(numProcsTot>1){ 
-    communicate_and_take_halo_contributions1(meshField, numVertices, numEntries, 0, 0);
+    communicate_and_take_halo_contributions_gpu_aware(meshField, numVertices, numEntries, 0, 0);
   }
   pumipic::RecordTime("Communicate Field Values" + std::to_string(self), timer.seconds());
 }

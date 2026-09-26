@@ -21,6 +21,44 @@ set(SOURCES
 )
 
 add_library(polyMPO-core ${SOURCES})
+
+# Default ON only for Cray GPU builds (Kokkos CUDA + Cray MPICH GTL available).
+# Can still be overridden with -DpolyMPO_ENABLE_GPU_AWARE_MPI=ON/OFF.
+set(polyMPO_GPU_AWARE_MPI_DEFAULT OFF)
+if(Kokkos_ENABLE_CUDA
+   AND DEFINED ENV{PE_MPICH_GTL_DIR_nvidia80}
+   AND DEFINED ENV{PE_MPICH_GTL_LIBS_nvidia80})
+  set(polyMPO_GPU_AWARE_MPI_DEFAULT ON)
+endif()
+
+option(polyMPO_ENABLE_GPU_AWARE_MPI
+  "Use GPU-aware (CUDA-aware) MPI for halo exchange"
+  ${polyMPO_GPU_AWARE_MPI_DEFAULT})
+message(STATUS "polyMPO_ENABLE_GPU_AWARE_MPI: ${polyMPO_ENABLE_GPU_AWARE_MPI}")
+
+if(polyMPO_ENABLE_GPU_AWARE_MPI)
+  if(NOT Kokkos_ENABLE_CUDA)
+    message(FATAL_ERROR
+      "polyMPO_ENABLE_GPU_AWARE_MPI=ON requires Kokkos built with CUDA.")
+  endif()
+
+  if(DEFINED ENV{PE_MPICH_GTL_DIR_nvidia80}
+     AND DEFINED ENV{PE_MPICH_GTL_LIBS_nvidia80})
+    target_link_options(polyMPO-core PUBLIC
+      "$ENV{PE_MPICH_GTL_DIR_nvidia80}"
+      "$ENV{PE_MPICH_GTL_LIBS_nvidia80}"
+    )
+    message(STATUS "polyMPO: enabling Cray MPICH CUDA GTL linkage")
+  else()
+    message(FATAL_ERROR
+      "Cray MPICH CUDA GTL environment variables are unavailable. "
+      "Load cudatoolkit and craype-accel-nvidia80, or set "
+      "CRAY_ACCEL_TARGET=nvidia80 before configuring.")
+  endif()
+
+  target_compile_definitions(polyMPO-core PUBLIC GPU_AWARE_MPI)
+endif()
+
 set_property(TARGET polyMPO-core PROPERTY CXX_STANDARD "17")
 set_property(TARGET polyMPO-core PROPERTY CXX_STANDARD_REQUIRED ON)
 set_property(TARGET polyMPO-core PROPERTY CXX_EXTENSIONS OFF)

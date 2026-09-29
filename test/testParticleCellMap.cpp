@@ -1,18 +1,29 @@
 #include "pmpo_MPMesh.hpp"
-#include "pmpo_createTestMPMesh.hpp"
 
 #include <mpi.h>
 #include <Kokkos_Core.hpp>
 
+#include <algorithm>
 #include <cmath>
 #include <iostream>
+#include <string>
 #include <vector>
 
+#ifdef POLYMPO_HAS_NETCDF
+#include <netcdf.h>
+#endif
 
-// Unit test for particle-cell mapping of the category fields on a SPHERICAL mesh
+// Unit test for particle-cell mapping of the category fields on an MPAS
+// spherical centroidal Voronoi (SCVT) mesh:
+//   MPF_IceAreaCategory    <-> MeshF_IceAreaCategory
+//   MPF_IceVolumeCategory  <-> MeshF_IceVolumeCategory
+//   MPF_SnowVolumeCategory <-> MeshF_SnowVolumeCategory
+// Each field has nIceCategories components.
 //
-// Mesh: the 10-cell polyMPO test mesh (same cells and connectivity), with its
-// vertices placed on a sphere of Earth radius, away from the poles.
+// Mesh: read from an MPAS mesh file (test/sample_mpas_meshes/
+//       spherical_cvt_642elms.nc): vertex coordinates, cell centers
+//       (SCVT generators), verticesOnCell and cellsOnCell. Cell areas are
+//       computed from the vertices.
 //
 // MPs: built by this test so the number of MPs per cell is controlled.
 // Cells are split into four groups by (cell mod 4):
@@ -22,7 +33,7 @@
 //   Group C (2): no MPs
 //   Group D (3): exactly 1 MP, carries base
 //
-//   base(f, k, cell) = f * 100000 + (k + 1) * 1000 + cell
+//   base(f, k, cell) = f * 1e7 + (k + 1) * 1e4 + cell
 //
 // Part 0: MP count per cell matches the layout above.
 //
@@ -33,10 +44,16 @@
 //   All three fields are mapped before any is read back.
 //
 // Part 2: cells -> MPs (MPMesh::mapCellsToMPs)
+//   2a: every cell set to 1.5 * (k + 1)
+//       -> every MP exactly 1.5 * (k + 1)
+//   2b: every cell set to (k + 1) * 1e4 + cell (varies between neighbours)
+//       -> every MP within the min/max of its cell and neighbour cells
+//          (gradient limiter, uses the real SCVT neighbours)
+//
+// Usage: ./testParticleCellMap <path to spherical MPAS mesh .nc file>
 
 namespace {
 
-constexpr double SPHERE_RADIUS = 6371229.0;
 constexpr double SPREAD = 0.5;
 constexpr double REL_TOL = 1.0e-12;
 constexpr int MPS_PER_VTX = 2;
@@ -47,89 +64,190 @@ int cellGroup(const int elm) { return elm % 4; }
 KOKKOS_INLINE_FUNCTION
 double baseValue(const int field, const int cat, const int elm)
 {
-    return field * 1.0e5 + (cat + 1) * 1.0e3 + elm;
+    return field * 1.0e7 + (cat + 1) * 1.0e4 + elm;
 }
 
 KOKKOS_INLINE_FUNCTION
-double cellToMPValue(const int cat)
+double constantCellValue(const int cat)
 {
     return 1.5 * (cat + 1);
 }
 
-// Spherical version of the 10-cell test mesh: same cells and connectivity,
-// vertices moved onto a sphere of radius SPHERE_RADIUS.
-polyMPO::Mesh* createSphericalTestMesh()
+KOKKOS_INLINE_FUNCTION
+double varyingCellValue(const int cat, const int elm)
 {
-    polyMPO::Mesh* planar = polyMPO::initTestMesh(1, 1);
+    return (cat + 1) * 1.0e4 + elm;
+}
 
-    const int nVertices = planar->getNumVertices();
-    const int nCells = planar->getNumElements();
+//--------------------------------------------------------------------------
+// MPAS mesh file
+//--------------------------------------------------------------------------
 
-    auto planarCoords = Kokkos::create_mirror_view_and_copy(
-        Kokkos::HostSpace(), planar->getMeshField<polyMPO::MeshF_VtxCoords>());
+struct MPASMesh {
+    int nCells = 0;
+    int nVertices = 0;
+    int maxEdges = 0;
+    double sphereRadius = 0.0;
+    std::vector<double> xVertex, yVertex, zVertex;
+    std::vector<double> xCell, yCell, zCell;
+    std::vector<int> nEdgesOnCell;
+    std::vector<int> verticesOnCell;   // [nCells][maxEdges], 1-based
+    std::vector<int> cellsOnCell;      // [nCells][maxEdges], 1-based
+};
 
-    polyMPO::MeshFView<polyMPO::MeshF_VtxCoords> vtxCoords("sphericalVtxCoords", nVertices);
+#ifdef POLYMPO_HAS_NETCDF
+
+void ncCheck(const int status, const std::string& what)
+{
+    if (status != NC_NOERR) {
+        std::cerr << "NetCDF error (" << what << "): " << nc_strerror(status) << std::endl;
+        MPI_Abort(MPI_COMM_WORLD, 1);
+    }
+}
+
+int ncDimLen(const int ncid, const char* name)
+{
+    int dimid;
+    size_t len;
+    ncCheck(nc_inq_dimid(ncid, name, &dimid), name);
+    ncCheck(nc_inq_dimlen(ncid, dimid, &len), name);
+    return static_cast<int>(len);
+}
+
+void ncReadDouble(const int ncid, const char* name, std::vector<double>& data, const size_t size)
+{
+    int varid;
+    data.resize(size);
+    ncCheck(nc_inq_varid(ncid, name, &varid), name);
+    ncCheck(nc_get_var_double(ncid, varid, data.data()), name);
+}
+
+void ncReadInt(const int ncid, const char* name, std::vector<int>& data, const size_t size)
+{
+    int varid;
+    data.resize(size);
+    ncCheck(nc_inq_varid(ncid, name, &varid), name);
+    ncCheck(nc_get_var_int(ncid, varid, data.data()), name);
+}
+
+MPASMesh readMPASMesh(const std::string& filename)
+{
+    MPASMesh m;
+    int ncid;
+    ncCheck(nc_open(filename.c_str(), NC_NOWRITE, &ncid), filename);
+
+    size_t attLen = 0;
+    ncCheck(nc_inq_attlen(ncid, NC_GLOBAL, "on_a_sphere", &attLen), "on_a_sphere");
+    std::string onSphere(attLen, ' ');
+    ncCheck(nc_get_att_text(ncid, NC_GLOBAL, "on_a_sphere", &onSphere[0]), "on_a_sphere");
+    if (onSphere.compare(0, 3, "YES") != 0) {
+        std::cerr << "Mesh file is not spherical (on_a_sphere = " << onSphere << ")" << std::endl;
+        MPI_Abort(MPI_COMM_WORLD, 1);
+    }
+    ncCheck(nc_get_att_double(ncid, NC_GLOBAL, "sphere_radius", &m.sphereRadius), "sphere_radius");
+
+    m.nCells = ncDimLen(ncid, "nCells");
+    m.nVertices = ncDimLen(ncid, "nVertices");
+    m.maxEdges = ncDimLen(ncid, "maxEdges");
+
+    ncReadDouble(ncid, "xVertex", m.xVertex, m.nVertices);
+    ncReadDouble(ncid, "yVertex", m.yVertex, m.nVertices);
+    ncReadDouble(ncid, "zVertex", m.zVertex, m.nVertices);
+    ncReadDouble(ncid, "xCell", m.xCell, m.nCells);
+    ncReadDouble(ncid, "yCell", m.yCell, m.nCells);
+    ncReadDouble(ncid, "zCell", m.zCell, m.nCells);
+    ncReadInt(ncid, "nEdgesOnCell", m.nEdgesOnCell, m.nCells);
+    ncReadInt(ncid, "verticesOnCell", m.verticesOnCell, static_cast<size_t>(m.nCells) * m.maxEdges);
+    ncReadInt(ncid, "cellsOnCell", m.cellsOnCell, static_cast<size_t>(m.nCells) * m.maxEdges);
+
+    ncCheck(nc_close(ncid), "close");
+    return m;
+}
+
+#endif
+
+//--------------------------------------------------------------------------
+// polyMPO mesh from the MPAS mesh
+//--------------------------------------------------------------------------
+
+polyMPO::Mesh* createMesh(const MPASMesh& m)
+{
+    polyMPO::MeshFView<polyMPO::MeshF_VtxCoords> vtxCoords("scvtVtxCoords", m.nVertices);
     auto vtxCoordsHost = Kokkos::create_mirror_view(vtxCoords);
-    for (int v = 0; v < nVertices; v++) {
-        const double p[3] = {1.1, planarCoords(v, 0) - 0.5, planarCoords(v, 1) - 0.5};
-        const double norm = std::sqrt(p[0]*p[0] + p[1]*p[1] + p[2]*p[2]);
-        for (int d = 0; d < 3; d++) {
-            vtxCoordsHost(v, d) = SPHERE_RADIUS * p[d] / norm;
-        }
+    for (int v = 0; v < m.nVertices; v++) {
+        vtxCoordsHost(v, 0) = m.xVertex[v];
+        vtxCoordsHost(v, 1) = m.yVertex[v];
+        vtxCoordsHost(v, 2) = m.zVertex[v];
     }
     Kokkos::deep_copy(vtxCoords, vtxCoordsHost);
 
-    polyMPO::Mesh* mesh = new polyMPO::Mesh(planar->getMeshType(),
-                                            polyMPO::geom_spherical_surf,
-                                            SPHERE_RADIUS,
-                                            nVertices,
-                                            nCells,
-                                            vtxCoords,
-                                            planar->getElm2VtxConn(),
-                                            planar->getElm2ElmConn());
-    delete planar;
-    return mesh;
+    polyMPO::IntVtx2ElmView elm2Vtx("scvtElm2VtxConn", m.nCells);
+    polyMPO::IntElm2ElmView elm2Elm("scvtElm2ElmConn", m.nCells);
+    auto elm2VtxHost = Kokkos::create_mirror_view(elm2Vtx);
+    auto elm2ElmHost = Kokkos::create_mirror_view(elm2Elm);
+
+    const int maxConn = static_cast<int>(elm2VtxHost.extent(1)) - 1;
+    for (int c = 0; c < m.nCells; c++) {
+        const int nv = m.nEdgesOnCell[c];
+        if (nv > maxConn) {
+            std::cerr << "Cell " << c << " has " << nv << " edges, polyMPO supports "
+                      << maxConn << std::endl;
+            MPI_Abort(MPI_COMM_WORLD, 1);
+        }
+        elm2VtxHost(c, 0) = nv;
+        elm2ElmHost(c, 0) = nv;
+        for (int j = 0; j < nv; j++) {
+            elm2VtxHost(c, j + 1) = m.verticesOnCell[c * m.maxEdges + j];
+            elm2ElmHost(c, j + 1) = m.cellsOnCell[c * m.maxEdges + j];
+        }
+    }
+    Kokkos::deep_copy(elm2Vtx, elm2VtxHost);
+    Kokkos::deep_copy(elm2Elm, elm2ElmHost);
+
+    return new polyMPO::Mesh(polyMPO::mesh_general_polygonal,
+                             polyMPO::geom_spherical_surf,
+                             m.sphereRadius,
+                             m.nVertices,
+                             m.nCells,
+                             vtxCoords,
+                             elm2Vtx,
+                             elm2Elm);
 }
 
-// Cell centers (mean of vertices, projected onto the sphere) and cell areas
-// (sum of triangles center-v_i-v_i+1). elm2VtxConn(elm, 0) is the vertex
-// count, (elm, 1..n) are 1-based vertex IDs.
-void setCellGeometry(polyMPO::Mesh* mesh)
+// Cell centers from the file (SCVT generators) and cell areas computed as
+// the sum of triangles (center, v_i, v_i+1).
+void setCellGeometry(polyMPO::Mesh* mesh, const MPASMesh& m)
 {
     const int nElms = mesh->getNumElements();
-    const double radius = mesh->getSphereRadius();
     auto elm2Vtx = mesh->getElm2VtxConn();
     auto vtxCoords = mesh->getMeshField<polyMPO::MeshF_VtxCoords>();
     auto elmCenter = mesh->getMeshField<polyMPO::MeshF_ElmCenterXYZ>();
     auto cellArea = mesh->getMeshField<polyMPO::MeshF_CellArea>();
 
-    Kokkos::parallel_for("setTestCellGeometry", nElms, KOKKOS_LAMBDA(const int elm) {
+    auto elmCenterHost = Kokkos::create_mirror_view(elmCenter);
+    for (int c = 0; c < nElms; c++) {
+        elmCenterHost(c, 0) = m.xCell[c];
+        elmCenterHost(c, 1) = m.yCell[c];
+        elmCenterHost(c, 2) = m.zCell[c];
+    }
+    Kokkos::deep_copy(elmCenter, elmCenterHost);
+
+    Kokkos::parallel_for("setScvtCellArea", nElms, KOKKOS_LAMBDA(const int elm) {
         const int nv = elm2Vtx(elm, 0);
-
-        double c[3] = {0.0, 0.0, 0.0};
-        for (int i = 1; i <= nv; i++) {
-            const int v = elm2Vtx(elm, i) - 1;
-            for (int d = 0; d < 3; d++) c[d] += vtxCoords(v, d);
-        }
-        const double norm = Kokkos::sqrt(c[0]*c[0] + c[1]*c[1] + c[2]*c[2]);
-        for (int d = 0; d < 3; d++) c[d] *= radius / norm;
-
         double area = 0.0;
         for (int i = 1; i <= nv; i++) {
             const int a = elm2Vtx(elm, i) - 1;
             const int b = elm2Vtx(elm, (i % nv) + 1) - 1;
             double u[3], w[3];
             for (int d = 0; d < 3; d++) {
-                u[d] = vtxCoords(a, d) - c[d];
-                w[d] = vtxCoords(b, d) - c[d];
+                u[d] = vtxCoords(a, d) - elmCenter(elm, d);
+                w[d] = vtxCoords(b, d) - elmCenter(elm, d);
             }
             const double cx = u[1]*w[2] - u[2]*w[1];
             const double cy = u[2]*w[0] - u[0]*w[2];
             const double cz = u[0]*w[1] - u[1]*w[0];
             area += 0.5 * Kokkos::sqrt(cx*cx + cy*cy + cz*cz);
         }
-
-        for (int d = 0; d < 3; d++) elmCenter(elm, d) = c[d];
         cellArea(elm, 0) = area;
     });
     Kokkos::fence();
@@ -145,18 +263,14 @@ int expectedMPs(const int elm, const int nVtx)
 }
 
 // MPs on the sphere, laid out per group (see top of file).
-polyMPO::MaterialPoints* createTestMPs(polyMPO::Mesh* mesh, std::vector<int>& mpsPerCell)
+polyMPO::MaterialPoints* createTestMPs(polyMPO::Mesh* mesh, const MPASMesh& m)
 {
-    const int nElms = mesh->getNumElements();
-    const double radius = mesh->getSphereRadius();
-
-    auto elm2VtxHost = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), mesh->getElm2VtxConn());
-    auto vtxHost = Kokkos::create_mirror_view_and_copy(
-        Kokkos::HostSpace(), mesh->getMeshField<polyMPO::MeshF_VtxCoords>());
+    const int nElms = m.nCells;
+    const double radius = m.sphereRadius;
 
     std::vector<double> px, py, pz;
     std::vector<int> owner;
-    mpsPerCell.assign(nElms, 0);
+    std::vector<int> mpsPerCell(nElms, 0);
 
     auto addMP = [&](const int elm, double x, double y, double z) {
         const double norm = std::sqrt(x*x + y*y + z*z);
@@ -168,31 +282,27 @@ polyMPO::MaterialPoints* createTestMPs(polyMPO::Mesh* mesh, std::vector<int>& mp
     };
 
     for (int elm = 0; elm < nElms; elm++) {
-        const int nv = elm2VtxHost(elm, 0);
-        double c[3] = {0.0, 0.0, 0.0};
-        for (int i = 1; i <= nv; i++) {
-            const int v = elm2VtxHost(elm, i) - 1;
-            for (int d = 0; d < 3; d++) c[d] += vtxHost(v, d) / nv;
-        }
-
+        const double c[3] = {m.xCell[elm], m.yCell[elm], m.zCell[elm]};
+        const int nv = m.nEdgesOnCell[elm];
         const int group = cellGroup(elm);
+
         if (group == 2) {
-            continue;                                   // C: no MPs
+            continue;                                           // C: no MPs
         }
-        if (group == 3) {                               // D: one MP
-            const int v = elm2VtxHost(elm, 1) - 1;
-            addMP(elm, 0.5 * (c[0] + vtxHost(v, 0)),
-                       0.5 * (c[1] + vtxHost(v, 1)),
-                       0.5 * (c[2] + vtxHost(v, 2)));
+        if (group == 3) {                                       // D: one MP
+            const int v = m.verticesOnCell[elm * m.maxEdges] - 1;
+            addMP(elm, 0.5 * (c[0] + m.xVertex[v]),
+                       0.5 * (c[1] + m.yVertex[v]),
+                       0.5 * (c[2] + m.zVertex[v]));
             continue;
         }
-        for (int i = 1; i <= nv; i++) {                 // A, B: spread inside
-            const int v = elm2VtxHost(elm, i) - 1;
-            for (int m = 1; m <= MPS_PER_VTX; m++) {
-                const double t = static_cast<double>(m) / (MPS_PER_VTX + 1);
-                addMP(elm, (1.0 - t) * c[0] + t * vtxHost(v, 0),
-                           (1.0 - t) * c[1] + t * vtxHost(v, 1),
-                           (1.0 - t) * c[2] + t * vtxHost(v, 2));
+        for (int j = 0; j < nv; j++) {                          // A, B: spread inside
+            const int v = m.verticesOnCell[elm * m.maxEdges + j] - 1;
+            for (int s = 1; s <= MPS_PER_VTX; s++) {
+                const double t = static_cast<double>(s) / (MPS_PER_VTX + 1);
+                addMP(elm, (1.0 - t) * c[0] + t * m.xVertex[v],
+                           (1.0 - t) * c[1] + t * m.yVertex[v],
+                           (1.0 - t) * c[2] + t * m.zVertex[v]);
             }
         }
     }
@@ -236,7 +346,10 @@ polyMPO::MaterialPoints* createTestMPs(polyMPO::Mesh* mesh, std::vector<int>& mp
     return p_MPs;
 }
 
-// Set MP values for one category field (Part 1 pattern).
+//--------------------------------------------------------------------------
+// Part 1: MPs -> cells
+//--------------------------------------------------------------------------
+
 template <polyMPO::MaterialPointSlice mpSlice>
 void setMPValues(polyMPO::MPMesh& mpMesh, const int field)
 {
@@ -255,7 +368,6 @@ void setMPValues(polyMPO::MPMesh& mpMesh, const int field)
     Kokkos::fence();
 }
 
-// Check cell values of one category field after MPs -> cells.
 template <polyMPO::MeshFieldIndex mfIndex>
 int checkCellValues(polyMPO::MPMesh& mpMesh, const int field, const char* name, const int rank)
 {
@@ -264,6 +376,7 @@ int checkCellValues(polyMPO::MPMesh& mpMesh, const int field, const char* name, 
 
     const int nElms = mpMesh.p_mesh->getNumElements();
     int failures = 0;
+    int groupFailures[4] = {0, 0, 0, 0};
 
     for (int elm = 0; elm < nElms; elm++) {
         for (int k = 0; k < nIceCategories; k++) {
@@ -271,11 +384,12 @@ int checkCellValues(polyMPO::MPMesh& mpMesh, const int field, const char* name, 
             const double value = fieldHost(elm, k);
             const double base = baseValue(field, k, elm);
             const double tol = REL_TOL * std::abs(base);
+            const int group = cellGroup(elm);
 
             bool ok = std::isfinite(value);
             const char* expected = "";
 
-            switch (cellGroup(elm)) {
+            switch (group) {
                 case 0:
                     ok = ok && (std::abs(value - base) <= tol);
                     expected = "exactly base (group A)";
@@ -296,6 +410,7 @@ int checkCellValues(polyMPO::MPMesh& mpMesh, const int field, const char* name, 
 
             if (!ok) {
                 ++failures;
+                ++groupFailures[group];
                 if (failures <= MAX_PRINT) {
                     std::cerr
                         << "Rank " << rank << ": " << name
@@ -308,54 +423,118 @@ int checkCellValues(polyMPO::MPMesh& mpMesh, const int field, const char* name, 
             }
         }
     }
+
+    std::cout
+        << "Rank " << rank << ": MPs -> cells " << name
+        << ": failures A/B/C/D = "
+        << groupFailures[0] << "/" << groupFailures[1] << "/"
+        << groupFailures[2] << "/" << groupFailures[3]
+        << std::endl;
+
     return failures;
 }
 
-// Cells -> MPs for one category field, then check every MP.
+//--------------------------------------------------------------------------
+// Part 2: cells -> MPs
+//--------------------------------------------------------------------------
+
+// Min/max of each cell and its valid neighbours for the varying cell field.
+void neighbourBounds(const MPASMesh& m,
+                     Kokkos::View<double**>& lo, Kokkos::View<double**>& hi)
+{
+    const int nElms = m.nCells;
+    lo = Kokkos::View<double**>("limiterLo", nElms, nIceCategories);
+    hi = Kokkos::View<double**>("limiterHi", nElms, nIceCategories);
+    auto loHost = Kokkos::create_mirror_view(lo);
+    auto hiHost = Kokkos::create_mirror_view(hi);
+
+    for (int elm = 0; elm < nElms; elm++) {
+        for (int k = 0; k < nIceCategories; k++) {
+            double vmin = varyingCellValue(k, elm);
+            double vmax = vmin;
+            for (int j = 0; j < m.nEdgesOnCell[elm]; j++) {
+                const int nb = m.cellsOnCell[elm * m.maxEdges + j] - 1;
+                if (nb < 0 || nb >= nElms) continue;
+                const double v = varyingCellValue(k, nb);
+                vmin = std::min(vmin, v);
+                vmax = std::max(vmax, v);
+            }
+            loHost(elm, k) = vmin;
+            hiHost(elm, k) = vmax;
+        }
+    }
+    Kokkos::deep_copy(lo, loHost);
+    Kokkos::deep_copy(hi, hiHost);
+}
+
 template <polyMPO::MeshFieldIndex mfIndex, polyMPO::MaterialPointSlice mpSlice>
-int checkCellsToMPs(polyMPO::MPMesh& mpMesh, const char* name, const int rank)
+int checkCellsToMPs(polyMPO::MPMesh& mpMesh, const char* name, const int rank,
+                    const Kokkos::View<double**>& lo, const Kokkos::View<double**>& hi)
 {
     auto p_mesh = mpMesh.p_mesh;
     auto p_MPs = mpMesh.p_MPs;
     const int nElms = p_mesh->getNumElements();
-
     auto meshField = p_mesh->getMeshField<mfIndex>();
+    auto mpField = p_MPs->getData<mpSlice>();
+
+    // 2a: constant cell field -> every MP exactly that value
     Kokkos::parallel_for("setConstantCellValues", nElms, KOKKOS_LAMBDA(const int elm) {
         for (int k = 0; k < nIceCategories; k++) {
-            meshField(elm, k) = cellToMPValue(k);
+            meshField(elm, k) = constantCellValue(k);
         }
     });
     Kokkos::fence();
-
     mpMesh.mapCellsToMPs<mfIndex>();
     Kokkos::fence();
 
-    auto mpField = p_MPs->getData<mpSlice>();
-    Kokkos::View<int> badValues("badMPValues");
-
-    auto checkValues = PS_LAMBDA(const int& elm, const int& mp, const int& mask) {
+    Kokkos::View<int> badConstant("badConstant");
+    auto checkConstant = PS_LAMBDA(const int& elm, const int& mp, const int& mask) {
         if (mask) {
             for (int k = 0; k < nIceCategories; k++) {
-                const double value = mpField(mp, k);
-                const double expected = cellToMPValue(k);
-                if (!(Kokkos::fabs(value - expected) <= REL_TOL * expected)) {
-                    Kokkos::atomic_increment(&badValues());
+                const double expected = constantCellValue(k);
+                if (!(Kokkos::fabs(mpField(mp, k) - expected) <= REL_TOL * expected)) {
+                    Kokkos::atomic_increment(&badConstant());
                 }
             }
         }
     };
-    p_MPs->parallel_for(checkValues, "checkCellToMPValues");
+    p_MPs->parallel_for(checkConstant, "checkConstantCellToMP");
+
+    // 2b: varying cell field -> every MP within its cell/neighbour min/max
+    Kokkos::parallel_for("setVaryingCellValues", nElms, KOKKOS_LAMBDA(const int elm) {
+        for (int k = 0; k < nIceCategories; k++) {
+            meshField(elm, k) = varyingCellValue(k, elm);
+        }
+    });
+    Kokkos::fence();
+    mpMesh.mapCellsToMPs<mfIndex>();
     Kokkos::fence();
 
-    auto badHost = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), badValues);
-    if (badHost() != 0) {
-        std::cerr
-            << "Rank " << rank << ": " << name
-            << " cells -> MPs: " << badHost()
-            << " MP values differ from 1.5*(k+1)"
-            << std::endl;
-    }
-    return badHost();
+    Kokkos::View<int> badBounded("badBounded");
+    auto checkBounded = PS_LAMBDA(const int& elm, const int& mp, const int& mask) {
+        if (mask) {
+            for (int k = 0; k < nIceCategories; k++) {
+                const double v = mpField(mp, k);
+                const double tol = REL_TOL * Kokkos::fabs(hi(elm, k));
+                if (!(v >= lo(elm, k) - tol && v <= hi(elm, k) + tol)) {
+                    Kokkos::atomic_increment(&badBounded());
+                }
+            }
+        }
+    };
+    p_MPs->parallel_for(checkBounded, "checkBoundedCellToMP");
+    Kokkos::fence();
+
+    auto badConstantHost = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), badConstant);
+    auto badBoundedHost = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), badBounded);
+
+    std::cout
+        << "Rank " << rank << ": cells -> MPs " << name
+        << ": constant failures = " << badConstantHost()
+        << ", out-of-bounds (limiter) failures = " << badBoundedHost()
+        << std::endl;
+
+    return badConstantHost() + badBoundedHost();
 }
 
 } // namespace
@@ -374,21 +553,36 @@ int main(int argc, char** argv)
         MPI_Comm_rank(MPI_COMM_WORLD, &rank);
         MPI_Comm_size(MPI_COMM_WORLD, &size);
 
+#ifndef POLYMPO_HAS_NETCDF
+        if (rank == 0) {
+            std::cerr << "testParticleCellMap requires NetCDF; skipping." << std::endl;
+        }
+        testResult = 77;
+#else
+        if (argc < 2) {
+            if (rank == 0) {
+                std::cerr << "Usage: " << argv[0] << " <path to spherical MPAS mesh .nc file>" << std::endl;
+            }
+            MPI_Abort(MPI_COMM_WORLD, 1);
+        }
+        const std::string meshFile = argv[1];
+
         if (rank == 0) {
             std::cout
                 << "Particle-cell mapping test running with "
-                << size << " MPI ranks."
+                << size << " MPI ranks on " << meshFile
                 << std::endl;
         }
 
-        // Spherical 10-cell mesh with cell centers and areas.
+        // SCVT mesh from the MPAS mesh file.
         // The mapping is local to each rank, so every rank runs the same test.
 
-        polyMPO::Mesh* mesh = createSphericalTestMesh();
-        setCellGeometry(mesh);
+        const MPASMesh mpasMesh = readMPASMesh(meshFile);
 
-        std::vector<int> mpsPerCell;
-        polyMPO::MaterialPoints* p_MPs = createTestMPs(mesh, mpsPerCell);
+        polyMPO::Mesh* mesh = createMesh(mpasMesh);
+        setCellGeometry(mesh, mpasMesh);
+
+        polyMPO::MaterialPoints* p_MPs = createTestMPs(mesh, mpasMesh);
 
         polyMPO::MPMesh mpMesh(mesh, p_MPs);
         mpMesh.p_MPs->setMPIComm(MPI_COMM_WORLD);
@@ -401,9 +595,10 @@ int main(int argc, char** argv)
 
         std::cout
             << "Rank " << rank
-            << ": geometry = " << (spherical ? "spherical" : "NOT spherical")
+            << ": geometry = " << (spherical ? "spherical (SCVT)" : "NOT spherical")
             << ", radius = " << mesh->getSphereRadius()
             << ", cells = " << nElms
+            << ", vertices = " << mesh->getNumVertices()
             << ", MPs = " << mpMesh.p_MPs->getCount()
             << std::endl;
 
@@ -434,20 +629,23 @@ int main(int argc, char** argv)
         mpMesh.p_MPs->parallel_for(countMPs, "countMPsPerCell");
         Kokkos::fence();
         auto nMPsHost = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), nMPs);
-        auto elm2VtxHost = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), mesh->getElm2VtxConn());
 
+        int cellsPerGroup[4] = {0, 0, 0, 0};
+        int countFailures = 0;
         for (int elm = 0; elm < nElms; elm++) {
-            const int expected = expectedMPs(elm, elm2VtxHost(elm, 0));
-            std::cout
-                << "Rank " << rank << ": cell " << elm
-                << " group " << "ABCD"[cellGroup(elm)]
-                << ": MPs = " << nMPsHost(elm)
-                << " (expected " << expected << ")"
-                << std::endl;
-            if (nMPsHost(elm) != expected) {
-                ++localFailures;
+            ++cellsPerGroup[cellGroup(elm)];
+            if (nMPsHost(elm) != expectedMPs(elm, mpasMesh.nEdgesOnCell[elm])) {
+                ++countFailures;
             }
         }
+        std::cout
+            << "Rank " << rank
+            << ": cells per group A/B/C/D = "
+            << cellsPerGroup[0] << "/" << cellsPerGroup[1] << "/"
+            << cellsPerGroup[2] << "/" << cellsPerGroup[3]
+            << ", MP count mismatches = " << countFailures
+            << std::endl;
+        localFailures += countFailures;
 
         // Part 1: MPs -> cells.
         // Set and map all three fields first, then read all three back.
@@ -472,12 +670,15 @@ int main(int argc, char** argv)
 
         // Part 2: cells -> MPs.
 
+        Kokkos::View<double**> lo, hi;
+        neighbourBounds(mpasMesh, lo, hi);
+
         localFailures += checkCellsToMPs<polyMPO::MeshF_IceAreaCategory,
-                                         polyMPO::MPF_IceAreaCategory>(mpMesh, "iceAreaCategory", rank);
+                                         polyMPO::MPF_IceAreaCategory>(mpMesh, "iceAreaCategory", rank, lo, hi);
         localFailures += checkCellsToMPs<polyMPO::MeshF_IceVolumeCategory,
-                                         polyMPO::MPF_IceVolumeCategory>(mpMesh, "iceVolumeCategory", rank);
+                                         polyMPO::MPF_IceVolumeCategory>(mpMesh, "iceVolumeCategory", rank, lo, hi);
         localFailures += checkCellsToMPs<polyMPO::MeshF_SnowVolumeCategory,
-                                         polyMPO::MPF_SnowVolumeCategory>(mpMesh, "snowVolumeCategory", rank);
+                                         polyMPO::MPF_SnowVolumeCategory>(mpMesh, "snowVolumeCategory", rank, lo, hi);
 
         int globalFailures = 0;
 
@@ -505,6 +706,7 @@ int main(int argc, char** argv)
 
         // Do not delete mesh or MPs here.
         // mpMesh owns the Mesh and MaterialPoints objects.
+#endif
     }
 
     Kokkos::finalize();

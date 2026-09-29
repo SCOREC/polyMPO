@@ -94,7 +94,6 @@ pmpo_add_test(testFortran 1 ./testFortran)
 pmpo_add_test(testFortranMPMeshModule 1 ./testFortranMPMeshModule)
 pmpo_add_test(testFortranMPAppIDs 1 ./testFortranMPAppIDs)
 pmpo_add_test(test_gpu_aware_halo_exchange 4 ./testGPUAwareHaloExchange)
-pmpo_add_test(test_particle_cell_map 1 ./testParticleCellMap)
 set_tests_properties(test_gpu_aware_halo_exchange PROPERTIES SKIP_RETURN_CODE 77)
 
 #set NC file for test
@@ -111,7 +110,9 @@ if(EXISTS ${TEST_NC_FILE_SPHERICAL})
     if (MPIRUN)
       pmpo_add_test(test_fortran_mp_advection_migration_4 4 ./testFortranMPAdvection "MIGRATION" 5 5 ${TEST_NC_FILE})
     endif()
-
+    # particle-cell mapping of category fields on the spherical SCVT mesh
+    pmpo_add_test(test_particle_cell_map 1 ./testParticleCellMap ${TEST_NC_FILE_SPHERICAL})
+    set_tests_properties(test_particle_cell_map PROPERTIES SKIP_RETURN_CODE 77)
 else()
     set(TEST_NC_FILE ${TEST_NC_FILE_PLANAR})
 endif()

@@ -44,7 +44,12 @@ enum MaterialPointSlice {
   MPF_Area,
   MPF_IcePressure,
   MPF_ReplacementPressure,
-  MPF_Vel_IncrTimesTanLatVertexOverRadius
+  MPF_Vel_IncrTimesTanLatVertexOverRadius,
+  MPF_OpenWaterArea,
+  MPF_IceAreaCategory,
+  MPF_IceVolumeCategory,
+  MPF_SnowVolumeCategory,
+  MPF_OceanStress
 };
 
 enum Operating_Mode{
@@ -77,6 +82,11 @@ template <> struct mpSliceToMeshField < MPF_Area                > { using type =
 template <> struct mpSliceToMeshField < MPF_IcePressure         > { using type = doubleSclr_t; };
 template <> struct mpSliceToMeshField < MPF_ReplacementPressure > { using type = doubleSclr_t; };
 template <> struct mpSliceToMeshField < MPF_Vel_IncrTimesTanLatVertexOverRadius> { using type = vec2d_t; };
+template <> struct mpSliceToMeshField < MPF_OpenWaterArea       > { using type = doubleSclr_t; };
+template <> struct mpSliceToMeshField < MPF_IceAreaCategory     > { using type = double[nIceCategories]; };
+template <> struct mpSliceToMeshField < MPF_IceVolumeCategory   > { using type = double[nIceCategories]; };
+template <> struct mpSliceToMeshField < MPF_SnowVolumeCategory  > { using type = double[nIceCategories]; };
+template <> struct mpSliceToMeshField < MPF_OceanStress         > { using type = vec2d_t; };
 
 template <MaterialPointSlice slice> 
 static constexpr int mpSliceToNumEntries() {
@@ -116,7 +126,12 @@ typedef MemberTypes<mpSliceToMeshField < MPF_Status              >::type,
                     mpSliceToMeshField < MPF_Area                >::type,
                     mpSliceToMeshField < MPF_IcePressure         >::type,
                     mpSliceToMeshField < MPF_ReplacementPressure >::type,
-                    mpSliceToMeshField < MPF_Vel_IncrTimesTanLatVertexOverRadius >::type
+                    mpSliceToMeshField < MPF_Vel_IncrTimesTanLatVertexOverRadius >::type,
+                    mpSliceToMeshField < MPF_OpenWaterArea       >::type,
+                    mpSliceToMeshField < MPF_IceAreaCategory     >::type,
+                    mpSliceToMeshField < MPF_IceVolumeCategory   >::type,
+                    mpSliceToMeshField < MPF_SnowVolumeCategory  >::type,
+                    mpSliceToMeshField < MPF_OceanStress         >::type
                     >MaterialPointTypes;
 typedef ps::ParticleStructure<MaterialPointTypes> PS;
 
@@ -148,7 +163,7 @@ class MaterialPoints {
     void rebuild(IntView addedMP2elm, IntView addedMPAppID);
     void startRebuild(IntView tgtElm, int addedNumMPs, IntView addedMP2elm, IntView addedMPAppID, Kokkos::View<const int*> addedMPMask);
     void startRebuild(IntView tgtElm, int addedNumMPs, IntView addedMP2elm, IntView addedMPAppID);
-    
+
     void finishRebuild();
     bool rebuildOngoing();
 

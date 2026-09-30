@@ -8,6 +8,7 @@
 namespace polyMPO{
 
 #define maxVtxsPerElm 8
+#define nIceCategories 5
 #define maxElmsPerVtx 5
 
 using IntVtx2ElmView = Kokkos::View<int*[maxVtxsPerElm+1]>;
@@ -19,8 +20,10 @@ enum MeshFieldIndex{
     MeshF_Unsupported,
     MeshF_VtxCoords,
     MeshF_VtxRotLat,
+    MeshF_VtxRotLon,
     MeshF_ElmCenterXYZ,
     MeshF_DualTriangleArea,
+    MeshF_CellArea,
     MeshF_Vel,
     MeshF_VtxMass,
     MeshF_ElmMass,
@@ -28,6 +31,8 @@ enum MeshFieldIndex{
     MeshF_OnSurfDispIncr,
     MeshF_RotLatLonIncr,
     MeshF_VtxGnomProj,
+    MeshF_CellGnomProj,
+    MeshF_CellOnCellGnomProj,
     MeshF_ElmCenterGnomProj,
     MeshF_TanLatVertexRotatedOverRadius,
     MeshF_SolveStress,
@@ -41,7 +46,13 @@ enum MeshFieldIndex{
     MeshF_SurfaceTilt,
     MeshF_TotalMassFVtx,
     MeshF_OceanStress,
-    MeshF_OceanStressCoeff
+    MeshF_OceanStressCell,
+    MeshF_OceanStressCoeff,
+    MeshF_OceanVelocity,
+    MeshF_OpenWaterArea,
+    MeshF_IceAreaCategory,
+    MeshF_IceVolumeCategory,
+    MeshF_SnowVolumeCategory
 };
 
 enum MeshFieldType{
@@ -54,8 +65,10 @@ enum MeshFieldType{
 template <MeshFieldIndex> struct meshFieldToType;
 template <> struct meshFieldToType < MeshF_VtxCoords         > { using type = Kokkos::View<vec3d_t*>; };
 template <> struct meshFieldToType < MeshF_VtxRotLat         > { using type = DoubleView; };
+template <> struct meshFieldToType < MeshF_VtxRotLon         > { using type = DoubleView; };
 template <> struct meshFieldToType < MeshF_ElmCenterXYZ      > { using type = Kokkos::View<vec3d_t*>; };
 template <> struct meshFieldToType < MeshF_DualTriangleArea  > { using type = Kokkos::View<doubleSclr_t*>; };
+template <> struct meshFieldToType < MeshF_CellArea          > { using type = Kokkos::View<doubleSclr_t*>; };
 template <> struct meshFieldToType < MeshF_Vel               > { using type = Kokkos::View<vec2d_t*>; };
 template <> struct meshFieldToType < MeshF_VtxMass           > { using type = Kokkos::View<doubleSclr_t*>; };
 template <> struct meshFieldToType < MeshF_ElmMass           > { using type = Kokkos::View<doubleSclr_t*>; };
@@ -63,6 +76,8 @@ template <> struct meshFieldToType < MeshF_OnSurfVeloIncr    > { using type = Ko
 template <> struct meshFieldToType < MeshF_OnSurfDispIncr    > { using type = Kokkos::View<vec2d_t*>; };
 template <> struct meshFieldToType < MeshF_RotLatLonIncr     > { using type = Kokkos::View<vec2d_t*>; };
 template <> struct meshFieldToType < MeshF_VtxGnomProj       > { using type = Kokkos::View<double*[maxVtxsPerElm][2]>; };
+template <> struct meshFieldToType < MeshF_CellGnomProj      > { using type = Kokkos::View<double*[2]>; };
+template <> struct meshFieldToType < MeshF_CellOnCellGnomProj> { using type = Kokkos::View<double*[maxVtxsPerElm][2]>; };
 template <> struct meshFieldToType < MeshF_ElmCenterGnomProj > { using type = Kokkos::View<double*[4]>; };
 template <> struct meshFieldToType < MeshF_TanLatVertexRotatedOverRadius > { using type = Kokkos::View<doubleSclr_t*>; };
 template <> struct meshFieldToType < MeshF_SolveStress       > { using type = IntView; };
@@ -76,7 +91,13 @@ template <> struct meshFieldToType < MeshF_AirStress         > { using type = Ko
 template <> struct meshFieldToType < MeshF_SurfaceTilt       > { using type = Kokkos::View<vec2d_t*>; };
 template <> struct meshFieldToType < MeshF_TotalMassFVtx     > { using type = Kokkos::View<doubleSclr_t*>; };
 template <> struct meshFieldToType < MeshF_OceanStress       > { using type = Kokkos::View<vec2d_t*>; };
+template <> struct meshFieldToType < MeshF_OceanStressCell   > { using type = Kokkos::View<vec2d_t*>; };
 template <> struct meshFieldToType < MeshF_OceanStressCoeff  > { using type = Kokkos::View<doubleSclr_t*>; };
+template <> struct meshFieldToType < MeshF_OceanVelocity     > { using type = Kokkos::View<vec2d_t*>; };
+template <> struct meshFieldToType < MeshF_OpenWaterArea     > { using type = Kokkos::View<doubleSclr_t*>; };
+template <> struct meshFieldToType < MeshF_IceAreaCategory   > { using type = Kokkos::View<double**>; };
+template <> struct meshFieldToType < MeshF_IceVolumeCategory > { using type = Kokkos::View<double**>; };
+template <> struct meshFieldToType < MeshF_SnowVolumeCategory> { using type = Kokkos::View<double**>; };
 
 template <MeshFieldIndex index>
 using MeshFView = typename meshFieldToType<index>::type;
@@ -86,8 +107,10 @@ const std::map<MeshFieldIndex, std::pair<MeshFieldType, std::string>> meshFields
         {MeshF_Unsupported,      {MeshFType_Unsupported,"MeshField_Unsupported"}},
         {MeshF_VtxCoords,        {MeshFType_VtxBased,"MeshField_VerticesCoords"}},
         {MeshF_VtxRotLat,        {MeshFType_VtxBased,"MeshField_VerticesLatitude"}},
+        {MeshF_VtxRotLon,        {MeshFType_VtxBased,"MeshField_VerticesLongitude"}},
         {MeshF_ElmCenterXYZ,     {MeshFType_ElmBased,"MeshField_ElementCenterXYZ"}},
         {MeshF_DualTriangleArea, {MeshFType_VtxBased,"MeshField_DualTriangleArea"}},
+        {MeshF_CellArea,         {MeshFType_ElmBased,"MeshField_CellArea"}},
         {MeshF_Vel,              {MeshFType_VtxBased,"MeshField_Velocity"}},
         {MeshF_VtxMass,          {MeshFType_VtxBased,"MeshField_VerticesMass"}},
         {MeshF_ElmMass,          {MeshFType_ElmBased,"MeshField_ElementsMass"}},
@@ -95,6 +118,8 @@ const std::map<MeshFieldIndex, std::pair<MeshFieldType, std::string>> meshFields
         {MeshF_OnSurfDispIncr,   {MeshFType_VtxBased,"MeshField_OnSurfaceDisplacementIncrement"}},
         {MeshF_RotLatLonIncr,    {MeshFType_VtxBased,"MeshField_RotationalLatitudeLongitudeIncreasement"}},
         {MeshF_VtxGnomProj,      {MeshFType_ElmBased,"MeshField_VertexGnomonicProjection"}},
+        {MeshF_CellGnomProj,     {MeshFType_ElmBased,"MeshField_CellGnomonicProjection"}},
+        {MeshF_CellOnCellGnomProj,{MeshFType_ElmBased,"MeshField_CellOnCellGnomonicProjection"}},
         {MeshF_ElmCenterGnomProj,{MeshFType_ElmBased,"MeshField_ElementCenterGnomonicprojection"}},
         {MeshF_TanLatVertexRotatedOverRadius, {MeshFType_VtxBased,"MeshField_TanLatVertexRotatedOverRadius"}},
         {MeshF_SolveStress,      {MeshFType_ElmBased,"MeshField_SolveStress"}},
@@ -108,7 +133,13 @@ const std::map<MeshFieldIndex, std::pair<MeshFieldType, std::string>> meshFields
         {MeshF_SurfaceTilt,      {MeshFType_VtxBased,"MeshField_SurfaceTilt"}},
         {MeshF_TotalMassFVtx,    {MeshFType_VtxBased,"MeshField_TotalMassFVtx"}},
         {MeshF_OceanStress,      {MeshFType_VtxBased,"MeshField_OceanStress"}},
-        {MeshF_OceanStressCoeff, {MeshFType_VtxBased,"MeshField_OceanStressCoeff"}}
+        {MeshF_OceanStressCell,  {MeshFType_ElmBased,"MeshField_OceanStressCell"}},
+        {MeshF_OceanStressCoeff, {MeshFType_VtxBased,"MeshField_OceanStressCoeff"}},
+        {MeshF_OceanVelocity,    {MeshFType_VtxBased,"MeshField_OceanVelocity"}},
+        {MeshF_OpenWaterArea,    {MeshFType_ElmBased,"MeshField_OpenWaterArea"}},
+        {MeshF_IceAreaCategory,  {MeshFType_ElmBased,"MeshField_IceAreaCategory"}},
+        {MeshF_IceVolumeCategory,{MeshFType_ElmBased,"MeshField_IceVolumeCategory"}},
+        {MeshF_SnowVolumeCategory,{MeshFType_ElmBased,"MeshField_SnowVolumeCategory"}}
 };
 
 enum mesh_type {mesh_unrecognized_lower = -1,
@@ -141,8 +172,10 @@ class Mesh {
     //start of meshFields
     MeshFView<MeshF_VtxCoords> vtxCoords_;
     MeshFView<MeshF_VtxRotLat> vtxRotLat_;
+    MeshFView<MeshF_VtxRotLon> vtxRotLon_;
     MeshFView<MeshF_ElmCenterXYZ> elmCenterXYZ_;
     MeshFView<MeshF_DualTriangleArea> dualTriangleArea_;
+    MeshFView<MeshF_CellArea> cellArea_;
 
     MeshFView<MeshF_uBdryVtxNormal> uBdryVtxNormal_;
     MeshFView<MeshF_vBdryVtxNormal> vBdryVtxNormal_;
@@ -155,8 +188,10 @@ class Mesh {
     MeshFView<MeshF_RotLatLonIncr> vtxRotLatLonIncr_;
     //GnomonicProjection
     MeshFView<MeshF_VtxGnomProj> vtxGnomProj_;
+    MeshFView<MeshF_CellGnomProj> cellGnomProj_;
+    MeshFView<MeshF_CellOnCellGnomProj> cellOnCellGnomProj_;
     MeshFView<MeshF_ElmCenterGnomProj> elmCenterGnomProj_;
-    
+
     MeshFView<MeshF_TanLatVertexRotatedOverRadius> tanLatVertexRotatedOverRadius_;
     MeshFView<MeshF_SolveStress> solveStress_;
     MeshFView<MeshF_SolveVelocity> solveVelocity_;
@@ -166,7 +201,13 @@ class Mesh {
     MeshFView<MeshF_SurfaceTilt> surfaceTilt_;
     MeshFView<MeshF_TotalMassFVtx> totalMassFVtx_;
     MeshFView<MeshF_OceanStress> oceanStress_;
+    MeshFView<MeshF_OceanStressCell> oceanStressCell_;
     MeshFView<MeshF_OceanStressCoeff> oceanStressCoeff_;
+    MeshFView<MeshF_OceanVelocity> oceanVelocity_;
+    MeshFView<MeshF_OpenWaterArea> openWaterArea_;
+    MeshFView<MeshF_IceAreaCategory> iceAreaCategory_;
+    MeshFView<MeshF_IceVolumeCategory> iceVolumeCategory_;
+    MeshFView<MeshF_SnowVolumeCategory> snowVolumeCategory_;
 
     bool isRotatedFlag = false;
     double elasticTimeStep_;
@@ -271,6 +312,8 @@ class Mesh {
     double getDynamicTimeStep(){
       return dynamicTimeStep_;
     }
+
+    void calcOceanStressCoeff(const double configIceOceanDragCoeff);
     void gridSolveGPU();
     void aggregateDeluDyn();
     void applyFreeSlipBC();
@@ -292,11 +335,17 @@ auto Mesh::getMeshField(){
     else if constexpr (index==MeshF_VtxRotLat){
         return vtxRotLat_;
     }
+    else if constexpr (index==MeshF_VtxRotLon){
+        return vtxRotLon_;
+    }
     else if constexpr (index==MeshF_ElmCenterXYZ){
         return elmCenterXYZ_;
     }
     else if constexpr (index==MeshF_DualTriangleArea){
         return dualTriangleArea_;
+    }
+    else if constexpr (index==MeshF_CellArea){
+        return cellArea_;
     }
     else if constexpr (index==MeshF_Vel){
         return vtxVel_;
@@ -318,6 +367,12 @@ auto Mesh::getMeshField(){
     }
     else if constexpr (index==MeshF_VtxGnomProj){
         return vtxGnomProj_;
+    }
+    else if constexpr (index==MeshF_CellGnomProj){
+        return cellGnomProj_;
+    }
+    else if constexpr (index==MeshF_CellOnCellGnomProj){
+        return cellOnCellGnomProj_;
     }
     else if constexpr (index==MeshF_ElmCenterGnomProj){
         return elmCenterGnomProj_;
@@ -358,8 +413,26 @@ auto Mesh::getMeshField(){
     else if constexpr (index==MeshF_OceanStress){
         return oceanStress_;
     }
+    else if constexpr (index==MeshF_OceanStressCell){
+        return oceanStressCell_;
+    }
     else if constexpr (index==MeshF_OceanStressCoeff){
         return oceanStressCoeff_;
+    }
+    else if constexpr (index==MeshF_OceanVelocity){
+        return oceanVelocity_;
+    }
+    else if constexpr (index==MeshF_OpenWaterArea){
+        return openWaterArea_;
+    }
+    else if constexpr (index==MeshF_IceAreaCategory){
+        return iceAreaCategory_;
+    }
+    else if constexpr (index==MeshF_IceVolumeCategory){
+        return iceVolumeCategory_;
+    }
+    else if constexpr (index==MeshF_SnowVolumeCategory){
+        return snowVolumeCategory_;
     }
     fprintf(stderr,"Mesh Field Index error!\n");
     exit(1);

@@ -13,70 +13,54 @@
 #include <netcdf.h>
 #endif
 
-// Unit test for particle-cell mapping of the category fields on an MPAS
-// spherical centroidal Voronoi (SCVT) mesh:
-//   MPF_IceAreaCategory    <-> MeshF_IceAreaCategory
-//   MPF_IceVolumeCategory  <-> MeshF_IceVolumeCategory
-//   MPF_SnowVolumeCategory <-> MeshF_SnowVolumeCategory
-// Each field has nIceCategories components.
+// Partitioned (4-rank) unit test for particle-cell mapping on spherical centroidal Voronoi (SCVT) mesh.
 //
-// Mesh: read from an MPAS mesh file (test/sample_mpas_meshes/
-//       spherical_cvt_642elms.nc): vertex coordinates, cell centers
-//       (SCVT generators), verticesOnCell and cellsOnCell. Cell areas are
-//       computed from the vertices.
+// Partition: the SCVT mesh (spherical_cvt_642elms.nc) is split into 4 longitude wedges; rank r owns the cells whose center lies in wedge r.
 //
-// MPs: built by this test so the number of MPs per cell is controlled.
-// Cells are split into four groups by (cell mod 4):
+// MP layout and values (based on the global cell ID, so the partitioned and serial runs see identical inputs):
+//   Group A (gid mod 4 = 0): 2 MPs per vertex, all carry base
+//   Group B (gid mod 4 = 1): 2 MPs per vertex, base or base + 0.5
+//                            (+0.5 for MPs on one side of the cell center)
+//   Group C (gid mod 4 = 2): no MPs
+//   Group D (gid mod 4 = 3): exactly 1 MP, carries base
+//   base(f, k, gid) = f * 1e7 + (k + 1) * 1e4 + gid
 //
-//   Group A (0): 2 MPs per vertex, spread inside the cell, all carry base
-//   Group B (1): 2 MPs per vertex, alternating base and base + 0.5
-//   Group C (2): no MPs
-//   Group D (3): exactly 1 MP, carries base
-//
-//   base(f, k, cell) = f * 1e7 + (k + 1) * 1e4 + cell
-//
-// Part 0: MP count per cell matches the layout above.
-//
-// Part 1: MPs -> cells (MPMesh::mapMPsToCells)
-//   Group A, D -> cell value exactly base
-//   Group B    -> cell value in [base, base + 0.5]   (clamping)
-//   Group C    -> cell value exactly 0
-//   All three fields are mapped before any is read back.
-//
-// Part 2: cells -> MPs (MPMesh::mapCellsToMPs)
-//   2a: every cell set to 1.5 * (k + 1)
-//       -> every MP exactly 1.5 * (k + 1)
-//   2b: every cell set to (k + 1) * 1e4 + cell (varies between neighbours)
-//       -> every MP within the min/max of its cell and neighbour cells
-//          (gradient limiter, uses the real SCVT neighbours)
-//
-// Usage: ./testParticleCellMap <path to spherical MPAS mesh .nc file>
+//   Two important parts of this test:
+//   Part 1: MPs -> cells: every owned cell value equals the serial value.
+//   Part 2: cells -> MPs: cells (owned + halo) set to
+//           (k + 1) * 1e4 + gid (varies between neighbours); the MPs of
+//           every owned cell must match the serial MPs of that cell
+//           (sum, min and max per category).
+// Halo cells get no MP contribution (MPs live on their owning rank); the test reports them but does not require a value.
 
 namespace {
 
+constexpr int NUM_PARTS = 4;
+constexpr int NUM_FIELDS = 3;
 constexpr double SPREAD = 0.5;
 constexpr double REL_TOL = 1.0e-12;
 constexpr int MPS_PER_VTX = 2;
 constexpr int MAX_PRINT = 10;
 
-int cellGroup(const int elm) { return elm % 4; }
+KOKKOS_INLINE_FUNCTION
+int cellGroup(const int gid) { return gid % 4; }
 
 KOKKOS_INLINE_FUNCTION
-double baseValue(const int field, const int cat, const int elm)
+double baseValue(const int field, const int cat, const int gid)
 {
-    return field * 1.0e7 + (cat + 1) * 1.0e4 + elm;
+    return field * 1.0e7 + (cat + 1) * 1.0e4 + gid;
 }
 
 KOKKOS_INLINE_FUNCTION
-double constantCellValue(const int cat)
+double varyingCellValue(const int cat, const int gid)
 {
-    return 1.5 * (cat + 1);
+    return (cat + 1) * 1.0e4 + gid;
 }
 
-KOKKOS_INLINE_FUNCTION
-double varyingCellValue(const int cat, const int elm)
+bool nearlyEqual(const double a, const double b)
 {
-    return (cat + 1) * 1.0e4 + elm;
+    return std::isfinite(a) && std::isfinite(b) &&
+           std::abs(a - b) <= REL_TOL * std::max(1.0, std::abs(b));
 }
 
 //--------------------------------------------------------------------------
@@ -167,38 +151,125 @@ MPASMesh readMPASMesh(const std::string& filename)
 #endif
 
 //--------------------------------------------------------------------------
-// polyMPO mesh from the MPAS mesh
+// Local (rank) mesh: owned cells first, then halo cells
 //--------------------------------------------------------------------------
 
-polyMPO::Mesh* createMesh(const MPASMesh& m)
+struct LocalMesh {
+    int nCells = 0;
+    int nOwned = 0;
+    int nVertices = 0;
+    int maxEdges = 0;
+    double sphereRadius = 0.0;
+    std::vector<double> xVertex, yVertex, zVertex;
+    std::vector<double> xCell, yCell, zCell;
+    std::vector<int> nEdgesOnCell;
+    std::vector<int> verticesOnCell;   // [nCells][maxEdges], 1-based local
+    std::vector<int> cellsOnCell;      // [nCells][maxEdges], 1-based local, invalid = nCells + 1
+    std::vector<int> globalId;         // local cell -> global cell
+    std::vector<bool> isBoundary;      // owned cell with a neighbour owned by another rank
+};
+
+// owner[g] = owning rank of global cell g. serial = true: all cells owned.
+LocalMesh buildLocalMesh(const MPASMesh& m, const std::vector<int>& owner,
+                         const int rank, const bool serial)
 {
-    polyMPO::MeshFView<polyMPO::MeshF_VtxCoords> vtxCoords("scvtVtxCoords", m.nVertices);
+    LocalMesh L;
+    L.maxEdges = m.maxEdges;
+    L.sphereRadius = m.sphereRadius;
+
+    std::vector<int> g2l(m.nCells, -1);
+    std::vector<int> cells;
+
+    for (int g = 0; g < m.nCells; g++) {
+        if (serial || owner[g] == rank) {
+            g2l[g] = static_cast<int>(cells.size());
+            cells.push_back(g);
+        }
+    }
+    L.nOwned = static_cast<int>(cells.size());
+
+    if (!serial) {
+        for (int i = 0; i < L.nOwned; i++) {
+            const int g = cells[i];
+            for (int j = 0; j < m.nEdgesOnCell[g]; j++) {
+                const int nb = m.cellsOnCell[g * m.maxEdges + j] - 1;
+                if (nb < 0 || nb >= m.nCells || g2l[nb] >= 0) continue;
+                g2l[nb] = static_cast<int>(cells.size());
+                cells.push_back(nb);
+            }
+        }
+    }
+    L.nCells = static_cast<int>(cells.size());
+
+    std::vector<int> v2l(m.nVertices, -1);
+    L.nEdgesOnCell.resize(L.nCells);
+    L.verticesOnCell.assign(static_cast<size_t>(L.nCells) * L.maxEdges, 0);
+    L.cellsOnCell.assign(static_cast<size_t>(L.nCells) * L.maxEdges, L.nCells + 1);
+    L.isBoundary.assign(L.nCells, false);
+
+    for (int l = 0; l < L.nCells; l++) {
+        const int g = cells[l];
+        L.globalId.push_back(g);
+        L.xCell.push_back(m.xCell[g]);
+        L.yCell.push_back(m.yCell[g]);
+        L.zCell.push_back(m.zCell[g]);
+        L.nEdgesOnCell[l] = m.nEdgesOnCell[g];
+
+        for (int j = 0; j < m.nEdgesOnCell[g]; j++) {
+            const int v = m.verticesOnCell[g * m.maxEdges + j] - 1;
+            if (v2l[v] < 0) {
+                v2l[v] = static_cast<int>(L.xVertex.size());
+                L.xVertex.push_back(m.xVertex[v]);
+                L.yVertex.push_back(m.yVertex[v]);
+                L.zVertex.push_back(m.zVertex[v]);
+            }
+            L.verticesOnCell[l * L.maxEdges + j] = v2l[v] + 1;
+
+            const int nb = m.cellsOnCell[g * m.maxEdges + j] - 1;
+            if (nb >= 0 && nb < m.nCells && g2l[nb] >= 0) {
+                L.cellsOnCell[l * L.maxEdges + j] = g2l[nb] + 1;
+            }
+            if (l < L.nOwned && nb >= 0 && nb < m.nCells && !serial && owner[nb] != rank) {
+                L.isBoundary[l] = true;
+            }
+        }
+    }
+    L.nVertices = static_cast<int>(L.xVertex.size());
+    return L;
+}
+
+//--------------------------------------------------------------------------
+// polyMPO mesh and MPs from a local mesh
+//--------------------------------------------------------------------------
+
+polyMPO::Mesh* createMesh(const LocalMesh& L)
+{
+    polyMPO::MeshFView<polyMPO::MeshF_VtxCoords> vtxCoords("localVtxCoords", L.nVertices);
     auto vtxCoordsHost = Kokkos::create_mirror_view(vtxCoords);
-    for (int v = 0; v < m.nVertices; v++) {
-        vtxCoordsHost(v, 0) = m.xVertex[v];
-        vtxCoordsHost(v, 1) = m.yVertex[v];
-        vtxCoordsHost(v, 2) = m.zVertex[v];
+    for (int v = 0; v < L.nVertices; v++) {
+        vtxCoordsHost(v, 0) = L.xVertex[v];
+        vtxCoordsHost(v, 1) = L.yVertex[v];
+        vtxCoordsHost(v, 2) = L.zVertex[v];
     }
     Kokkos::deep_copy(vtxCoords, vtxCoordsHost);
 
-    polyMPO::IntVtx2ElmView elm2Vtx("scvtElm2VtxConn", m.nCells);
-    polyMPO::IntElm2ElmView elm2Elm("scvtElm2ElmConn", m.nCells);
+    polyMPO::IntVtx2ElmView elm2Vtx("localElm2VtxConn", L.nCells);
+    polyMPO::IntElm2ElmView elm2Elm("localElm2ElmConn", L.nCells);
     auto elm2VtxHost = Kokkos::create_mirror_view(elm2Vtx);
     auto elm2ElmHost = Kokkos::create_mirror_view(elm2Elm);
 
     const int maxConn = static_cast<int>(elm2VtxHost.extent(1)) - 1;
-    for (int c = 0; c < m.nCells; c++) {
-        const int nv = m.nEdgesOnCell[c];
+    for (int c = 0; c < L.nCells; c++) {
+        const int nv = L.nEdgesOnCell[c];
         if (nv > maxConn) {
-            std::cerr << "Cell " << c << " has " << nv << " edges, polyMPO supports "
-                      << maxConn << std::endl;
+            std::cerr << "Cell with " << nv << " edges, polyMPO supports " << maxConn << std::endl;
             MPI_Abort(MPI_COMM_WORLD, 1);
         }
         elm2VtxHost(c, 0) = nv;
         elm2ElmHost(c, 0) = nv;
         for (int j = 0; j < nv; j++) {
-            elm2VtxHost(c, j + 1) = m.verticesOnCell[c * m.maxEdges + j];
-            elm2ElmHost(c, j + 1) = m.cellsOnCell[c * m.maxEdges + j];
+            elm2VtxHost(c, j + 1) = L.verticesOnCell[c * L.maxEdges + j];
+            elm2ElmHost(c, j + 1) = L.cellsOnCell[c * L.maxEdges + j];
         }
     }
     Kokkos::deep_copy(elm2Vtx, elm2VtxHost);
@@ -206,9 +277,9 @@ polyMPO::Mesh* createMesh(const MPASMesh& m)
 
     return new polyMPO::Mesh(polyMPO::mesh_general_polygonal,
                              polyMPO::geom_spherical_surf,
-                             m.sphereRadius,
-                             m.nVertices,
-                             m.nCells,
+                             L.sphereRadius,
+                             L.nVertices,
+                             L.nCells,
                              vtxCoords,
                              elm2Vtx,
                              elm2Elm);
@@ -216,7 +287,7 @@ polyMPO::Mesh* createMesh(const MPASMesh& m)
 
 // Cell centers from the file (SCVT generators) and cell areas computed as
 // the sum of triangles (center, v_i, v_i+1).
-void setCellGeometry(polyMPO::Mesh* mesh, const MPASMesh& m)
+void setCellGeometry(polyMPO::Mesh* mesh, const LocalMesh& L)
 {
     const int nElms = mesh->getNumElements();
     auto elm2Vtx = mesh->getElm2VtxConn();
@@ -226,13 +297,13 @@ void setCellGeometry(polyMPO::Mesh* mesh, const MPASMesh& m)
 
     auto elmCenterHost = Kokkos::create_mirror_view(elmCenter);
     for (int c = 0; c < nElms; c++) {
-        elmCenterHost(c, 0) = m.xCell[c];
-        elmCenterHost(c, 1) = m.yCell[c];
-        elmCenterHost(c, 2) = m.zCell[c];
+        elmCenterHost(c, 0) = L.xCell[c];
+        elmCenterHost(c, 1) = L.yCell[c];
+        elmCenterHost(c, 2) = L.zCell[c];
     }
     Kokkos::deep_copy(elmCenter, elmCenterHost);
 
-    Kokkos::parallel_for("setScvtCellArea", nElms, KOKKOS_LAMBDA(const int elm) {
+    Kokkos::parallel_for("setLocalCellArea", nElms, KOKKOS_LAMBDA(const int elm) {
         const int nv = elm2Vtx(elm, 0);
         double area = 0.0;
         for (int i = 1; i <= nv; i++) {
@@ -253,20 +324,11 @@ void setCellGeometry(polyMPO::Mesh* mesh, const MPASMesh& m)
     Kokkos::fence();
 }
 
-int expectedMPs(const int elm, const int nVtx)
+// MPs only in owned cells, laid out by the global cell ID.
+polyMPO::MaterialPoints* createMPs(polyMPO::Mesh* mesh, const LocalMesh& L)
 {
-    switch (cellGroup(elm)) {
-        case 2:  return 0;
-        case 3:  return 1;
-        default: return MPS_PER_VTX * nVtx;
-    }
-}
-
-// MPs on the sphere, laid out per group (see top of file).
-polyMPO::MaterialPoints* createTestMPs(polyMPO::Mesh* mesh, const MPASMesh& m)
-{
-    const int nElms = m.nCells;
-    const double radius = m.sphereRadius;
+    const int nElms = L.nCells;
+    const double radius = L.sphereRadius;
 
     std::vector<double> px, py, pz;
     std::vector<int> owner;
@@ -281,28 +343,28 @@ polyMPO::MaterialPoints* createTestMPs(polyMPO::Mesh* mesh, const MPASMesh& m)
         mpsPerCell[elm]++;
     };
 
-    for (int elm = 0; elm < nElms; elm++) {
-        const double c[3] = {m.xCell[elm], m.yCell[elm], m.zCell[elm]};
-        const int nv = m.nEdgesOnCell[elm];
-        const int group = cellGroup(elm);
+    for (int elm = 0; elm < L.nOwned; elm++) {
+        const double c[3] = {L.xCell[elm], L.yCell[elm], L.zCell[elm]};
+        const int nv = L.nEdgesOnCell[elm];
+        const int group = cellGroup(L.globalId[elm]);
 
         if (group == 2) {
             continue;                                           // C: no MPs
         }
         if (group == 3) {                                       // D: one MP
-            const int v = m.verticesOnCell[elm * m.maxEdges] - 1;
-            addMP(elm, 0.5 * (c[0] + m.xVertex[v]),
-                       0.5 * (c[1] + m.yVertex[v]),
-                       0.5 * (c[2] + m.zVertex[v]));
+            const int v = L.verticesOnCell[elm * L.maxEdges] - 1;
+            addMP(elm, 0.5 * (c[0] + L.xVertex[v]),
+                       0.5 * (c[1] + L.yVertex[v]),
+                       0.5 * (c[2] + L.zVertex[v]));
             continue;
         }
         for (int j = 0; j < nv; j++) {                          // A, B: spread inside
-            const int v = m.verticesOnCell[elm * m.maxEdges + j] - 1;
+            const int v = L.verticesOnCell[elm * L.maxEdges + j] - 1;
             for (int s = 1; s <= MPS_PER_VTX; s++) {
                 const double t = static_cast<double>(s) / (MPS_PER_VTX + 1);
-                addMP(elm, (1.0 - t) * c[0] + t * m.xVertex[v],
-                           (1.0 - t) * c[1] + t * m.yVertex[v],
-                           (1.0 - t) * c[2] + t * m.zVertex[v]);
+                addMP(elm, (1.0 - t) * c[0] + t * L.xVertex[v],
+                           (1.0 - t) * c[1] + t * L.yVertex[v],
+                           (1.0 - t) * c[2] + t * L.zVertex[v]);
             }
         }
     }
@@ -347,20 +409,36 @@ polyMPO::MaterialPoints* createTestMPs(polyMPO::Mesh* mesh, const MPASMesh& m)
 }
 
 //--------------------------------------------------------------------------
-// Part 1: MPs -> cells
+// One run of the mapping on a local mesh
 //--------------------------------------------------------------------------
 
+struct Results {
+    int numMPs = 0;
+    std::vector<int> mpCount;                    // [nCells]
+    std::vector<double> cell[NUM_FIELDS];        // MPs -> cells, [nCells * nIceCategories]
+    std::vector<double> mpSum[NUM_FIELDS];       // cells -> MPs, per cell and category
+    std::vector<double> mpMin[NUM_FIELDS];
+    std::vector<double> mpMax[NUM_FIELDS];
+};
+
 template <polyMPO::MaterialPointSlice mpSlice>
-void setMPValues(polyMPO::MPMesh& mpMesh, const int field)
+void setMPValues(polyMPO::MPMesh& mpMesh, const int field, const polyMPO::IntView& gid)
 {
     auto p_MPs = mpMesh.p_MPs;
     auto mpField = p_MPs->getData<mpSlice>();
+    auto mpPos = p_MPs->getData<polyMPO::MPF_Cur_Pos_XYZ>();
+    auto elmCenter = mpMesh.p_mesh->getMeshField<polyMPO::MeshF_ElmCenterXYZ>();
 
     auto setValues = PS_LAMBDA(const int& elm, const int& mp, const int& mask) {
         if (mask) {
-            const bool addSpread = (elm % 4 == 1) && (mp % 2 == 1);
+            const int g = gid(elm);
+            // group B: +0.5 for MPs on one side of the cell center (position
+            // based, so it is identical in the serial and partitioned runs)
+            const double side = (mpPos(mp, 0) + mpPos(mp, 1) + mpPos(mp, 2))
+                              - (elmCenter(elm, 0) + elmCenter(elm, 1) + elmCenter(elm, 2));
+            const bool addSpread = (cellGroup(g) == 1) && (side > 0.0);
             for (int k = 0; k < nIceCategories; k++) {
-                mpField(mp, k) = baseValue(field, k, elm) + (addSpread ? SPREAD : 0.0);
+                mpField(mp, k) = baseValue(field, k, g) + (addSpread ? SPREAD : 0.0);
             }
         }
     };
@@ -369,172 +447,130 @@ void setMPValues(polyMPO::MPMesh& mpMesh, const int field)
 }
 
 template <polyMPO::MeshFieldIndex mfIndex>
-int checkCellValues(polyMPO::MPMesh& mpMesh, const int field, const char* name, const int rank)
+std::vector<double> readCellValues(polyMPO::MPMesh& mpMesh)
 {
     auto meshField = mpMesh.p_mesh->getMeshField<mfIndex>();
     auto fieldHost = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), meshField);
-
     const int nElms = mpMesh.p_mesh->getNumElements();
-    int failures = 0;
-    int groupFailures[4] = {0, 0, 0, 0};
-
+    std::vector<double> values(static_cast<size_t>(nElms) * nIceCategories);
     for (int elm = 0; elm < nElms; elm++) {
         for (int k = 0; k < nIceCategories; k++) {
-
-            const double value = fieldHost(elm, k);
-            const double base = baseValue(field, k, elm);
-            const double tol = REL_TOL * std::abs(base);
-            const int group = cellGroup(elm);
-
-            bool ok = std::isfinite(value);
-            const char* expected = "";
-
-            switch (group) {
-                case 0:
-                    ok = ok && (std::abs(value - base) <= tol);
-                    expected = "exactly base (group A)";
-                    break;
-                case 1:
-                    ok = ok && (value >= base - tol) && (value <= base + SPREAD + tol);
-                    expected = "within [base, base+0.5] (group B)";
-                    break;
-                case 2:
-                    ok = ok && (value == 0.0);
-                    expected = "0 (group C, no MPs)";
-                    break;
-                default:
-                    ok = ok && (std::abs(value - base) <= tol);
-                    expected = "exactly base (group D, 1 MP)";
-                    break;
-            }
-
-            if (!ok) {
-                ++failures;
-                ++groupFailures[group];
-                if (failures <= MAX_PRINT) {
-                    std::cerr
-                        << "Rank " << rank << ": " << name
-                        << " cell " << elm << " cat " << k
-                        << " = " << value
-                        << ", base = " << base
-                        << ", expected " << expected
-                        << std::endl;
-                }
-            }
+            values[elm * nIceCategories + k] = fieldHost(elm, k);
         }
     }
-
-    std::cout
-        << "Rank " << rank << ": MPs -> cells " << name
-        << ": failures A/B/C/D = "
-        << groupFailures[0] << "/" << groupFailures[1] << "/"
-        << groupFailures[2] << "/" << groupFailures[3]
-        << std::endl;
-
-    return failures;
-}
-
-//--------------------------------------------------------------------------
-// Part 2: cells -> MPs
-//--------------------------------------------------------------------------
-
-// Min/max of each cell and its valid neighbours for the varying cell field.
-void neighbourBounds(const MPASMesh& m,
-                     Kokkos::View<double**>& lo, Kokkos::View<double**>& hi)
-{
-    const int nElms = m.nCells;
-    lo = Kokkos::View<double**>("limiterLo", nElms, nIceCategories);
-    hi = Kokkos::View<double**>("limiterHi", nElms, nIceCategories);
-    auto loHost = Kokkos::create_mirror_view(lo);
-    auto hiHost = Kokkos::create_mirror_view(hi);
-
-    for (int elm = 0; elm < nElms; elm++) {
-        for (int k = 0; k < nIceCategories; k++) {
-            double vmin = varyingCellValue(k, elm);
-            double vmax = vmin;
-            for (int j = 0; j < m.nEdgesOnCell[elm]; j++) {
-                const int nb = m.cellsOnCell[elm * m.maxEdges + j] - 1;
-                if (nb < 0 || nb >= nElms) continue;
-                const double v = varyingCellValue(k, nb);
-                vmin = std::min(vmin, v);
-                vmax = std::max(vmax, v);
-            }
-            loHost(elm, k) = vmin;
-            hiHost(elm, k) = vmax;
-        }
-    }
-    Kokkos::deep_copy(lo, loHost);
-    Kokkos::deep_copy(hi, hiHost);
+    return values;
 }
 
 template <polyMPO::MeshFieldIndex mfIndex, polyMPO::MaterialPointSlice mpSlice>
-int checkCellsToMPs(polyMPO::MPMesh& mpMesh, const char* name, const int rank,
-                    const Kokkos::View<double**>& lo, const Kokkos::View<double**>& hi)
+void cellsToMPs(polyMPO::MPMesh& mpMesh, const polyMPO::IntView& gid, Results& r, const int f)
 {
-    auto p_mesh = mpMesh.p_mesh;
     auto p_MPs = mpMesh.p_MPs;
-    const int nElms = p_mesh->getNumElements();
-    auto meshField = p_mesh->getMeshField<mfIndex>();
-    auto mpField = p_MPs->getData<mpSlice>();
+    const int nElms = mpMesh.p_mesh->getNumElements();
+    auto meshField = mpMesh.p_mesh->getMeshField<mfIndex>();
 
-    // 2a: constant cell field -> every MP exactly that value
-    Kokkos::parallel_for("setConstantCellValues", nElms, KOKKOS_LAMBDA(const int elm) {
-        for (int k = 0; k < nIceCategories; k++) {
-            meshField(elm, k) = constantCellValue(k);
-        }
-    });
-    Kokkos::fence();
-    mpMesh.mapCellsToMPs<mfIndex>();
-    Kokkos::fence();
-
-    Kokkos::View<int> badConstant("badConstant");
-    auto checkConstant = PS_LAMBDA(const int& elm, const int& mp, const int& mask) {
-        if (mask) {
-            for (int k = 0; k < nIceCategories; k++) {
-                const double expected = constantCellValue(k);
-                if (!(Kokkos::fabs(mpField(mp, k) - expected) <= REL_TOL * expected)) {
-                    Kokkos::atomic_increment(&badConstant());
-                }
-            }
-        }
-    };
-    p_MPs->parallel_for(checkConstant, "checkConstantCellToMP");
-
-    // 2b: varying cell field -> every MP within its cell/neighbour min/max
+    // Owned and halo cells, as MPAS provides them.
     Kokkos::parallel_for("setVaryingCellValues", nElms, KOKKOS_LAMBDA(const int elm) {
         for (int k = 0; k < nIceCategories; k++) {
-            meshField(elm, k) = varyingCellValue(k, elm);
+            meshField(elm, k) = varyingCellValue(k, gid(elm));
         }
     });
     Kokkos::fence();
     mpMesh.mapCellsToMPs<mfIndex>();
     Kokkos::fence();
 
-    Kokkos::View<int> badBounded("badBounded");
-    auto checkBounded = PS_LAMBDA(const int& elm, const int& mp, const int& mask) {
+    Kokkos::View<double**> sum("mpSum", nElms, nIceCategories);
+    Kokkos::View<double**> vmin("mpMin", nElms, nIceCategories);
+    Kokkos::View<double**> vmax("mpMax", nElms, nIceCategories);
+    Kokkos::deep_copy(vmin, 1.0e300);
+    Kokkos::deep_copy(vmax, -1.0e300);
+
+    auto mpField = p_MPs->getData<mpSlice>();
+    auto aggregate = PS_LAMBDA(const int& elm, const int& mp, const int& mask) {
         if (mask) {
             for (int k = 0; k < nIceCategories; k++) {
                 const double v = mpField(mp, k);
-                const double tol = REL_TOL * Kokkos::fabs(hi(elm, k));
-                if (!(v >= lo(elm, k) - tol && v <= hi(elm, k) + tol)) {
-                    Kokkos::atomic_increment(&badBounded());
-                }
+                Kokkos::atomic_add(&sum(elm, k), v);
+                Kokkos::atomic_fetch_min(&vmin(elm, k), v);
+                Kokkos::atomic_fetch_max(&vmax(elm, k), v);
             }
         }
     };
-    p_MPs->parallel_for(checkBounded, "checkBoundedCellToMP");
+    p_MPs->parallel_for(aggregate, "aggregateMPValues");
     Kokkos::fence();
 
-    auto badConstantHost = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), badConstant);
-    auto badBoundedHost = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), badBounded);
+    auto sumHost = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), sum);
+    auto minHost = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), vmin);
+    auto maxHost = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), vmax);
 
-    std::cout
-        << "Rank " << rank << ": cells -> MPs " << name
-        << ": constant failures = " << badConstantHost()
-        << ", out-of-bounds (limiter) failures = " << badBoundedHost()
-        << std::endl;
+    const size_t n = static_cast<size_t>(nElms) * nIceCategories;
+    r.mpSum[f].resize(n);
+    r.mpMin[f].resize(n);
+    r.mpMax[f].resize(n);
+    for (int elm = 0; elm < nElms; elm++) {
+        for (int k = 0; k < nIceCategories; k++) {
+            r.mpSum[f][elm * nIceCategories + k] = sumHost(elm, k);
+            r.mpMin[f][elm * nIceCategories + k] = minHost(elm, k);
+            r.mpMax[f][elm * nIceCategories + k] = maxHost(elm, k);
+        }
+    }
+}
 
-    return badConstantHost() + badBoundedHost();
+Results runMapping(const LocalMesh& L)
+{
+    Results r;
+
+    polyMPO::Mesh* mesh = createMesh(L);
+    setCellGeometry(mesh, L);
+    polyMPO::MaterialPoints* p_MPs = createMPs(mesh, L);
+
+    polyMPO::MPMesh mpMesh(mesh, p_MPs);
+    mpMesh.p_MPs->setMPIComm(MPI_COMM_WORLD);
+    mesh->setGnomonicProjection(mesh->getRotatedFlag());
+
+    r.numMPs = mpMesh.p_MPs->getCount();
+
+    polyMPO::IntView gid("globalCellId", L.nCells);
+    auto gidHost = Kokkos::create_mirror_view(gid);
+    for (int l = 0; l < L.nCells; l++) gidHost(l) = L.globalId[l];
+    Kokkos::deep_copy(gid, gidHost);
+
+    // uniform MP area
+    auto mpArea = mpMesh.p_MPs->getData<polyMPO::MPF_Area>();
+    auto setArea = PS_LAMBDA(const int& elm, const int& mp, const int& mask) {
+        if (mask) mpArea(mp, 0) = 1.0;
+    };
+    mpMesh.p_MPs->parallel_for(setArea, "setUniformMPArea");
+
+    // MP count per cell
+    Kokkos::View<int*> nMPs("nMPsPerCell", L.nCells);
+    auto countMPs = PS_LAMBDA(const int& elm, const int& mp, const int& mask) {
+        if (mask) Kokkos::atomic_increment(&nMPs(elm));
+    };
+    mpMesh.p_MPs->parallel_for(countMPs, "countMPsPerCell");
+    Kokkos::fence();
+    auto nMPsHost = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), nMPs);
+    r.mpCount.assign(nMPsHost.data(), nMPsHost.data() + L.nCells);
+
+    // MPs -> cells: map all three fields, then read all three
+    setMPValues<polyMPO::MPF_IceAreaCategory>(mpMesh, 1, gid);
+    mpMesh.mapMPsToCells<polyMPO::MPF_IceAreaCategory>();
+    setMPValues<polyMPO::MPF_IceVolumeCategory>(mpMesh, 2, gid);
+    mpMesh.mapMPsToCells<polyMPO::MPF_IceVolumeCategory>();
+    setMPValues<polyMPO::MPF_SnowVolumeCategory>(mpMesh, 3, gid);
+    mpMesh.mapMPsToCells<polyMPO::MPF_SnowVolumeCategory>();
+    Kokkos::fence();
+
+    r.cell[0] = readCellValues<polyMPO::MeshF_IceAreaCategory>(mpMesh);
+    r.cell[1] = readCellValues<polyMPO::MeshF_IceVolumeCategory>(mpMesh);
+    r.cell[2] = readCellValues<polyMPO::MeshF_SnowVolumeCategory>(mpMesh);
+
+    // cells -> MPs
+    cellsToMPs<polyMPO::MeshF_IceAreaCategory, polyMPO::MPF_IceAreaCategory>(mpMesh, gid, r, 0);
+    cellsToMPs<polyMPO::MeshF_IceVolumeCategory, polyMPO::MPF_IceVolumeCategory>(mpMesh, gid, r, 1);
+    cellsToMPs<polyMPO::MeshF_SnowVolumeCategory, polyMPO::MPF_SnowVolumeCategory>(mpMesh, gid, r, 2);
+
+    // mpMesh owns and deletes the Mesh and MaterialPoints
+    return r;
 }
 
 } // namespace
@@ -555,157 +591,174 @@ int main(int argc, char** argv)
 
 #ifndef POLYMPO_HAS_NETCDF
         if (rank == 0) {
-            std::cerr << "testParticleCellMap requires NetCDF; skipping." << std::endl;
+            std::cerr << "testParticleCellMapPartitioned requires NetCDF; skipping." << std::endl;
         }
         testResult = 77;
 #else
-        if (argc < 2) {
+        if (size != NUM_PARTS) {
             if (rank == 0) {
-                std::cerr << "Usage: " << argv[0] << " <path to spherical MPAS mesh .nc file>" << std::endl;
-            }
-            MPI_Abort(MPI_COMM_WORLD, 1);
-        }
-        const std::string meshFile = argv[1];
-
-        if (rank == 0) {
-            std::cout
-                << "Particle-cell mapping test running with "
-                << size << " MPI ranks on " << meshFile
-                << std::endl;
-        }
-
-        // SCVT mesh from the MPAS mesh file.
-        // The mapping is local to each rank, so every rank runs the same test.
-
-        const MPASMesh mpasMesh = readMPASMesh(meshFile);
-
-        polyMPO::Mesh* mesh = createMesh(mpasMesh);
-        setCellGeometry(mesh, mpasMesh);
-
-        polyMPO::MaterialPoints* p_MPs = createTestMPs(mesh, mpasMesh);
-
-        polyMPO::MPMesh mpMesh(mesh, p_MPs);
-        mpMesh.p_MPs->setMPIComm(MPI_COMM_WORLD);
-
-        // mapCellsToMPs uses the gnomonic projection of cells and MPs.
-        mesh->setGnomonicProjection(mesh->getRotatedFlag());
-
-        const int nElms = mesh->getNumElements();
-        const bool spherical = (mesh->getGeomType() == polyMPO::geom_spherical_surf);
-
-        std::cout
-            << "Rank " << rank
-            << ": geometry = " << (spherical ? "spherical (SCVT)" : "NOT spherical")
-            << ", radius = " << mesh->getSphereRadius()
-            << ", cells = " << nElms
-            << ", vertices = " << mesh->getNumVertices()
-            << ", MPs = " << mpMesh.p_MPs->getCount()
-            << std::endl;
-
-        // MPs -> cells weights each MP by its area: use uniform area.
-        auto mpArea = mpMesh.p_MPs->getData<polyMPO::MPF_Area>();
-        auto setArea = PS_LAMBDA(const int& elm, const int& mp, const int& mask) {
-            if (mask) {
-                mpArea(mp, 0) = 1.0;
-            }
-        };
-        mpMesh.p_MPs->parallel_for(setArea, "setUniformMPArea");
-
-        int localFailures = 0;
-
-        if (!spherical) {
-            std::cerr << "Rank " << rank << ": mesh is not spherical" << std::endl;
-            ++localFailures;
-        }
-
-        // Part 0: MP count per cell matches the requested layout.
-
-        Kokkos::View<int*> nMPs("nMPsPerCell", nElms);
-        auto countMPs = PS_LAMBDA(const int& elm, const int& mp, const int& mask) {
-            if (mask) {
-                Kokkos::atomic_increment(&nMPs(elm));
-            }
-        };
-        mpMesh.p_MPs->parallel_for(countMPs, "countMPsPerCell");
-        Kokkos::fence();
-        auto nMPsHost = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), nMPs);
-
-        int cellsPerGroup[4] = {0, 0, 0, 0};
-        int countFailures = 0;
-        for (int elm = 0; elm < nElms; elm++) {
-            ++cellsPerGroup[cellGroup(elm)];
-            if (nMPsHost(elm) != expectedMPs(elm, mpasMesh.nEdgesOnCell[elm])) {
-                ++countFailures;
-            }
-        }
-        std::cout
-            << "Rank " << rank
-            << ": cells per group A/B/C/D = "
-            << cellsPerGroup[0] << "/" << cellsPerGroup[1] << "/"
-            << cellsPerGroup[2] << "/" << cellsPerGroup[3]
-            << ", MP count mismatches = " << countFailures
-            << std::endl;
-        localFailures += countFailures;
-
-        // Part 1: MPs -> cells.
-        // Set and map all three fields first, then read all three back.
-
-        setMPValues<polyMPO::MPF_IceAreaCategory>(mpMesh, 1);
-        mpMesh.mapMPsToCells<polyMPO::MPF_IceAreaCategory>();
-
-        setMPValues<polyMPO::MPF_IceVolumeCategory>(mpMesh, 2);
-        mpMesh.mapMPsToCells<polyMPO::MPF_IceVolumeCategory>();
-
-        setMPValues<polyMPO::MPF_SnowVolumeCategory>(mpMesh, 3);
-        mpMesh.mapMPsToCells<polyMPO::MPF_SnowVolumeCategory>();
-
-        Kokkos::fence();
-
-        localFailures += checkCellValues<polyMPO::MeshF_IceAreaCategory>(
-            mpMesh, 1, "iceAreaCategory", rank);
-        localFailures += checkCellValues<polyMPO::MeshF_IceVolumeCategory>(
-            mpMesh, 2, "iceVolumeCategory", rank);
-        localFailures += checkCellValues<polyMPO::MeshF_SnowVolumeCategory>(
-            mpMesh, 3, "snowVolumeCategory", rank);
-
-        // Part 2: cells -> MPs.
-
-        Kokkos::View<double**> lo, hi;
-        neighbourBounds(mpasMesh, lo, hi);
-
-        localFailures += checkCellsToMPs<polyMPO::MeshF_IceAreaCategory,
-                                         polyMPO::MPF_IceAreaCategory>(mpMesh, "iceAreaCategory", rank, lo, hi);
-        localFailures += checkCellsToMPs<polyMPO::MeshF_IceVolumeCategory,
-                                         polyMPO::MPF_IceVolumeCategory>(mpMesh, "iceVolumeCategory", rank, lo, hi);
-        localFailures += checkCellsToMPs<polyMPO::MeshF_SnowVolumeCategory,
-                                         polyMPO::MPF_SnowVolumeCategory>(mpMesh, "snowVolumeCategory", rank, lo, hi);
-
-        int globalFailures = 0;
-
-        MPI_Allreduce(&localFailures, &globalFailures, 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
-
-        if (rank == 0) {
-
-            if (globalFailures == 0) {
-                std::cout
-                    << "Particle-cell mapping test PASSED."
-                    << std::endl;
-            }
-            else {
                 std::cerr
-                    << "Particle-cell mapping test FAILED with "
-                    << globalFailures
-                    << " errors."
+                    << "This test requires exactly " << NUM_PARTS
+                    << " MPI ranks (got " << size << "); skipping."
                     << std::endl;
             }
+            testResult = 77;
         }
+        else {
+      #ifdef PMPO_TEST_SCVT_MESH
+              const std::string meshFile = (argc >= 2) ? argv[1] : PMPO_TEST_SCVT_MESH;
+      #else
+             if (argc < 2) {
+                if (rank == 0) std::cerr << "Usage: " << argv[0] << " <mesh.nc>" << std::endl;
+                MPI_Abort(MPI_COMM_WORLD, 1);
+            }
+            const std::string meshFile = argv[1];
+      #endif
+ 
+            if (rank == 0) {
+                std::cout
+                    << "Partitioned particle-cell mapping test running with "
+                    << size << " MPI ranks on " << meshFile
+                    << std::endl;
+            }
 
-        if (globalFailures != 0) {
-            testResult = 1;
+            const MPASMesh m = readMPASMesh(meshFile);
+
+            // Partition: 4 longitude wedges of the cell centers.
+            const double pi = 4.0 * std::atan(1.0);
+            std::vector<int> owner(m.nCells);
+            for (int g = 0; g < m.nCells; g++) {
+                const double lon = std::atan2(m.yCell[g], m.xCell[g]);          // [-pi, pi]
+                int p = static_cast<int>((lon + pi) / (2.0 * pi) * NUM_PARTS);
+                owner[g] = std::min(std::max(p, 0), NUM_PARTS - 1);
+            }
+
+            const LocalMesh serialMesh = buildLocalMesh(m, owner, rank, true);
+            const LocalMesh localMesh = buildLocalMesh(m, owner, rank, false);
+
+            const Results serial = runMapping(serialMesh);
+            const Results part = runMapping(localMesh);
+
+            int nBoundary = 0;
+            for (int l = 0; l < localMesh.nOwned; l++) {
+                if (localMesh.isBoundary[l]) ++nBoundary;
+            }
+
+            std::cout
+                << "Rank " << rank
+                << ": owned cells = " << localMesh.nOwned
+                << " (partition-boundary " << nBoundary << ")"
+                << ", halo cells = " << localMesh.nCells - localMesh.nOwned
+                << ", MPs = " << part.numMPs
+                << std::endl;
+
+            int localFailures = 0;
+
+            // Part 0: totals over all ranks, MP counts per owned cell.
+            int ownedTotal = 0;
+            int mpsTotal = 0;
+            MPI_Allreduce(&localMesh.nOwned, &ownedTotal, 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
+            MPI_Allreduce(&part.numMPs, &mpsTotal, 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
+            if (rank == 0) {
+                std::cout
+                    << "All ranks: owned cells = " << ownedTotal << " (mesh " << m.nCells << ")"
+                    << ", MPs = " << mpsTotal << " (serial " << serial.numMPs << ")"
+                    << std::endl;
+                if (ownedTotal != m.nCells) ++localFailures;
+                if (mpsTotal != serial.numMPs) ++localFailures;
+            }
+
+            int countMismatch = 0;
+            for (int l = 0; l < localMesh.nOwned; l++) {
+                if (part.mpCount[l] != serial.mpCount[localMesh.globalId[l]]) ++countMismatch;
+            }
+            localFailures += countMismatch;
+
+            // Part 1: MPs -> cells, owned cells vs serial.
+            int p1Interior = 0, p1Boundary = 0, printed = 0;
+            for (int f = 0; f < NUM_FIELDS; f++) {
+                for (int l = 0; l < localMesh.nOwned; l++) {
+                    const int g = localMesh.globalId[l];
+                    for (int k = 0; k < nIceCategories; k++) {
+                        const double p = part.cell[f][l * nIceCategories + k];
+                        const double s = serial.cell[f][g * nIceCategories + k];
+                        if (!nearlyEqual(p, s)) {
+                            (localMesh.isBoundary[l] ? p1Boundary : p1Interior)++;
+                            if (printed++ < MAX_PRINT) {
+                                std::cerr << "Rank " << rank << ": MPs -> cells field " << f + 1
+                                          << " cell " << g << " cat " << k
+                                          << ": partitioned = " << p << ", serial = " << s << std::endl;
+                            }
+                        }
+                    }
+                }
+            }
+            localFailures += p1Interior + p1Boundary;
+
+            // Halo cells: no MPs on this rank (reported only).
+            int haloNonZero = 0;
+            for (int f = 0; f < NUM_FIELDS; f++) {
+                for (int l = localMesh.nOwned; l < localMesh.nCells; l++) {
+                    for (int k = 0; k < nIceCategories; k++) {
+                        if (part.cell[f][l * nIceCategories + k] != 0.0) ++haloNonZero;
+                    }
+                }
+            }
+
+            // Part 2: cells -> MPs, per owned cell vs serial (sum, min, max).
+            int p2Interior = 0, p2Boundary = 0;
+            printed = 0;
+            for (int f = 0; f < NUM_FIELDS; f++) {
+                for (int l = 0; l < localMesh.nOwned; l++) {
+                    const int g = localMesh.globalId[l];
+                    if (part.mpCount[l] == 0) continue;
+                    for (int k = 0; k < nIceCategories; k++) {
+                        const size_t il = static_cast<size_t>(l) * nIceCategories + k;
+                        const size_t ig = static_cast<size_t>(g) * nIceCategories + k;
+                        const bool ok = nearlyEqual(part.mpSum[f][il], serial.mpSum[f][ig]) &&
+                                        nearlyEqual(part.mpMin[f][il], serial.mpMin[f][ig]) &&
+                                        nearlyEqual(part.mpMax[f][il], serial.mpMax[f][ig]);
+                        if (!ok) {
+                            (localMesh.isBoundary[l] ? p2Boundary : p2Interior)++;
+                            if (printed++ < MAX_PRINT) {
+                                std::cerr << "Rank " << rank << ": cells -> MPs field " << f + 1
+                                          << " cell " << g << " cat " << k
+                                          << ": partitioned sum/min/max = " << part.mpSum[f][il]
+                                          << "/" << part.mpMin[f][il] << "/" << part.mpMax[f][il]
+                                          << ", serial = " << serial.mpSum[f][ig]
+                                          << "/" << serial.mpMin[f][ig] << "/" << serial.mpMax[f][ig]
+                                          << std::endl;
+                            }
+                        }
+                    }
+                }
+            }
+            localFailures += p2Interior + p2Boundary;
+
+            std::cout
+                << "Rank " << rank
+                << ": MP count mismatches = " << countMismatch
+                << "; MPs -> cells mismatches (interior/boundary) = " << p1Interior << "/" << p1Boundary
+                << "; cells -> MPs mismatches (interior/boundary) = " << p2Interior << "/" << p2Boundary
+                << "; halo cell values != 0 (info) = " << haloNonZero
+                << std::endl;
+
+            int globalFailures = 0;
+            MPI_Allreduce(&localFailures, &globalFailures, 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
+
+            if (rank == 0) {
+                if (globalFailures == 0) {
+                    std::cout << "Partitioned particle-cell mapping test PASSED." << std::endl;
+                }
+                else {
+                    std::cerr << "Partitioned particle-cell mapping test FAILED with "
+                              << globalFailures << " errors." << std::endl;
+                }
+            }
+            if (globalFailures != 0) {
+                testResult = 1;
+            }
         }
-
-        // Do not delete mesh or MPs here.
-        // mpMesh owns the Mesh and MaterialPoints objects.
 #endif
     }
 
